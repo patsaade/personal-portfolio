@@ -1,0 +1,101 @@
+---
+// Tools page — categorized DFIR toolkit (free/open-source) with external links.
+import { css } from 'styled-system/css';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import Badge from '../components/Badge.astro';
+import Icon from '../components/Icon.astro';
+
+interface Tool {
+  name: string;
+  use: string;
+  cost: 'Free' | 'Commercial';
+  url: string;
+}
+
+const categories: { title: string; icon: string; tools: Tool[] }[] = [
+  {
+    title: 'Memory Forensics',
+    icon: 'cpu',
+    tools: [
+      { name: 'Volatility 3', use: 'Memory image analysis & plugin framework', cost: 'Free', url: 'https://github.com/volatilityfoundation/volatility3' },
+      { name: 'MemProcFS', use: 'Mount memory as a file system for fast triage', cost: 'Free', url: 'https://github.com/ufrisk/MemProcFS' },
+      { name: 'WinDbg', use: 'Kernel/structure-level debugging of dumps', cost: 'Free', url: 'https://learn.microsoft.com/windows-hardware/drivers/debugger/' },
+    ],
+  },
+  {
+    title: 'Host Forensics',
+    icon: 'hard-drive',
+    tools: [
+      { name: 'KAPE', use: 'Targeted artifact collection & module processing', cost: 'Free', url: 'https://www.kroll.com/kape' },
+      { name: 'Eric Zimmerman Tools', use: 'MFTECmd, Registry Explorer, PECmd, and more', cost: 'Free', url: 'https://ericzimmerman.github.io/' },
+      { name: 'Autopsy', use: 'GUI disk forensics & keyword/artifact analysis', cost: 'Free', url: 'https://www.autopsy.com/' },
+    ],
+  },
+  {
+    title: 'Timeline Analysis',
+    icon: 'clock',
+    tools: [
+      { name: 'Plaso (log2timeline)', use: 'Super-timeline generation across artifacts', cost: 'Free', url: 'https://github.com/log2timeline/plaso' },
+      { name: 'Timesketch', use: 'Collaborative timeline review & annotation', cost: 'Free', url: 'https://timesketch.org/' },
+    ],
+  },
+  {
+    title: 'Collection & Platforms',
+    icon: 'server',
+    tools: [
+      { name: 'Velociraptor', use: 'Endpoint visibility & remote collection at scale', cost: 'Free', url: 'https://docs.velociraptor.app/' },
+      { name: 'SANS SIFT', use: 'Pre-built DFIR analysis workstation', cost: 'Free', url: 'https://www.sans.org/tools/sift-workstation/' },
+    ],
+  },
+];
+---
+
+<BaseLayout title="Tools" description="The DFIR toolkit I actually use — free and open-source tooling across memory, host, timeline, and collection work.">
+  <PageHeader
+    eyebrow="Tooling"
+    title="The DFIR Toolkit"
+    description="What I reach for across memory, host, timeline, and collection work — with setup guides linked from the relevant posts."
+  />
+
+  <div class={css({ display: 'flex', flexDirection: 'column', gap: '2.5rem' })}>
+    {
+      categories.map((cat) => (
+        <section>
+          <h2 class={css({ fontSize: '1.25rem', fontWeight: 700, mb: '1rem', display: 'flex', alignItems: 'center', gap: '0.6rem' })}>
+            <Icon name={cat.icon as any} size={20} class={css({ color: 'primary' })} />
+            {cat.title}
+          </h2>
+          <div class={css({ display: 'flex', flexDirection: 'column', gap: '0.75rem' })}>
+            {cat.tools.map((tool) => (
+              <a
+                href={tool.url}
+                target="_blank"
+                rel="noopener"
+                class={css({
+                  display: 'flex',
+                  flexDirection: { base: 'column', sm: 'row' },
+                  sm: { alignItems: 'center' },
+                  gap: '0.5rem 1rem',
+                  p: '1rem 1.25rem',
+                  bg: 'bgCard',
+                  border: '1px solid token(colors.border)',
+                  borderRadius: 'md',
+                  transition: 'border-color 200ms ease',
+                  _hover: { borderColor: 'primary' },
+                })}
+              >
+                <span class={css({ fontWeight: 700, fontFamily: 'mono', minW: { sm: '180px' } })}>
+                  {tool.name}
+                </span>
+                <span class={css({ color: 'textMuted', fontSize: '0.92rem', flex: 1 })}>{tool.use}</span>
+                <Badge variant={tool.cost === 'Free' ? 'accent' : 'default'}>{tool.cost}</Badge>
+                <Icon name="external-link" size={15} class={css({ color: 'textMuted', flexShrink: 0 })} />
+              </a>
+            ))}
+          </div>
+        </section>
+      ))
+    }
+  </div>
+</BaseLayout>

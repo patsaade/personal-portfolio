@@ -1,0 +1,168 @@
+import { defineConfig } from '@pandacss/dev';
+
+export default defineConfig({
+  // Whether to use css reset
+  preflight: true,
+
+  // Where to look for your css declarations
+  include: ['./src/**/*.{js,jsx,ts,tsx,astro,mdx}'],
+
+  // Files to exclude
+  exclude: [],
+
+  // Light/dark mode is signalled by a `data-mode` attribute on <html>;
+  // the specific palette is set by `data-theme` (see src/themes.ts).
+  conditions: {
+    extend: {
+      light: '[data-mode=light] &',
+      dark: '[data-mode=dark] &',
+    },
+  },
+
+  // Useful for theme customization
+  theme: {
+    extend: {
+      tokens: {
+        colors: {
+          // Raw palette (DFIR-themed)
+          blue: {
+            deep: { value: '#1e40af' },
+            electric: { value: '#3b82f6' },
+            400: { value: '#60a5fa' },
+          },
+          green: {
+            remediate: { value: '#16a34a' },
+            highlight: { value: '#4ade80' },
+          },
+          slate: {
+            50: { value: '#f8fafc' },
+            100: { value: '#f1f5f9' },
+            200: { value: '#e2e8f0' },
+            300: { value: '#cbd5e1' },
+            400: { value: '#94a3b8' },
+            500: { value: '#64748b' },
+            600: { value: '#475569' },
+            700: { value: '#334155' },
+            800: { value: '#1e293b' },
+            900: { value: '#0f172a' },
+            950: { value: '#030712' },
+          },
+        },
+        fonts: {
+          sans: {
+            value:
+              'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+          },
+          mono: {
+            value:
+              'ui-monospace, "JetBrains Mono", "SF Mono", "Cascadia Code", Menlo, Consolas, monospace',
+          },
+        },
+        radii: {
+          sm: { value: '4px' },
+          md: { value: '8px' },
+          lg: { value: '12px' },
+          xl: { value: '16px' },
+        },
+        shadows: {
+          card: { value: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08)' },
+          cardHover: { value: '0 10px 25px -5px rgba(0,0,0,0.25)' },
+        },
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        fadeInScale: {
+          '0%': { opacity: '0', transform: 'scale(0.98)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+      },
+      semanticTokens: {
+        colors: {
+          // Light is the base value, dark overrides via `_dark`
+          bg: {
+            value: { base: '#ffffff', _dark: '{colors.slate.950}' },
+          },
+          bgSubtle: {
+            value: { base: '{colors.slate.50}', _dark: '{colors.slate.900}' },
+          },
+          bgCard: {
+            value: { base: '#ffffff', _dark: '{colors.slate.900}' },
+          },
+          border: {
+            value: { base: '{colors.slate.200}', _dark: '{colors.slate.800}' },
+          },
+          text: {
+            value: { base: '{colors.slate.900}', _dark: '#ffffff' },
+          },
+          textMuted: {
+            value: { base: '{colors.slate.600}', _dark: '{colors.slate.400}' },
+          },
+          primary: {
+            value: { base: '{colors.blue.deep}', _dark: '{colors.blue.electric}' },
+          },
+          primaryHover: {
+            value: { base: '#1e3a8a', _dark: '{colors.blue.400}' },
+          },
+          accent: {
+            value: { base: '{colors.green.remediate}', _dark: '{colors.green.highlight}' },
+          },
+          codeBg: {
+            value: { base: '{colors.slate.100}', _dark: '{colors.slate.900}' },
+          },
+          // Text/icon color to use on top of a `primary` fill (buttons, active
+          // chips). Per-theme override in src/themes.ts keeps it readable on
+          // light primaries (e.g. dark text on the matrix/amber greens).
+          onPrimary: {
+            value: { base: '#ffffff', _dark: '#ffffff' },
+          },
+        },
+      },
+    },
+  },
+
+  // Global CSS
+  globalCss: {
+    'html, body': {
+      margin: 0,
+      padding: 0,
+    },
+    // Background color lives on <html> (not <body>) so the fixed background
+    // canvas — which sits at z-index -1 above the root bg but below content —
+    // remains visible. <body> stays transparent.
+    html: {
+      bg: 'bg',
+      transition: 'background-color 300ms ease',
+    },
+    body: {
+      background: 'transparent',
+      color: 'text',
+      fontFamily: 'sans',
+      lineHeight: 1.7,
+      WebkitFontSmoothing: 'antialiased',
+      transition: 'color 300ms ease',
+    },
+    '*': {
+      boxSizing: 'border-box',
+    },
+    a: {
+      color: 'inherit',
+      textDecoration: 'none',
+    },
+    '::selection': {
+      bg: 'primary',
+      color: 'onPrimary',
+    },
+  },
+
+  // Generate keyframe animations
+  globalVars: {},
+
+  // The output directory for your css system
+  outdir: 'styled-system',
+
+  // JSX framework is not used (Astro)
+  jsxFramework: undefined,
+});

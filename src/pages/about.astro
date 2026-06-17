@@ -1,0 +1,392 @@
+---
+// About page — bio, expertise, work-history timeline, certs, education, home lab.
+import { css } from 'styled-system/css';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import Badge from '../components/Badge.astro';
+import Icon from '../components/Icon.astro';
+import { SOCIALS } from '../consts';
+
+const expertise = [
+  'Memory forensics',
+  'Host forensics',
+  'EDR artifact analysis',
+  'Timeline reconstruction',
+  'Malware triage',
+  'Persistence detection',
+  // Live-response / response-side skills
+  'Incident response',
+  'Live response & containment',
+  'Endpoint triage',
+  'Threat remediation',
+];
+
+// Work history (from LinkedIn). Each company groups the roles held there,
+// newest first. Summaries lead with the hands-on, DFIR-relevant work.
+const experience = [
+  {
+    company: 'First American',
+    icon: 'landmark',
+    meta: 'Full-time · Santa Ana, CA · Remote',
+    current: true,
+    skills: ['SOC', 'SIEM', 'Detection engineering', 'Incident response', 'Endpoint security'],
+    roles: [
+      {
+        title: 'Senior Information Security Analyst',
+        period: 'Jun 2026 – Present',
+        summary:
+          'Anchor the Information Security Operations Center, driving detection-and-response, incident response, and detection tuning across SIEM, cloud, endpoint, and email — including escalations with the MSSP.',
+      },
+    ],
+  },
+  {
+    company: 'Red Canary (a Zscaler company)',
+    icon: 'bird',
+    meta: 'Full-time · United States · Remote',
+    current: false,
+    skills: ['Live response', 'Containment', 'EDR investigation', 'Host artifacts', 'Endpoint threats'],
+    roles: [
+      {
+        title: 'Threat Response Engineer',
+        period: 'Aug 2025 – Jun 2026',
+        note: 'Title retained after Red Canary was acquired by Zscaler.',
+        summary:
+          'Led live response and containment for confirmed endpoint threats across enterprise customers in a 24/7 managed detection and response operation.',
+      },
+      {
+        title: 'Threat Response Engineer',
+        period: 'Apr 2025 – Aug 2025',
+        summary:
+          'Shifted fully into hands-on incident response, investigating confirmed endpoint threats through EDR telemetry, process analysis, and host artifacts.',
+      },
+    ],
+  },
+  {
+    company: 'ReliaQuest',
+    icon: 'target',
+    meta: 'Full-time · Las Vegas, NV · On-site',
+    current: false,
+    skills: ['SIEM', 'EDR', 'Detection engineering', 'Alert triage', 'SOC operations'],
+    roles: [
+      {
+        title: 'Security Engineer',
+        period: 'Feb 2025 – Apr 2025',
+        summary:
+          'Took on a broader, customer-facing engineering role — deploying and tuning detections, integrating telemetry sources, and leading advanced investigations to mature clients’ detection-and-response.',
+      },
+      {
+        title: 'Security Architect',
+        period: 'Oct 2024 – Feb 2025',
+        summary:
+          'Moved from triaging alerts to detection work — tailoring and tuning detection content to each customer’s data types, fields, and log sources, and closing visibility gaps across their environments.',
+      },
+      {
+        title: 'Cybersecurity Analyst, Tier 1',
+        period: 'Apr 2024 – Oct 2024',
+        summary:
+          'Grew into independent, end-to-end alert investigation across SIEM and EDR, validating suspicious activity and escalating confirmed threats with responder-ready context.',
+      },
+      {
+        title: 'Cybersecurity Analyst, Associate',
+        period: 'Jul 2023 – Apr 2024',
+        summary:
+          'Started on the SOC floor — triaging alerts, reviewing evidence, and documenting cases across enterprise monitoring queues.',
+      },
+    ],
+  },
+];
+
+// Earlier IT / contract roles — the foundation before the security career.
+// Condensed (year-level, no per-role detail) so it adds context without competing
+// with the detailed roles above.
+const earlierExperience = [
+  { title: 'Service Desk Technician', org: 'Hanesbrands Inc.', type: 'Contract', period: '2023' },
+  { title: 'Service Desk Technician', org: 'Kaiser Permanente', type: 'Contract', period: '2022–2023' },
+  { title: 'Service Desk Technician', org: 'DCI Hollow Metal', type: 'Contract', period: '2021–2022' },
+  { title: 'Help Desk Apprentice', org: 'City of Moreno Valley', type: 'Apprenticeship', period: '2021' },
+  { title: 'Student Aide, Makerspace', org: 'Moreno Valley College', type: 'Part-time', period: '2019–2021' },
+];
+
+// Featured certifications, ranked strongest-first. Each links to its Credly
+// badge for verification. The full set (incl. CompTIA stackable certs) lives on
+// the Credly profile — see the "view all" link, so this stays uncluttered.
+const certs = [
+  { name: 'CISSP', issuer: 'ISC2', url: 'https://www.credly.com/badges/66ba2583-f710-413c-989f-6ab2eaca6a8e/public_url' },
+  { name: 'SecurityX (CASP+)', issuer: 'CompTIA', url: 'https://www.credly.com/badges/75b925a7-fe2a-48a2-9976-21648d24a20c/public_url' },
+  { name: 'CySA+', issuer: 'CompTIA', url: 'https://www.credly.com/badges/fc07214a-db98-4fac-8b78-c4b2d350c433/public_url' },
+  { name: 'PenTest+', issuer: 'CompTIA', url: 'https://www.credly.com/badges/b918b8d7-9eef-4e64-b6fb-36dbd1c69a29/public_url' },
+  { name: 'Cloud+', issuer: 'CompTIA', url: 'https://www.credly.com/badges/e40c4bdf-9ce5-4004-b23e-e61879e9cb92/public_url' },
+  { name: 'Server+', issuer: 'CompTIA', url: 'https://www.credly.com/badges/9ab10287-084a-45ab-8d93-0880a9145e89/public_url' },
+];
+const certsPursuing = ['GCFA', 'GCFE', 'GCIH'];
+
+const certChip = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.45rem',
+  px: '0.7rem',
+  py: '0.45rem',
+  borderRadius: 'md',
+  border: '1px solid color-mix(in srgb, token(colors.accent) 35%, transparent)',
+  bg: 'color-mix(in srgb, token(colors.accent) 12%, transparent)',
+  color: 'accent',
+  fontSize: '0.85rem',
+  transition: 'all 200ms ease',
+  _hover: { borderColor: 'accent', transform: 'translateY(-1px)' },
+});
+
+const para = css({ color: 'textMuted', lineHeight: 1.8, mb: '1rem' });
+const sectionTitle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  fontSize: '1.3rem',
+  fontWeight: 700,
+  mt: '2.75rem',
+  mb: '1.25rem',
+});
+const sectionIcon = css({ color: 'primary', flexShrink: 0 });
+const connectLink = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.45rem',
+  color: 'primary',
+  fontWeight: 600,
+  _hover: { textDecoration: 'underline' },
+});
+---
+
+<BaseLayout title="About" description="Patrick Saade — Senior Information Security Analyst at First American. SOC detection & response, incident response, and DFIR.">
+  <PageHeader eyebrow="About" title="Patrick Saade" description="Security analyst going deep on DFIR. I investigate what happened, when, and how — then prove it." />
+
+  <p class={para}>
+    I'm a Senior Information Security Analyst at
+    <strong class={css({ color: 'text' })}>First American</strong>, working the Information
+    Security Operations Center — monitoring SIEM, cloud, endpoint, and email-security alerts,
+    and driving detection-and-response and incident response (including escalations with our
+    MSSP). Before this I was a Threat Response Engineer at
+    <strong class={css({ color: 'text' })}>Red Canary</strong> (now part of
+    <strong class={css({ color: 'text' })}>Zscaler</strong>), running live response and
+    containment for confirmed endpoint threats, and I came up through the SOC at
+    <strong class={css({ color: 'text' })}>ReliaQuest</strong>, from alert triage to detection
+    engineering.
+  </p>
+  <p class={para}>
+    Now I'm going deeper on the forensics craft — memory analysis, timeline reconstruction,
+    and full DFIR — and documenting it here as I target DFIR-focused roles: detailed
+    writeups, lab walkthroughs, tool guides, and exam-prep notes.
+  </p>
+
+  <h2 class={sectionTitle}>
+    <Icon name="shield" size={20} class={sectionIcon} /> Expertise
+  </h2>
+  <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' })}>
+    {expertise.map((e) => <Badge variant="primary">{e}</Badge>)}
+  </div>
+
+  <h2 class={sectionTitle}>
+    <Icon name="briefcase" size={20} class={sectionIcon} /> Experience
+  </h2>
+  <div class={css({ display: 'flex', flexDirection: 'column', gap: '1.25rem' })}>
+    {
+      experience.map((company) => (
+        <section
+          class={css({
+            p: { base: '1.25rem', md: '1.5rem' },
+            bg: 'bgCard',
+            border: '1px solid token(colors.border)',
+            borderRadius: 'lg',
+          })}
+        >
+          <header class={css({ display: 'flex', alignItems: 'flex-start', gap: '0.85rem', mb: '1.1rem' })}>
+            <span
+              class={css({
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                w: '2.4rem',
+                h: '2.4rem',
+                borderRadius: 'md',
+                bg: 'bgSubtle',
+                border: '1px solid token(colors.border)',
+                color: 'primary',
+              })}
+              aria-hidden="true"
+            >
+              <Icon name={(company.icon ?? 'briefcase') as any} size={18} />
+            </span>
+            <div class={css({ flex: 1, minW: 0 })}>
+              <div class={css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' })}>
+                <h3 class={css({ fontWeight: 700, fontSize: '1.1rem' })}>{company.company}</h3>
+                {company.current && <Badge variant="accent">Current</Badge>}
+              </div>
+              <p class={css({ color: 'textMuted', fontFamily: 'mono', fontSize: '0.82rem', mt: '0.2rem' })}>
+                {company.meta}
+              </p>
+            </div>
+          </header>
+
+          <ol
+            class={css({
+              listStyle: 'none',
+              m: 0,
+              p: 0,
+              ml: '1rem',
+              borderLeft: '2px solid token(colors.border)',
+            })}
+          >
+            {company.roles.map((role, i) => (
+              <li
+                class={css({
+                  position: 'relative',
+                  pl: '1.5rem',
+                  pb: i === company.roles.length - 1 ? '0' : '1.25rem',
+                })}
+              >
+                <span
+                  class={css({
+                    position: 'absolute',
+                    left: '-6px',
+                    top: '6px',
+                    w: '10px',
+                    h: '10px',
+                    borderRadius: '50%',
+                    bg: 'primary',
+                    border: '2px solid token(colors.bgCard)',
+                  })}
+                  aria-hidden="true"
+                />
+                <div class={css({ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '0.3rem 0.75rem' })}>
+                  <span class={css({ fontWeight: 600 })}>{role.title}</span>
+                  <span class={css({ color: 'textMuted', fontFamily: 'mono', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' })}>
+                    <Icon name="calendar" size={12} /> {role.period}
+                  </span>
+                </div>
+                {role.note && (
+                  <p class={css({ color: 'accent', fontSize: '0.78rem', fontStyle: 'italic', mt: '0.2rem' })}>
+                    {role.note}
+                  </p>
+                )}
+                <p class={css({ color: 'textMuted', fontSize: '0.92rem', mt: '0.35rem' })}>{role.summary}</p>
+              </li>
+            ))}
+          </ol>
+
+          <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', mt: '1.1rem' })}>
+            {company.skills.map((s) => (
+              <Badge>{s}</Badge>
+            ))}
+          </div>
+        </section>
+      ))
+    }
+  </div>
+
+  <p class={css({ fontSize: '0.8rem', fontWeight: 700, color: 'textMuted', fontFamily: 'mono', textTransform: 'uppercase', letterSpacing: '0.08em', mt: '1.75rem', mb: '0.6rem' })}>
+    Earlier &amp; contract experience
+  </p>
+  <ul
+    class={css({
+      listStyle: 'none',
+      m: 0,
+      p: '0.25rem 1.25rem',
+      bg: 'bgCard',
+      border: '1px solid token(colors.border)',
+      borderRadius: 'lg',
+    })}
+  >
+    {
+      earlierExperience.map((r, i) => (
+        <li
+          class={css({
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+            gap: '0.15rem 1rem',
+            py: '0.7rem',
+            borderTop: i === 0 ? 'none' : '1px solid token(colors.border)',
+          })}
+        >
+          <span>
+            <span class={css({ fontWeight: 600 })}>{r.title}</span>
+            <span class={css({ color: 'textMuted' })}> · {r.org}</span>
+          </span>
+          <span class={css({ fontFamily: 'mono', fontSize: '0.8rem', color: 'textMuted', whiteSpace: 'nowrap' })}>
+            {r.type} · {r.period}
+          </span>
+        </li>
+      ))
+    }
+  </ul>
+
+  <h2 class={sectionTitle}>
+    <Icon name="award" size={20} class={sectionIcon} /> Certifications
+  </h2>
+  <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' })}>
+    {
+      certs.map((c) => (
+        <a
+          href={c.url}
+          target="_blank"
+          rel="noopener"
+          title={`Verify ${c.name} on Credly`}
+          class={certChip}
+        >
+          <Icon name="award" size={14} />
+          <span class={css({ fontWeight: 700 })}>{c.name}</span>
+          <span class={css({ opacity: 0.7, fontSize: '0.75rem' })}>{c.issuer}</span>
+        </a>
+      ))
+    }
+  </div>
+  <p class={css({ mt: '0.85rem', fontSize: '0.9rem' })}>
+    <a
+      href={SOCIALS.credly}
+      target="_blank"
+      rel="noopener"
+      class={css({ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: 'primary', fontWeight: 600, _hover: { textDecoration: 'underline' } })}
+    >
+      View all credentials on Credly <Icon name="external-link" size={14} />
+    </a>
+    <span class={css({ color: 'textMuted' })}> — incl. CompTIA stackable certifications.</span>
+  </p>
+
+  <p class={css({ fontSize: '0.8rem', fontWeight: 700, color: 'textMuted', fontFamily: 'mono', textTransform: 'uppercase', letterSpacing: '0.08em', mt: '1.5rem', mb: '0.6rem' })}>
+    In pursuit
+  </p>
+  <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' })}>
+    {certsPursuing.map((c) => <Badge>{c}</Badge>)}
+  </div>
+
+  <h2 class={sectionTitle}>
+    <Icon name="graduation-cap" size={20} class={sectionIcon} /> Education
+  </h2>
+  <ul class={css({ color: 'textMuted', pl: '1.25rem', lineHeight: 1.9 })}>
+    <li>M.S. Cybersecurity (in progress) — Georgia Institute of Technology</li>
+    <li>B.S. — ECPI University</li>
+  </ul>
+
+  <h2 class={sectionTitle}>
+    <Icon name="server" size={20} class={sectionIcon} /> Home Lab
+  </h2>
+  <p class={para}>
+    Most of the content here is forged in a home lab running Velociraptor for endpoint
+    collection and SANS SIFT for analysis — plus memory acquisition tooling and a
+    Plaso/Timesketch timeline pipeline. See the
+    <a href="/tools" class={css({ color: 'primary', textDecoration: 'underline' })}>Tools</a> page for the full stack.
+  </p>
+
+  <h2 class={sectionTitle}>
+    <Icon name="link" size={20} class={sectionIcon} /> Connect
+  </h2>
+  <div class={css({ display: 'flex', gap: '1.25rem', flexWrap: 'wrap' })}>
+    <a href={SOCIALS.linkedin} target="_blank" rel="noopener" class={connectLink}>
+      <Icon name="linkedin" size={16} /> LinkedIn
+    </a>
+    <a href={SOCIALS.github} target="_blank" rel="noopener" class={connectLink}>
+      <Icon name="github" size={16} /> GitHub (home lab)
+    </a>
+  </div>
+</BaseLayout>

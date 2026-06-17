@@ -1,0 +1,149 @@
+/* Prose styling for rendered MDX article content. */
+.prose {
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  color: var(--colors-text);
+}
+
+.prose > * + * {
+  margin-top: 1.25em;
+}
+
+.prose h2,
+.prose h3,
+.prose h4 {
+  font-weight: 700;
+  line-height: 1.25;
+  scroll-margin-top: 90px;
+  color: var(--colors-text);
+}
+
+.prose h2 {
+  font-size: 1.75rem;
+  margin-top: 2.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--colors-border);
+}
+
+.prose h3 {
+  font-size: 1.35rem;
+  margin-top: 2rem;
+}
+
+.prose h4 {
+  font-size: 1.1rem;
+  margin-top: 1.5rem;
+}
+
+.prose a {
+  color: var(--colors-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.prose a:hover {
+  color: var(--colors-primary-hover);
+}
+
+.prose strong {
+  color: var(--colors-text);
+  font-weight: 700;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.5rem;
+}
+
+.prose li + li {
+  margin-top: 0.4rem;
+}
+
+.prose blockquote {
+  border-left: 3px solid var(--colors-primary);
+  padding: 0.5rem 1.25rem;
+  margin-left: 0;
+  color: var(--colors-text-muted);
+  background: var(--colors-bg-subtle);
+  border-radius: 0 8px 8px 0;
+}
+
+.prose img {
+  border-radius: 12px;
+  border: 1px solid var(--colors-border);
+  max-width: 100%;
+  height: auto;
+}
+
+.prose figcaption {
+  font-size: 0.85rem;
+  color: var(--colors-text-muted);
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  display: block;
+  overflow-x: auto;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid var(--colors-border);
+  padding: 0.55rem 0.85rem;
+  text-align: left;
+}
+
+.prose th {
+  background: var(--colors-bg-subtle);
+  font-weight: 700;
+}
+
+.prose hr {
+  border: none;
+  border-top: 1px solid var(--colors-border);
+  margin: 2.5rem 0;
+}
+
+/* Inline code */
+.prose :not(pre) > code {
+  font-family: var(--fonts-mono);
+  font-size: 0.875em;
+  background: var(--colors-code-bg);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  border: 1px solid var(--colors-border);
+}
+
+/* Shiki code blocks */
+.prose pre {
+  font-family: var(--fonts-mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  padding: 1.1rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid var(--colors-border);
+  overflow-x: auto;
+  position: relative;
+}
+
+.prose pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* Light/dark dual-theme Shiki: swap variables driven by data-mode */
+[data-mode='dark'] .prose .astro-code,
+[data-mode='dark'] .prose .astro-code span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+  text-decoration: var(--shiki-dark-text-decoration) !important;
+}

@@ -1,0 +1,174 @@
+---
+// Sticky top nav — brand, links, theme picker, mode toggle, mobile menu.
+import { css } from 'styled-system/css';
+import { NAV_LINKS, SITE } from '../consts';
+import ThemePicker from './ThemePicker.astro';
+import ModeToggle from './ModeToggle.astro';
+import Icon from './Icon.astro';
+
+const pathname = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === '/' ? pathname === '/' : pathname.startsWith(href);
+---
+
+<header
+  class={css({
+    position: 'sticky',
+    top: 0,
+    zIndex: 50,
+    bg: 'color-mix(in srgb, token(colors.bg) 85%, transparent)',
+    backdropFilter: 'blur(10px)',
+    borderBottom: '1px solid token(colors.border)',
+  })}
+>
+  <nav
+    class={css({
+      maxW: '960px',
+      mx: 'auto',
+      px: '1.25rem',
+      h: '64px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '1rem',
+    })}
+  >
+    <a
+      href="/"
+      class={css({
+        fontWeight: 700,
+        fontSize: '1.1rem',
+        letterSpacing: '-0.02em',
+        whiteSpace: 'nowrap',
+      })}
+    >
+      {SITE.title}
+    </a>
+
+    <div
+      class={css({
+        display: 'flex',
+        alignItems: 'center',
+        gap: { base: '0.5rem', md: '1.5rem' },
+      })}
+    >
+      <ul
+        class={css({
+          display: { base: 'none', md: 'flex' },
+          alignItems: 'center',
+          gap: '1.5rem',
+          listStyle: 'none',
+          m: 0,
+          p: 0,
+        })}
+      >
+        {
+          NAV_LINKS.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                aria-current={isActive(link.href) ? 'page' : undefined}
+                class={css({
+                  fontSize: '0.95rem',
+                  color: 'textMuted',
+                  fontWeight: 500,
+                  transition: 'color 200ms ease',
+                  borderBottom: '2px solid transparent',
+                  pb: '2px',
+                  _hover: { color: 'text' },
+                  '&[aria-current=page]': {
+                    color: 'primary',
+                    borderBottomColor: 'primary',
+                  },
+                })}
+              >
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+
+      <ThemePicker />
+
+      {/* Standalone light/dark/system switch — furthest-right control */}
+      <ModeToggle />
+
+      <button
+        id="mobile-menu-toggle"
+        type="button"
+        aria-label="Toggle navigation menu"
+        aria-expanded="false"
+        class={css({
+          display: { base: 'inline-flex', md: 'none' },
+          alignItems: 'center',
+          justifyContent: 'center',
+          w: '38px',
+          h: '38px',
+          borderRadius: 'md',
+          border: '1px solid token(colors.border)',
+          bg: 'transparent',
+          color: 'text',
+          cursor: 'pointer',
+        })}
+      >
+        <Icon name="menu" size={20} />
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile dropdown -->
+  <ul
+    id="mobile-menu"
+    hidden
+    class={css({
+      display: { base: 'flex', md: 'none' },
+      flexDirection: 'column',
+      gap: '0.25rem',
+      listStyle: 'none',
+      m: 0,
+      px: '1.25rem',
+      py: '0.75rem',
+      borderTop: '1px solid token(colors.border)',
+      bg: 'bg',
+    })}
+  >
+    {
+      NAV_LINKS.map((link) => (
+        <li>
+          <a
+            href={link.href}
+            aria-current={isActive(link.href) ? 'page' : undefined}
+            class={css({
+              display: 'block',
+              py: '0.6rem',
+              fontSize: '1rem',
+              color: 'textMuted',
+              '&[aria-current=page]': { color: 'primary', fontWeight: 600 },
+            })}
+          >
+            {link.label}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</header>
+
+<script is:inline>
+  (function () {
+    var toggle = document.getElementById('mobile-menu-toggle');
+    var menu = document.getElementById('mobile-menu');
+    if (!toggle || !menu) return;
+    toggle.addEventListener('click', function () {
+      var open = menu.hasAttribute('hidden');
+      if (open) {
+        menu.removeAttribute('hidden');
+        toggle.setAttribute('aria-expanded', 'true');
+      } else {
+        menu.setAttribute('hidden', '');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+  })();
+</script>

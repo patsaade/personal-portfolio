@@ -1,0 +1,74 @@
+---
+// Base page shell — head, theme styles, sticky nav, main slot, footer, skip link.
+import '../styles/global.css';
+import { css } from 'styled-system/css';
+import BaseHead from '../components/BaseHead.astro';
+import ThemeStyles from '../components/ThemeStyles.astro';
+import Background from '../components/Background.astro';
+import Navigation from '../components/Navigation.astro';
+import Footer from '../components/Footer.astro';
+import { DEFAULT_DARK } from '../themes';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  type?: 'website' | 'article';
+  publishedDate?: Date;
+}
+
+const props = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" data-theme={DEFAULT_DARK} data-mode="dark">
+  <head>
+    <BaseHead {...props} />
+    <ThemeStyles />
+  </head>
+  <body>
+    <Background />
+
+    <a
+      href="#main"
+      class={css({
+        position: 'absolute',
+        left: '-9999px',
+        _focus: {
+          left: '1rem',
+          top: '1rem',
+          zIndex: 100,
+          bg: 'primary',
+          color: 'onPrimary',
+          px: '1rem',
+          py: '0.5rem',
+          borderRadius: 'md',
+        },
+      })}
+    >
+      Skip to content
+    </a>
+
+    <Navigation />
+
+    <main
+      id="main"
+      class={css({
+        maxW: '960px',
+        mx: 'auto',
+        px: '1.25rem',
+        py: { base: '2rem', md: '3rem' },
+        minH: '60vh',
+        animation: 'fadeIn 400ms ease both',
+      })}
+    >
+      <slot />
+    </main>
+
+    <Footer />
+
+    {/* Vercel Web Analytics — cookieless page-view counts; loaded only in
+        production (the script is served by Vercel when Analytics is enabled). */}
+    {import.meta.env.PROD && <script defer src="/_vercel/insights/script.js" is:inline />}
+  </body>
+</html>

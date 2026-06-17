@@ -1,0 +1,36 @@
+---
+// Single lab writeup — renders an MDX lab entry via PostLayout.
+import { render } from 'astro:content';
+import PostLayout from '../../layouts/PostLayout.astro';
+import { estimateReadTime, getSortedLabs } from '../../utils/posts';
+
+export async function getStaticPaths() {
+  // getSortedLabs() excludes drafts in production, so drafts never get a page.
+  const labs = await getSortedLabs();
+  return labs.map((lab) => ({
+    params: { slug: lab.id },
+    props: { lab },
+  }));
+}
+
+const { lab } = Astro.props;
+const { Content, headings } = await render(lab);
+const readTime = estimateReadTime(lab.body);
+
+const tags = [...new Set([lab.data.source, ...lab.data.tags])];
+---
+
+<PostLayout
+  title={lab.data.title}
+  excerpt={lab.data.excerpt}
+  category={lab.data.source}
+  date={lab.data.date}
+  readTime={readTime}
+  difficulty={lab.data.difficulty}
+  tags={tags}
+  tools={lab.data.tools}
+  headings={headings}
+  path={`/labs/${lab.id}`}
+>
+  <Content />
+</PostLayout>

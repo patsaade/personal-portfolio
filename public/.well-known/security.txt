@@ -1,0 +1,6 @@
+# Security contact for patricksaade.com (RFC 9116)
+Contact: https://www.linkedin.com/in/patsaade
+Contact: https://github.com/patsaade
+Expires: 2027-06-15T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://patricksaade.com/.well-known/security.txt

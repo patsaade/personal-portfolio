@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://patricksaade.com/sitemap-index.xml

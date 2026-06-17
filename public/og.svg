@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <rect width="1200" height="630" fill="#030712"/>
+  <rect x="40" y="40" width="1120" height="550" rx="20" fill="none" stroke="#1e293b" stroke-width="2"/>
+  <text x="80" y="250" font-family="Helvetica, Arial, sans-serif" font-size="78" font-weight="700" fill="#ffffff">Patrick Saade</text>
+  <text x="80" y="360" font-family="Helvetica, Arial, sans-serif" font-size="44" font-weight="700" fill="#3b82f6">Digital Forensics &amp; Incident Response</text>
+  <text x="80" y="450" font-family="Helvetica, Arial, sans-serif" font-size="32" fill="#94a3b8">Memory forensics · Host &amp; EDR analysis · Timeline reconstruction</text>
+  <text x="80" y="555" font-family="Menlo, Courier, monospace" font-size="28" fill="#64748b">patricksaade.com</text>
+</svg>

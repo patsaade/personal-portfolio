@@ -1,0 +1,52 @@
+---
+// Inline post metadata row — author, date, read time, difficulty (with icons).
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+import { getFormattedDate, getISODate } from '../utils/date';
+
+interface Props {
+  date: Date;
+  readTime?: number;
+  difficulty?: string;
+  author?: string;
+}
+
+const { date, readTime, difficulty, author } = Astro.props;
+
+const item = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.35rem',
+});
+---
+
+<div
+  class={css({
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: '0.5rem 1rem',
+    fontSize: '0.85rem',
+    color: 'textMuted',
+    fontFamily: 'mono',
+  })}
+>
+  {author && (
+    <span class={item}>
+      <Icon name="user" size={14} /> {author}
+    </span>
+  )}
+  <time class={item} datetime={getISODate(date)}>
+    <Icon name="calendar" size={14} /> {getFormattedDate(date)}
+  </time>
+  {readTime && (
+    <span class={item}>
+      <Icon name="clock" size={14} /> {readTime} min read
+    </span>
+  )}
+  {difficulty && (
+    <span class={item}>
+      <Icon name="gauge" size={14} class={css({ color: 'accent' })} /> {difficulty}
+    </span>
+  )}
+</div>

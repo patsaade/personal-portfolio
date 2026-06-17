@@ -1,0 +1,37 @@
+{
+  "name": "patricksaade-dfir-blog",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "panda codegen && astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "check": "panda codegen && astro check",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepare": "panda codegen"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^6.0.3",
+    "@astrojs/rss": "^4.0.18",
+    "@astrojs/sitemap": "^3.7.3",
+    "astro": "^6.4.7"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@pandacss/dev": "^1.11.3",
+    "sharp": "^0.35.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  },
+  "allowScripts": {
+    "sharp@0.34.5": true,
+    "sharp@0.35.1": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.27.7": true,
+    "fsevents@2.3.3": true
+  }
+}

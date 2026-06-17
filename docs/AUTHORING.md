@@ -1,0 +1,132 @@
+# Authoring Guide
+
+How to add and format content. Two collections exist: **blog** (articles) and
+**labs** (challenge/CTF writeups). Schemas are enforced at build time by
+[`src/content.config.ts`](../src/content.config.ts) — a missing or mistyped field fails
+the build, which is intentional.
+
+> **Content source — hard rule.** Write only from **public lab & CTF challenges and personal
+> study** (CyberDefenders, 13Cubed, MemLabs, Magnet, home lab). **Never** publish real,
+> employer, or client investigations or data — that's an employer/confidentiality breach.
+> No "redacted real case" framing.
+>
+> **Voice:** conversational practitioner, first person, original (see
+> [STYLE_GUIDE.md](STYLE_GUIDE.md)). **Priority pillars:** Host forensics & Memory forensics.
+
+---
+
+## Add a blog post
+
+Create `src/content/blog/<slug>.mdx`. The filename (minus extension) becomes the URL:
+`src/content/blog/volatility3-installation.mdx` → `/blog/volatility3-installation`.
+
+### Blog frontmatter
+
+| Field        | Required | Type / values | Notes |
+| ------------ | :------: | ------------- | ----- |
+| `title`      | ✅ | string | Post title. |
+| `date`       | ✅ | date (`YYYY-MM-DD`) | Publish date; used for sorting & RSS. |
+| `category`   | ✅ | `Memory Forensics` \| `Host Forensics` \| `EDR Analysis` \| `Labs` \| `Tools` | Drives the category badge + icon. |
+| `excerpt`    | ✅ | string | 1–2 sentence summary (cards, SEO, RSS). |
+| `tags`       |   | string[] | Lowercase topic tags, e.g. `["volatility3", "malware"]`. |
+| `tools`      |   | string[] | Tools featured, shown as accent badges. |
+| `difficulty` |   | `Beginner` \| `Intermediate` \| `Advanced` \| `Hard` | Optional. |
+| `author`     |   | string | Defaults to `Patrick Saade`. |
+| `readTime`   |   | number | Overrides the auto estimate (minutes). |
+| `updated`    |   | date | Last-updated date. |
+| `heroImage`  |   | string | Path under `public/`. |
+| `featured`   |   | boolean | `true` surfaces it on the home page. |
+| `draft`      |   | boolean | `true` hides it from production builds. |
+
+```mdx
+---
+title: "Volatility 3: Finding Malware in Memory"
+date: 2026-02-20
+category: "Memory Forensics"
+excerpt: "Detecting injected code and rogue processes in a Windows memory image."
+tags: ["volatility3", "malware", "memory analysis"]
+tools: ["Volatility 3"]
+difficulty: "Intermediate"
+featured: true
+---
+
+Your intro paragraph here…
+
+## A section heading
+
+Headings render into the auto table of contents (h2 + h3 only).
+```
+
+---
+
+## Add a lab writeup
+
+Create `src/content/labs/<slug>.mdx` → `/labs/<slug>`.
+
+### Lab frontmatter
+
+| Field        | Required | Type / values | Notes |
+| ------------ | :------: | ------------- | ----- |
+| `title`      | ✅ | string | Prefix with `[Lab Writeup]` by convention. |
+| `date`       | ✅ | date | |
+| `difficulty` | ✅ | `Beginner` \| `Intermediate` \| `Advanced` \| `Hard` | |
+| `source`     | ✅ | string | Platform, e.g. `CyberDefenders`, `13Cubed`, `Home Lab`. |
+| `excerpt`    | ✅ | string | |
+| `sourceUrl`  |   | url | Link to the challenge. |
+| `timeSpent`  |   | string | e.g. `~2.5 hours`. |
+| `tags`       |   | string[] | |
+| `tools`      |   | string[] | |
+| `iocCount`   |   | number | Feeds the CTF/labs stats. |
+| `draft`      |   | boolean | |
+
+**Recommended section structure** (matches the example in
+[`examples/labs/szechuan-sauce-memory.mdx`](../examples/labs/szechuan-sauce-memory.mdx)):
+
+```
+## Challenge Summary
+## Approach
+## Key Findings
+## Timeline
+## IOCs Extracted
+## Lessons Learned
+```
+
+> Flags/answers should be omitted or redacted — the methodology is the point.
+
+---
+
+## Formatting reference
+
+- **Code blocks** — fence with a language for syntax highlighting:
+  ````
+  ```bash
+  vol -f memory.raw windows.pslist
+  ```
+  ````
+  Colors follow the active theme's mode (Shiki dual-theme).
+- **Inline code** — `` `vol.py` ``.
+- **Images** — place under `public/images/blog/` or `public/images/labs/` and reference
+  with an absolute path (`/images/blog/foo.png`). They're styled with rounded borders.
+- **Internal links** — link related posts with root-relative paths, e.g.
+  `[Memory Forensics 101](/blog/memory-forensics-101)`. This powers discoverability and
+  the related-posts block (which also auto-matches by category + shared tags).
+- **Tables, blockquotes, lists** — standard Markdown; all are styled in
+  [`src/styles/markdown.css`](../src/styles/markdown.css).
+
+---
+
+## Drafts & preview
+
+- `draft: true` keeps a post out of **production** builds (`npm run build`) and RSS, but
+  it's still visible in `npm run dev` so you can preview it.
+- To stage a lab as a template without publishing, keep it under `examples/` (not built,
+  not deployed).
+
+## Publishing checklist
+
+- [ ] Frontmatter complete and valid (build passes).
+- [ ] `excerpt` is tight and specific.
+- [ ] Code examples tested; languages tagged.
+- [ ] Images optimized and placed under `public/`.
+- [ ] At least one internal link to a related post.
+- [ ] `npm run build` succeeds and the page renders in `npm run preview`.

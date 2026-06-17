@@ -1,0 +1,128 @@
+---
+// Article layout — header meta, prose + sticky table of contents, share buttons.
+import '../styles/markdown.css';
+import { css } from 'styled-system/css';
+import type { MarkdownHeading } from 'astro';
+import BaseLayout from './BaseLayout.astro';
+import Badge from '../components/Badge.astro';
+import PostMeta from '../components/PostMeta.astro';
+import TableOfContents from '../components/TableOfContents.astro';
+import ShareButtons from '../components/ShareButtons.astro';
+import { categoryIcon } from '../consts';
+import { tagSlug } from '../utils/posts';
+
+interface Props {
+  title: string;
+  excerpt: string;
+  category: string;
+  date: Date;
+  updated?: Date;
+  readTime?: number;
+  difficulty?: string;
+  tags?: string[];
+  tools?: string[];
+  headings: MarkdownHeading[];
+  path: string;
+  linkTags?: boolean; // link each tag to its /tags page (blog posts only)
+}
+
+const {
+  title,
+  excerpt,
+  category,
+  date,
+  readTime,
+  difficulty,
+  tags = [],
+  tools = [],
+  headings,
+  path,
+  linkTags = false,
+} = Astro.props;
+---
+
+<BaseLayout
+  title={title}
+  description={excerpt}
+  type="article"
+  publishedDate={date}
+>
+  <article>
+    <header class={css({ mb: '2rem' })}>
+      <div class={css({ display: 'flex', gap: '0.5rem', mb: '1rem', flexWrap: 'wrap' })}>
+        <Badge variant="primary" icon={categoryIcon(category)}>{category}</Badge>
+        {difficulty && <Badge variant="difficulty" icon="gauge">{difficulty}</Badge>}
+      </div>
+
+      <h1
+        class={css({
+          fontSize: { base: '2rem', md: '2.75rem' },
+          fontWeight: 700,
+          lineHeight: 1.15,
+          letterSpacing: '-0.02em',
+          mb: '1rem',
+        })}
+      >
+        {title}
+      </h1>
+
+      <p class={css({ fontSize: '1.15rem', color: 'textMuted', mb: '1.25rem' })}>{excerpt}</p>
+
+      <PostMeta date={date} readTime={readTime} difficulty={difficulty} author="Patrick Saade" />
+
+      {
+        tools.length > 0 && (
+          <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', mt: '1rem' })}>
+            {tools.map((t) => (
+              <Badge variant="accent">{t}</Badge>
+            ))}
+          </div>
+        )
+      }
+    </header>
+
+    <div
+      class={css({
+        display: 'grid',
+        gridTemplateColumns: { base: '1fr', lg: 'minmax(0, 1fr) 220px' },
+        gap: '2.5rem',
+        alignItems: 'start',
+      })}
+    >
+      <div class="prose">
+        <slot />
+      </div>
+
+      <aside
+        class={css({
+          display: { base: 'none', lg: 'block' },
+          position: 'sticky',
+          top: '90px',
+        })}
+      >
+        <TableOfContents headings={headings} />
+      </aside>
+    </div>
+
+    <div class={css({ mt: '2.5rem', pt: '1.5rem', borderTop: '1px solid token(colors.border)' })}>
+      <ShareButtons title={title} path={path} />
+      {
+        tags.length > 0 && (
+          <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', mt: '1.25rem' })}>
+            {tags.map((t) =>
+              linkTags ? (
+                <a href={`/tags/${tagSlug(t)}`} class={css({ _hover: { opacity: 0.85 } })}>
+                  <Badge>#{t}</Badge>
+                </a>
+              ) : (
+                <Badge>#{t}</Badge>
+              ),
+            )}
+          </div>
+        )
+      }
+    </div>
+
+    <slot name="footer" />
+  </article>
+</BaseLayout>

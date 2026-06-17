@@ -1,0 +1,83 @@
+---
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+
+// Standalone light/dark/system switch. Reads & writes the shared theme
+// controller (window.__theme) and re-syncs on the global `themechange` event,
+// so it stays in lockstep with the palette picker.
+const modes = [
+  { id: 'system', label: 'System theme', icon: 'monitor' as const },
+  { id: 'light', label: 'Light mode', icon: 'sun' as const },
+  { id: 'dark', label: 'Dark mode', icon: 'moon' as const },
+];
+
+const segBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '30px',
+  h: '30px',
+  borderRadius: 'sm',
+  border: '1px solid transparent',
+  bg: 'transparent',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { color: 'text' },
+  '&[data-active]': {
+    bg: 'bgCard',
+    color: 'primary',
+    borderColor: 'border',
+    boxShadow: 'card',
+  },
+});
+---
+
+<div
+  role="radiogroup"
+  aria-label="Color mode"
+  data-mode-toggle
+  class={css({
+    display: 'inline-flex',
+    gap: '0.15rem',
+    p: '0.2rem',
+    bg: 'bgSubtle',
+    border: '1px solid token(colors.border)',
+    borderRadius: 'md',
+  })}
+>
+  {
+    modes.map((m) => (
+      <button type="button" role="radio" aria-checked="false" aria-label={m.label} title={m.label} class={segBtn} data-mode-pref={m.id}>
+        <Icon name={m.icon} size={15} />
+      </button>
+    ))
+  }
+</div>
+
+<script is:inline>
+  (function () {
+    var root = document.querySelector('[data-mode-toggle]');
+    if (!root || !window.__theme) return;
+    var btns = Array.prototype.slice.call(root.querySelectorAll('[data-mode-pref]'));
+
+    function sync() {
+      var mode = window.__theme.getMode();
+      btns.forEach(function (b) {
+        var active = b.getAttribute('data-mode-pref') === mode;
+        if (active) b.setAttribute('data-active', '');
+        else b.removeAttribute('data-active');
+        b.setAttribute('aria-checked', active ? 'true' : 'false');
+      });
+    }
+
+    btns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        window.__theme.setMode(b.getAttribute('data-mode-pref'));
+      });
+    });
+
+    document.addEventListener('themechange', sync);
+    sync();
+  })();
+</script>

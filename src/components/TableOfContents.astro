@@ -1,0 +1,91 @@
+---
+import { css } from 'styled-system/css';
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+  headings: MarkdownHeading[];
+}
+
+// Only surface h2/h3 for a clean, navigable outline.
+const toc = Astro.props.headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+{
+  toc.length > 0 && (
+    <nav
+      aria-label="Table of contents"
+      class={css({ fontSize: '0.875rem' })}
+    >
+      <p
+        class={css({
+          fontFamily: 'mono',
+          fontWeight: 700,
+          fontSize: '0.75rem',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          color: 'textMuted',
+          mb: '0.75rem',
+        })}
+      >
+        On this page
+      </p>
+      <ul class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.1rem' })}>
+        {toc.map((h) => (
+          <li>
+            <a
+              href={`#${h.slug}`}
+              data-toc-link={h.slug}
+              class={css({
+                display: 'block',
+                py: '0.3rem',
+                pl: h.depth === 3 ? '1rem' : '0',
+                color: 'textMuted',
+                borderLeft: '2px solid transparent',
+                lineHeight: 1.4,
+                transition: 'color 150ms ease, border-color 150ms ease',
+                _hover: { color: 'text' },
+                '&[data-active]': { color: 'primary', borderLeftColor: 'primary', fontWeight: 600 },
+              })}
+            >
+              {h.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+<script is:inline>
+  (function () {
+    var links = Array.from(document.querySelectorAll('[data-toc-link]'));
+    if (!links.length) return;
+    var byId = {};
+    links.forEach(function (l) {
+      byId[l.getAttribute('data-toc-link')] = l;
+    });
+    var headings = links
+      .map(function (l) {
+        return document.getElementById(l.getAttribute('data-toc-link'));
+      })
+      .filter(Boolean);
+
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            links.forEach(function (l) {
+              l.removeAttribute('data-active');
+            });
+            var active = byId[entry.target.id];
+            if (active) active.setAttribute('data-active', '');
+          }
+        });
+      },
+      { rootMargin: '-80px 0px -70% 0px', threshold: 0 }
+    );
+    headings.forEach(function (h) {
+      observer.observe(h);
+    });
+  })();
+</script>
