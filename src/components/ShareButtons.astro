@@ -1,0 +1,59 @@
+---
+// Share row — LinkedIn, email, text (SMS), and copy-link button.
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+import { SITE } from '../consts';
+
+interface Props {
+  title: string;
+  path: string;
+}
+const { title, path } = Astro.props;
+const url = new URL(path, SITE.url).toString();
+const li = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+const mail = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(url)}`;
+// `sms:?&body=` is the most cross-platform form (works on iOS and Android).
+const sms = `sms:?&body=${encodeURIComponent(`${title} ${url}`)}`;
+
+const btn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  fontSize: '0.8rem',
+  fontFamily: 'mono',
+  px: '0.7rem',
+  py: '0.4rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  color: 'textMuted',
+  cursor: 'pointer',
+  bg: 'transparent',
+  transition: 'all 200ms ease',
+  _hover: { color: 'primary', borderColor: 'primary' },
+});
+---
+
+<div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' })}>
+  <span class={css({ fontSize: '0.8rem', color: 'textMuted', fontFamily: 'mono' })}>Share:</span>
+  <a class={btn} href={li} target="_blank" rel="noopener"><Icon name="linkedin" size={15} />LinkedIn</a>
+  <a class={btn} href={mail}><Icon name="mail" size={15} />Email</a>
+  <a class={btn} href={sms}><Icon name="message-square" size={15} />Text</a>
+  <button class={btn} type="button" data-copy-url={url} id="copy-link-btn"><Icon name="copy" size={15} />Copy link</button>
+</div>
+
+<script is:inline>
+  (function () {
+    var btn = document.getElementById('copy-link-btn');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      var url = btn.getAttribute('data-copy-url');
+      navigator.clipboard.writeText(url).then(function () {
+        var prev = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(function () {
+          btn.textContent = prev;
+        }, 1600);
+      });
+    });
+  })();
+</script>

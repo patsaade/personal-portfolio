@@ -1,0 +1,7 @@
+---
+import { buildThemeCss } from '../themes';
+const css = buildThemeCss();
+---
+
+{/* Unlayered theme variable overrides — win over Panda's layered token defaults. */}
+<style is:global set:html={css}></style>

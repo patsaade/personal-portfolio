@@ -1,0 +1,89 @@
+---
+// Site footer — brand, nav links, and social/RSS icon links.
+import { css } from 'styled-system/css';
+import { SITE, SOCIALS, NAV_LINKS } from '../consts';
+import Icon from './Icon.astro';
+const year = new Date().getFullYear();
+
+const iconLink = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.35rem',
+  color: 'textMuted',
+  _hover: { color: 'primary' },
+});
+---
+
+<footer
+  class={css({
+    borderTop: '1px solid token(colors.border)',
+    mt: '4rem',
+    bg: 'bgSubtle',
+  })}
+>
+  <div
+    class={css({
+      maxW: '960px',
+      mx: 'auto',
+      px: '1.25rem',
+      py: '2.5rem',
+      display: 'flex',
+      flexDirection: { base: 'column', sm: 'row' },
+      justifyContent: 'space-between',
+      alignItems: { base: 'flex-start', sm: 'center' },
+      gap: '1.5rem',
+    })}
+  >
+    <div>
+      <p class={css({ fontFamily: 'mono', fontWeight: 700, color: 'text' })}>
+        {SITE.title}
+      </p>
+      <p class={css({ fontSize: '0.875rem', color: 'textMuted', mt: '0.25rem' })}>
+        {SITE.tagline} · writeups, labs & tooling.
+      </p>
+    </div>
+
+    <div
+      class={css({
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.6rem',
+        alignItems: { base: 'flex-start', sm: 'flex-end' },
+      })}
+    >
+      {/* Row 1: pages */}
+      <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.875rem' })}>
+        {
+          NAV_LINKS.map((l) => (
+            <a href={l.href} class={css({ color: 'textMuted', _hover: { color: 'primary' } })}>
+              {l.label}
+            </a>
+          ))
+        }
+        <a href="/tags" class={css({ color: 'textMuted', _hover: { color: 'primary' } })}>Tags</a>
+        <a href="/privacy" class={css({ color: 'textMuted', _hover: { color: 'primary' } })}>Privacy</a>
+        <a href="/colophon" class={css({ color: 'textMuted', _hover: { color: 'primary' } })}>Colophon</a>
+      </div>
+
+      {/* Row 2: feed & social */}
+      <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.875rem' })}>
+        <a href="/rss.xml" class={iconLink}><Icon name="rss" size={15} />RSS</a>
+        <a href={SOCIALS.linkedin} target="_blank" rel="noopener" class={iconLink}><Icon name="linkedin" size={15} />LinkedIn</a>
+        <a href={SOCIALS.github} target="_blank" rel="noopener" class={iconLink}><Icon name="github" size={15} />GitHub</a>
+        <a href={SOCIALS.credly} target="_blank" rel="noopener" class={iconLink}><Icon name="award" size={15} />Credly</a>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class={css({
+      borderTop: '1px solid token(colors.border)',
+      py: '1rem',
+      textAlign: 'center',
+      fontSize: '0.8rem',
+      color: 'textMuted',
+    })}
+  >
+    © {year} {SITE.author}. Built with Astro + Panda CSS.
+  </div>
+</footer>

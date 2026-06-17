@@ -1,0 +1,177 @@
+---
+// Labs listing — gallery of lab/CTF writeups, filterable by source platform.
+import { css } from 'styled-system/css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import Badge from '../../components/Badge.astro';
+import Icon from '../../components/Icon.astro';
+import { getFormattedDate } from '../../utils/date';
+import { getSortedLabs } from '../../utils/posts';
+
+const labs = await getSortedLabs();
+const sources = [...new Set(labs.map((l) => l.data.source))];
+
+const chip = css({
+  fontFamily: 'mono',
+  fontSize: '0.82rem',
+  px: '0.8rem',
+  py: '0.4rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  bg: 'transparent',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'text' },
+  '&[data-active]': { bg: 'primary', color: 'onPrimary', borderColor: 'primary' },
+});
+---
+
+<BaseLayout title="Labs" description="Completed DFIR lab & CTF writeups — CyberDefenders, 13Cubed, Magnet, BTLO, and home-lab projects.">
+  <PageHeader
+    eyebrow="Labs & Writeups"
+    title="Hands-on Challenges, Solved"
+    description="Full walkthroughs of forensics challenges — approach, key findings, extracted IOCs, and lessons learned. Proof of skills, not just claims."
+  />
+
+  {
+    sources.length > 0 && (
+      <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', mb: '2rem' })}>
+        <button class={chip} data-filter="all" data-active type="button">All sources</button>
+        {sources.map((s) => (
+          <button class={chip} data-filter={s} type="button">{s}</button>
+        ))}
+      </div>
+    )
+  }
+
+  {
+    labs.length > 0 ? (
+      <div
+        id="lab-grid"
+        class={css({
+          display: 'grid',
+          gridTemplateColumns: { base: '1fr', md: 'repeat(2, 1fr)' },
+          gap: '1.25rem',
+        })}
+      >
+        {labs.map((lab) => (
+          <a
+            href={`/labs/${lab.id}`}
+            class={`lab-item ${css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem',
+              p: '1.5rem',
+              bg: 'bgCard',
+              border: '1px solid token(colors.border)',
+              borderRadius: 'lg',
+              boxShadow: 'card',
+              transition: 'transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease',
+              _hover: { transform: 'translateY(-3px)', borderColor: 'primary', boxShadow: 'cardHover' },
+            })}`}
+            data-source={lab.data.source}
+          >
+            <div class={css({ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' })}>
+              <Badge variant="primary">{lab.data.source}</Badge>
+              <Badge variant="difficulty">{lab.data.difficulty}</Badge>
+            </div>
+            <h3 class={css({ fontSize: '1.15rem', fontWeight: 700, lineHeight: 1.3 })}>
+              {lab.data.title}
+            </h3>
+            <p class={css({ color: 'textMuted', fontSize: '0.92rem', flex: 1 })}>{lab.data.excerpt}</p>
+            <div
+              class={css({
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.5rem 1.25rem',
+                fontSize: '0.78rem',
+                fontFamily: 'mono',
+                color: 'textMuted',
+                pt: '0.5rem',
+                borderTop: '1px solid token(colors.border)',
+              })}
+            >
+              <span>{getFormattedDate(lab.data.date)}</span>
+              {lab.data.timeSpent && <span>⏱ {lab.data.timeSpent}</span>}
+              {typeof lab.data.iocCount === 'number' && <span>{lab.data.iocCount} IOCs</span>}
+              {lab.data.tools.length > 0 && <span>{lab.data.tools.length} tools</span>}
+            </div>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div
+        class={css({
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          gap: '1rem',
+          p: { base: '2.5rem 1.5rem', md: '4rem 2rem' },
+          bg: 'bgCard',
+          border: '1px dashed token(colors.border)',
+          borderRadius: 'xl',
+        })}
+      >
+        <span
+          class={css({
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            w: '3.5rem',
+            h: '3.5rem',
+            borderRadius: 'lg',
+            bg: 'color-mix(in srgb, token(colors.primary) 13%, transparent)',
+            color: 'primary',
+          })}
+          aria-hidden="true"
+        >
+          <Icon name="flask" size={26} />
+        </span>
+        <h2 class={css({ fontSize: '1.4rem', fontWeight: 700 })}>Writeups in the works</h2>
+        <p class={css({ color: 'textMuted', maxW: '480px', lineHeight: 1.7 })}>
+          Full walkthroughs of public lab &amp; CTF challenges — CyberDefenders, 13Cubed,
+          MemLabs, Magnet, and home-lab projects — are on the way, with a focus on host and
+          memory forensics.
+        </p>
+        <a
+          href="/blog"
+          class={css({
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            mt: '0.25rem',
+            bg: 'primary',
+            color: 'onPrimary',
+            fontWeight: 600,
+            px: '1.25rem',
+            py: '0.7rem',
+            borderRadius: 'md',
+            transition: 'background 200ms ease',
+            _hover: { bg: 'primaryHover' },
+          })}
+        >
+          Read the blog meanwhile <Icon name="arrow-right" size={16} />
+        </a>
+      </div>
+    )
+  }
+</BaseLayout>
+
+<script is:inline>
+  (function () {
+    var chips = Array.from(document.querySelectorAll('[data-filter]'));
+    var items = Array.from(document.querySelectorAll('.lab-item'));
+    chips.forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        chips.forEach(function (c) { c.removeAttribute('data-active'); });
+        chip.setAttribute('data-active', '');
+        var f = chip.getAttribute('data-filter');
+        items.forEach(function (item) {
+          item.style.display = f === 'all' || item.getAttribute('data-source') === f ? '' : 'none';
+        });
+      });
+    });
+  })();
+</script>

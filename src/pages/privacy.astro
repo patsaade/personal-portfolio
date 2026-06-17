@@ -1,0 +1,87 @@
+---
+// Privacy policy — reflects cookieless Vercel Web Analytics and local-only theme storage.
+import { css } from 'styled-system/css';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import { SOCIALS } from '../consts';
+
+const para = css({ color: 'textMuted', lineHeight: 1.8, mb: '1rem' });
+const h2 = css({ fontSize: '1.3rem', fontWeight: 700, mt: '2.25rem', mb: '0.75rem' });
+const list = css({ color: 'textMuted', lineHeight: 1.9, pl: '1.25rem', mb: '1rem' });
+const link = css({ color: 'primary', textDecoration: 'underline', _hover: { color: 'primaryHover' } });
+
+const updated = 'June 15, 2026';
+---
+
+<BaseLayout
+  title="Privacy Policy"
+  description="How patricksaade.com handles data: a static site with cookieless, privacy-friendly analytics and no personal tracking."
+>
+  <PageHeader eyebrow="Legal" title="Privacy Policy" description={`Last updated: ${updated}`} />
+
+  <p class={para}>
+    This site (<strong class={css({ color: 'text' })}>patricksaade.com</strong>) is a static
+    blog and portfolio. It is intentionally privacy-respecting: there are no accounts, no
+    sign-ups, no advertising, and no third-party tracking or marketing cookies.
+  </p>
+
+  <h2 class={h2}>Analytics</h2>
+  <p class={para}>
+    The site uses <strong class={css({ color: 'text' })}>Vercel Web Analytics</strong>, a
+    privacy-friendly, <strong class={css({ color: 'text' })}>cookieless</strong> measurement
+    tool. It records aggregate, anonymized visit data — such as page views, referrer,
+    approximate country, and device/browser type — to understand which content is useful. It
+    does <strong class={css({ color: 'text' })}>not</strong> use cookies, does not build
+    advertising profiles, and does not track you across other websites. No personally
+    identifiable information is collected or stored. See
+    <a class={link} href="https://vercel.com/docs/analytics/privacy-policy" target="_blank" rel="noopener">Vercel's analytics privacy documentation</a>
+    for details.
+  </p>
+
+  <h2 class={h2}>Cookies & local storage</h2>
+  <p class={para}>
+    This site sets <strong class={css({ color: 'text' })}>no cookies</strong>. Your theme
+    preference (light/dark mode and chosen color palette) is saved in your browser's
+    <code class={css({ fontFamily: 'mono', fontSize: '0.9em' })}>localStorage</code>. That
+    value stays on your device, is never transmitted to a server, and you can clear it any
+    time via your browser settings.
+  </p>
+
+  <h2 class={h2}>Hosting & server logs</h2>
+  <p class={para}>
+    The site is hosted on <a class={link} href="https://vercel.com" target="_blank" rel="noopener">Vercel</a>,
+    which may process standard request data (such as IP address and user-agent) transiently
+    to deliver pages and protect against abuse, per
+    <a class={link} href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercel's privacy policy</a>.
+    This site's owner does not maintain its own separate logs of visitors.
+  </p>
+
+  <h2 class={h2}>External links</h2>
+  <p class={para}>
+    Posts and pages link to third-party resources (e.g. LinkedIn, GitHub, and tool/vendor
+    documentation). Those sites have their own privacy practices, which this policy does not
+    cover.
+  </p>
+
+  <h2 class={h2}>Your choices</h2>
+  <ul class={list}>
+    <li>Use your browser's "Do Not Track" / privacy settings — analytics here is already cookieless and anonymous.</li>
+    <li>Clear site data / <code class={css({ fontFamily: 'mono', fontSize: '0.9em' })}>localStorage</code> to reset your saved theme preference.</li>
+    <li>Block scripts for <code class={css({ fontFamily: 'mono', fontSize: '0.9em' })}>patricksaade.com</code> — the site still renders and reads normally.</li>
+  </ul>
+
+  <h2 class={h2}>Contact</h2>
+  <p class={para}>
+    Questions about this policy, or want to report a security issue? Reach out via
+    <a class={link} href={SOCIALS.linkedin} target="_blank" rel="noopener">LinkedIn</a> or
+    <a class={link} href={SOCIALS.github} target="_blank" rel="noopener">GitHub</a>. Security
+    contact details are also published at
+    <a class={link} href="/.well-known/security.txt">/.well-known/security.txt</a>.
+  </p>
+
+  <h2 class={h2}>Changes</h2>
+  <p class={para}>
+    This policy may be updated as the site evolves. Material changes will be reflected by the
+    "last updated" date above.
+  </p>
+</BaseLayout>

@@ -1,0 +1,107 @@
+---
+// Single blog post — renders an MDX entry via PostLayout, plus related + prev/next.
+import { render } from 'astro:content';
+import { css } from 'styled-system/css';
+import PostLayout from '../../layouts/PostLayout.astro';
+import RelatedPosts from '../../components/RelatedPosts.astro';
+import Icon from '../../components/Icon.astro';
+import { getSortedPosts, getRelatedPosts, estimateReadTime } from '../../utils/posts';
+
+export async function getStaticPaths() {
+  // getSortedPosts() excludes drafts in production, so drafts never get a page.
+  const posts = await getSortedPosts();
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content, headings } = await render(post);
+
+const all = await getSortedPosts();
+const related = getRelatedPosts(post, all);
+const readTime = estimateReadTime(post.body, post.data.readTime);
+
+// Adjacent posts (all is newest-first): newer = previous index, older = next index.
+const idx = all.findIndex((p) => p.id === post.id);
+const newer = idx > 0 ? all[idx - 1] : null;
+const older = idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;
+
+const navLink = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.25rem',
+  p: '1rem 1.25rem',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  bg: 'bgCard',
+  transition: 'border-color 200ms ease, transform 200ms ease',
+  _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
+});
+const navMeta = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.3rem',
+  fontSize: '0.75rem',
+  fontFamily: 'mono',
+  color: 'textMuted',
+});
+const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
+---
+
+<PostLayout
+  title={post.data.title}
+  excerpt={post.data.excerpt}
+  category={post.data.category}
+  date={post.data.date}
+  updated={post.data.updated}
+  readTime={readTime}
+  difficulty={post.data.difficulty}
+  tags={post.data.tags}
+  tools={post.data.tools}
+  headings={headings}
+  path={`/blog/${post.id}`}
+  linkTags
+>
+  <Content />
+  <Fragment slot="footer">
+    <RelatedPosts posts={related} />
+    {
+      (newer || older) && (
+        <nav
+          aria-label="More posts"
+          class={css({
+            display: 'grid',
+            gridTemplateColumns: { base: '1fr', sm: '1fr 1fr' },
+            gap: '1rem',
+            mt: '2.5rem',
+            pt: '1.5rem',
+            borderTop: '1px solid token(colors.border)',
+          })}
+        >
+          {older ? (
+            <a href={`/blog/${older.id}`} class={navLink}>
+              <span class={navMeta}>
+                <Icon name="arrow-left" size={13} /> Older
+              </span>
+              <span class={navTitle}>{older.data.title}</span>
+            </a>
+          ) : (
+            <span />
+          )}
+          {newer ? (
+            <a href={`/blog/${newer.id}`} class={`${navLink} ${css({ textAlign: 'right', alignItems: 'flex-end' })}`}>
+              <span class={navMeta}>
+                Newer <Icon name="arrow-right" size={13} />
+              </span>
+              <span class={navTitle}>{newer.data.title}</span>
+            </a>
+          ) : (
+            <span />
+          )}
+        </nav>
+      )
+    }
+  </Fragment>
+</PostLayout>

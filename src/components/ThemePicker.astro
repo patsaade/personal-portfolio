@@ -1,0 +1,222 @@
+---
+import { css } from 'styled-system/css';
+import { DARK_THEMES, LIGHT_THEMES, type Theme } from '../themes';
+import Icon from './Icon.astro';
+
+// The picker sets a *preferred* palette for each mode independently; it does not
+// change the active light/dark mode (that's the ModeToggle's job).
+const groups: { label: string; themes: Theme[] }[] = [
+  { label: 'Dark mode', themes: DARK_THEMES },
+  { label: 'Light mode', themes: LIGHT_THEMES },
+];
+
+const itemClass = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  w: '100%',
+  px: '0.45rem',
+  py: '0.4rem',
+  borderRadius: 'md',
+  border: '1px solid transparent',
+  bg: 'transparent',
+  color: 'text',
+  cursor: 'pointer',
+  textAlign: 'left',
+  transition: 'background 150ms ease, border-color 150ms ease',
+  _hover: { bg: 'bgSubtle' },
+  '&[data-selected]': { borderColor: 'primary', bg: 'bgSubtle' },
+});
+---
+
+<div class={css({ position: 'relative' })} data-theme-picker>
+  <button
+    id="theme-picker-btn"
+    type="button"
+    aria-haspopup="menu"
+    aria-expanded="false"
+    aria-label="Choose color theme"
+    class={css({
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '0.3rem',
+      h: '38px',
+      px: '0.6rem',
+      borderRadius: 'md',
+      border: '1px solid token(colors.border)',
+      bg: 'transparent',
+      color: 'textMuted',
+      cursor: 'pointer',
+      transition: 'all 200ms ease',
+      _hover: { color: 'primary', borderColor: 'primary', bg: 'bgSubtle' },
+    })}
+  >
+    <Icon name="palette" size={18} />
+    <Icon name="chevron-down" size={12} strokeWidth={2.5} class={css({ display: { base: 'none', sm: 'block' } })} />
+  </button>
+
+  <div
+    id="theme-picker-menu"
+    role="menu"
+    aria-label="Color themes"
+    hidden
+    class={css({
+      position: 'absolute',
+      right: 0,
+      top: 'calc(100% + 8px)',
+      zIndex: 60,
+      w: { base: 'min(340px, calc(100vw - 2rem))', sm: '380px' },
+      p: '0.75rem',
+      bg: 'bgCard',
+      border: '1px solid token(colors.border)',
+      borderRadius: 'lg',
+      boxShadow: 'cardHover',
+    })}
+  >
+    <p
+      class={css({
+        fontSize: '0.72rem',
+        color: 'textMuted',
+        px: '0.45rem',
+        pb: '0.6rem',
+        lineHeight: 1.4,
+      })}
+    >
+      Your theme for each mode. Switch light/dark with the toggle.
+    </p>
+    <div class={css({ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' })}>
+      {
+        groups.map((group) => (
+          <div>
+            <p
+              class={css({
+                fontFamily: 'mono',
+                fontSize: '0.62rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                color: 'textMuted',
+                px: '0.45rem',
+                pb: '0.4rem',
+              })}
+            >
+              {group.label}
+            </p>
+            <div class={css({ display: 'flex', flexDirection: 'column', gap: '0.1rem' })}>
+              {group.themes.map((theme) => (
+                <button
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked="false"
+                  title={theme.blurb}
+                  class={itemClass}
+                  data-theme-id={theme.id}
+                  data-theme-mode={theme.mode}
+                >
+                  <span
+                    class={css({
+                      display: 'inline-flex',
+                      flexShrink: 0,
+                      borderRadius: '5px',
+                      overflow: 'hidden',
+                      border: '1px solid token(colors.border)',
+                      w: '24px',
+                      h: '24px',
+                    })}
+                    aria-hidden="true"
+                  >
+                    <span style={`background:${theme.colors.bg};width:45%`} />
+                    <span style={`background:${theme.colors.primary};width:30%`} />
+                    <span style={`background:${theme.colors.accent};width:25%`} />
+                  </span>
+                  <span
+                    class={css({
+                      flex: 1,
+                      minW: 0,
+                      fontSize: '0.8rem',
+                      fontWeight: 500,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    })}
+                  >
+                    {theme.name}
+                  </span>
+                  <Icon
+                    name="check"
+                    size={14}
+                    strokeWidth={3}
+                    class={`check-icon ${css({ flexShrink: 0, color: 'primary', visibility: 'hidden' })}`}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  (function () {
+    var wrap = document.querySelector('[data-theme-picker]');
+    if (!wrap || !window.__theme) return;
+    var btn = document.getElementById('theme-picker-btn');
+    var menu = document.getElementById('theme-picker-menu');
+    var paletteItems = Array.prototype.slice.call(menu.querySelectorAll('[data-theme-id]'));
+
+    function syncUI() {
+      // Each column shows the preferred palette for its mode, independent of which
+      // mode is currently active.
+      var prefDark = window.__theme.getPalette('dark');
+      var prefLight = window.__theme.getPalette('light');
+      paletteItems.forEach(function (item) {
+        var id = item.getAttribute('data-theme-id');
+        var mode = item.getAttribute('data-theme-mode');
+        var selected = id === (mode === 'dark' ? prefDark : prefLight);
+        if (selected) item.setAttribute('data-selected', '');
+        else item.removeAttribute('data-selected');
+        item.setAttribute('aria-checked', selected ? 'true' : 'false');
+        var check = item.querySelector('.check-icon');
+        if (check) check.style.visibility = selected ? 'visible' : 'hidden';
+      });
+    }
+
+    function open() {
+      menu.removeAttribute('hidden');
+      btn.setAttribute('aria-expanded', 'true');
+      syncUI();
+      document.addEventListener('click', onDocClick, true);
+      document.addEventListener('keydown', onKey);
+    }
+    function close() {
+      menu.setAttribute('hidden', '');
+      btn.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('click', onDocClick, true);
+      document.removeEventListener('keydown', onKey);
+    }
+    function onDocClick(e) { if (!wrap.contains(e.target)) close(); }
+    function onKey(e) {
+      if (e.key === 'Escape') { close(); btn.focus(); }
+    }
+
+    btn.addEventListener('click', function () {
+      if (menu.hasAttribute('hidden')) open();
+      else close();
+    });
+
+    paletteItems.forEach(function (item) {
+      item.addEventListener('click', function () {
+        // Set the preference for this palette's mode. Keep the menu open so the
+        // user can set both their light and dark themes in one go; syncUI runs
+        // via the themechange event below.
+        window.__theme.setPalette(item.getAttribute('data-theme-id'));
+      });
+    });
+
+    // Stay in sync when the mode toggle (or a palette pick) changes state.
+    document.addEventListener('themechange', syncUI);
+    syncUI();
+  })();
+</script>

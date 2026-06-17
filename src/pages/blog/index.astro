@@ -1,0 +1,180 @@
+---
+// Blog listing — searchable, category-filterable grid of posts (client-side filtering).
+import { css } from 'styled-system/css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import BlogCard from '../../components/BlogCard.astro';
+import Icon from '../../components/Icon.astro';
+import { getSortedPosts, estimateReadTime } from '../../utils/posts';
+import { categoryIcon } from '../../consts';
+
+const posts = await getSortedPosts();
+// Show a filter chip for every category actually present in the posts.
+const categories = [...new Set(posts.map((p) => p.data.category))];
+
+const chip = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.35rem',
+  fontFamily: 'mono',
+  fontSize: '0.82rem',
+  px: '0.8rem',
+  py: '0.4rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  bg: 'transparent',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'text' },
+  '&[data-active]': { bg: 'primary', color: 'onPrimary', borderColor: 'primary' },
+});
+---
+
+<BaseLayout title="Blog" description="DFIR deep dives: memory forensics, host artifacts, EDR analysis, timeline reconstruction.">
+  <PageHeader
+    eyebrow="Blog"
+    title="DFIR Deep Dives"
+    description="Memory forensics, host & EDR artifact analysis, timeline reconstruction, and the tooling that ties it together."
+  />
+
+  <div class={css({ mb: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' })}>
+    <div class={css({ position: 'relative' })}>
+      <Icon
+        name="search"
+        size={17}
+        class={css({
+          position: 'absolute',
+          left: '0.85rem',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          color: 'textMuted',
+          pointerEvents: 'none',
+        })}
+      />
+      <input
+        type="search"
+        id="post-search"
+        placeholder="Search posts, tools, tags…"
+        aria-label="Search posts"
+        class={css({
+          w: '100%',
+          pl: '2.6rem',
+          pr: '1rem',
+          py: '0.7rem',
+          fontSize: '0.95rem',
+          bg: 'bgCard',
+          border: '1px solid token(colors.border)',
+          borderRadius: 'md',
+          color: 'text',
+          fontFamily: 'mono',
+          _focus: { outline: 'none', borderColor: 'primary' },
+        })}
+      />
+    </div>
+    <div class={css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' })}>
+      <button class={chip} data-filter="all" data-active type="button">All</button>
+      {categories.map((c) => (
+        <button class={chip} data-filter={c} type="button">
+          <Icon name={categoryIcon(c) as any} size={13} />{c}
+        </button>
+      ))}
+      <a
+        href="/tags"
+        class={css({
+          ml: { sm: 'auto' },
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.3rem',
+          fontSize: '0.82rem',
+          fontFamily: 'mono',
+          color: 'textMuted',
+          _hover: { color: 'primary' },
+        })}
+      >
+        <Icon name="tag" size={13} /> Browse by tag
+      </a>
+    </div>
+  </div>
+
+  {
+    posts.length > 0 ? (
+      <div
+        id="post-grid"
+        class={css({
+          display: 'grid',
+          gridTemplateColumns: { base: '1fr', md: 'repeat(2, 1fr)' },
+          gap: '1.25rem',
+        })}
+      >
+        {posts.map((p) => (
+          <div
+            class="post-item"
+            data-category={p.data.category}
+            data-search={`${p.data.title} ${p.data.excerpt} ${p.data.tags.join(' ')} ${p.data.tools.join(' ')} ${p.data.category}`.toLowerCase()}
+          >
+            <BlogCard
+              href={`/blog/${p.id}`}
+              title={p.data.title}
+              excerpt={p.data.excerpt}
+              category={p.data.category}
+              date={p.data.date}
+              readTime={estimateReadTime(p.body, p.data.readTime)}
+              difficulty={p.data.difficulty}
+              tags={p.data.tags}
+              featured={p.data.featured}
+            />
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p class={css({ color: 'textMuted' })}>No posts yet — check back soon.</p>
+    )
+  }
+
+  <p
+    id="no-results"
+    hidden
+    class={css({ color: 'textMuted', textAlign: 'center', py: '2rem' })}
+  >
+    No posts match your filters.
+  </p>
+</BaseLayout>
+
+<script is:inline>
+  (function () {
+    var search = document.getElementById('post-search');
+    var chips = Array.from(document.querySelectorAll('[data-filter]'));
+    var items = Array.from(document.querySelectorAll('.post-item'));
+    var noResults = document.getElementById('no-results');
+    var activeCategory = 'all';
+
+    function apply() {
+      var q = (search && search.value ? search.value : '').trim().toLowerCase();
+      var visible = 0;
+      items.forEach(function (item) {
+        var matchCat = activeCategory === 'all' || item.getAttribute('data-category') === activeCategory;
+        var matchSearch = !q || (item.getAttribute('data-search') || '').indexOf(q) !== -1;
+        var show = matchCat && matchSearch;
+        item.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      if (noResults) {
+        if (visible === 0) noResults.removeAttribute('hidden');
+        else noResults.setAttribute('hidden', '');
+      }
+    }
+
+    chips.forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        chips.forEach(function (c) {
+          c.removeAttribute('data-active');
+        });
+        chip.setAttribute('data-active', '');
+        activeCategory = chip.getAttribute('data-filter');
+        apply();
+      });
+    });
+    if (search) search.addEventListener('input', apply);
+  })();
+</script>

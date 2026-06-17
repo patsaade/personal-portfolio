@@ -1,0 +1,164 @@
+---
+import { SITE, SOCIALS } from '../consts';
+import { THEME_MODES, DEFAULT_DARK, DEFAULT_LIGHT } from '../themes';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  type?: 'website' | 'article';
+  publishedDate?: Date;
+}
+
+const {
+  title,
+  description = SITE.description,
+  image = '/og.png',
+  type = 'website',
+  publishedDate,
+} = Astro.props;
+
+const pageTitle = title ? `${title} · ${SITE.title}` : `${SITE.title} — ${SITE.tagline}`;
+const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? SITE.url);
+const ogImage = new URL(image, Astro.site ?? SITE.url);
+
+// Structured data (JSON-LD): a Person + WebSite graph site-wide, plus a
+// BlogPosting node on article pages. Helps search engines and rich results.
+const personId = `${SITE.url}/#person`;
+const graph: Record<string, unknown>[] = [
+  {
+    '@type': 'Person',
+    '@id': personId,
+    name: SITE.author,
+    url: SITE.url,
+    jobTitle: 'Senior Information Security Analyst',
+    sameAs: [SOCIALS.linkedin, SOCIALS.github],
+  },
+  {
+    '@type': 'WebSite',
+    '@id': `${SITE.url}/#website`,
+    url: SITE.url,
+    name: SITE.title,
+    description: SITE.description,
+    inLanguage: 'en',
+    publisher: { '@id': personId },
+  },
+];
+if (type === 'article') {
+  graph.push({
+    '@type': 'BlogPosting',
+    headline: title,
+    description,
+    image: ogImage.toString(),
+    datePublished: publishedDate?.toISOString(),
+    author: { '@id': personId },
+    publisher: { '@id': personId },
+    mainEntityOfPage: canonicalURL.toString(),
+  });
+}
+const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="generator" content={Astro.generator} />
+
+<title>{pageTitle}</title>
+<meta name="description" content={description} />
+<meta name="author" content={SITE.author} />
+<meta name="robots" content="index, follow, max-image-preview:large" />
+<meta name="theme-color" content="#030712" />
+<link rel="canonical" href={canonicalURL} />
+<link rel="sitemap" href="/sitemap-index.xml" />
+<link
+  rel="alternate"
+  type="application/rss+xml"
+  title={SITE.title}
+  href={new URL('rss.xml', Astro.site ?? SITE.url)}
+/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+
+<!-- Structured data -->
+<script type="application/ld+json" is:inline set:html={jsonLd} />
+
+<!-- Open Graph -->
+<meta property="og:type" content={type} />
+<meta property="og:url" content={canonicalURL} />
+<meta property="og:title" content={pageTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={ogImage} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content={`${SITE.author} — ${SITE.tagline}`} />
+<meta property="og:site_name" content={SITE.title} />
+{publishedDate && (
+  <meta property="article:published_time" content={publishedDate.toISOString()} />
+)}
+
+<!-- Theme controller. Runs before first paint to avoid flash; exposes window.__theme. -->
+<script is:inline define:vars={{ THEME_MODES, DEFAULT_DARK, DEFAULT_LIGHT }}>
+  (function () {
+    var root = document.documentElement;
+    var mql = window.matchMedia('(prefers-color-scheme: dark)');
+
+    function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+    function del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+
+    function osMode() { return mql.matches ? 'dark' : 'light'; }
+    function getMode() {
+      var m = get('mode');
+      return m === 'light' || m === 'dark' || m === 'system' ? m : 'system';
+    }
+    function effectiveMode() {
+      var m = getMode();
+      return m === 'system' ? osMode() : m;
+    }
+    // Palette is a per-mode *preference*: a chosen dark palette and a chosen light
+    // palette are remembered independently. The color mode is controlled only by
+    // the mode switch — picking a palette never flips light/dark.
+    function paletteKey(mode) { return mode === 'dark' ? 'theme-dark' : 'theme-light'; }
+    function getPalette(mode) {
+      var v = get(paletteKey(mode));
+      if (v && THEME_MODES[v] === mode) return v;
+      return mode === 'dark' ? DEFAULT_DARK : DEFAULT_LIGHT;
+    }
+    function apply() {
+      var em = effectiveMode();
+      root.setAttribute('data-mode', em);
+      root.setAttribute('data-theme', getPalette(em));
+      try {
+        document.dispatchEvent(new CustomEvent('themechange'));
+      } catch (e) {}
+    }
+    function setMode(m) {
+      if (m === 'system') del('mode');
+      else set('mode', m);
+      apply();
+    }
+    function setPalette(id) {
+      var mode = THEME_MODES[id];
+      if (!mode) return;
+      // Save as the preferred palette for that mode only — don't change the mode.
+      set(paletteKey(mode), id);
+      apply();
+    }
+    // Re-resolve when the OS theme flips — only matters while mode is 'system'.
+    mql.addEventListener('change', function () {
+      if (getMode() === 'system') apply();
+    });
+
+    window.__theme = {
+      apply: apply,
+      setMode: setMode,
+      setPalette: setPalette,
+      getMode: getMode,
+      getPalette: getPalette,
+    };
+    apply();
+  })();
+</script>

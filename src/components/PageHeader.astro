@@ -1,0 +1,47 @@
+---
+// Section page header — eyebrow label, title, and optional description.
+import { css } from 'styled-system/css';
+
+interface Props {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+}
+const { eyebrow, title, description } = Astro.props;
+---
+
+<header class={css({ mb: '2.5rem' })}>
+  {
+    eyebrow && (
+      <p
+        class={css({
+          fontFamily: 'mono',
+          fontSize: '0.8rem',
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          color: 'primary',
+          mb: '0.5rem',
+        })}
+      >
+        {eyebrow}
+      </p>
+    )
+  }
+  <h1
+    class={css({
+      fontSize: { base: '2rem', md: '2.75rem' },
+      fontWeight: 700,
+      letterSpacing: '-0.02em',
+      lineHeight: 1.1,
+    })}
+  >
+    {title}
+  </h1>
+  {
+    description && (
+      <p class={css({ fontSize: '1.1rem', color: 'textMuted', mt: '0.75rem', maxW: '640px' })}>
+        {description}
+      </p>
+    )
+  }
+</header>

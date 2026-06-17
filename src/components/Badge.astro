@@ -1,0 +1,50 @@
+---
+// Small pill/tag with an optional leading icon and color variants.
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+
+interface Props {
+  variant?: 'default' | 'primary' | 'accent' | 'difficulty';
+  difficulty?: string;
+  icon?: string;
+}
+
+const { variant = 'default', icon } = Astro.props;
+
+const base = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.3rem',
+  fontSize: '0.72rem',
+  fontWeight: 600,
+  fontFamily: 'mono',
+  letterSpacing: '0.02em',
+  px: '0.55rem',
+  py: '0.2rem',
+  borderRadius: 'sm',
+  lineHeight: 1.4,
+  whiteSpace: 'nowrap',
+} as const;
+
+const variants = {
+  default: { bg: 'bgSubtle', color: 'textMuted', border: '1px solid token(colors.border)' },
+  primary: {
+    bg: 'color-mix(in srgb, token(colors.primary) 14%, transparent)',
+    color: 'primary',
+    border: '1px solid color-mix(in srgb, token(colors.primary) 35%, transparent)',
+  },
+  accent: {
+    bg: 'color-mix(in srgb, token(colors.accent) 14%, transparent)',
+    color: 'accent',
+    border: '1px solid color-mix(in srgb, token(colors.accent) 35%, transparent)',
+  },
+  difficulty: { bg: 'bgSubtle', color: 'textMuted', border: '1px solid token(colors.border)' },
+} as const;
+
+const className = css(base, variants[variant]);
+---
+
+<span class={className}>
+  {icon && <Icon name={icon as any} size={12} strokeWidth={2.25} />}
+  <slot />
+</span>
