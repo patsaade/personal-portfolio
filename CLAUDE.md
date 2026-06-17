@@ -5,8 +5,10 @@ making changes.
 
 ## What this is
 
-A static **Astro + Panda CSS + MDX** DFIR portfolio/blog, deployed on Vercel. Zero client
-JS by default. See [README.md](README.md) for setup, [docs/AUTHORING.md](docs/AUTHORING.md)
+An **Astro + Panda CSS + MDX** DFIR portfolio/blog, deployed on Vercel via the
+`@astrojs/vercel` adapter (`output: 'server'`; content routes are prerendered). Client JS
+is minimal — small inline scripts plus Vercel Web Analytics & Speed Insights.
+See [README.md](README.md) for setup, [docs/AUTHORING.md](docs/AUTHORING.md)
 for content, and **[docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) for the design language and
 copy conventions** (color tokens, typography, when to bold company names, cert wording, etc.)
 — follow it for any new page, component, or copy.
@@ -53,13 +55,23 @@ npm test         # vitest unit suite
    for *that palette's* mode and never changes the active mode — so picking a dark palette
    while in light mode just updates the dark preference for later.
 
-5. **Zero-JS philosophy.** No client frameworks. Interactivity is small `<script is:inline>`
-   blocks. Keep it that way unless there's a strong reason.
+5. **Minimal JS.** No client frameworks. Interactivity is small `<script is:inline>` blocks.
+   The only third-party client JS is Vercel Web Analytics (injected by the adapter's
+   `webAnalytics`) and Speed Insights (`<SpeedInsights/>` from `@vercel/speed-insights/astro`
+   in `BaseLayout`). Keep it that way unless there's a strong reason.
 
-6. **`examples/` is never built or deployed** (outside content collections + in
+6. **SSR adapter — prerender content routes.** `astro.config.mjs` uses `@astrojs/vercel`
+   with `output: 'server'`. Under server output, `getStaticPaths()` is **ignored** unless the
+   route also `export const prerender = true`. The dynamic routes (`blog/[...slug]`,
+   `labs/[...slug]`, `tags/[tag]`) set it — without it they 500 at runtime (`Astro.props` is
+   empty). The build emits the Vercel Build Output API (`.vercel/output/`), not `dist/`. An
+   `.npmrc` sets `legacy-peer-deps=true` because the Vercel analytics/speed-insights packages
+   declare an optional SvelteKit peer that conflicts with this project's Vite version.
+
+7. **`examples/` is never built or deployed** (outside content collections + in
    `.vercelignore`). It holds reference templates only.
 
-7. **Page background color lives on `<html>`, not `<body>`.** `Background.astro` paints a
+8. **Page background color lives on `<html>`, not `<body>`.** `Background.astro` paints a
    fixed `<canvas>` at `z-index: -1` (the ambient node field), which sits *above* the root
    background but *below* content. For it to be visible, `<body>` must stay transparent and
    the theme bg must be on `<html>` (see `panda.config.ts` `globalCss`). Don't move it back.

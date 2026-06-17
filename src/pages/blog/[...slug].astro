@@ -7,6 +7,9 @@ import RelatedPosts from '../../components/RelatedPosts.astro';
 import Icon from '../../components/Icon.astro';
 import { getSortedPosts, getRelatedPosts, estimateReadTime } from '../../utils/posts';
 
+// Prerender to static HTML (required: getStaticPaths is ignored under output: 'server').
+export const prerender = true;
+
 export async function getStaticPaths() {
   // getSortedPosts() excludes drafts in production, so drafts never get a page.
   const posts = await getSortedPosts();

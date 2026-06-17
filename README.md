@@ -1,7 +1,7 @@
 <h1 align="center">patricksaade.com</h1>
 
 <p align="center">
-  A fast, static <strong>DFIR portfolio &amp; blog</strong> — digital forensics &amp;
+  A fast <strong>DFIR portfolio &amp; blog</strong> — digital forensics &amp;
   incident response, in the open.
 </p>
 
@@ -16,11 +16,11 @@
 
 ## ✨ Highlights
 
-- ⚡ **Zero client JS by default** — interactivity is a few tiny inline scripts.
+- ⚡ **Lean & fast** — content prerendered to HTML; just small inline scripts plus Vercel Web Analytics & Speed Insights.
 - 🎨 **10 themes** (5 dark · 5 light) + a System / Light / Dark switch, no flash of unstyled theme.
 - 📝 **MDX content** with Shiki code highlighting, auto table of contents, tags, RSS & sitemap.
 - 🔍 **SEO-ready** — OG image, JSON-LD, canonical URLs, `robots.txt`, `security.txt`.
-- 🔒 **Privacy-first** — cookieless analytics, no trackers.
+- 🔒 **Privacy-first** — cookieless Vercel analytics, no marketing trackers.
 
 ## 🚀 Quick start
 
@@ -34,7 +34,7 @@ npm run dev     # → http://localhost:4321
 | Script | Does |
 | --- | --- |
 | `npm run dev` | Start the dev server |
-| `npm run build` | `panda codegen` + `astro build` → `dist/` |
+| `npm run build` | `panda codegen` + `astro build` → `.vercel/output/` |
 | `npm run preview` | Serve the production build |
 | `npm run check` | `astro check` (types & diagnostics) |
 | `npm test` | Run the Vitest unit suite |
@@ -61,9 +61,11 @@ src/
 
 ## ☁️ Deploy
 
-Push to GitHub → import in **Vercel** (auto-detects Astro). The build runs
-`panda codegen && astro build` (see [`vercel.json`](vercel.json)) and outputs `dist/`.
-Enable **Web Analytics** in the Vercel dashboard to activate the cookieless analytics.
+Push to GitHub → import in **Vercel**. The site uses the **`@astrojs/vercel`** adapter
+(`output: 'server'`; content routes are prerendered) — the build runs
+`panda codegen && astro build` (see [`vercel.json`](vercel.json)) and emits the Vercel
+build output. **Web Analytics** (adapter) and **Speed Insights** (`@vercel/speed-insights`)
+are wired in `BaseLayout`; enable them in the Vercel dashboard to start collecting.
 
 ---
 
