@@ -1,5 +1,5 @@
 ---
-// Privacy policy — reflects cookieless Vercel Web Analytics and local-only theme storage.
+// Privacy policy — cookieless Vercel Web Analytics + Speed Insights, local-only theme storage.
 import { css } from 'styled-system/css';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
@@ -15,27 +15,30 @@ const updated = 'June 15, 2026';
 
 <BaseLayout
   title="Privacy Policy"
-  description="How patricksaade.com handles data: a static site with cookieless, privacy-friendly analytics and no personal tracking."
+  description="How patricksaade.com handles data: cookieless, privacy-friendly analytics and no personal tracking."
 >
   <PageHeader eyebrow="Legal" title="Privacy Policy" description={`Last updated: ${updated}`} />
 
   <p class={para}>
-    This site (<strong class={css({ color: 'text' })}>patricksaade.com</strong>) is a static
+    This site (<strong class={css({ color: 'text' })}>patricksaade.com</strong>) is a personal
     blog and portfolio. It is intentionally privacy-respecting: there are no accounts, no
     sign-ups, no advertising, and no third-party tracking or marketing cookies.
   </p>
 
   <h2 class={h2}>Analytics</h2>
   <p class={para}>
-    The site uses <strong class={css({ color: 'text' })}>Vercel Web Analytics</strong>, a
-    privacy-friendly, <strong class={css({ color: 'text' })}>cookieless</strong> measurement
-    tool. It records aggregate, anonymized visit data — such as page views, referrer,
-    approximate country, and device/browser type — to understand which content is useful. It
-    does <strong class={css({ color: 'text' })}>not</strong> use cookies, does not build
-    advertising profiles, and does not track you across other websites. No personally
-    identifiable information is collected or stored. See
-    <a class={link} href="https://vercel.com/docs/analytics/privacy-policy" target="_blank" rel="noopener">Vercel's analytics privacy documentation</a>
-    for details.
+    The site uses <strong class={css({ color: 'text' })}>Vercel Web Analytics</strong> and
+    <strong class={css({ color: 'text' })}>Vercel Speed Insights</strong> — both
+    privacy-friendly and <strong class={css({ color: 'text' })}>cookieless</strong>. Web
+    Analytics records aggregate, anonymized visit data (page views, referrer, approximate
+    country, device/browser type); Speed Insights records anonymized page-performance metrics
+    (load times and Core Web Vitals). Neither uses cookies, builds advertising profiles, nor
+    tracks you across other websites, and <strong class={css({ color: 'text' })}>no</strong>
+    personally identifiable information is collected or stored. See Vercel's
+    <a class={link} href="https://vercel.com/docs/analytics/privacy-policy" target="_blank" rel="noopener">Web Analytics</a>
+    and
+    <a class={link} href="https://vercel.com/docs/speed-insights/privacy-policy" target="_blank" rel="noopener">Speed Insights</a>
+    privacy documentation for details.
   </p>
 
   <h2 class={h2}>Cookies & local storage</h2>

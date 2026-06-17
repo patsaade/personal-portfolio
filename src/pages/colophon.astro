@@ -19,11 +19,11 @@ const term = css({ color: 'text', fontWeight: 600 });
 
   <h2 class={h2}>Stack</h2>
   <ul class={list}>
-    <li><span class={term}>Astro</span> — static site generator; zero client JS by default.</li>
+    <li><span class={term}>Astro</span> — content-driven framework; pages are prerendered to HTML, with minimal client JS.</li>
     <li><span class={term}>Panda CSS</span> — type-safe, zero-runtime styling generated at build time.</li>
     <li><span class={term}>MDX</span> — posts authored in Markdown via Astro content collections.</li>
     <li><span class={term}>Shiki</span> — build-time syntax highlighting with light/dark themes.</li>
-    <li><span class={term}>Vercel</span> — static hosting, global CDN, and cookieless web analytics.</li>
+    <li><span class={term}>Vercel</span> — hosting via the <code class={css({ fontFamily: 'mono', fontSize: '0.9em' })}>@astrojs/vercel</code> adapter, global CDN, plus cookieless Web Analytics &amp; Speed Insights.</li>
   </ul>
 
   <h2 class={h2}>Design</h2>
@@ -36,8 +36,8 @@ const term = css({ color: 'text', fontWeight: 600 });
 
   <h2 class={h2}>Principles</h2>
   <ul class={list}>
-    <li><span class={term}>Fast & light</span> — no client frameworks; interactivity is small inline scripts.</li>
-    <li><span class={term}>Privacy-first</span> — cookieless analytics, no trackers. See the <a class={link} href="/privacy">privacy policy</a>.</li>
+    <li><span class={term}>Fast & light</span> — no client frameworks; interactivity is small inline scripts, plus Vercel Web Analytics & Speed Insights.</li>
+    <li><span class={term}>Privacy-first</span> — cookieless Web Analytics & Speed Insights, no marketing trackers. See the <a class={link} href="/privacy">privacy policy</a>.</li>
     <li><span class={term}>Accessible</span> — semantic markup, keyboard-friendly controls, and reduced-motion support (the background animation disables itself when you prefer reduced motion).</li>
   </ul>
 

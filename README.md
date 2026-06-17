@@ -1,72 +1,69 @@
-<h1 align="center">patricksaade.com</h1>
+<h1 align="center">Patrick Saade</h1>
 
 <p align="center">
-  A fast <strong>DFIR portfolio &amp; blog</strong> — digital forensics &amp;
-  incident response, in the open.
+  <strong>DFIR-focused security analyst</strong> — digital forensics &amp; incident response, in the open.
 </p>
 
 <p align="center">
-  <img alt="Astro" src="https://img.shields.io/badge/Astro-BC52EE?logo=astro&logoColor=white">
-  <img alt="Panda CSS" src="https://img.shields.io/badge/Panda_CSS-E7C400?logoColor=black">
-  <img alt="MDX" src="https://img.shields.io/badge/MDX-1B1F24?logo=mdx&logoColor=white">
-  <img alt="Vercel" src="https://img.shields.io/badge/Vercel-000?logo=vercel&logoColor=white">
+  <a href="https://patricksaade.com"><img alt="Website" src="https://img.shields.io/badge/patricksaade.com-3b82f6?logo=astro&logoColor=white"></a>
+  <a href="https://www.linkedin.com/in/patsaade"><img alt="LinkedIn" src="https://img.shields.io/badge/LinkedIn-0A66C2?logo=linkedin&logoColor=white"></a>
+  <a href="https://github.com/patsaade"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-181717?logo=github&logoColor=white"></a>
+  <a href="https://www.credly.com/users/patsaade"><img alt="Credly" src="https://img.shields.io/badge/Credly-FF6B00?logoColor=white"></a>
 </p>
 
 ---
 
-## ✨ Highlights
+## 👋 About
 
-- ⚡ **Lean & fast** — content prerendered to HTML; just small inline scripts plus Vercel Web Analytics & Speed Insights.
-- 🎨 **10 themes** (5 dark · 5 light) + a System / Light / Dark switch, no flash of unstyled theme.
-- 📝 **MDX content** with Shiki code highlighting, auto table of contents, tags, RSS & sitemap.
-- 🔍 **SEO-ready** — OG image, JSON-LD, canonical URLs, `robots.txt`, `security.txt`.
-- 🔒 **Privacy-first** — cookieless Vercel analytics, no marketing trackers.
+I'm a **Senior Information Security Analyst at First American**, working the Information
+Security Operations Center — detection-and-response, incident response, and detection tuning
+across SIEM, cloud, endpoint, and email. I came up through the SOC at **ReliaQuest** (alert
+triage → detection engineering) and ran hands-on threat response at **Red Canary** (now part
+of Zscaler), doing live response and containment for confirmed endpoint threats.
 
-## 🚀 Quick start
+Now I'm going deeper on the forensics craft and documenting it in the open at
+**[patricksaade.com](https://patricksaade.com)**.
+
+## 🔬 Focus
+
+- **Host forensics** — registry, `$MFT`/USN/Prefetch/Shellbags, timeline reconstruction
+- **Memory forensics** — Volatility 3, MemProcFS, finding malicious code in RAM
+- **EDR artifact analysis** · live response & containment
+- **Lab & CTF writeups** — CyberDefenders, 13Cubed, MemLabs, Magnet (public datasets only — never employer/client casework)
+
+## 📜 Certifications
+
+- **CISSP** (ISC2)
+- **CompTIA** SecurityX (CASP+) · CySA+ · PenTest+ · Cloud+ · Server+ — [full set on Credly](https://www.credly.com/users/patsaade)
+- *In pursuit of:* GCFA · GCFE · GCIH
+
+## 🔗 Links
+
+[Site](https://patricksaade.com) · [LinkedIn](https://www.linkedin.com/in/patsaade) · [GitHub](https://github.com/patsaade) · [Credly](https://www.credly.com/users/patsaade)
+
+---
+
+<details>
+<summary><sub>About this repository</sub></summary>
+
+<br>
+
+This repo is the source for **patricksaade.com** — an **Astro + Panda CSS + MDX** site
+deployed on Vercel via the `@astrojs/vercel` adapter (content prerendered).
 
 ```bash
 npm install     # also runs `panda codegen`
-npm run dev     # → http://localhost:4321
+npm run dev      # → http://localhost:4321
+npm run build    # panda codegen + astro build
+npm test         # Vitest unit suite
 ```
 
-## 📜 Scripts
+Technical details: [docs/AUTHORING.md](docs/AUTHORING.md) (writing posts) ·
+[docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) (design & direction) ·
+[CLAUDE.md](CLAUDE.md) (architecture). Design & front-end built with AI assistance
+([Claude Code](https://claude.com/claude-code)), then reviewed & refined — see
+[/colophon](https://patricksaade.com/colophon).
 
-| Script | Does |
-| --- | --- |
-| `npm run dev` | Start the dev server |
-| `npm run build` | `panda codegen` + `astro build` → `.vercel/output/` |
-| `npm run preview` | Serve the production build |
-| `npm run check` | `astro check` (types & diagnostics) |
-| `npm test` | Run the Vitest unit suite |
+</details>
 
-## 📁 Structure
-
-```
-src/
-├── components/   UI — Icon, Badge, Navigation, ThemePicker, Background…
-├── layouts/      BaseLayout (shell) · PostLayout (article + TOC)
-├── pages/        index · blog/ · labs/ · tags/ · about · tools · 404 · rss
-├── content/      MDX collections — blog/ · labs/
-├── themes.ts     The 10-theme registry (single source of truth)
-└── consts.ts     Site config, nav, pillars, category icons
-```
-
-## 📚 Docs
-
-| File | What |
-| --- | --- |
-| [docs/AUTHORING.md](docs/AUTHORING.md) | Writing posts & lab writeups (frontmatter reference) |
-| [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) | Design language, voice & project direction |
-| [CLAUDE.md](CLAUDE.md) | Architecture invariants & conventions |
-
-## ☁️ Deploy
-
-Push to GitHub → import in **Vercel**. The site uses the **`@astrojs/vercel`** adapter
-(`output: 'server'`; content routes are prerendered) — the build runs
-`panda codegen && astro build` (see [`vercel.json`](vercel.json)) and emits the Vercel
-build output. **Web Analytics** (adapter) and **Speed Insights** (`@vercel/speed-insights`)
-are wired in `BaseLayout`; enable them in the Vercel dashboard to start collecting.
-
----
-
-<sub>Design & front-end built with AI assistance ([Claude Code](https://claude.com/claude-code)), then reviewed & refined — see <a href="src/pages/colophon.astro">/colophon</a>. Content © Patrick Saade.</sub>
+<sub>Content © Patrick Saade.</sub>
