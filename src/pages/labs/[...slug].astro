@@ -4,6 +4,9 @@ import { render } from 'astro:content';
 import PostLayout from '../../layouts/PostLayout.astro';
 import { estimateReadTime, getSortedLabs } from '../../utils/posts';
 
+// Prerender to static HTML (required: getStaticPaths is ignored under output: 'server').
+export const prerender = true;
+
 export async function getStaticPaths() {
   // getSortedLabs() excludes drafts in production, so drafts never get a page.
   const labs = await getSortedLabs();

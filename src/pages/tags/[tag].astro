@@ -7,6 +7,9 @@ import BlogCard from '../../components/BlogCard.astro';
 import Icon from '../../components/Icon.astro';
 import { getSortedPosts, estimateReadTime, tagSlug } from '../../utils/posts';
 
+// Prerender to static HTML (required: getStaticPaths is ignored under output: 'server').
+export const prerender = true;
+
 export async function getStaticPaths() {
   const posts = await getSortedPosts();
   const byTag = new Map<string, { tag: string; posts: typeof posts }>();

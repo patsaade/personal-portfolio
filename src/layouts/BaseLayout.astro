@@ -7,6 +7,7 @@ import ThemeStyles from '../components/ThemeStyles.astro';
 import Background from '../components/Background.astro';
 import Navigation from '../components/Navigation.astro';
 import Footer from '../components/Footer.astro';
+import SpeedInsights from '@vercel/speed-insights/astro';
 import { DEFAULT_DARK } from '../themes';
 
 interface Props {
@@ -67,8 +68,8 @@ const props = Astro.props;
 
     <Footer />
 
-    {/* Vercel Web Analytics — cookieless page-view counts; loaded only in
-        production (the script is served by Vercel when Analytics is enabled). */}
-    {import.meta.env.PROD && <script defer src="/_vercel/insights/script.js" is:inline />}
+    {/* Vercel Web Analytics is injected by the @astrojs/vercel adapter
+        (webAnalytics.enabled in astro.config.mjs). Speed Insights below. */}
+    <SpeedInsights />
   </body>
 </html>
