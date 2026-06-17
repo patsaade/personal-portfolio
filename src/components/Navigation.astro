@@ -42,7 +42,8 @@ const isActive = (href: string) =>
         whiteSpace: 'nowrap',
       })}
     >
-      {SITE.title}
+      <span class={css({ display: { base: 'inline', sm: 'none' } })}>{SITE.brandShort}</span>
+      <span class={css({ display: { base: 'none', sm: 'inline' } })}>{SITE.brand}</span>
     </a>
 
     <div
