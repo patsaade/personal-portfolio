@@ -2,6 +2,9 @@
 
 export const SITE = {
   title: 'Patrick Saade',
+  // Display wordmark (nav + footer). `title` stays formal for <title>/SEO/JSON-LD.
+  brand: 'Patrick (Pat) Saade',
+  brandShort: 'Pat Saade', // nav wordmark on narrow screens (avoids nav overflow)
   tagline: 'Digital Forensics & Incident Response',
   description:
     'Hands-on digital forensics & incident response. Memory analysis, host forensics, EDR investigation, timeline reconstruction, and lab/CTF writeups.',
