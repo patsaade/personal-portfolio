@@ -62,8 +62,11 @@ const itemClass = css({
     hidden
     class={css({
       // Mobile: the picker button sits mid-nav, so a button-anchored popover ran
-      // off the left edge. Pin it to the viewport instead (fixed, symmetric 1rem
-      // margins, just below the 64px header). Desktop keeps the button-anchored menu.
+      // off the left edge. Pin it across the top instead (fixed, symmetric 1rem
+      // margins, just below the 64px-tall header). The header has backdrop-filter,
+      // which makes IT the containing block for this fixed menu — so `top` is
+      // measured from the header's own box, and `64px + 8px` lands 8px below it
+      // automatically, even when the word-of-the-day ticker pushes the page down.
       position: { base: 'fixed', sm: 'absolute' },
       top: { base: 'calc(64px + 8px)', sm: 'calc(100% + 8px)' },
       left: { base: '1rem', sm: 'auto' },

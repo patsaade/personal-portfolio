@@ -95,6 +95,22 @@ npm test         # vitest unit suite
    or build-time only; **don't `audit fix --force`** (it regresses the stack) — let Dependabot
    raise real fixes.
 
+10. **Word of the Day = one bank, client-side daily rotation.** `src/data/securityTerms.ts`
+    is the single source of truth (vendor-agnostic concepts only — never products). It drives
+    the site-wide ticker (`Ticker.astro` in `BaseLayout`, above the nav), the
+    `/word-of-the-day/` glossary index, and the prerendered `/word-of-the-day/[slug]/` detail
+    pages (each with `DefinedTerm` JSON-LD). **The daily term is picked in the browser**, not at
+    build: a tiny inline script computes `daySerial(localY/M/D) mod bankLength` — identical math
+    to `termForDate()` — so the word changes at local midnight with no rebuild (the whole site is
+    CDN-static, so a build-time pick would freeze until redeploy). Prerendered HTML carries the
+    build-day term as a no-JS/crawler fallback. Add a term by appending to `SECURITY_TERMS`;
+    `test/securityTerms.test.ts` guards slug uniqueness, related-link integrity, and the rotation
+    math. The ticker marquee lives in `global.css` (`@keyframes wotd-marquee`, reduced-motion
+    stops it). **Note:** the sticky nav `<header>` has `backdrop-filter`, which makes it the
+    *containing block* for the theme picker's `position: fixed` mobile menu — that's why the
+    picker's `top: calc(64px + 8px)` lands just below the header even though the ticker makes the
+    page taller. Don't "fix" it with viewport-coordinate math (it double-counts the ticker).
+
 ## Conventions
 
 - **Styling:** use the `css()` function from `styled-system/css`. Reference semantic tokens

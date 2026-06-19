@@ -1,0 +1,178 @@
+---
+// Word-of-the-day detail page — one prerendered page per term, with definition,
+// significance, an example, related terms, and DefinedTerm structured data.
+// Prerender to static HTML (required: getStaticPaths is ignored under output: 'server').
+export const prerender = true;
+import { css } from 'styled-system/css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Badge from '../../components/Badge.astro';
+import Icon from '../../components/Icon.astro';
+import { SITE } from '../../consts';
+import {
+  SECURITY_TERMS,
+  CATEGORY_META,
+  termBySlug,
+} from '../../data/securityTerms';
+
+export async function getStaticPaths() {
+  return SECURITY_TERMS.map((term) => ({ params: { slug: term.slug }, props: { term } }));
+}
+
+const { term } = Astro.props;
+
+const idx = SECURITY_TERMS.findIndex((t) => t.slug === term.slug);
+const prev = idx > 0 ? SECURITY_TERMS[idx - 1] : null;
+const next = idx >= 0 && idx < SECURITY_TERMS.length - 1 ? SECURITY_TERMS[idx + 1] : null;
+const related = term.related.map((s) => termBySlug(s)).filter(Boolean);
+
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'DefinedTerm',
+  name: term.term,
+  ...(term.aka && term.aka.length ? { alternateName: term.aka } : {}),
+  description: term.definition,
+  inDefinedTermSet: `${SITE.url}/word-of-the-day/`,
+  termCode: term.slug,
+  url: `${SITE.url}/word-of-the-day/${term.slug}/`,
+});
+
+const sectionH2 = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  fontSize: '1.2rem',
+  fontWeight: 700,
+  mt: '2.5rem',
+  mb: '0.75rem',
+});
+const para = css({ color: 'text', lineHeight: 1.8, fontSize: '1.02rem' });
+const navLink = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.25rem',
+  p: '0.85rem 1.1rem',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  bg: 'bgCard',
+  transition: 'border-color 200ms ease, transform 200ms ease',
+  _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
+});
+const navMeta = css({ fontSize: '0.72rem', fontFamily: 'mono', color: 'textMuted' });
+const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
+---
+
+<BaseLayout title={term.term} description={`${term.term} — ${term.short}`}>
+  <a
+    href="/word-of-the-day/"
+    class={css({
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '0.35rem',
+      fontSize: '0.85rem',
+      fontFamily: 'mono',
+      color: 'textMuted',
+      mb: '1.5rem',
+      _hover: { color: 'primary' },
+    })}
+  >
+    <Icon name="arrow-left" size={14} /> Word of the Day
+  </a>
+
+  <header class={css({ mb: '1.5rem' })}>
+    <p class={css({ fontFamily: 'mono', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'primary', mb: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' })}>
+      <Icon name={CATEGORY_META[term.category].icon as any} size={15} />
+      {term.category}
+    </p>
+    <h1 class={css({ fontSize: { base: '2.1rem', md: '2.75rem' }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 })}>
+      {term.term}
+    </h1>
+    {
+      term.aka && term.aka.length > 0 && (
+        <p class={css({ mt: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' })}>
+          <span class={css({ fontSize: '0.8rem', color: 'textMuted' })}>Also known as</span>
+          {term.aka.map((a) => (
+            <Badge>{a}</Badge>
+          ))}
+        </p>
+      )
+    }
+    <p class={css({ fontSize: '1.2rem', color: 'textMuted', mt: '1rem', lineHeight: 1.6, maxW: '640px' })}>
+      {term.short}
+    </p>
+  </header>
+
+  <h2 class={sectionH2}><Icon name="book-open" size={18} class={css({ color: 'primary' })} /> Definition</h2>
+  <p class={para}>{term.definition}</p>
+
+  <h2 class={sectionH2}><Icon name="shield" size={18} class={css({ color: 'primary' })} /> Why it matters</h2>
+  <p class={para}>{term.significance}</p>
+
+  <h2 class={sectionH2}><Icon name="terminal" size={18} class={css({ color: 'primary' })} /> In practice</h2>
+  <p class={`${para} ${css({ borderLeft: '3px solid token(colors.primary)', pl: '1rem', color: 'textMuted', fontStyle: 'italic' })}`}>
+    {term.example}
+  </p>
+
+  {
+    related.length > 0 && (
+      <>
+        <h2 class={sectionH2}><Icon name="link" size={18} class={css({ color: 'primary' })} /> Related terms</h2>
+        <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' })}>
+          {related.map((r) => (
+            <a
+              href={`/word-of-the-day/${r!.slug}/`}
+              class={css({
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                px: '0.8rem',
+                py: '0.45rem',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                bg: 'bgCard',
+                border: '1px solid token(colors.border)',
+                borderRadius: 'md',
+                transition: 'border-color 200ms ease, color 200ms ease',
+                _hover: { borderColor: 'primary', color: 'primary' },
+              })}
+            >
+              {r!.term}
+              <Icon name="arrow-right" size={13} />
+            </a>
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  {/* Prev / next browse */}
+  <nav
+    aria-label="More terms"
+    class={css({
+      display: 'grid',
+      gridTemplateColumns: { base: '1fr', sm: '1fr 1fr' },
+      gap: '1rem',
+      mt: '3rem',
+      pt: '1.5rem',
+      borderTop: '1px solid token(colors.border)',
+    })}
+  >
+    {prev ? (
+      <a href={`/word-of-the-day/${prev.slug}/`} class={navLink}>
+        <span class={navMeta}>← Previous</span>
+        <span class={navTitle}>{prev.term}</span>
+      </a>
+    ) : (
+      <span />
+    )}
+    {next ? (
+      <a href={`/word-of-the-day/${next.slug}/`} class={`${navLink} ${css({ textAlign: 'right', alignItems: 'flex-end' })}`}>
+        <span class={navMeta}>Next →</span>
+        <span class={navTitle}>{next.term}</span>
+      </a>
+    ) : (
+      <span />
+    )}
+  </nav>
+
+  <script type="application/ld+json" is:inline set:html={jsonLd} />
+</BaseLayout>
