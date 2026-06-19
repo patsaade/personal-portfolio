@@ -1,7 +1,13 @@
 ---
-// Site-wide ambient background: a sparse field of slowly drifting nodes with
-// faint connecting lines. Fixed behind all content (z-index -1), theme-aware
-// (reads --colors-primary), and disabled under prefers-reduced-motion.
+// Site-wide ambient background: a sparse, slowly drifting node field with faint
+// links, fixed behind all content. Tuned for mobile performance and motion:
+//   • Frame-rate throttled (~30fps mobile / ~45fps desktop) to save battery.
+//   • Fewer nodes + shorter links + capped DPR on small screens.
+//   • Re-seeds only on width/orientation change — it ignores the constant height
+//     churn from the mobile URL bar, which previously reflowed the field mid-scroll.
+//   • Gentle scroll parallax via seamless vertical tiling, so it drifts with the
+//     page instead of sitting stationary.
+//   • prefers-reduced-motion -> one static frame; pauses when the tab is hidden.
 import { css } from 'styled-system/css';
 ---
 
@@ -10,13 +16,13 @@ import { css } from 'styled-system/css';
   aria-hidden="true"
   class={css({
     position: 'fixed',
-    inset: 0,
+    top: 0,
+    left: 0,
     zIndex: -1,
-    w: '100vw',
+    w: '100%',
     h: '100dvh',
     pointerEvents: 'none',
-    // Kept subtle; the nodes themselves are drawn at low alpha too.
-    opacity: { base: 0.5, md: 0.7 },
+    opacity: { base: 0.45, md: 0.7 },
   })}
 ></canvas>
 
@@ -27,129 +33,150 @@ import { css } from 'styled-system/css';
     var ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    var w = 0,
-      h = 0;
-    var nodes = [];
-    var raf = null;
-    var rgb = '59, 130, 246'; // fallback (primary blue)
+    var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    var w = 0, h = 0, fieldH = 0, dpr = 1, lastW = -1;
+    var nodes = [], links = [], raf = null, lastFrame = 0;
+    var rgb = '59, 130, 246'; // fallback primary
+    var LINK = 130, PARALLAX = 0.3, frameInterval = 22;
 
-    function readColor() {
-      try {
-        var v = getComputedStyle(document.documentElement)
-          .getPropertyValue('--colors-primary')
-          .trim();
-        if (v) rgb = hexToRgb(v) || rgb;
-      } catch (e) {}
-    }
     function hexToRgb(hex) {
-      var m = hex.replace('#', '');
+      var m = (hex || '').replace('#', '');
       if (m.length === 3) m = m[0] + m[0] + m[1] + m[1] + m[2] + m[2];
       if (m.length !== 6) return null;
       var n = parseInt(m, 16);
+      if (isNaN(n)) return null;
       return (n >> 16) + ', ' + ((n >> 8) & 255) + ', ' + (n & 255);
     }
+    function readColor() {
+      try {
+        var c = hexToRgb(
+          getComputedStyle(document.documentElement).getPropertyValue('--colors-primary').trim(),
+        );
+        if (c) rgb = c;
+      } catch (e) {}
+    }
 
-    function resize() {
-      w = window.innerWidth;
-      h = window.innerHeight;
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(h * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      // Node count scales with area, capped for performance.
-      var count = Math.min(70, Math.max(18, Math.round((w * h) / 22000)));
+    function seed() {
+      var small = w < 640;
+      LINK = small ? 100 : 130;
+      var count = Math.min(small ? 26 : 70, Math.max(14, Math.round((w * fieldH) / (small ? 42000 : 22000))));
       nodes = [];
       for (var i = 0; i < count; i++) {
         nodes.push({
           x: Math.random() * w,
-          y: Math.random() * h,
-          vx: (Math.random() - 0.5) * 0.25,
-          vy: (Math.random() - 0.5) * 0.25,
-          r: 1 + Math.random() * 1.5,
+          y: Math.random() * fieldH,
+          vx: (Math.random() - 0.5) * 0.22,
+          vy: (Math.random() - 0.5) * 0.22,
+          r: 1 + Math.random() * 1.4,
         });
       }
     }
 
-    var LINK = 130; // px distance to draw a connecting line
+    function size() {
+      var cw = canvas.clientWidth || window.innerWidth;
+      var ch = canvas.clientHeight || window.innerHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, cw < 640 ? 1.5 : 2);
+      frameInterval = cw < 640 ? 33 : 22;
+      w = cw; h = ch;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // Re-seed only on width/orientation change, not on the mobile URL bar's
+      // height twitches (which would otherwise reflow the field while scrolling).
+      if (w !== lastW || fieldH === 0) {
+        fieldH = h;
+        seed();
+        lastW = w;
+      } else if (h > fieldH) {
+        fieldH = h; // viewport grew taller than the field; extend the wrap period
+      }
+    }
 
-    function draw() {
-      ctx.clearRect(0, 0, w, h);
+    function computeLinks() {
+      links = [];
       for (var i = 0; i < nodes.length; i++) {
-        var a = nodes[i];
-        // Connections
         for (var j = i + 1; j < nodes.length; j++) {
-          var b = nodes[j];
-          var dx = a.x - b.x;
-          var dy = a.y - b.y;
-          var dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < LINK) {
-            var alpha = (1 - dist / LINK) * 0.18;
-            ctx.strokeStyle = 'rgba(' + rgb + ',' + alpha.toFixed(3) + ')';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.stroke();
-          }
+          var dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y;
+          var d2 = dx * dx + dy * dy;
+          if (d2 < LINK * LINK) links.push([i, j, (1 - Math.sqrt(d2) / LINK) * 0.16]);
         }
-        // Node dot
-        ctx.fillStyle = 'rgba(' + rgb + ',0.5)';
+      }
+    }
+
+    function drawTile(dy) {
+      var i;
+      ctx.lineWidth = 1;
+      for (i = 0; i < links.length; i++) {
+        var a = nodes[links[i][0]], b = nodes[links[i][1]];
+        ctx.strokeStyle = 'rgba(' + rgb + ',' + links[i][2].toFixed(3) + ')';
         ctx.beginPath();
-        ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2);
+        ctx.moveTo(a.x, a.y + dy);
+        ctx.lineTo(b.x, b.y + dy);
+        ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(' + rgb + ',0.45)';
+      for (i = 0; i < nodes.length; i++) {
+        var n = nodes[i], y = n.y + dy;
+        if (y < -2 || y > h + 2) continue;
+        ctx.beginPath();
+        ctx.arc(n.x, y, n.r, 0, 6.2832);
         ctx.fill();
       }
     }
 
-    function step() {
+    function render() {
+      if (fieldH <= 0) return;
+      ctx.clearRect(0, 0, w, h);
+      var off = (((window.scrollY || 0) * PARALLAX) % fieldH + fieldH) % fieldH;
+      for (var ty = -off; ty < h; ty += fieldH) drawTile(ty);
+    }
+
+    function advance() {
       for (var i = 0; i < nodes.length; i++) {
         var n = nodes[i];
-        n.x += n.vx;
-        n.y += n.vy;
-        if (n.x < 0 || n.x > w) n.vx *= -1;
-        if (n.y < 0 || n.y > h) n.vy *= -1;
+        n.x += n.vx; n.y += n.vy;
+        if (n.x < 0) { n.x = 0; n.vx = -n.vx; } else if (n.x > w) { n.x = w; n.vx = -n.vx; }
+        if (n.y < 0) { n.y = 0; n.vy = -n.vy; } else if (n.y > fieldH) { n.y = fieldH; n.vy = -n.vy; }
       }
-      draw();
-      raf = requestAnimationFrame(step);
+      computeLinks();
     }
 
-    function start() {
-      if (raf) return;
-      raf = requestAnimationFrame(step);
+    function loop(now) {
+      raf = requestAnimationFrame(loop);
+      if (now - lastFrame < frameInterval) return;
+      lastFrame = now;
+      advance();
+      render();
     }
-    function stop() {
-      if (raf) {
-        cancelAnimationFrame(raf);
-        raf = null;
-      }
-    }
+    function start() { if (!raf) raf = requestAnimationFrame(loop); }
+    function stop() { if (raf) { cancelAnimationFrame(raf); raf = null; } }
+    function staticFrame() { computeLinks(); render(); }
 
     readColor();
-    resize();
+    size();
+    if (motion.matches) staticFrame(); else start();
 
-    if (reduce) {
-      draw(); // single static frame, no motion
-    } else {
-      start();
-      document.addEventListener('visibilitychange', function () {
-        if (document.hidden) stop();
-        else start();
-      });
-    }
-
-    var resizeTimer;
-    window.addEventListener('resize', function () {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(function () {
-        resize();
-        if (reduce) draw();
-      }, 200);
+    document.addEventListener('visibilitychange', function () {
+      if (motion.matches) return;
+      if (document.hidden) stop(); else start();
     });
 
-    // Recolor when the theme/palette changes.
+    var rt;
+    window.addEventListener('resize', function () {
+      clearTimeout(rt);
+      rt = setTimeout(function () { size(); if (motion.matches) staticFrame(); }, 200);
+    }, { passive: true });
+
     document.addEventListener('themechange', function () {
       readColor();
-      if (reduce) draw();
+      if (motion.matches) staticFrame();
+    });
+
+    // React if the user toggles reduced-motion at runtime.
+    motion.addEventListener('change', function () {
+      stop();
+      if (motion.matches) staticFrame();
+      else start();
     });
   })();
 </script>
