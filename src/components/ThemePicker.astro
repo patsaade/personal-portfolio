@@ -61,11 +61,15 @@ const itemClass = css({
     aria-label="Color themes"
     hidden
     class={css({
-      position: 'absolute',
-      right: 0,
-      top: 'calc(100% + 8px)',
+      // Mobile: the picker button sits mid-nav, so a button-anchored popover ran
+      // off the left edge. Pin it to the viewport instead (fixed, symmetric 1rem
+      // margins, just below the 64px header). Desktop keeps the button-anchored menu.
+      position: { base: 'fixed', sm: 'absolute' },
+      top: { base: 'calc(64px + 8px)', sm: 'calc(100% + 8px)' },
+      left: { base: '1rem', sm: 'auto' },
+      right: { base: '1rem', sm: 0 },
       zIndex: 60,
-      w: { base: 'min(340px, calc(100vw - 2rem))', sm: '380px' },
+      w: { base: 'auto', sm: '380px' },
       p: '0.75rem',
       bg: 'bgCard',
       border: '1px solid token(colors.border)',
