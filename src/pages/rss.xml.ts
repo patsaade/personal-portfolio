@@ -3,6 +3,9 @@ import type { APIContext } from 'astro';
 import { SITE } from '../consts';
 import { getSortedPosts, getSortedLabs } from '../utils/posts';
 
+// Prerender the feed to a static file (output: 'server' is on-demand by default).
+export const prerender = true;
+
 export async function GET(context: APIContext) {
   const posts = await getSortedPosts();
   const labs = await getSortedLabs();

@@ -8,6 +8,9 @@ import vercel from '@astrojs/vercel';
 export default defineConfig({
   site: 'https://patricksaade.com',
   output: 'server',
+  // Enforce a single canonical URL form (matches our canonical tags + sitemap, which
+  // already use trailing slashes) so /about and /about/ don't become duplicate URLs.
+  trailingSlash: 'always',
   adapter: vercel({
     webAnalytics: { enabled: true },
   }),

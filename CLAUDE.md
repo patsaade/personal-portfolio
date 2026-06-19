@@ -6,7 +6,8 @@ making changes.
 ## What this is
 
 An **Astro + Panda CSS + MDX** DFIR portfolio/blog, deployed on Vercel via the
-`@astrojs/vercel` adapter (`output: 'server'`; content routes are prerendered). Client JS
+`@astrojs/vercel` adapter (`output: 'server'`, but **every route is prerendered** to static
+HTML — the adapter is kept for Web Analytics and the on-demand 404 fallback). Client JS
 is minimal — small inline scripts plus Vercel Web Analytics & Speed Insights.
 See [README.md](README.md) for setup, [docs/AUTHORING.md](docs/AUTHORING.md)
 for content, and **[docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) for the design language and
@@ -60,13 +61,18 @@ npm test         # vitest unit suite
    `webAnalytics`) and Speed Insights (`<SpeedInsights/>` from `@vercel/speed-insights/astro`
    in `BaseLayout`). Keep it that way unless there's a strong reason.
 
-6. **SSR adapter — prerender content routes.** `astro.config.mjs` uses `@astrojs/vercel`
-   with `output: 'server'`. Under server output, `getStaticPaths()` is **ignored** unless the
-   route also `export const prerender = true`. The dynamic routes (`blog/[...slug]`,
-   `labs/[...slug]`, `tags/[tag]`) set it — without it they 500 at runtime (`Astro.props` is
-   empty). The build emits the Vercel Build Output API (`.vercel/output/`), not `dist/`. An
-   `.npmrc` sets `legacy-peer-deps=true` because the Vercel analytics/speed-insights packages
-   declare an optional SvelteKit peer that conflicts with this project's Vite version.
+6. **SSR adapter, but prerender everything.** `astro.config.mjs` uses `@astrojs/vercel`
+   with `output: 'server'`, where routes render on-demand by default. So **every page sets
+   `export const prerender = true`** (static pages near the top of their frontmatter; the
+   dynamic routes `blog/[...slug]`, `labs/[...slug]`, `tags/[tag]` must set it too, or
+   `getStaticPaths()` is ignored and they 500 with an empty `Astro.props`). The RSS endpoint
+   prerenders as well. Net effect: the whole site is static HTML on Vercel's CDN, and the
+   adapter is retained only for Web Analytics and the on-demand 404 fallback. **When you add a
+   route, prerender it** unless it genuinely needs per-request logic. `trailingSlash: 'always'`
+   makes the adapter emit 308 redirects to a single canonical URL form (matching our canonical
+   tags + sitemap). The build emits the Vercel Build Output API (`.vercel/output/`), not
+   `dist/`. An `.npmrc` sets `legacy-peer-deps=true` because the Vercel analytics/speed-insights
+   packages declare an optional SvelteKit peer that conflicts with this project's Vite version.
 
 7. **`examples/` is never built or deployed** (outside content collections + in
    `.vercelignore`). It holds reference templates only.
@@ -75,6 +81,19 @@ npm test         # vitest unit suite
    fixed `<canvas>` at `z-index: -1` (the ambient node field), which sits *above* the root
    background but *below* content. For it to be visible, `<body>` must stay transparent and
    the theme bg must be on `<html>` (see `panda.config.ts` `globalCss`). Don't move it back.
+   The canvas is deliberately mobile-tuned: FPS-throttled (~30fps mobile / 45fps desktop),
+   fewer nodes + capped DPR on small screens, **re-seeds only on *width*/orientation change**
+   (not the mobile URL-bar height churn that used to reflow it mid-scroll), pauses when hidden,
+   honors `prefers-reduced-motion`, and uses seamless vertical tiling for the scroll parallax.
+   Keep those guards if you touch it.
+
+9. **Build & CI hygiene.** Node ≥ 20.3 (`.nvmrc` pins 24 to match Vercel's serverless runtime;
+   `engines` in `package.json` sets the floor). GitHub Actions (`.github/workflows/ci.yml`)
+   runs `check` + `test` + `build` on every push and PR; Dependabot (`.github/dependabot.yml`)
+   keeps deps + actions patched. `package-lock.json` is committed — use `npm ci`. Outstanding
+   `npm audit` items have no forward fix (npm only offers major *downgrades*) and are dev-tooling
+   or build-time only; **don't `audit fix --force`** (it regresses the stack) — let Dependabot
+   raise real fixes.
 
 ## Conventions
 

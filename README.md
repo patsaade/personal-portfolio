@@ -49,7 +49,8 @@ Now I'm going deeper on the forensics craft and documenting it in the open at
 <br>
 
 This repo is the source for **patricksaade.com** — an **Astro + Panda CSS + MDX** site
-deployed on Vercel via the `@astrojs/vercel` adapter (content prerendered).
+deployed on Vercel via the `@astrojs/vercel` adapter (all routes prerendered to static HTML;
+CI type-checks, tests, and builds every push).
 
 ```bash
 npm install     # also runs `panda codegen`
