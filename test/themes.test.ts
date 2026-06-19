@@ -74,4 +74,22 @@ describe('buildThemeCss', () => {
     expect(css).toContain('--colors-primary:');
     expect(css).toContain('--colors-text:');
   });
+
+  it('emits an on-primary color (white by default) for every theme', () => {
+    for (const theme of THEMES) {
+      const expected = theme.colors.onPrimary ?? '#ffffff';
+      expect(css, theme.id).toContain(`--colors-on-primary: ${expected};`);
+    }
+  });
+
+  it('uses a custom, non-white on-primary where a theme needs label contrast', () => {
+    // Guards the accessibility fix: bright-accent themes (e.g. matrix/amber) carry
+    // a dark on-primary so white-on-bright-button text never falls below contrast.
+    const custom = THEMES.filter((t) => t.colors.onPrimary);
+    expect(custom.length).toBeGreaterThan(0);
+    for (const theme of custom) {
+      expect(theme.colors.onPrimary, theme.id).not.toBe('#ffffff');
+      expect(css).toContain(`--colors-on-primary: ${theme.colors.onPrimary};`);
+    }
+  });
 });

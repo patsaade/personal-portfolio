@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { estimateReadTime, getRelatedPosts, type BlogPost } from '../src/utils/posts';
+import {
+  estimateReadTime,
+  getRelatedPosts,
+  tagSlug,
+  collectTags,
+  type BlogPost,
+} from '../src/utils/posts';
 
 // Build a minimal blog entry shaped like a real CollectionEntry<'blog'>.
 function post(id: string, category: string, tags: string[] = []): BlogPost {
@@ -49,5 +55,45 @@ describe('getRelatedPosts', () => {
       post('e', 'Memory Forensics'),
     ];
     expect(getRelatedPosts(current, many, 2)).toHaveLength(2);
+  });
+});
+
+describe('tagSlug', () => {
+  it('lowercases and hyphenates spaces', () => {
+    expect(tagSlug('Memory Analysis')).toBe('memory-analysis');
+  });
+
+  it('collapses non-alphanumerics and trims edge hyphens', () => {
+    expect(tagSlug('  C2 / Beaconing!! ')).toBe('c2-beaconing');
+    expect(tagSlug('$MFT')).toBe('mft');
+  });
+
+  it('is idempotent on an already-slugged value', () => {
+    expect(tagSlug('volatility-3')).toBe('volatility-3');
+  });
+});
+
+describe('collectTags', () => {
+  const posts = [
+    post('a', 'Memory Forensics', ['dfir', 'volatility3']),
+    post('b', 'Host Forensics', ['dfir', 'timeline']),
+    post('c', 'Notes', ['dfir']),
+  ];
+
+  it('counts occurrences across posts', () => {
+    const tags = collectTags(posts);
+    expect(tags.find((t) => t.tag === 'dfir')?.count).toBe(3);
+    expect(tags.find((t) => t.tag === 'timeline')?.count).toBe(1);
+  });
+
+  it('sorts by count desc, then name asc, and slugifies', () => {
+    const tags = collectTags(posts);
+    expect(tags[0]).toEqual({ tag: 'dfir', slug: 'dfir', count: 3 });
+    // remaining all have count 1 -> alphabetical by tag
+    expect(tags.slice(1).map((t) => t.tag)).toEqual(['timeline', 'volatility3']);
+  });
+
+  it('returns an empty list for no posts', () => {
+    expect(collectTags([])).toEqual([]);
   });
 });

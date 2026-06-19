@@ -1,5 +1,7 @@
 ---
 // Blog listing — searchable, category-filterable grid of posts (client-side filtering).
+// Static page — prerender to HTML served from the CDN (output: 'server' is on-demand by default).
+export const prerender = true;
 import { css } from 'styled-system/css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';

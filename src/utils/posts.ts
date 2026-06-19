@@ -26,9 +26,10 @@ export function tagSlug(tag: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-/** All tags across non-draft posts, with slug + count, sorted by count then name. */
-export async function getTags(): Promise<{ tag: string; slug: string; count: number }[]> {
-  const posts = await getSortedPosts();
+export type TagCount = { tag: string; slug: string; count: number };
+
+/** Aggregate tags from a list of posts into slug+count, sorted by count then name. */
+export function collectTags(posts: BlogPost[]): TagCount[] {
   const counts = new Map<string, number>();
   for (const post of posts) {
     for (const tag of post.data.tags) {
@@ -38,6 +39,11 @@ export async function getTags(): Promise<{ tag: string; slug: string; count: num
   return [...counts.entries()]
     .map(([tag, count]) => ({ tag, slug: tagSlug(tag), count }))
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+}
+
+/** All tags across non-draft posts, with slug + count, sorted by count then name. */
+export async function getTags(): Promise<TagCount[]> {
+  return collectTags(await getSortedPosts());
 }
 
 /** Estimate reading time from rendered body length (~200 wpm). */
