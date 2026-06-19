@@ -7,7 +7,7 @@ export const SITE = {
   brandShort: 'Pat Saade', // nav wordmark on narrow screens (avoids nav overflow)
   tagline: 'Digital Forensics & Incident Response',
   description:
-    'Hands-on digital forensics & incident response. Memory analysis, host forensics, EDR investigation, timeline reconstruction, and lab/CTF writeups.',
+    'Hands-on DFIR — digital forensics & incident response: memory & host forensics, EDR investigation, timeline reconstruction, and public lab & CTF writeups.',
   url: 'https://patricksaade.com',
   author: 'Patrick Saade',
   email: 'contact@patricksaade.com',
