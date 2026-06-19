@@ -16,4 +16,31 @@ html {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+  /* Fully stop the ticker (the global 0.01ms rule would still cycle it). */
+  .wotd-marquee-track {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* Word-of-the-day ticker: seamless right-to-left scroll. The track holds the
+   content twice, so translating by -50% lands on an identical frame = no seam. */
+@keyframes wotd-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Subtle "live" pulse on the ticker indicator dot. */
+@keyframes wotd-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
 }

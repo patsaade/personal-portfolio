@@ -1,0 +1,154 @@
+---
+// Word of the Day — glossary index. Features today's term (client-updated to the
+// visitor's day) above the full, browsable, prerendered glossary.
+// Static page — prerender to HTML served from the CDN (output: 'server' is on-demand by default).
+export const prerender = true;
+import { css } from 'styled-system/css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import Badge from '../../components/Badge.astro';
+import Icon from '../../components/Icon.astro';
+import {
+  CATEGORIES,
+  CATEGORY_META,
+  SECURITY_TERMS,
+  termForDate,
+  slimBank,
+} from '../../data/securityTerms';
+
+const today = termForDate(new Date());
+const todayDate = new Date().toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+const bank = slimBank();
+
+const cardClass = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.3rem',
+  p: '0.9rem 1rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  transition: 'border-color 200ms ease, transform 200ms ease',
+  _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
+});
+---
+
+<BaseLayout
+  title="Word of the Day"
+  description="A vendor-agnostic cybersecurity & DFIR glossary — a new term highlighted every day, in plain English, with why each one matters in an investigation."
+>
+  <PageHeader
+    eyebrow="Glossary"
+    title="Cybersecurity Word of the Day"
+    description="A vendor-agnostic term every day — what it means and why it matters in a real investigation. Browse the full glossary below."
+  />
+
+  {/* ── Today's featured term (client-updated to the visitor's local day) ── */}
+  <section
+    class={css({
+      borderTop: '3px solid token(colors.primary)',
+      border: '1px solid token(colors.border)',
+      borderTopWidth: '3px',
+      borderTopColor: 'primary',
+      borderRadius: 'lg',
+      bg: 'bgCard',
+      p: { base: '1.5rem', md: '2rem' },
+      mb: '3rem',
+      boxShadow: 'card',
+    })}
+  >
+    <div class={css({ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', mb: '1rem', flexWrap: 'wrap' })}>
+      <span class={css({ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontFamily: 'mono', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'primary', fontWeight: 700 })}>
+        <Icon name="radio" size={15} /> Today’s term
+      </span>
+      <span id="wotd-feat-date" class={css({ fontFamily: 'mono', fontSize: '0.8rem', color: 'textMuted' })}>{todayDate}</span>
+    </div>
+
+    <div class={css({ mb: '0.75rem' })}>
+      <Badge variant="primary" icon="book-open"><span id="wotd-feat-cat">{today.category}</span></Badge>
+    </div>
+
+    <h2 id="wotd-feat-term" class={css({ fontSize: { base: '1.9rem', md: '2.4rem' }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 })}>
+      {today.term}
+    </h2>
+    <p id="wotd-feat-short" class={css({ fontSize: '1.15rem', color: 'textMuted', mt: '0.6rem', maxW: '640px' })}>
+      {today.short}
+    </p>
+
+    <a
+      id="wotd-feat-link"
+      href={`/word-of-the-day/${today.slug}/`}
+      class={css({
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.4rem',
+        mt: '1.25rem',
+        fontWeight: 600,
+        color: 'primary',
+        _hover: { '& svg': { transform: 'translateX(3px)' } },
+      })}
+    >
+      Read the full entry
+      <Icon name="arrow-right" size={16} class={css({ transition: 'transform 200ms ease' })} />
+    </a>
+  </section>
+
+  {/* ── Full glossary ── */}
+  <section>
+    <h2 class={css({ fontSize: '1.4rem', fontWeight: 700, mb: '0.4rem' })}>
+      The full glossary
+      <span class={css({ color: 'textMuted', fontWeight: 400, fontSize: '1rem' })}> · {SECURITY_TERMS.length} terms</span>
+    </h2>
+    <p class={css({ color: 'textMuted', mb: '2rem', fontSize: '0.95rem' })}>
+      Every term is a concept, technique, or artifact — never a product.
+    </p>
+
+    <div class={css({ display: 'flex', flexDirection: 'column', gap: '2.5rem' })}>
+      {
+        CATEGORIES.map((cat) => {
+          const terms = SECURITY_TERMS.filter((t) => t.category === cat);
+          return (
+            <div>
+              <h3 class={css({ display: 'flex', alignItems: 'baseline', gap: '0.6rem', mb: '1rem', flexWrap: 'wrap' })}>
+                <span class={css({ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.15rem', fontWeight: 700 })}>
+                  <Icon name={CATEGORY_META[cat].icon as any} size={19} class={css({ color: 'primary' })} />
+                  {cat}
+                </span>
+                <span class={css({ color: 'textMuted', fontSize: '0.85rem', fontWeight: 400 })}>{CATEGORY_META[cat].blurb}</span>
+              </h3>
+              <div class={css({ display: 'grid', gridTemplateColumns: { base: '1fr', sm: '1fr 1fr' }, gap: '0.75rem' })}>
+                {terms.map((t) => (
+                  <a href={`/word-of-the-day/${t.slug}/`} class={cardClass}>
+                    <span class={css({ fontFamily: 'mono', fontWeight: 700, color: 'text' })}>{t.term}</span>
+                    <span class={css({ fontSize: '0.88rem', color: 'textMuted', lineHeight: 1.4 })}>{t.short}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          );
+        })
+      }
+    </div>
+  </section>
+
+  <script is:inline define:vars={{ bank }}>
+    (function () {
+      if (!Array.isArray(bank) || !bank.length) return;
+      var d = new Date();
+      var serial = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+      var t = bank[((serial % bank.length) + bank.length) % bank.length];
+      var set = function (id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+      set('wotd-feat-term', t.t);
+      set('wotd-feat-short', t.d);
+      set('wotd-feat-cat', t.c);
+      var dateEl = document.getElementById('wotd-feat-date');
+      if (dateEl) { try { dateEl.textContent = d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }); } catch (e) {} }
+      var link = document.getElementById('wotd-feat-link');
+      if (link) link.setAttribute('href', '/word-of-the-day/' + t.s + '/');
+    })();
+  </script>
+</BaseLayout>
