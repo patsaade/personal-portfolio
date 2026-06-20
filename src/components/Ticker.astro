@@ -10,7 +10,7 @@ import Icon from './Icon.astro';
 import { termForDate } from '../data/securityTerms';
 
 const today = termForDate(new Date());
-const href = `/term-of-the-day/${today.slug}/`;
+const href = `/glossary/${today.slug}/`;
 
 // Identical copies; -50% translate lands on a matching frame. Enough copies to
 // span ultra-wide viewports without a gap.
@@ -96,7 +96,7 @@ const sepClass = css({ color: 'primary', opacity: 0.4, px: '1.1rem', fontSize: '
         pl: '1.25rem',
         fontSize: { base: '0.78rem', sm: '0.85rem' },
         willChange: 'transform',
-        animation: 'totd-marquee 60s linear infinite',
+        animation: 'totd-marquee 75s linear infinite',
       })}`}>
         {
           Array.from({ length: COPIES }).map(() => (
@@ -131,7 +131,7 @@ const sepClass = css({ color: 'primary', opacity: 0.4, px: '1.1rem', fontSize: '
       if (!link) return;
       // Fetch the compact bank (cached) and recompute the term for the visitor's
       // local day. The build-day term is already shown as a no-JS fallback.
-      fetch('/term-of-the-day/bank.json')
+      fetch('/glossary/bank.json')
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (bank) {
           if (!Array.isArray(bank) || !bank.length) return;
@@ -139,7 +139,7 @@ const sepClass = css({ color: 'primary', opacity: 0.4, px: '1.1rem', fontSize: '
           var d = new Date();
           var serial = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
           var e = bank[((serial % bank.length) + bank.length) % bank.length]; // [slug, term, short, cat]
-          var href = '/term-of-the-day/' + e[0] + '/';
+          var href = '/glossary/' + e[0] + '/';
           if (link.getAttribute('href') === href) return; // build day == visitor day
           link.setAttribute('href', href);
           link.setAttribute('aria-label', 'Cybersecurity term of the day: ' + e[1] + '. ' + e[2] + ' Read the full entry.');

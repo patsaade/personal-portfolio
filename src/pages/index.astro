@@ -48,11 +48,13 @@ const latest = (featured.length ? featured : posts).slice(0, 3);
       I'm Patrick Saade — a Senior Information Security Analyst at
       <strong class={css({ color: 'text' })}>First American</strong>, working the Security
       Operations Center: detection-and-response, incident response, and detection tuning across
-      SIEM, cloud, endpoint, and email. Before this I ran live response and containment as a
-      Threat Response Engineer at <strong class={css({ color: 'text' })}>Red Canary</strong>
-      (now part of <strong class={css({ color: 'text' })}>Zscaler</strong>). This is where I go
-      deeper on the forensics craft: memory analysis walkthroughs, host & EDR artifact deep
-      dives, timeline reconstruction, and full lab writeups.
+      SIEM, cloud, endpoint, and email. I came up through the SOC at
+      <strong class={css({ color: 'text' })}>ReliaQuest</strong> — from alert triage to detection
+      engineering — then ran live response and containment as a Threat Response Engineer at
+      <strong class={css({ color: 'text' })}>Red Canary</strong> (now part of
+      <strong class={css({ color: 'text' })}>Zscaler</strong>). This site is where I go deeper on
+      the forensics craft: memory analysis walkthroughs, host & EDR artifact deep dives, timeline
+      reconstruction, and full lab writeups.
     </p>
     <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' })}>
       <a
@@ -135,10 +137,10 @@ const latest = (featured.length ? featured : posts).slice(0, 3);
             <Icon name={s.icon} size={18} />
           </span>
           <div class={css({ minW: 0 })}>
-            <div class={css({ fontWeight: 700, fontSize: '0.98rem', color: 'text', lineHeight: 1.3 })}>
+            <div class={css({ fontWeight: 700, fontSize: '0.98rem', color: 'text', lineHeight: 1.3, textWrap: 'balance' })}>
               {s.title}
             </div>
-            <div class={css({ fontSize: '0.82rem', color: 'textMuted', mt: '0.15rem', lineHeight: 1.4 })}>
+            <div class={css({ fontSize: '0.82rem', color: 'textMuted', mt: '0.2rem', lineHeight: 1.45, textWrap: 'pretty' })}>
               {s.desc}
             </div>
           </div>
