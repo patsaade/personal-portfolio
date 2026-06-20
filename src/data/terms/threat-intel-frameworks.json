@@ -1,0 +1,335 @@
+[
+  {
+    "term": "Cyber Kill Chain",
+    "slug": "cyber-kill-chain",
+    "aka": ["Intrusion Kill Chain"],
+    "short": "A seven-stage model of how an intrusion unfolds, from recon to action on objectives.",
+    "definition": "A model, originally published by Lockheed Martin, that breaks a targeted intrusion into seven sequential phases: reconnaissance, weaponization, delivery, exploitation, installation, command and control, and actions on objectives. The idea is that breaking any single link disrupts the whole attack.",
+    "significance": "It gave defenders a shared vocabulary for where an intrusion sits and where to intervene, and it underpins the courses-of-action matrix that maps detect, deny, disrupt, and degrade actions to each phase. Its main limitation is a linear, perimeter-centric view that fits less well once an attacker is already inside.",
+    "example": "Mapping a phishing intrusion to the kill chain to show the email was the delivery phase and the macro execution was exploitation, so future controls should target both.",
+    "related": ["unified-kill-chain", "courses-of-action-matrix", "tactics-techniques-and-procedures"]
+  },
+  {
+    "term": "Unified Kill Chain",
+    "slug": "unified-kill-chain",
+    "aka": ["UKC"],
+    "short": "An 18-phase model fusing the Cyber Kill Chain and ATT&CK across the attack lifecycle.",
+    "definition": "A meta-model published by Paul Pols that combines the Cyber Kill Chain with MITRE ATT&CK into 18 phases spanning initial foothold, network propagation, and action on objectives. Phases can be skipped, repeated, or run out of order to reflect how real intrusions actually progress.",
+    "significance": "It addresses the original kill chain's linearity and weak coverage of post-compromise activity, giving analysts a more complete way to describe an end-to-end attack — including the pivot from an initial beachhead through internal movement to the final objective.",
+    "example": "Using the Unified Kill Chain to show an intrusion looped back from network propagation to a second foothold after the first implant was caught.",
+    "related": ["cyber-kill-chain", "tactics-techniques-and-procedures", "campaign"]
+  },
+  {
+    "term": "Courses of Action Matrix",
+    "slug": "courses-of-action-matrix",
+    "aka": ["COA Matrix"],
+    "short": "A grid mapping defensive actions to each phase of the kill chain.",
+    "definition": "A planning matrix, paired with the Cyber Kill Chain, that lists defensive courses of action — detect, deny, disrupt, degrade, deceive, and destroy — against each intrusion phase. Each cell names a concrete control or response option.",
+    "significance": "It turns the kill chain from a description into an operational plan, helping teams see coverage gaps and decide where to add detections or block adversary options rather than reacting ad hoc.",
+    "example": "Filling the matrix and finding the delivery phase has detection but no disruption, prompting a new attachment-sandboxing control.",
+    "related": ["cyber-kill-chain", "structured-analytic-techniques", "indicator-of-attack"]
+  },
+  {
+    "term": "Threat Actor",
+    "slug": "threat-actor",
+    "aka": ["Adversary"],
+    "short": "An individual or group that carries out or sponsors malicious cyber activity.",
+    "definition": "The person, group, or entity behind a cyber operation, ranging from lone criminals and hacktivists to organized crime and nation-state services. Actors are characterized by their motivation, capability, resources, and intent.",
+    "significance": "Understanding who is behind activity shapes the whole response — a financially motivated crew and a state intelligence service warrant different assumptions about persistence, sophistication, and likely next moves. Actor profiling anchors most threat intelligence.",
+    "example": "Profiling a threat actor as financially motivated based on rapid ransomware deployment rather than the quiet, long-term collection typical of espionage.",
+    "related": ["advanced-persistent-threat", "attribution", "intrusion-set"]
+  },
+  {
+    "term": "Advanced Persistent Threat",
+    "slug": "advanced-persistent-threat",
+    "aka": ["APT"],
+    "short": "A well-resourced, stealthy adversary that maintains long-term access to a target.",
+    "definition": "A threat actor — typically nation-state or state-aligned — that conducts sustained, targeted intrusions, prioritizing stealth and persistence over quick wins. The term describes the actor's behavior and resourcing, not a specific piece of malware.",
+    "significance": "APT activity implies patient, objective-driven operations: long dwell time, careful tradecraft, and a willingness to adapt when detected. Recognizing those traits changes scoping assumptions and raises the bar for eradication.",
+    "example": "Treating an intrusion as APT activity after finding months of quiet collection and tooling tailored to the victim's environment.",
+    "related": ["threat-actor", "attribution", "tactics-techniques-and-procedures"]
+  },
+  {
+    "term": "Threat Group Naming",
+    "slug": "threat-group-naming",
+    "aka": ["Actor Naming"],
+    "short": "The cluster labels (APT28, etc.) different trackers assign to adversary activity.",
+    "definition": "The practice by which research teams assign their own names — animals, numbers, weather, or coded schemes — to clusters of related intrusion activity. Different organizations track overlapping activity under different names because each clusters on its own visibility and criteria.",
+    "significance": "Analysts must reconcile these aliases to avoid double-counting or conflating distinct activity; a single real-world group may carry half a dozen vendor names, and two names are not guaranteed to mean exactly the same set of intrusions.",
+    "example": "Noting that one tracker's 'APT29' overlaps heavily with another's named cluster, then cross-referencing both before writing an assessment.",
+    "related": ["intrusion-set", "attribution", "threat-actor"]
+  },
+  {
+    "term": "Attribution",
+    "slug": "attribution",
+    "short": "Linking observed activity to a specific actor, group, or sponsor.",
+    "definition": "The analytic process of associating an intrusion with a responsible party, at levels ranging from technical clustering of activity up to naming a country or organization. Strong attribution combines technical indicators, tradecraft, infrastructure, and geopolitical context.",
+    "significance": "Attribution drives strategic decisions — sanctions, indictments, and defensive posture — but it is probabilistic and prone to deception, so claims should carry explicit confidence levels and be open to false-flag manipulation.",
+    "example": "Attributing a campaign to a known group with moderate confidence based on shared tooling and infrastructure reuse, while flagging possible false-flag tradecraft.",
+    "related": ["threat-actor", "estimative-language", "threat-group-naming"]
+  },
+  {
+    "term": "Tactics, Techniques, and Procedures",
+    "slug": "tactics-techniques-and-procedures",
+    "aka": ["TTPs"],
+    "short": "How an adversary operates — their goals, methods, and step-by-step execution.",
+    "definition": "A layered description of adversary behavior: tactics are the high-level goals (the why), techniques are the general methods (the how), and procedures are the specific step-by-step implementations an actor actually uses. TTPs sit at the top of the Pyramid of Pain because they are hard for an adversary to change.",
+    "significance": "Behavior-based detection built on TTPs survives infrastructure and malware changes that defeat simple indicators, so understanding an adversary's TTPs makes hunting and detection far more durable.",
+    "example": "Writing a detection for the procedure an actor uses to dump credentials, knowing it will outlast any single hash or IP they swap out.",
+    "related": ["campaign", "indicator-of-attack", "advanced-persistent-threat"]
+  },
+  {
+    "term": "Campaign",
+    "slug": "campaign",
+    "short": "A set of related intrusions sharing intent, targeting, and tradecraft over time.",
+    "definition": "A grouping of intrusion activity that an analyst assesses to share a common objective, target set, and behavioral signature over a bounded period. A campaign ties individual incidents into a coherent operation, often attributed to one actor or intrusion set.",
+    "significance": "Thinking in campaigns lets defenders connect isolated alerts into a bigger picture, anticipate follow-on targets in the same sector, and brief leadership on intent rather than just on disjointed events.",
+    "example": "Linking three separate phishing incidents into one campaign after spotting the same lure theme, infrastructure pattern, and target sector.",
+    "related": ["intrusion-set", "tactics-techniques-and-procedures", "advanced-persistent-threat"]
+  },
+  {
+    "term": "Intrusion Set",
+    "slug": "intrusion-set",
+    "short": "A clustered body of activity believed to share a common origin or operator.",
+    "definition": "A grouping of adversary behaviors, indicators, and resources that an analyst assesses to originate from a single organization, even when the specific people behind it are unknown. An intrusion set can span multiple campaigns over years.",
+    "significance": "It provides a stable unit of tracking that does not depend on definitive attribution — analysts can build a rich picture of an operator's habits and tooling under one label before, or without ever, naming the real-world sponsor.",
+    "example": "Maintaining an intrusion set that bundles years of campaigns sharing distinctive loaders and infrastructure, pending firmer attribution.",
+    "related": ["campaign", "attribution", "threat-group-naming"]
+  },
+  {
+    "term": "Strategic, Operational, and Tactical Intelligence",
+    "slug": "strategic-operational-tactical-intelligence",
+    "aka": ["Levels of CTI"],
+    "short": "The three altitudes of threat intelligence, from boardroom trends to raw indicators.",
+    "definition": "The three levels at which cyber threat intelligence is produced and consumed: strategic (high-level trends and risk for leadership), operational (campaigns, actor intent, and TTPs for defenders and planners), and tactical (specific technical indicators for sensors and analysts). Each serves a different audience and time horizon.",
+    "significance": "Matching intelligence to the right level prevents handing executives raw indicators or burying responders in geopolitics; products fail when the altitude is wrong for the consumer.",
+    "example": "Delivering a strategic brief on ransomware trends to the board while feeding tactical indicators from the same incident straight into detection tooling.",
+    "related": ["intelligence-cycle", "attribution", "collection-requirements"]
+  },
+  {
+    "term": "Intelligence Cycle",
+    "slug": "intelligence-cycle",
+    "short": "The iterative process turning requirements into finished, disseminated intelligence.",
+    "definition": "The repeating workflow by which raw information becomes usable intelligence: planning and direction, collection, processing, analysis and production, and dissemination, followed by feedback that resets requirements. It is a loop, not a one-way pipeline.",
+    "significance": "Following the cycle keeps a threat-intel program driven by stakeholder needs rather than by whatever data happens to be available, and the feedback step ensures products actually inform decisions instead of piling up unread.",
+    "example": "Restarting the intelligence cycle after a stakeholder's feedback reveals the last report answered the wrong question.",
+    "related": ["collection-requirements", "strategic-operational-tactical-intelligence", "tactics-techniques-and-procedures"]
+  },
+  {
+    "term": "Collection Requirements",
+    "slug": "collection-requirements",
+    "aka": ["Intelligence Requirements", "PIRs"],
+    "short": "The prioritized questions that direct what intelligence to gather.",
+    "definition": "The specific, prioritized information needs — often expressed as priority intelligence requirements (PIRs) — that drive collection and analysis. They translate a decision-maker's questions into concrete things the team must find out.",
+    "significance": "Without explicit requirements, a program collects indiscriminately and produces noise; well-formed requirements focus limited resources on what stakeholders actually need to decide and make the resulting intelligence measurable against a goal.",
+    "example": "Setting a collection requirement to track whether a named actor is targeting the organization's sector, then tasking sources against exactly that question.",
+    "related": ["intelligence-cycle", "strategic-operational-tactical-intelligence", "attribution"]
+  },
+  {
+    "term": "Indicator of Attack",
+    "slug": "indicator-of-attack",
+    "aka": ["IOA"],
+    "short": "Evidence of adversary intent and behavior in progress, not just artifacts left behind.",
+    "definition": "An observable that reflects what an attacker is trying to do — the sequence of actions, techniques, and intent behind an intrusion — as opposed to a static artifact. Where an indicator of compromise says something bad happened, an indicator of attack describes the behavior as it occurs.",
+    "significance": "Because IOAs key on behavior rather than known-bad values, they can catch novel tooling and fileless activity that signature-based indicators miss, and they map naturally onto TTP-based detection.",
+    "example": "Alerting on the behavioral chain of a process spawning a shell and then reaching out for credentials, regardless of which binary is involved.",
+    "related": ["tactics-techniques-and-procedures", "mitre-engage", "threat-intelligence-sharing"]
+  },
+  {
+    "term": "STIX",
+    "slug": "stix",
+    "aka": ["Structured Threat Information Expression"],
+    "short": "A standardized JSON language for describing and linking cyber threat information.",
+    "definition": "Structured Threat Information Expression, a community standard governed by OASIS, is a machine-readable format for representing threat intelligence as connected objects — indicators, actors, malware, campaigns, relationships, and more. It expresses not just data points but how they relate.",
+    "significance": "STIX lets organizations and tools exchange rich, structured intelligence instead of unstructured reports, preserving context and relationships so the receiving side can act on it automatically.",
+    "example": "Publishing a threat report as STIX objects so a partner's platform ingests the indicators and their links to the actor automatically.",
+    "related": ["taxii", "openioc", "threat-intelligence-sharing"]
+  },
+  {
+    "term": "TAXII",
+    "slug": "taxii",
+    "aka": ["Trusted Automated Exchange of Intelligence Information"],
+    "short": "The transport protocol for sharing STIX threat intelligence between systems.",
+    "definition": "Trusted Automated Exchange of Intelligence Information, an OASIS standard, defines how threat intelligence — typically formatted as STIX — is transported over HTTPS between producers and consumers. It specifies the API and exchange models (collections and channels) rather than the data format itself.",
+    "significance": "TAXII pairs with STIX to automate sharing at scale: STIX says what the intelligence is, TAXII says how it moves, so feeds can be pulled or pushed between sharing communities without manual handling.",
+    "example": "Subscribing to a sharing community's TAXII collection so new STIX indicators flow into the platform on a schedule.",
+    "related": ["stix", "threat-intelligence-sharing", "traffic-light-protocol"]
+  },
+  {
+    "term": "OpenIOC",
+    "slug": "openioc",
+    "short": "An XML schema for describing indicators of compromise in a portable way.",
+    "definition": "An open XML-based framework for documenting and sharing indicators of compromise, combining technical artifacts with logical operators so an indicator can express compound conditions. It was an early, widely adopted format for codifying host and network artifacts.",
+    "significance": "OpenIOC made indicators portable across tools and teams, letting investigators encode the forensic traits of an intrusion once and sweep many systems for them; much of its role has since been absorbed by STIX, but the concept of structured, shareable indicators endures.",
+    "example": "Encoding a malware family's registry keys, file names, and mutexes as an OpenIOC document to sweep an enterprise for matches.",
+    "related": ["stix", "taxii", "threat-intelligence-sharing"]
+  },
+  {
+    "term": "Threat Intelligence Sharing",
+    "slug": "threat-intelligence-sharing",
+    "aka": ["Information Sharing", "ISAC sharing"],
+    "short": "Pooling indicators and analysis across organizations to defend collectively.",
+    "definition": "The practice of exchanging threat data and analysis among organizations — often through sector-based sharing communities or open platforms — so that one victim's experience becomes everyone's early warning. Sharing can be bilateral, community-based, or open, and is usually governed by handling rules.",
+    "significance": "Defenders who share turn isolated incidents into collective defense, learning an adversary's current infrastructure and TTPs before being hit themselves; the model only works when contributions are timely and handling restrictions are respected.",
+    "example": "A sector sharing community circulating an actor's fresh infrastructure so members block it before the campaign reaches them.",
+    "related": ["traffic-light-protocol", "stix", "taxii"]
+  },
+  {
+    "term": "Traffic Light Protocol",
+    "slug": "traffic-light-protocol",
+    "aka": ["TLP"],
+    "short": "Color labels (RED, AMBER, GREEN, CLEAR) that set how far shared information may travel.",
+    "definition": "A simple labeling scheme, maintained by FIRST, that marks how widely a piece of shared information may be redistributed. The current version uses TLP:RED, TLP:AMBER (with an optional +STRICT), TLP:GREEN, and TLP:CLEAR, each defining a clear audience boundary.",
+    "significance": "TLP gives producers a lightweight, universally understood way to control disclosure, which is what makes sensitive threat-intel sharing possible; mishandling a label can burn a source or expose an investigation, so honoring it is a trust requirement.",
+    "example": "Receiving an actor report marked TLP:AMBER and limiting it to internal defenders rather than forwarding it to outside peers.",
+    "related": ["threat-intelligence-sharing", "stix", "taxii"]
+  },
+  {
+    "term": "Common Vulnerabilities and Exposures",
+    "slug": "common-vulnerabilities-and-exposures",
+    "aka": ["CVE"],
+    "short": "The universal ID scheme that assigns a unique identifier to each public vulnerability.",
+    "definition": "A program, run by MITRE under U.S. government sponsorship, that assigns a unique identifier (such as CVE-2024-12345) to each publicly disclosed security flaw. A CVE entry is a stable reference, not a severity rating or a fix.",
+    "significance": "CVE IDs give the whole industry one common name for a vulnerability, so advisories, scanners, patches, and threat reports can all point at the same flaw without ambiguity — the backbone of vulnerability coordination.",
+    "example": "Tracking remediation of a specific CVE across scanners and vendor advisories because every tool references the same identifier.",
+    "related": ["common-vulnerability-scoring-system", "common-weakness-enumeration", "known-exploited-vulnerabilities"]
+  },
+  {
+    "term": "Common Vulnerability Scoring System",
+    "slug": "common-vulnerability-scoring-system",
+    "aka": ["CVSS"],
+    "short": "An open framework that scores vulnerability severity from 0 to 10.",
+    "definition": "An open standard, maintained by FIRST, for rating the severity of a vulnerability on a 0–10 scale. It combines base metrics (intrinsic traits like attack vector and impact) with optional threat and environmental metrics that adjust the score for real-world exploitation and a specific deployment.",
+    "significance": "CVSS gives a consistent, transparent severity language across vendors, but the base score alone reflects worst-case potential, not actual risk — practitioners pair it with exploitation data and asset context before prioritizing.",
+    "example": "Treating a CVSS 9.8 base score as a starting point, then checking exploitation likelihood and asset exposure before scheduling the patch.",
+    "related": ["common-vulnerabilities-and-exposures", "exploit-prediction-scoring-system", "known-exploited-vulnerabilities"]
+  },
+  {
+    "term": "Exploit Prediction Scoring System",
+    "slug": "exploit-prediction-scoring-system",
+    "aka": ["EPSS"],
+    "short": "A data-driven probability that a given CVE will be exploited in the next 30 days.",
+    "definition": "A model, maintained by a FIRST special interest group, that outputs a daily probability (0 to 1) that a particular vulnerability will be exploited in the wild within the next 30 days. It is trained on observed exploitation data rather than on a flaw's intrinsic characteristics.",
+    "significance": "EPSS complements CVSS by predicting likelihood instead of measuring severity, helping teams prioritize the small fraction of vulnerabilities attackers are actually likely to use rather than patching by severity alone.",
+    "example": "Bumping a moderate-CVSS vulnerability up the patch queue because its EPSS score signals a high near-term chance of exploitation.",
+    "related": ["common-vulnerability-scoring-system", "known-exploited-vulnerabilities", "common-vulnerabilities-and-exposures"]
+  },
+  {
+    "term": "Common Weakness Enumeration",
+    "slug": "common-weakness-enumeration",
+    "aka": ["CWE"],
+    "short": "A catalog of software and hardware weakness types, the root causes behind CVEs.",
+    "definition": "A community-developed, MITRE-maintained taxonomy of weakness classes — such as buffer overflow, SQL injection, or improper authentication — that describe the kinds of flaws that lead to vulnerabilities. Where a CVE names a specific instance, a CWE names the category of mistake.",
+    "significance": "CWE lets teams reason about root causes and systemic patterns rather than one-off bugs, informing secure-coding standards, static-analysis rules, and trend reporting on which weakness classes recur.",
+    "example": "Tagging a cluster of findings to the same CWE to show a recurring input-validation weakness across the codebase.",
+    "related": ["common-vulnerabilities-and-exposures", "common-attack-pattern-enumeration", "common-vulnerability-scoring-system"]
+  },
+  {
+    "term": "Common Attack Pattern Enumeration and Classification",
+    "slug": "common-attack-pattern-enumeration",
+    "aka": ["CAPEC"],
+    "short": "A catalog of the attack patterns adversaries use to exploit weaknesses.",
+    "definition": "A MITRE-maintained dictionary of common attack patterns — the methods adversaries use to exploit weaknesses — organized by mechanism and abstraction level. It maps to CWE (the weaknesses being exploited) and complements ATT&CK's focus on observed in-the-wild behavior.",
+    "significance": "CAPEC helps defenders and developers think like an attacker about how a weakness gets abused, supporting threat modeling, test-case design, and the translation of abstract weaknesses into concrete attack scenarios.",
+    "example": "Pulling the relevant CAPEC patterns for an authentication weakness to design abuse-case tests before release.",
+    "related": ["common-weakness-enumeration", "tactics-techniques-and-procedures", "mitre-d3fend"]
+  },
+  {
+    "term": "Known Exploited Vulnerabilities",
+    "slug": "known-exploited-vulnerabilities",
+    "aka": ["KEV", "KEV Catalog"],
+    "short": "A curated list of CVEs with reliable evidence of active exploitation in the wild.",
+    "definition": "A concept embodied by the U.S. CISA Known Exploited Vulnerabilities catalog: a vetted list of vulnerabilities that meet three criteria — an assigned CVE, reliable evidence of in-the-wild exploitation, and a clear remediation action. It elevates flaws that are not merely theoretical but actively used.",
+    "significance": "A KEV-style list cuts through the flood of CVEs by spotlighting what attackers are already exploiting, making it one of the strongest signals for remediation prioritization and a common policy anchor for patch deadlines.",
+    "example": "Reprioritizing the patch backlog so anything appearing on the known-exploited list jumps to the front regardless of its CVSS score.",
+    "related": ["common-vulnerabilities-and-exposures", "exploit-prediction-scoring-system", "common-vulnerability-scoring-system"]
+  },
+  {
+    "term": "MITRE D3FEND",
+    "slug": "mitre-d3fend",
+    "short": "A knowledge graph of defensive countermeasures, the defender's counterpart to ATT&CK.",
+    "definition": "A MITRE-developed knowledge base that catalogs and relates cybersecurity countermeasures — defensive techniques such as hardening, detection, isolation, and deception — and ties them back to the offensive techniques they address. It provides a structured vocabulary for defenses.",
+    "significance": "D3FEND gives defenders the same kind of shared, structured language ATT&CK gives for offense, helping teams articulate exactly which technique a control counters and spot gaps where adversary techniques have no defensive answer.",
+    "example": "Using D3FEND to show a proposed control maps to a specific countermeasure and closes a gap against a known adversary technique.",
+    "related": ["mitre-engage", "courses-of-action-matrix", "common-attack-pattern-enumeration"]
+  },
+  {
+    "term": "MITRE Engage",
+    "slug": "mitre-engage",
+    "short": "A framework for planning adversary engagement, denial, and deception operations.",
+    "definition": "A MITRE framework that guides defenders in planning and running adversary engagement — the deliberate use of denial, deception, and direct interaction to expose, affect, and learn from an active adversary. It frames decoys, breadcrumbs, and controlled exposure as a strategy rather than ad hoc tricks.",
+    "significance": "Engage moves deception from one-off honeypots to a planned discipline tied to defensive goals, letting teams shape an adversary's behavior, gather intelligence on their TTPs, and raise the cost of operating in the environment.",
+    "example": "Planting deceptive credentials per the Engage framework to detect lateral movement and study how the intruder uses them.",
+    "related": ["mitre-d3fend", "tactics-techniques-and-procedures", "indicator-of-attack"]
+  },
+  {
+    "term": "NIST Cybersecurity Framework",
+    "slug": "nist-cybersecurity-framework",
+    "aka": ["NIST CSF", "CSF 2.0"],
+    "short": "A risk-based framework organizing security into functions like Identify and Protect.",
+    "definition": "A voluntary framework from the U.S. National Institute of Standards and Technology that organizes cybersecurity outcomes into high-level functions — Govern, Identify, Protect, Detect, Respond, and Recover — with underlying categories and subcategories. It is outcome-focused and technology-neutral.",
+    "significance": "The CSF gives organizations a common structure to assess maturity, communicate risk to leadership, and align security work to business outcomes, which is why it is widely referenced well beyond its U.S. government origins.",
+    "example": "Mapping the security program to CSF functions to show leadership where coverage is strong and where the Detect function lags.",
+    "related": ["nist-sp-800-61", "iso-and-cis-controls", "structured-analytic-techniques"]
+  },
+  {
+    "term": "NIST SP 800-61",
+    "slug": "nist-sp-800-61",
+    "aka": ["Incident Handling Guide"],
+    "short": "NIST's core guidance on building and running an incident response capability.",
+    "definition": "A NIST special publication that provides recommendations for incident response. Its long-standing model described a lifecycle of preparation; detection and analysis; containment, eradication, and recovery; and post-incident activity, while the latest revision reframes those activities around the Cybersecurity Framework's functions and continuous improvement.",
+    "significance": "It is one of the most widely cited references for how to structure an IR program — from building the team and playbooks to handling and learning from incidents — and gives responders shared terminology for the phases of a response.",
+    "example": "Structuring a response retrospective around the post-incident activity stage of NIST 800-61 to feed lessons back into preparation.",
+    "related": ["nist-cybersecurity-framework", "f3ead", "iso-and-cis-controls"]
+  },
+  {
+    "term": "ISO 27001 and CIS Controls",
+    "slug": "iso-and-cis-controls",
+    "aka": ["ISO/IEC 27001", "CIS Critical Security Controls"],
+    "short": "A certifiable security management standard and a prioritized list of defensive controls.",
+    "definition": "Two widely used control frameworks: ISO/IEC 27001 is an international, certifiable standard for an information security management system (ISMS) built around risk treatment, while the CIS Critical Security Controls are a prioritized, prescriptive set of defensive actions grouped into implementation tiers. One governs the management system; the other lists concrete controls.",
+    "significance": "Organizations lean on these to demonstrate due diligence and to prioritize hardening: ISO 27001 for auditable governance and certification, CIS Controls for a pragmatic, ordered roadmap of what to implement first.",
+    "example": "Using the CIS Controls to sequence quick hardening wins while pursuing ISO 27001 certification for the broader management system.",
+    "related": ["nist-cybersecurity-framework", "nist-sp-800-61", "collection-requirements"]
+  },
+  {
+    "term": "F3EAD",
+    "slug": "f3ead",
+    "aka": ["Find, Fix, Finish, Exploit, Analyze, Disseminate"],
+    "short": "A targeting loop from military operations that fuses ops and intelligence.",
+    "definition": "A six-step cycle — Find, Fix, Finish, Exploit, Analyze, Disseminate — adapted from military special-operations targeting for use in cyber threat intelligence. The first three steps are operational (locate and act on a threat) and the last three are intelligence-driven (mine what you captured and feed it back).",
+    "significance": "F3EAD tightly couples incident response and intelligence, so that acting on a threat directly generates new intelligence that improves the next round of operations, closing the gap between operators and analysts.",
+    "example": "After containing an intrusion (Finish), exploiting and analyzing the recovered tooling to disseminate fresh indicators to the SOC.",
+    "related": ["intelligence-cycle", "nist-sp-800-61", "analysis-of-competing-hypotheses"]
+  },
+  {
+    "term": "Analysis of Competing Hypotheses",
+    "slug": "analysis-of-competing-hypotheses",
+    "aka": ["ACH"],
+    "short": "A method that tests every explanation against the evidence to reduce analyst bias.",
+    "definition": "A structured analytic technique, developed by former CIA analyst Richards Heuer, that lays out all plausible hypotheses and evaluates each piece of evidence against every one of them in a matrix. Crucially, it works by seeking to disprove hypotheses rather than confirm a favorite.",
+    "significance": "ACH counters confirmation bias by forcing analysts to consider alternatives they might otherwise dismiss, which is valuable in attribution and intrusion analysis where the obvious answer may be wrong or deliberately planted.",
+    "example": "Running ACH on an attribution question and discarding the leading suspect because key evidence is inconsistent with it.",
+    "related": ["structured-analytic-techniques", "attribution", "estimative-language"]
+  },
+  {
+    "term": "Structured Analytic Techniques",
+    "slug": "structured-analytic-techniques",
+    "aka": ["SATs"],
+    "short": "Repeatable methods that make intelligence reasoning explicit and challengeable.",
+    "definition": "A family of methods — including techniques like analysis of competing hypotheses, key assumptions checks, devil's advocacy, and red teaming — that externalize an analyst's reasoning into a visible, repeatable process. They are designed to surface assumptions and mitigate cognitive bias.",
+    "significance": "SATs raise the rigor and transparency of intelligence work: by making the analytic steps explicit, they let others review the reasoning, expose weak assumptions, and reduce the individual biases that quietly skew conclusions.",
+    "example": "Running a key assumptions check before publishing an assessment to expose beliefs the conclusion silently depends on.",
+    "related": ["analysis-of-competing-hypotheses", "estimative-language", "attribution"]
+  },
+  {
+    "term": "Estimative Language",
+    "slug": "estimative-language",
+    "aka": ["Confidence Levels", "Words of Estimative Probability"],
+    "short": "Calibrated words and confidence levels that convey analytic certainty precisely.",
+    "definition": "A convention for expressing analytic judgments using standardized probability terms (such as 'likely' or 'almost certainly') paired with a stated confidence level (low, moderate, or high) grounded in the quality of the underlying evidence. It separates how probable a judgment is from how confident the analyst is in it.",
+    "significance": "Vague phrasing causes readers to misjudge risk; estimative language makes intelligence assessments comparable and honest about uncertainty, which is essential when a conclusion like attribution will drive consequential decisions.",
+    "example": "Writing that an intrusion is 'likely the work of a named group, with moderate confidence' rather than stating it as plain fact.",
+    "related": ["structured-analytic-techniques", "attribution", "analysis-of-competing-hypotheses"]
+  }
+]

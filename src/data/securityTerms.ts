@@ -1,9 +1,14 @@
 // ─────────────────────────────────────────────────────────────────────────
-// Cybersecurity "Word of the Day" bank — the single source of truth.
+// Cybersecurity "Term of the Day" bank — the single source of truth.
 //
 // Vendor-agnostic on purpose: every entry is a concept, technique, artifact, or
-// model — never a product. This data drives the site-wide ticker, the
-// /word-of-the-day/ glossary index, and each prerendered detail page.
+// model — never a product. Each field is natural prose (see docs/STYLE_GUIDE.md →
+// "Glossary terms"); task instructions must never leak into a definition. This
+// data drives the site-wide ticker, the /term-of-the-day/ glossary index, and
+// each prerendered detail page.
+//
+// A small curated core lives inline below; the bulk is authored per-domain in
+// src/data/terms/*.json and merged, de-duplicated, and link-sanitized at load.
 //
 // The daily term is chosen deterministically from the calendar date (see
 // `termForDate`), so it changes every day and is the same for everyone on a
@@ -12,14 +17,36 @@
 // and the rotation math.
 // ─────────────────────────────────────────────────────────────────────────
 
+import memoryTerms from './terms/memory.json';
+import hostDiskTerms from './terms/host-disk.json';
+import malwareReTerms from './terms/malware-re.json';
+import networkTerms from './terms/network.json';
+import adversaryTerms from './terms/adversary.json';
+import credentialIdentityTerms from './terms/credential-identity.json';
+import cloudTerms from './terms/cloud.json';
+import cryptoTerms from './terms/crypto.json';
+import detectionIrTerms from './terms/detection-ir.json';
+import threatIntelTerms from './terms/threat-intel-frameworks.json';
+import vulnExploitTerms from './terms/vuln-exploit.json';
+import webAppEmailTerms from './terms/web-app-email.json';
+import loggingTerms from './terms/logging.json';
+import linuxMacMobileTerms from './terms/linux-mac-mobile.json';
+
 export const CATEGORIES = [
   'Memory Forensics',
-  'Host Forensics',
-  'Malware Analysis',
-  'Network & C2',
+  'Host & Disk Forensics',
+  'Malware Analysis & RE',
+  'Network Forensics & C2',
   'Adversary Tactics',
-  'IR & Detection',
-  'Frameworks & Models',
+  'Credential & Identity Attacks',
+  'Cloud & Container Security',
+  'Cryptography & Data Protection',
+  'Detection, Hunting & IR',
+  'Threat Intelligence & Frameworks',
+  'Vulnerabilities & Exploitation',
+  'Web, Email & Application Security',
+  'Logging & Telemetry',
+  'Linux, macOS & Mobile Forensics',
 ] as const;
 
 export type SecurityCategory = (typeof CATEGORIES)[number];
@@ -45,15 +72,24 @@ export interface SecurityTerm {
 /** Icon (see Icon.astro) + blurb for each category, used on the glossary index. */
 export const CATEGORY_META: Record<SecurityCategory, { icon: string; blurb: string }> = {
   'Memory Forensics': { icon: 'cpu', blurb: 'Evidence that lives only in RAM.' },
-  'Host Forensics': { icon: 'hard-drive', blurb: 'Artifacts left behind on disk.' },
-  'Malware Analysis': { icon: 'bug', blurb: 'How malicious code hides and runs.' },
-  'Network & C2': { icon: 'radio', blurb: 'Traffic, callbacks, and exfil.' },
-  'Adversary Tactics': { icon: 'crosshair', blurb: 'How attackers move and escalate.' },
-  'IR & Detection': { icon: 'shield', blurb: 'Finding, scoping, and proving it.' },
-  'Frameworks & Models': { icon: 'layers', blurb: 'Shared language for the craft.' },
+  'Host & Disk Forensics': { icon: 'hard-drive', blurb: 'Artifacts left behind on disk.' },
+  'Malware Analysis & RE': { icon: 'bug', blurb: 'How malicious code hides, runs, and is reversed.' },
+  'Network Forensics & C2': { icon: 'radio', blurb: 'Traffic, callbacks, tunnels, and exfil.' },
+  'Adversary Tactics': { icon: 'crosshair', blurb: 'How attackers move, escalate, and evade.' },
+  'Credential & Identity Attacks': { icon: 'key', blurb: 'Stealing and abusing authentication.' },
+  'Cloud & Container Security': { icon: 'cloud', blurb: 'IAM, workloads, and container risk.' },
+  'Cryptography & Data Protection': { icon: 'lock', blurb: 'Ciphers, hashing, keys, and PKI.' },
+  'Detection, Hunting & IR': { icon: 'shield', blurb: 'Finding, scoping, and responding.' },
+  'Threat Intelligence & Frameworks': { icon: 'layers', blurb: 'Actors, models, and shared language.' },
+  'Vulnerabilities & Exploitation': { icon: 'alert-triangle', blurb: 'Flaws, classes, and exploit primitives.' },
+  'Web, Email & Application Security': { icon: 'globe', blurb: 'Phishing, web, and app-layer attacks.' },
+  'Logging & Telemetry': { icon: 'activity', blurb: 'The sources that make detection possible.' },
+  'Linux, macOS & Mobile Forensics': { icon: 'terminal', blurb: 'Artifacts beyond Windows.' },
 };
 
-export const SECURITY_TERMS: SecurityTerm[] = [
+// Curated core — hand-written, highest-quality entries. Merged ahead of (and
+// de-duplicated against) the per-domain JSON batches below.
+const CURATED_TERMS: SecurityTerm[] = [
   // ── Memory Forensics ──────────────────────────────────────────────────
   {
     term: 'Order of Volatility',
@@ -86,7 +122,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Master File Table',
     slug: 'master-file-table',
-    category: 'Host Forensics',
+    category: 'Host & Disk Forensics',
     aka: ['$MFT', 'MFT'],
     short: 'The NTFS index of every file — a forensic goldmine of timestamps.',
     definition:
@@ -100,7 +136,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Prefetch',
     slug: 'prefetch',
-    category: 'Host Forensics',
+    category: 'Host & Disk Forensics',
     short: 'A Windows artifact proving a program ran — and when.',
     definition:
       'Prefetch files are created by Windows to speed up application launches. Each one records the executable name, a run count, and the last several execution times.',
@@ -113,7 +149,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Shellbags',
     slug: 'shellbags',
-    category: 'Host Forensics',
+    category: 'Host & Disk Forensics',
     short: 'Registry traces of which folders a user browsed in Explorer.',
     definition:
       'Shellbags are registry keys that store the view settings of folders a user has opened in Windows Explorer. They persist even after the folder — or an external/removable volume — is gone.',
@@ -126,7 +162,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Alternate Data Streams',
     slug: 'alternate-data-streams',
-    category: 'Host Forensics',
+    category: 'Host & Disk Forensics',
     aka: ['ADS'],
     short: 'Hidden NTFS streams that stash data behind a normal-looking file.',
     definition:
@@ -140,7 +176,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Timestomping',
     slug: 'timestomping',
-    category: 'Host Forensics',
+    category: 'Host & Disk Forensics',
     short: 'Forging file timestamps to hide when something really happened.',
     definition:
       'An anti-forensic technique that alters a file’s timestamps to blend malicious files into normal system activity or to break timeline analysis.',
@@ -153,7 +189,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Windows Event Log',
     slug: 'windows-event-log',
-    category: 'Host Forensics',
+    category: 'Host & Disk Forensics',
     aka: ['EVTX', 'Event Logs'],
     short: 'Windows’ record of logons, process starts, and system activity.',
     definition:
@@ -167,7 +203,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'File Carving',
     slug: 'file-carving',
-    category: 'Host Forensics',
+    category: 'Host & Disk Forensics',
     aka: ['Data Carving'],
     short: 'Recovering files from raw bytes using signatures, not the file system.',
     definition:
@@ -183,7 +219,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Process Hollowing',
     slug: 'process-hollowing',
-    category: 'Malware Analysis',
+    category: 'Malware Analysis & RE',
     short: 'Malware starts a legit process, then swaps its guts for malicious code.',
     definition:
       'A code-injection technique where an attacker launches a legitimate process in a suspended state, unmaps its original image, and replaces it with malicious code before resuming it. The process keeps a trusted name and path.',
@@ -196,7 +232,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Entropy',
     slug: 'entropy',
-    category: 'Malware Analysis',
+    category: 'Malware Analysis & RE',
     short: 'A randomness score that flags packed or encrypted data.',
     definition:
       'In file analysis, entropy measures the randomness of a file’s bytes on a 0–8 scale. Compressed or encrypted data pushes toward the high end.',
@@ -209,7 +245,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Packing',
     slug: 'packing',
-    category: 'Malware Analysis',
+    category: 'Malware Analysis & RE',
     aka: ['Packer'],
     short: 'Compressing or encrypting a binary to hide its real code.',
     definition:
@@ -223,7 +259,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Sandboxing',
     slug: 'sandboxing',
-    category: 'Malware Analysis',
+    category: 'Malware Analysis & RE',
     short: 'Detonating a sample in an isolated environment to watch its behavior.',
     definition:
       'A sandbox is an instrumented, isolated environment where suspicious code is executed so analysts can observe file, registry, and network behavior without risking production systems.',
@@ -236,7 +272,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Rootkit',
     slug: 'rootkit',
-    category: 'Malware Analysis',
+    category: 'Malware Analysis & RE',
     short: 'Stealth malware that hides itself deep in the OS.',
     definition:
       'A rootkit is malware designed to conceal its own presence and that of other tools, typically by hooking or modifying the operating system at the user or kernel level.',
@@ -251,7 +287,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Beaconing',
     slug: 'beaconing',
-    category: 'Network & C2',
+    category: 'Network Forensics & C2',
     short: "Malware 'phoning home' on a regular interval.",
     definition:
       'Beaconing is the periodic check-in traffic from a compromised host to its command-and-control server, asking for instructions. It often follows a regular interval, sometimes with jitter to look less robotic.',
@@ -264,7 +300,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Command and Control',
     slug: 'command-and-control',
-    category: 'Network & C2',
+    category: 'Network Forensics & C2',
     aka: ['C2', 'C&C'],
     short: 'The channel an attacker uses to control compromised hosts.',
     definition:
@@ -278,7 +314,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'DNS Tunneling',
     slug: 'dns-tunneling',
-    category: 'Network & C2',
+    category: 'Network Forensics & C2',
     short: 'Smuggling data or C2 inside DNS queries and responses.',
     definition:
       'DNS tunneling encodes data within DNS queries and responses, abusing a protocol that is almost always allowed out of networks to carry C2 traffic or exfiltrate data.',
@@ -291,7 +327,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Domain Generation Algorithm',
     slug: 'domain-generation-algorithm',
-    category: 'Network & C2',
+    category: 'Network Forensics & C2',
     aka: ['DGA'],
     short: 'Malware that algorithmically generates many C2 domains.',
     definition:
@@ -305,7 +341,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Data Exfiltration',
     slug: 'data-exfiltration',
-    category: 'Network & C2',
+    category: 'Network Forensics & C2',
     aka: ['Exfil'],
     short: 'Stealing data out of a network to attacker-controlled systems.',
     definition:
@@ -404,7 +440,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Indicator of Compromise',
     slug: 'indicator-of-compromise',
-    category: 'IR & Detection',
+    category: 'Detection, Hunting & IR',
     aka: ['IOC'],
     short: 'Forensic breadcrumbs that a system was compromised.',
     definition:
@@ -418,7 +454,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Dwell Time',
     slug: 'dwell-time',
-    category: 'IR & Detection',
+    category: 'Detection, Hunting & IR',
     short: 'How long an attacker goes undetected in a network.',
     definition:
       'Dwell time is the elapsed period between an adversary’s initial compromise and their detection or eviction. It is a headline incident-response metric.',
@@ -431,7 +467,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Chain of Custody',
     slug: 'chain-of-custody',
-    category: 'IR & Detection',
+    category: 'Detection, Hunting & IR',
     short: 'The documented trail proving evidence integrity.',
     definition:
       'Chain of custody is the chronological documentation of who collected, handled, transferred, and stored a piece of evidence, and when.',
@@ -444,7 +480,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Threat Hunting',
     slug: 'threat-hunting',
-    category: 'IR & Detection',
+    category: 'Detection, Hunting & IR',
     short: 'Proactively searching for threats that evaded detection.',
     definition:
       'Threat hunting is the proactive, hypothesis-driven search through data for adversary activity that automated alerts missed, rather than waiting for a tool to fire.',
@@ -457,7 +493,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'YARA',
     slug: 'yara',
-    category: 'IR & Detection',
+    category: 'Detection, Hunting & IR',
     short: 'A pattern-matching rule language to classify malware.',
     definition:
       'YARA is an open rule language and scanner that matches files or memory against patterns — strings, byte sequences, and conditions — to identify and classify malware families.',
@@ -472,7 +508,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'MITRE ATT&CK',
     slug: 'mitre-attack',
-    category: 'Frameworks & Models',
+    category: 'Threat Intelligence & Frameworks',
     aka: ['ATT&CK'],
     short: 'A public knowledge base of real adversary tactics and techniques.',
     definition:
@@ -486,7 +522,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Pyramid of Pain',
     slug: 'pyramid-of-pain',
-    category: 'Frameworks & Models',
+    category: 'Threat Intelligence & Frameworks',
     short: 'Ranks indicators by how much they hurt attackers to lose.',
     definition:
       'The Pyramid of Pain ranks indicator types by how costly they are for an adversary to change — from trivial (hashes, IPs) up to tough (tools and TTPs).',
@@ -499,7 +535,7 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   {
     term: 'Diamond Model',
     slug: 'diamond-model',
-    category: 'Frameworks & Models',
+    category: 'Threat Intelligence & Frameworks',
     short: 'Links adversary, capability, infrastructure, and victim in one event.',
     definition:
       'The Diamond Model of Intrusion Analysis frames every intrusion event around four linked vertices: adversary, capability, infrastructure, and victim.',
@@ -511,7 +547,52 @@ export const SECURITY_TERMS: SecurityTerm[] = [
   },
 ];
 
-// ─── Lookup + rotation helpers (pure; unit-tested) ─────────────────────────
+// ─── Assemble the bank, then lookup + rotation helpers (pure; unit-tested) ─────────────────────────
+
+type RawTerm = Omit<SecurityTerm, 'category'>;
+const tag = (raw: unknown, category: SecurityCategory): SecurityTerm[] =>
+  (raw as RawTerm[]).map((t) => ({ ...t, category }));
+
+// Curated core first (so it wins de-dup), then each per-domain JSON batch.
+const ALL_RAW: SecurityTerm[] = [
+  ...CURATED_TERMS,
+  ...tag(memoryTerms, 'Memory Forensics'),
+  ...tag(hostDiskTerms, 'Host & Disk Forensics'),
+  ...tag(malwareReTerms, 'Malware Analysis & RE'),
+  ...tag(networkTerms, 'Network Forensics & C2'),
+  ...tag(adversaryTerms, 'Adversary Tactics'),
+  ...tag(credentialIdentityTerms, 'Credential & Identity Attacks'),
+  ...tag(cloudTerms, 'Cloud & Container Security'),
+  ...tag(cryptoTerms, 'Cryptography & Data Protection'),
+  ...tag(detectionIrTerms, 'Detection, Hunting & IR'),
+  ...tag(threatIntelTerms, 'Threat Intelligence & Frameworks'),
+  ...tag(vulnExploitTerms, 'Vulnerabilities & Exploitation'),
+  ...tag(webAppEmailTerms, 'Web, Email & Application Security'),
+  ...tag(loggingTerms, 'Logging & Telemetry'),
+  ...tag(linuxMacMobileTerms, 'Linux, macOS & Mobile Forensics'),
+];
+
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const isComplete = (t: SecurityTerm): boolean =>
+  !!(t.term && t.slug && t.short && t.definition && t.significance && t.example);
+
+// Dedupe by slug (first occurrence wins), keeping only valid, complete entries.
+const deduped: SecurityTerm[] = [];
+const seenSlugs = new Set<string>();
+for (const t of ALL_RAW) {
+  if (!SLUG_RE.test(t.slug) || seenSlugs.has(t.slug) || !isComplete(t)) continue;
+  seenSlugs.add(t.slug);
+  deduped.push(t);
+}
+
+// Sanitize cross-links: drop self-links and any related slug that doesn't resolve.
+const validSlugs = new Set(deduped.map((t) => t.slug));
+
+/** The full term bank — curated core + per-domain batches, deduped + sanitized. */
+export const SECURITY_TERMS: SecurityTerm[] = deduped.map((t) => ({
+  ...t,
+  related: (t.related ?? []).filter((r) => r !== t.slug && validSlugs.has(r)).slice(0, 4),
+}));
 
 const BY_SLUG: Map<string, SecurityTerm> = new Map(
   SECURITY_TERMS.map((t) => [t.slug, t]),
@@ -540,9 +621,4 @@ export function termIndexForDay(serial: number, count = SECURITY_TERMS.length): 
 export function termForDate(date: Date): SecurityTerm {
   const serial = daySerial(date.getFullYear(), date.getMonth(), date.getDate());
   return SECURITY_TERMS[termIndexForDay(serial)];
-}
-
-/** Slim records injected into the inline ticker/featured-card scripts. */
-export function slimBank(): { t: string; s: string; d: string; c: SecurityCategory }[] {
-  return SECURITY_TERMS.map((x) => ({ t: x.term, s: x.slug, d: x.short, c: x.category }));
 }

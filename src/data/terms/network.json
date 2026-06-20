@@ -1,0 +1,379 @@
+[
+  {
+    "term": "Packet Capture",
+    "slug": "packet-capture",
+    "aka": ["PCAP", "full packet capture"],
+    "short": "Recording raw network frames off the wire for later analysis.",
+    "definition": "The act of copying network traffic — frame by frame, with full headers and payloads — into a file or buffer for inspection. The stored result is commonly called a PCAP after the long-standing capture file format.",
+    "significance": "A full capture is ground truth for an investigation: it preserves exactly what crossed the wire, so analysts can reconstruct sessions, extract files, and confirm or refute alerts long after the activity occurred.",
+    "example": "Pulling the PCAP from a tap in front of a compromised server to reassemble the exact bytes an attacker downloaded over a cleartext channel.",
+    "related": ["network-tap", "flow-data", "deep-packet-inspection"]
+  },
+  {
+    "term": "Flow Data",
+    "slug": "flow-data",
+    "aka": ["NetFlow", "IPFIX", "flow records"],
+    "short": "Summarized session metadata — who talked to whom — without payloads.",
+    "definition": "Records that summarize a conversation between two endpoints by its 5-tuple, byte and packet counts, timestamps, and duration, but without the actual content. NetFlow and its IETF standard successor IPFIX are the common formats.",
+    "significance": "Flow is cheap to store at scale, so it often covers far longer windows than full capture. It is ideal for spotting beaconing patterns, large outbound transfers, and lateral connections across a whole enterprise.",
+    "example": "Noticing in flow records that an internal workstation opened thousands of short, evenly spaced sessions to one external IP — a classic callback rhythm worth a deeper look.",
+    "related": ["packet-capture", "beacon-analysis", "low-and-slow"]
+  },
+  {
+    "term": "Deep Packet Inspection",
+    "slug": "deep-packet-inspection",
+    "aka": ["DPI"],
+    "short": "Parsing packet payloads, not just headers, to identify content.",
+    "definition": "Examining the application-layer contents of packets — not merely the IP and port headers — to identify protocols, extract fields, and match patterns. It lets a sensor recognize what an application is actually doing inside a connection.",
+    "significance": "DPI underpins protocol-aware detection and content extraction, but it is blind inside encrypted streams, which pushes investigators toward metadata and fingerprinting techniques when traffic is wrapped in TLS.",
+    "example": "Using DPI to spot a malicious HTTP request whose URI and User-Agent matched a known implant even though it rode over a non-standard port.",
+    "related": ["packet-capture", "encrypted-traffic-analysis", "intrusion-detection-system"]
+  },
+  {
+    "term": "JA3 Fingerprinting",
+    "slug": "ja3-fingerprinting",
+    "aka": ["JA3", "JA3S", "TLS client fingerprint"],
+    "short": "Hashing TLS handshake fields to fingerprint the client software.",
+    "definition": "A method that builds a hash from selected fields of a TLS Client Hello — version, cipher suites, extensions, and curves — to fingerprint the client implementation. The server-side counterpart, JA3S, fingerprints the Server Hello.",
+    "significance": "Because many malware families share a TLS stack, their handshakes hash to recognizable values even though the traffic is encrypted. This gives detection a foothold without decrypting anything.",
+    "example": "Flagging an encrypted beacon because its Client Hello produced a JA3 hash known to belong to a particular implant's networking library.",
+    "related": ["ja4-fingerprinting", "encrypted-traffic-analysis", "sni-inspection"]
+  },
+  {
+    "term": "JA4 Fingerprinting",
+    "slug": "ja4-fingerprinting",
+    "aka": ["JA4", "JA4+"],
+    "short": "A newer, more robust family of network traffic fingerprints.",
+    "definition": "A successor to JA3 that produces more structured, human-readable fingerprints of TLS and other protocol behavior, with a family of related hashes covering clients, servers, HTTP, and more. It was designed to resist the trivial evasion that plagued older hashes.",
+    "significance": "Adversaries learned to randomize handshake order to defeat JA3, so the more resilient and granular JA4 fingerprints help analysts keep tracking tooling across encrypted sessions.",
+    "example": "Correlating two seemingly unrelated infections after both exhibited the same JA4 fingerprint, pointing to a shared toolkit.",
+    "related": ["ja3-fingerprinting", "encrypted-traffic-analysis", "malleable-c2-profile"]
+  },
+  {
+    "term": "SNI Inspection",
+    "slug": "sni-inspection",
+    "aka": ["Server Name Indication", "ESNI", "Encrypted Client Hello"],
+    "short": "Reading the destination hostname from the TLS handshake.",
+    "definition": "Server Name Indication is a TLS extension that carries the requested hostname in cleartext during the handshake so a server can present the right certificate. Inspecting it reveals where an encrypted session is headed without breaking the encryption.",
+    "significance": "SNI is one of the few plaintext signals left in TLS, making it valuable for spotting connections to suspicious domains; defenders should also know that Encrypted Client Hello aims to hide it, shifting visibility back to IP and fingerprint data.",
+    "example": "Discovering a connection's SNI named a freshly registered domain, prompting the analyst to treat the otherwise opaque session as suspect.",
+    "related": ["encrypted-traffic-analysis", "domain-fronting", "ja3-fingerprinting"]
+  },
+  {
+    "term": "Encrypted Traffic Analysis",
+    "slug": "encrypted-traffic-analysis",
+    "aka": ["ETA"],
+    "short": "Inferring intent from encrypted traffic's shape and metadata.",
+    "definition": "A set of techniques that draw conclusions about encrypted connections using observable features — packet sizes, timing, direction, handshake details, and certificate data — instead of payload content. It treats the cipherstream as opaque and reasons about its envelope.",
+    "significance": "With most traffic now encrypted, payload inspection alone is insufficient; ETA lets investigators still surface command channels, exfiltration, and anomalous applications without decryption.",
+    "example": "Identifying an interactive command channel inside TLS because its tiny, bursty request-and-reply timing looked nothing like normal web browsing.",
+    "related": ["deep-packet-inspection", "ja3-fingerprinting", "beacon-analysis"]
+  },
+  {
+    "term": "Domain Fronting",
+    "slug": "domain-fronting",
+    "short": "Hiding the true destination behind a trusted shared front domain.",
+    "definition": "A technique that puts a benign, high-reputation hostname in the visible TLS SNI or HTTPS request while the actual destination is set in the encrypted Host header. Shared hosting and content delivery infrastructure make the two resolve to the same front, masking the real endpoint.",
+    "significance": "It lets command-and-control blend in with legitimate cloud or CDN traffic, defeating SNI- and domain-based blocking and complicating attribution of where data is really flowing.",
+    "example": "Tracing an implant that appeared to talk to a well-known CDN domain, only to find its inner Host header pointed at the attacker's hidden service.",
+    "related": ["sni-inspection", "redirector", "socks-proxy-pivot"]
+  },
+  {
+    "term": "Fast Flux",
+    "slug": "fast-flux",
+    "aka": ["fast-flux DNS"],
+    "short": "Rapidly rotating DNS records to keep malicious infrastructure alive.",
+    "definition": "A DNS evasion technique in which the addresses behind a single domain change very frequently — often every few minutes — cycling through a large pool of compromised hosts. Double-flux extends this by also rotating the authoritative name servers.",
+    "significance": "Constant rotation makes takedowns and IP blocking ineffective, so investigators must pivot on the domain and its behavior rather than chasing individual addresses.",
+    "example": "Watching a single C2 domain resolve to dozens of different residential IPs within an hour, a hallmark of a fast-flux network.",
+    "related": ["dead-drop-resolver", "peer-to-peer-c2", "dns-sinkhole"]
+  },
+  {
+    "term": "DNS over HTTPS",
+    "slug": "dns-over-https",
+    "aka": ["DoH", "DNS over TLS", "DoT"],
+    "short": "Encrypting DNS queries inside HTTPS or TLS to hide them.",
+    "definition": "Protocols that wrap DNS resolution in an encrypted channel — HTTPS for DoH, TLS for DoT — so queries are no longer visible to on-path observers. They were designed for privacy but also conceal name resolution from defenders.",
+    "significance": "Encrypted DNS blinds traditional query logging and can be abused to reach malicious domains or smuggle data past inspection, forcing teams to control which resolvers endpoints are allowed to use.",
+    "example": "Finding malware configured to resolve its C2 through a public DoH provider, bypassing the organization's DNS monitoring entirely.",
+    "related": ["dns-sinkhole", "protocol-tunneling", "encrypted-traffic-analysis"]
+  },
+  {
+    "term": "DNS Sinkhole",
+    "slug": "dns-sinkhole",
+    "aka": ["sinkholing"],
+    "short": "Redirecting malicious domain lookups to a controlled server.",
+    "definition": "A defensive technique that answers DNS queries for known-bad domains with an address the defender controls, so infected hosts connect to a monitoring server instead of the real C2. Researchers and registrars also sinkhole domains to disrupt active botnets.",
+    "significance": "A sinkhole both severs the attacker's control and reveals every victim that calls home, making it a powerful tool for scoping an outbreak and measuring infection counts.",
+    "example": "Pointing a malware family's hardcoded domain at a sinkhole and watching hundreds of internal hosts check in, exposing the true blast radius.",
+    "related": ["fast-flux", "dead-drop-resolver", "intrusion-prevention-system"]
+  },
+  {
+    "term": "Port Scanning",
+    "slug": "port-scanning",
+    "aka": ["network scanning"],
+    "short": "Probing hosts to discover open ports and reachable services.",
+    "definition": "Systematically sending probes to a range of ports or hosts to learn which services are listening and reachable. Techniques range from full-connect scans to stealthier half-open and crafted-flag scans meant to avoid logging.",
+    "significance": "Scanning is a near-universal precursor to attack, so its fingerprints in logs and flow data often mark the earliest detectable stage of an intrusion or an internal pivot.",
+    "example": "Spotting a single internal host sequentially touching port 445 across an entire subnet — reconnaissance ahead of lateral movement.",
+    "related": ["flow-data", "east-west-traffic", "intrusion-detection-system"]
+  },
+  {
+    "term": "ARP Spoofing",
+    "slug": "arp-spoofing",
+    "aka": ["ARP poisoning", "ARP cache poisoning"],
+    "short": "Forging ARP replies to intercept traffic on a local network.",
+    "definition": "An attack that sends falsified ARP messages on a LAN so a victim associates the attacker's MAC address with another host's IP, typically the gateway. Traffic meant for that IP is then delivered to the attacker.",
+    "significance": "It is a foundational way to achieve an on-path position inside a switched network, enabling interception, session tampering, and credential theft that originate entirely from a single foothold.",
+    "example": "Detecting duplicate-IP and gateway-MAC-change warnings that revealed a compromised host poisoning ARP to read its neighbors' traffic.",
+    "related": ["man-in-the-middle", "ssl-stripping", "network-tap"]
+  },
+  {
+    "term": "Man-in-the-Middle",
+    "slug": "man-in-the-middle",
+    "aka": ["MITM", "on-path attack", "adversary-in-the-middle"],
+    "short": "Secretly relaying and possibly altering traffic between two parties.",
+    "definition": "A position in which an attacker sits between two communicating endpoints, relaying their traffic while able to read or modify it, with neither side aware. The endpoints believe they are talking directly to each other.",
+    "significance": "An on-path position breaks the confidentiality and integrity assumptions of most protocols, enabling credential capture, content injection, and downgrade attacks — often the pivot point between local access and deeper compromise.",
+    "example": "Reconstructing an incident where a poisoned ARP cache let the attacker sit on-path and inject a malicious redirect into a victim's web session.",
+    "related": ["arp-spoofing", "ssl-stripping", "bgp-hijacking"]
+  },
+  {
+    "term": "SSL Stripping",
+    "slug": "ssl-stripping",
+    "aka": ["HTTPS downgrade"],
+    "short": "Downgrading a victim's HTTPS connection to plaintext HTTP.",
+    "definition": "An on-path attack that intercepts a user's attempt to reach a secure site and quietly keeps the victim on plaintext HTTP while the attacker maintains HTTPS to the real server. The user never gets the encryption they expected.",
+    "significance": "Stripping exposes credentials and session data that the victim assumed were protected, and it specifically exploits the gap before protections like HSTS take effect — a key thing to confirm when investigating account takeover.",
+    "example": "Finding that a victim's login posted over cleartext HTTP because an on-path attacker had stripped the redirect to HTTPS.",
+    "related": ["man-in-the-middle", "arp-spoofing", "sni-inspection"]
+  },
+  {
+    "term": "Protocol Tunneling",
+    "slug": "protocol-tunneling",
+    "aka": ["ICMP tunneling", "HTTP tunneling"],
+    "short": "Smuggling one protocol's traffic inside another to evade controls.",
+    "definition": "Encapsulating arbitrary traffic inside a protocol that is normally allowed out — such as ICMP, HTTP, or HTTPS — so it passes through firewalls and proxies. The carrier protocol acts as a wrapper for the hidden payload.",
+    "significance": "Tunneling lets attackers reach the outside world or move data even where egress is tightly filtered, so investigators learn to question traffic whose volume or pattern does not match the protocol it claims to be.",
+    "example": "Catching an implant that wrapped its command channel in oversized ICMP echo packets to slip past an egress firewall that allowed pings.",
+    "related": ["covert-channel", "exfiltration-over-dns", "port-forwarding"]
+  },
+  {
+    "term": "Covert Channel",
+    "slug": "covert-channel",
+    "short": "Communicating through a path not meant to carry data.",
+    "definition": "A communication path that conveys information in a way the system was not designed to allow, often by manipulating timing or unused fields rather than sending obvious messages. Storage channels hide data in fields; timing channels modulate the rate of events.",
+    "significance": "Covert channels are built specifically to evade monitoring, so recognizing them often requires statistical or behavioral analysis rather than signature matching, and they are a recurring theme in stealthy exfiltration cases.",
+    "example": "Uncovering data leaving a network encoded in the subtle timing gaps between otherwise innocuous DNS lookups.",
+    "related": ["protocol-tunneling", "exfiltration-over-dns", "low-and-slow"]
+  },
+  {
+    "term": "Data Staging",
+    "slug": "data-staging",
+    "aka": ["staging directory"],
+    "short": "Collecting and bundling stolen data before it leaves the network.",
+    "definition": "The step in which an attacker gathers targeted files into one location — and often compresses or encrypts them — on a host they control inside the victim environment, preparing for exfiltration. The staging host acts as a collection point.",
+    "significance": "Staging frequently precedes the actual theft, so finding an unexpected archive of sensitive files on an internal host is an early warning that lets responders intervene before data leaves.",
+    "example": "Discovering a multi-gigabyte password-protected archive assembled in a temp directory on a file server, queued for upload to external storage.",
+    "related": ["exfiltration-over-cloud", "exfiltration-over-dns", "bind-shell"]
+  },
+  {
+    "term": "Malleable C2 Profile",
+    "slug": "malleable-c2-profile",
+    "aka": ["traffic profile"],
+    "short": "A config that reshapes C2 traffic to mimic benign protocols.",
+    "definition": "A configuration that lets an operator customize exactly how an implant's command traffic looks on the wire — its URIs, headers, encoding, and cadence — so it imitates legitimate web services. The same framework can present radically different signatures depending on the profile loaded.",
+    "significance": "Because the network signature is attacker-defined and changeable, static indicators age quickly, pushing detection toward behavioral analysis and fingerprinting that survive cosmetic changes.",
+    "example": "Recognizing a beacon despite its traffic being shaped by a profile to mimic a popular analytics service's API calls.",
+    "related": ["beacon-jitter", "beacon-analysis", "ja3-fingerprinting"]
+  },
+  {
+    "term": "Beacon Jitter",
+    "slug": "beacon-jitter",
+    "aka": ["jitter", "sleep jitter"],
+    "short": "Randomizing call-home intervals to obscure a beacon's rhythm.",
+    "definition": "A deliberate randomization applied to the interval between an implant's check-ins, so the call-home timing varies around a base value instead of landing on a fixed clock. Operators set jitter as a percentage of the sleep time.",
+    "significance": "Jitter is meant to defeat naive detections that look for perfectly periodic traffic, so analysts compensate by examining the distribution of intervals over long windows rather than expecting a clean beat.",
+    "example": "Still spotting a beacon despite heavy jitter, because clustering its call-home timestamps revealed a consistent underlying interval.",
+    "related": ["beacon-analysis", "malleable-c2-profile", "low-and-slow"]
+  },
+  {
+    "term": "Beacon Analysis",
+    "slug": "beacon-analysis",
+    "aka": ["beacon detection"],
+    "short": "Finding C2 callbacks by their periodic, repetitive connection pattern.",
+    "definition": "The practice of detecting command-and-control by looking for the repetitive, roughly periodic connections an implant makes when it checks in. Analysts examine inter-arrival times, byte-count regularity, and persistence of a destination over time.",
+    "significance": "Beacon analysis works even against encrypted traffic because it relies on timing and volume metadata rather than content, making it a mainstay of network-based C2 hunting.",
+    "example": "Surfacing a hidden implant by charting flow records and finding one external host contacted every ten minutes for days, jitter notwithstanding.",
+    "related": ["beacon-jitter", "flow-data", "low-and-slow"]
+  },
+  {
+    "term": "Dead Drop Resolver",
+    "slug": "dead-drop-resolver",
+    "aka": ["dead drop"],
+    "short": "Hiding the real C2 address in content on a legitimate web service.",
+    "definition": "A technique where malware fetches its current C2 address from data posted on a trusted third-party service — such as a profile bio, a paste, or a code comment — rather than hardcoding it. The legitimate service acts as an indirection point the operator can update at will.",
+    "significance": "Routing the lookup through a reputable site makes the initial traffic look benign and lets operators rotate infrastructure without updating the malware, complicating both blocking and attribution.",
+    "example": "Finding that an implant read an attacker-controlled IP encoded in a comment field on a popular public service before connecting to its real C2.",
+    "related": ["fast-flux", "redirector", "domain-fronting"]
+  },
+  {
+    "term": "Peer-to-Peer C2",
+    "slug": "peer-to-peer-c2",
+    "aka": ["P2P botnet"],
+    "short": "A decentralized C2 where infected hosts relay commands to each other.",
+    "definition": "A command-and-control design without a central server, in which compromised hosts form a mesh and pass commands and updates among themselves. Any node can relay instructions, so there is no single point to disrupt.",
+    "significance": "Decentralization makes takedown and sinkholing far harder, since severing one node does not cut off the rest, and it complicates the hunt for a single command server in network data.",
+    "example": "Mapping a botnet whose members talked mostly to one another over an unusual high port, revealing a peer-to-peer control fabric instead of a central C2.",
+    "related": ["fast-flux", "east-west-traffic", "dns-sinkhole"]
+  },
+  {
+    "term": "Redirector",
+    "slug": "redirector",
+    "aka": ["traffic redirector"],
+    "short": "An intermediary host that relays C2 traffic to hide the real server.",
+    "definition": "An intermediate server, often a simple proxy or rule-based forwarder, that sits between victims and the true C2 and relays traffic between them. Victims only ever see the redirector's address, not the back-end team server.",
+    "significance": "Redirectors shield the actual control infrastructure from discovery and blocking, so analysts who burn one address may still be a layer away from the operator's real server.",
+    "example": "Blocking a callback IP only to find it was a disposable redirector forwarding to a hidden C2 the team had carefully kept off the wire.",
+    "related": ["dead-drop-resolver", "domain-fronting", "socks-proxy-pivot"]
+  },
+  {
+    "term": "Reverse Shell",
+    "slug": "reverse-shell",
+    "aka": ["connect-back shell"],
+    "short": "A compromised host that dials out to give the attacker a shell.",
+    "definition": "A remote shell in which the victim machine initiates the outbound connection to the attacker and then hands over command-line access. Because the victim connects out, it sidesteps inbound firewall rules that would block a listener.",
+    "significance": "Reverse shells are extremely common in intrusions precisely because outbound connections are usually permitted, so unexpected outbound sessions from servers are a high-value thing to hunt.",
+    "example": "Tracing an outbound connection from a web server to a strange IP on a high port that turned out to be a reverse shell spawned by an exploited service.",
+    "related": ["bind-shell", "web-shell", "protocol-tunneling"]
+  },
+  {
+    "term": "Bind Shell",
+    "slug": "bind-shell",
+    "aka": ["listening shell"],
+    "short": "A shell that listens on a port for the attacker to connect in.",
+    "definition": "A remote shell in which the compromised host opens a listening port and waits for the attacker to connect inbound to obtain command-line access. The victim is the server in this model, the attacker the client.",
+    "significance": "Bind shells require an inbound path to succeed, so they show up where firewalls are weak or on internal hosts during lateral movement, and an unexpected listening port is a strong artifact of compromise.",
+    "example": "Finding an unfamiliar service listening on a high port of an internal host, which proved to be a bind shell waiting for the operator to connect.",
+    "related": ["reverse-shell", "web-shell", "port-forwarding"]
+  },
+  {
+    "term": "Web Shell",
+    "slug": "web-shell",
+    "short": "A malicious script on a web server giving remote command access.",
+    "definition": "A script planted on a web server that accepts attacker input through HTTP requests and executes commands or file operations on the host. It turns a normal web request into a remote control interface.",
+    "significance": "Web shells are a durable foothold on internet-facing servers and ride entirely over expected web ports, so detecting them often means scrutinizing the server's own request logs and unexpected new files rather than just the network edge.",
+    "example": "Spotting POST requests to an obscure new .aspx file in the web logs, the telltale traffic of an attacker driving a freshly dropped web shell.",
+    "related": ["reverse-shell", "bind-shell", "data-staging"]
+  },
+  {
+    "term": "SOCKS Proxy Pivot",
+    "slug": "socks-proxy-pivot",
+    "aka": ["SOCKS pivot", "proxy pivot"],
+    "short": "Tunneling through a foothold to reach an internal network.",
+    "definition": "A technique where an attacker turns a compromised host into a SOCKS proxy and routes their tools through it to reach systems the foothold can see but the attacker cannot directly. The pivot host relays the connections inward.",
+    "significance": "Pivoting lets an external attacker operate as if inside the network, so the resulting east-west traffic originating from one host toward many internal services is a strong signal of post-compromise movement.",
+    "example": "Catching a single beachhead host suddenly proxying connections to dozens of internal systems, the footprint of a SOCKS pivot into the environment.",
+    "related": ["port-forwarding", "redirector", "east-west-traffic"]
+  },
+  {
+    "term": "Port Forwarding",
+    "slug": "port-forwarding",
+    "aka": ["port relay", "TCP relay"],
+    "short": "Relaying a port through a host to reach otherwise blocked services.",
+    "definition": "Redirecting traffic arriving on one host and port to another address and port, so a service reachable from the relay becomes reachable from elsewhere. Attackers use local, remote, and dynamic variants to bridge network boundaries.",
+    "significance": "Forwarding lets adversaries reach segmented or internal-only services through a single foothold, making unexpected relay behavior on a host a useful artifact when reconstructing how they crossed boundaries.",
+    "example": "Discovering a compromised jump box forwarding a database port outward, giving the attacker reach into a segment they should never have touched.",
+    "related": ["socks-proxy-pivot", "bind-shell", "network-segmentation"]
+  },
+  {
+    "term": "Network Tap",
+    "slug": "network-tap",
+    "aka": ["TAP", "test access point"],
+    "short": "A hardware device that copies a link's traffic for monitoring.",
+    "definition": "A dedicated hardware device inserted inline on a network link that passively copies every passing frame to a monitoring port without altering the original flow. Unlike a switch mirror, it does not compete for switch resources.",
+    "significance": "Because a tap captures all traffic faithfully and does not drop frames under contention the way a mirror can, it is the preferred source for forensic-grade capture and reliable detection.",
+    "example": "Installing a tap in front of a critical server so the captured PCAP would be complete enough to stand up as forensic evidence.",
+    "related": ["packet-capture", "intrusion-detection-system", "deep-packet-inspection"]
+  },
+  {
+    "term": "Intrusion Detection System",
+    "slug": "intrusion-detection-system",
+    "aka": ["IDS", "NIDS"],
+    "short": "A sensor that watches traffic and alerts on malicious activity.",
+    "definition": "A monitoring system that inspects network traffic or host activity and raises alerts when it matches known-bad signatures or deviates from normal behavior. It detects and reports but does not block by itself.",
+    "significance": "IDS alerts are often the first network-side indication of an intrusion, and their logs become key evidence for reconstructing what was seen and when during an investigation.",
+    "example": "Pivoting from a single IDS signature hit on an exploit attempt to the full PCAP that confirmed the server was compromised.",
+    "related": ["intrusion-prevention-system", "deep-packet-inspection", "network-tap"]
+  },
+  {
+    "term": "Intrusion Prevention System",
+    "slug": "intrusion-prevention-system",
+    "aka": ["IPS", "NIPS"],
+    "short": "An inline sensor that detects and actively blocks malicious traffic.",
+    "definition": "A monitoring system placed inline in the traffic path that, beyond detecting threats, can drop or reset malicious connections in real time. It combines detection with active enforcement.",
+    "significance": "Because an IPS can block as well as alert, its logs show both what was attempted and what was stopped, and its drop actions are themselves evidence when reconstructing an attacker's blocked attempts.",
+    "example": "Confirming from IPS logs that a scanning burst was actively reset at the perimeter before any session completed.",
+    "related": ["intrusion-detection-system", "deep-packet-inspection", "dns-sinkhole"]
+  },
+  {
+    "term": "Network Segmentation",
+    "slug": "network-segmentation",
+    "aka": ["microsegmentation"],
+    "short": "Dividing a network into zones to contain and control traffic.",
+    "definition": "The practice of splitting a network into isolated segments — by VLAN, subnet, or policy — and controlling the traffic permitted between them. Microsegmentation pushes this down to individual workloads.",
+    "significance": "Good segmentation limits how far an attacker can move from a foothold, and the policy boundaries themselves create chokepoints where lateral movement attempts become visible as denied or unusual cross-segment traffic.",
+    "example": "Containing an outbreak quickly because segmentation kept the compromised workstation from reaching the server VLAN directly.",
+    "related": ["east-west-traffic", "port-forwarding", "intrusion-prevention-system"]
+  },
+  {
+    "term": "East-West Traffic",
+    "slug": "east-west-traffic",
+    "aka": ["lateral traffic", "north-south traffic"],
+    "short": "Traffic moving between internal hosts rather than in and out.",
+    "definition": "Communication that flows laterally between systems inside a data center or network, as opposed to north-south traffic that crosses the perimeter to and from the outside. The terms describe direction relative to the network boundary.",
+    "significance": "Attackers generate east-west traffic as they pivot internally, and because perimeter tools mostly watch north-south flows, gaining visibility into lateral traffic is essential for catching movement after the initial breach.",
+    "example": "Detecting an intrusion not at the edge but from anomalous east-west connections as the attacker reached from one internal host to another.",
+    "related": ["network-segmentation", "socks-proxy-pivot", "port-scanning"]
+  },
+  {
+    "term": "Exfiltration over Cloud Storage",
+    "slug": "exfiltration-over-cloud",
+    "aka": ["cloud exfil"],
+    "short": "Stealing data by uploading it to a legitimate cloud service.",
+    "definition": "Moving stolen data out of a network by sending it to a widely used cloud storage or sharing service rather than to obviously attacker-owned infrastructure. The traffic blends in with sanctioned business use of the same platforms.",
+    "significance": "Because uploads to popular cloud providers are routine and often allowed, this exfiltration path hides in plain sight, so detection leans on data-volume baselines and which accounts or destinations are actually expected.",
+    "example": "Noticing a server pushing gigabytes to a personal cloud account over HTTPS, the egress leg of a staged data theft.",
+    "related": ["data-staging", "exfiltration-over-dns", "encrypted-traffic-analysis"]
+  },
+  {
+    "term": "Exfiltration over DNS",
+    "slug": "exfiltration-over-dns",
+    "aka": ["DNS exfil"],
+    "short": "Smuggling data out by encoding it into DNS queries.",
+    "definition": "A technique that encodes stolen data into the labels of DNS queries to an attacker-controlled domain, whose name server reassembles it from the requests. DNS is rarely blocked outright, so the queries usually leave even tightly filtered networks.",
+    "significance": "DNS exfiltration evades many egress controls and content inspection because it abuses an essential, trusted protocol, so unusually long, high-volume, or high-entropy DNS lookups are key things to hunt.",
+    "example": "Catching a steady stream of long, random-looking subdomain queries to one external domain — chunks of a database leaving over DNS.",
+    "related": ["covert-channel", "protocol-tunneling", "exfiltration-over-cloud"]
+  },
+  {
+    "term": "BGP Hijacking",
+    "slug": "bgp-hijacking",
+    "aka": ["route hijacking", "prefix hijacking"],
+    "short": "Falsely announcing IP routes to divert or intercept traffic.",
+    "definition": "An attack that abuses the trust-based Border Gateway Protocol by announcing IP address ranges the attacker does not own, causing other networks to route that traffic to them. The diverted traffic can be dropped, inspected, or relayed onward.",
+    "significance": "Route hijacks can silently reroute large volumes of internet traffic for interception or denial, and the resulting routing anomalies are a key signal when investigating sudden, unexplained traffic detours.",
+    "example": "Tracing a brief but suspicious detour of an organization's traffic to a foreign network that had announced its prefixes without authorization.",
+    "related": ["man-in-the-middle", "ssl-stripping", "encrypted-traffic-analysis"]
+  },
+  {
+    "term": "Low and Slow",
+    "slug": "low-and-slow",
+    "aka": ["slow exfiltration"],
+    "short": "Pacing activity below thresholds to stay under the radar.",
+    "definition": "An approach in which an attacker deliberately keeps the rate and volume of their activity low — trickling out data or spacing connections far apart — so nothing crosses the thresholds that trigger alerts. Patience is the evasion.",
+    "significance": "Low-and-slow behavior defeats volume- and rate-based detection, so finding it usually requires correlating small events over long time windows rather than watching for spikes.",
+    "example": "Uncovering an exfiltration that dribbled a few megabytes out each night for weeks, each transfer small enough to slip past the data-loss alerts.",
+    "related": ["beacon-analysis", "exfiltration-over-dns", "covert-channel"]
+  }
+]

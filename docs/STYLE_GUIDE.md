@@ -35,6 +35,19 @@ The decisions every change should serve:
 - **Original** — do not imitate other blogs' style; this is Patrick's voice.
 - Lead with the finding/insight, then the evidence. Explain *why*, not just *what*.
 - No marketing fluff, no employer name-dropping for cases, no invented metrics.
+- **Copy is the site's voice, never the prompt.** Write everything — page copy, glossary
+  definitions, metadata — as natural prose Patrick would write. **Never** let task instructions
+  or meta-phrasing leak into user-facing text (no "vendor-agnostic", "as requested", "never a
+  product", "this glossary", etc.). State the thing itself, plainly; if a rule shaped the copy,
+  the rule belongs in this guide, not on the page.
+
+### Glossary terms (Term of the Day)
+
+Entries in `src/data/securityTerms.ts` / `src/data/terms/*.json` are **concepts, techniques,
+artifacts, or models — never products, tools, vendors, or companies** (the generic idea, e.g.
+"credential dumping", not a named tool). Keep each field tight and factual: `short` ≤ 90 chars,
+`definition` 1–2 sentences (what it is), `significance` 1–2 sentences (why it matters in DFIR),
+`example` one concrete sentence. Accuracy over volume — only real, established industry terms.
 
 ## Visual direction
 
@@ -121,7 +134,7 @@ distinct, intentional pattern; keep it to the key guarantees, not proper nouns.
 - **Icons** ([Icon.astro](../src/components/Icon.astro)): lucide-style inline SVG, stroke,
   `currentColor`, 24×24 viewBox. Add new ones to the `ICONS` map. Default size 18; 13–15 in
   badges/inline, 20 in section headings.
-- **Buttons:** primary = solid `bg: 'primary'` / `color: 'white'` / `borderRadius: 'md'`,
+- **Buttons:** primary = solid `bg: 'primary'` / `color: 'onPrimary'` / `borderRadius: 'md'`,
   hover `bg: 'primaryHover'` + lift; ghost = `border` + transparent, hover `borderColor: 'primary'`.
 - **Links:** `color: 'primary'`, underline-on-hover (or persistent underline in prose).
   External links: `target="_blank" rel="noopener"` + an `external-link` icon when it aids clarity.

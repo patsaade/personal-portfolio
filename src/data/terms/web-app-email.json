@@ -1,0 +1,575 @@
+[
+  {
+    "term": "Phishing",
+    "slug": "phishing",
+    "short": "Tricking people into revealing credentials or running malware via fake messages.",
+    "definition": "A social-engineering attack that uses fraudulent emails, messages, or sites impersonating a trusted party to lure victims into handing over credentials, sending money, or executing malicious payloads. It is typically sent broadly to many recipients at once.",
+    "significance": "Phishing remains the most common initial-access vector in real intrusions, so triaging reported emails, pulling related deliveries, and scoping who clicked is bread-and-butter incident response.",
+    "example": "A 'password expiring' email that links to a fake login page harvesting whatever the victim types.",
+    "related": [
+      "spear-phishing",
+      "credential-harvesting-page",
+      "lookalike-domain"
+    ]
+  },
+  {
+    "term": "Spear Phishing",
+    "slug": "spear-phishing",
+    "short": "Targeted phishing tailored to a specific person or organization.",
+    "definition": "A focused form of phishing where the lure is customized using research about the target — their role, projects, colleagues, or vendors — to make the message far more convincing than a mass campaign.",
+    "significance": "Because it references real context, spear phishing slips past both filters and skeptical users, and it is the technique most associated with targeted intrusions, making sender and pretext analysis central to triage.",
+    "example": "An email that names the recipient's actual manager and a real ongoing deal to request an urgent wire change.",
+    "related": [
+      "phishing",
+      "whaling",
+      "business-email-compromise"
+    ]
+  },
+  {
+    "term": "Whaling",
+    "slug": "whaling",
+    "short": "Spear phishing aimed at executives and other high-value targets.",
+    "definition": "A subset of spear phishing that targets senior leaders — executives, board members, finance heads — whose access or authority makes a successful compromise especially damaging.",
+    "significance": "A compromised executive account carries weight that subordinates rarely question, so whaling frequently precedes large fraudulent transfers and high-impact data theft.",
+    "example": "A crafted message to a CFO referencing a confidential acquisition to authorize a fund movement.",
+    "related": [
+      "spear-phishing",
+      "business-email-compromise",
+      "email-spoofing"
+    ]
+  },
+  {
+    "term": "Business Email Compromise",
+    "slug": "business-email-compromise",
+    "aka": [
+      "BEC",
+      "CEO Fraud"
+    ],
+    "short": "Fraud that impersonates a trusted party in email to redirect money or data.",
+    "definition": "A financially motivated scheme in which an attacker impersonates an executive, employee, vendor, or partner over email to trick staff into transferring funds or sensitive data. It often relies on social engineering and account takeover rather than malware.",
+    "significance": "BEC produces some of the largest dollar losses in cybercrime with little or no payload to detect, so investigations hinge on mailbox rules, sign-in logs, and the money trail rather than file analysis.",
+    "example": "A spoofed vendor email asking accounts payable to update bank details for the next invoice.",
+    "related": [
+      "spear-phishing",
+      "thread-hijacking",
+      "email-spoofing"
+    ]
+  },
+  {
+    "term": "Email Spoofing",
+    "slug": "email-spoofing",
+    "short": "Forging an email's sender address to look like it came from someone else.",
+    "definition": "The practice of falsifying the visible 'From' address (and related headers) of an email so it appears to originate from a trusted domain or person. It exploits the fact that SMTP does not inherently verify the sender.",
+    "significance": "Spoofing underpins much phishing and fraud, which is exactly why authentication standards exist; confirming whether a message passed or failed those checks is a first step in email forensics.",
+    "example": "A message whose 'From' shows a bank's domain but whose envelope sender and path point to an unrelated server.",
+    "related": [
+      "sender-policy-framework",
+      "domain-based-message-authentication",
+      "email-header-analysis"
+    ]
+  },
+  {
+    "term": "Lookalike Domain",
+    "slug": "lookalike-domain",
+    "aka": [
+      "Homoglyph Domain",
+      "Cousin Domain"
+    ],
+    "short": "A near-identical domain used to impersonate a legitimate one.",
+    "definition": "A registered domain crafted to closely resemble a real one — using character swaps, added words, alternate TLDs, or visually identical Unicode homoglyphs — to deceive recipients into trusting it.",
+    "significance": "Lookalike domains let attackers pass authentication legitimately for their own domain while still fooling humans, so newly registered cousin domains are a high-value hunting and blocklisting target.",
+    "example": "Receiving mail from a domain that swaps a lowercase 'l' for a digit '1' in a familiar company name.",
+    "related": [
+      "email-spoofing",
+      "phishing",
+      "credential-harvesting-page"
+    ]
+  },
+  {
+    "term": "Sender Policy Framework",
+    "slug": "sender-policy-framework",
+    "aka": [
+      "SPF"
+    ],
+    "short": "DNS record listing which servers may send mail for a domain.",
+    "definition": "An email-authentication standard that publishes, in DNS, the set of IP addresses authorized to send mail on behalf of a domain. Receiving servers check the envelope sender's source against that list.",
+    "significance": "SPF is a frontline defense against envelope spoofing and a key signal in header analysis, though it breaks on forwarding and only covers the envelope sender — which is why it is paired with DKIM and DMARC.",
+    "example": "A receiving server rejecting mail because the sending IP is absent from the claimed domain's published SPF record.",
+    "related": [
+      "domainkeys-identified-mail",
+      "domain-based-message-authentication",
+      "email-spoofing"
+    ]
+  },
+  {
+    "term": "DomainKeys Identified Mail",
+    "slug": "domainkeys-identified-mail",
+    "aka": [
+      "DKIM"
+    ],
+    "short": "A cryptographic signature proving an email wasn't altered in transit.",
+    "definition": "An email-authentication standard in which the sending domain signs selected headers and the body with a private key; receivers verify the signature using a public key published in DNS. A valid signature ties the message to the signing domain.",
+    "significance": "DKIM survives forwarding better than SPF and provides integrity, so a failed or missing signature on a 'trusted' sender is a meaningful red flag during email investigation.",
+    "example": "A forwarded newsletter still verifying because its DKIM signature over the body remained intact.",
+    "related": [
+      "sender-policy-framework",
+      "domain-based-message-authentication",
+      "email-header-analysis"
+    ]
+  },
+  {
+    "term": "Domain-based Message Authentication, Reporting and Conformance",
+    "slug": "domain-based-message-authentication",
+    "aka": [
+      "DMARC"
+    ],
+    "short": "A policy tying SPF and DKIM to the visible From and reporting failures.",
+    "definition": "A standard that builds on SPF and DKIM by requiring alignment with the visible 'From' domain, telling receivers what to do with failures (none, quarantine, or reject), and sending the domain owner aggregate and forensic reports.",
+    "significance": "DMARC is what actually closes the domain-spoofing gap and gives owners visibility into who sends as them, so its policy and reports are core both to defense and to scoping abuse of a brand.",
+    "example": "A domain set to 'p=reject' causing receivers to drop unauthenticated mail claiming to be from it.",
+    "related": [
+      "sender-policy-framework",
+      "domainkeys-identified-mail",
+      "email-header-analysis"
+    ]
+  },
+  {
+    "term": "Email Header Analysis",
+    "slug": "email-header-analysis",
+    "short": "Reading an email's full headers to trace origin and authentication.",
+    "definition": "The forensic review of an email's complete header set — Received chain, envelope sender, Message-ID, and authentication results — to reconstruct the true delivery path and verify whether the message is what it claims to be.",
+    "significance": "Headers are the ground truth of an email investigation: they expose spoofing, reveal the real originating infrastructure, and confirm SPF/DKIM/DMARC results that the rendered message hides.",
+    "example": "Tracing the topmost untrusted 'Received' hop to find the actual server that injected a phishing message.",
+    "related": [
+      "email-spoofing",
+      "sender-policy-framework",
+      "thread-hijacking"
+    ]
+  },
+  {
+    "term": "Thread Hijacking",
+    "slug": "thread-hijacking",
+    "aka": [
+      "Conversation Hijacking",
+      "Reply-Chain Attack"
+    ],
+    "short": "Injecting a malicious reply into a real, ongoing email conversation.",
+    "definition": "An attack in which the adversary — often from a compromised mailbox — replies within a legitimate existing email thread, inheriting its context and quoted history to make a malicious link or attachment look like a natural continuation.",
+    "significance": "Because the message rides a real conversation with real participants, it defeats user suspicion and many filters, and it is a hallmark of mailbox compromise that turns up in BEC and malware campaigns.",
+    "example": "A reply to a months-old quoted thread that suddenly asks the recipient to open an attached invoice.",
+    "related": [
+      "business-email-compromise",
+      "spear-phishing",
+      "attachment-based-delivery"
+    ]
+  },
+  {
+    "term": "Attachment-Based Delivery",
+    "slug": "attachment-based-delivery",
+    "short": "Delivering malware as an email attachment the victim opens.",
+    "definition": "An initial-access technique that ships a malicious payload — an executable, document, archive, script, or disk-image file — as an email attachment, relying on the recipient to open it and trigger execution.",
+    "significance": "Attachments are a perennial delivery method, so understanding their file types, container tricks, and what the user did with them is central to determining whether a phishing email actually led to compromise.",
+    "example": "A password-protected archive in an email, where the password is given in the body to evade scanning.",
+    "related": [
+      "malicious-macro",
+      "html-smuggling",
+      "phishing"
+    ]
+  },
+  {
+    "term": "Malicious Macro",
+    "slug": "malicious-macro",
+    "aka": [
+      "Macro Malware",
+      "VBA Macro"
+    ],
+    "short": "Office document code that runs attacker logic when enabled.",
+    "definition": "Embedded automation code, typically VBA, inside an office document that executes when the user enables content, commonly downloading and launching a second-stage payload.",
+    "significance": "Macro-laden documents were for years the dominant malware delivery method and still appear, so detecting the 'enable content' lure and analyzing extracted macro code is a routine document-forensics task.",
+    "example": "A spreadsheet that, once macros are enabled, reaches out to a remote host and runs a downloaded payload.",
+    "related": [
+      "attachment-based-delivery",
+      "phishing",
+      "html-smuggling"
+    ]
+  },
+  {
+    "term": "HTML Smuggling",
+    "slug": "html-smuggling",
+    "short": "Reassembling a malicious file in the browser from script in an HTML page.",
+    "definition": "An evasion technique where the payload is encoded inside an HTML or script file and reconstructed locally by the browser — often via a data blob and an automatic download — so no malicious file traverses the network for inspection.",
+    "significance": "By building the file on the endpoint rather than transmitting it, smuggling slips past gateway and proxy scanning, making it a favored modern delivery method that pushes detection to the host.",
+    "example": "Opening an attached HTML page that silently assembles and saves an archive containing a loader.",
+    "related": [
+      "attachment-based-delivery",
+      "malicious-macro",
+      "quishing"
+    ]
+  },
+  {
+    "term": "Quishing",
+    "slug": "quishing",
+    "aka": [
+      "QR-Code Phishing",
+      "QR Phishing"
+    ],
+    "short": "Phishing that hides the malicious link inside a QR code.",
+    "definition": "A phishing variant that places the lure URL in a QR code rather than a clickable link, so the victim scans it — usually with a personal phone — and is taken to a credential-harvesting or malware site.",
+    "significance": "The QR code defeats link scanners that read text, and the pivot to a mobile device moves the victim off monitored, defended endpoints, complicating both prevention and post-incident scoping.",
+    "example": "An email image of a QR code claiming to be a voicemail or document that leads to a fake login page.",
+    "related": [
+      "phishing",
+      "credential-harvesting-page",
+      "html-smuggling"
+    ]
+  },
+  {
+    "term": "Cross-Site Scripting",
+    "slug": "cross-site-scripting",
+    "aka": [
+      "XSS"
+    ],
+    "short": "Injecting attacker script that runs in other users' browsers.",
+    "definition": "A web vulnerability where untrusted input is reflected into a page without proper encoding, causing the victim's browser to execute attacker-controlled script in the site's origin. It comes in stored, reflected, and DOM-based forms.",
+    "significance": "XSS lets attackers steal sessions, perform actions as the victim, and harvest data, and it sits on the OWASP Top 10; investigations look for the injection point, the payload, and what it exfiltrated.",
+    "example": "A comment field that stores '<script>' so every visitor's session cookie is sent to the attacker.",
+    "related": [
+      "output-encoding",
+      "content-security-policy",
+      "cookie-security"
+    ]
+  },
+  {
+    "term": "SQL Injection",
+    "slug": "sql-injection",
+    "aka": [
+      "SQLi"
+    ],
+    "short": "Manipulating a backend SQL query through unsanitized input.",
+    "definition": "A vulnerability in which attacker-supplied input is concatenated into a SQL statement, letting the attacker alter the query to read, modify, or destroy data, or in some cases reach the underlying system.",
+    "significance": "SQLi remains a leading cause of mass data breaches, and in DFIR it shows up as malformed parameters in web logs and as the entry point that led to database exfiltration.",
+    "example": "Submitting a crafted login value that turns the query into one that always returns true, bypassing authentication.",
+    "related": [
+      "input-validation",
+      "web-application-firewall",
+      "parameter-tampering"
+    ]
+  },
+  {
+    "term": "Cross-Site Request Forgery",
+    "slug": "cross-site-request-forgery",
+    "aka": [
+      "CSRF",
+      "XSRF"
+    ],
+    "short": "Tricking a logged-in user's browser into making an unwanted request.",
+    "definition": "An attack that abuses a victim's existing authenticated session by causing their browser to send a forged state-changing request to a site they trust, without their intent. The server cannot distinguish it from a genuine action.",
+    "significance": "CSRF can move money, change settings, or alter accounts using the victim's own session, which is why anti-CSRF tokens and SameSite cookies matter and why their absence is a notable finding.",
+    "example": "A hidden form on a malicious page that submits a funds-transfer request to a bank where the victim is logged in.",
+    "related": [
+      "cookie-security",
+      "api-security",
+      "cross-site-scripting"
+    ]
+  },
+  {
+    "term": "Server-Side Request Forgery",
+    "slug": "server-side-request-forgery",
+    "aka": [
+      "SSRF"
+    ],
+    "short": "Coercing a server into making attacker-chosen internal requests.",
+    "definition": "A vulnerability where an application can be induced to issue network requests to destinations the attacker chooses, including internal services and cloud metadata endpoints that are normally unreachable from outside.",
+    "significance": "SSRF is a powerful pivot into otherwise protected internal infrastructure and a frequent path to stealing cloud credentials, so outbound requests from app servers to internal or metadata addresses are key signals.",
+    "example": "An image-fetch feature pointed at a cloud metadata service to retrieve temporary instance credentials.",
+    "related": [
+      "input-validation",
+      "api-security",
+      "web-application-firewall"
+    ]
+  },
+  {
+    "term": "Clickjacking",
+    "slug": "clickjacking",
+    "aka": [
+      "UI Redressing"
+    ],
+    "short": "Tricking users into clicking hidden elements via overlaid framing.",
+    "definition": "An attack that loads a target site in a transparent or disguised frame over decoy content, so the victim's clicks are silently delivered to the hidden interface, performing actions they did not intend.",
+    "significance": "It can trigger sensitive operations using the victim's authenticated session, and the standard defenses — frame-busting headers and a strong CSP frame-ancestors policy — are common things to check for during a review.",
+    "example": "A fake 'play' button overlaying an invisible 'confirm' control on a banking page beneath it.",
+    "related": [
+      "security-headers",
+      "content-security-policy",
+      "cross-site-request-forgery"
+    ]
+  },
+  {
+    "term": "Cookie Security",
+    "slug": "cookie-security",
+    "aka": [
+      "HttpOnly",
+      "Secure Cookie",
+      "SameSite"
+    ],
+    "short": "Cookie flags that limit theft, leakage, and cross-site sending.",
+    "definition": "The set of attributes that harden cookies: HttpOnly blocks script access, Secure restricts them to HTTPS, and SameSite controls whether they ride cross-site requests. Together they constrain how and where a cookie is exposed.",
+    "significance": "Session cookies are prime theft targets, so these flags blunt XSS-based theft and CSRF; their absence on an authentication cookie is a direct, commonly cited weakness.",
+    "example": "An HttpOnly, Secure, SameSite cookie that injected page script cannot read and that won't be sent cross-site.",
+    "related": [
+      "cross-site-scripting",
+      "cross-site-request-forgery",
+      "json-web-token"
+    ]
+  },
+  {
+    "term": "Cross-Origin Resource Sharing",
+    "slug": "cross-origin-resource-sharing",
+    "aka": [
+      "CORS"
+    ],
+    "short": "Headers that relax the same-origin policy for chosen origins.",
+    "definition": "A browser mechanism that lets a server use response headers to permit specific other origins to read its responses, selectively loosening the same-origin policy for legitimate cross-origin requests.",
+    "significance": "Misconfigured CORS — reflecting any origin or allowing credentials too broadly — can expose sensitive data to attacker sites, making overly permissive policies a frequent finding in web assessments.",
+    "example": "An API that reflects whatever Origin it receives and allows credentials, letting any site read a user's data.",
+    "related": [
+      "content-security-policy",
+      "api-security",
+      "security-headers"
+    ]
+  },
+  {
+    "term": "Content Security Policy",
+    "slug": "content-security-policy",
+    "aka": [
+      "CSP"
+    ],
+    "short": "A header that restricts which sources a page may load and run.",
+    "definition": "A response-header policy that tells the browser which origins are allowed to supply scripts, styles, frames, and other resources for a page, and can forbid inline script entirely. It acts as a defense-in-depth control.",
+    "significance": "A well-built CSP sharply limits the impact of XSS and clickjacking, so reviewers check both that one exists and that it is not undermined by unsafe-inline or wildcard sources.",
+    "example": "A policy that only permits scripts from the site's own origin, neutralizing an injected inline payload.",
+    "related": [
+      "cross-site-scripting",
+      "security-headers",
+      "clickjacking"
+    ]
+  },
+  {
+    "term": "JSON Web Token",
+    "slug": "json-web-token",
+    "aka": [
+      "JWT"
+    ],
+    "short": "A signed, self-contained token carrying claims between parties.",
+    "definition": "A compact, URL-safe token format consisting of a header, a claims payload, and a signature, used to convey identity and authorization data that a recipient can verify without a server-side session lookup.",
+    "significance": "JWTs are everywhere in modern auth, and their pitfalls — accepting unsigned tokens, weak signing keys, or skipping verification — lead to authentication bypass, so inspecting their claims and validation is common in app reviews.",
+    "example": "A token whose signature is never verified, letting an attacker edit the payload to claim administrator rights.",
+    "related": [
+      "oauth",
+      "broken-access-control",
+      "api-security"
+    ]
+  },
+  {
+    "term": "OAuth",
+    "slug": "oauth",
+    "aka": [
+      "OAuth 2.0"
+    ],
+    "short": "A framework for delegating limited access without sharing a password.",
+    "definition": "An authorization framework that lets a user grant a third-party application scoped access to their resources by issuing it a token, rather than sharing their actual credentials. It defines flows for different client types.",
+    "significance": "OAuth governs how apps gain access on a user's behalf, and abuse such as consent phishing for malicious app grants, leaked tokens, or open redirects in the flow is a recurring incident theme.",
+    "example": "A rogue application requesting broad mailbox permissions so that, once consented, it reads mail without a password.",
+    "related": [
+      "credential-harvesting-page",
+      "json-web-token",
+      "api-security"
+    ]
+  },
+  {
+    "term": "API Security",
+    "slug": "api-security",
+    "short": "Protecting application programming interfaces from abuse and data exposure.",
+    "definition": "The discipline of securing the endpoints applications expose for programmatic access, covering authentication, authorization, input handling, and exposure of data and functions to ensure only intended callers can do intended things.",
+    "significance": "APIs now carry the bulk of sensitive traffic, and broken object-level authorization and excessive data exposure are leading breach causes, so reviewing API authz and inspecting API logs is core modern work.",
+    "example": "An endpoint that returns any user's record by ID because it never checks the caller owns that record.",
+    "related": [
+      "broken-access-control",
+      "rate-limiting",
+      "parameter-tampering"
+    ]
+  },
+  {
+    "term": "Rate Limiting",
+    "slug": "rate-limiting",
+    "short": "Capping how many requests a client can make in a time window.",
+    "definition": "A control that restricts the number of requests a given client, key, or IP may issue over a period, throttling or blocking those that exceed the threshold to protect availability and abuse-prone functions.",
+    "significance": "Its absence enables credential stuffing, brute force, scraping, and denial of service, so missing or weak limits on login and other sensitive endpoints are a frequent and impactful finding.",
+    "example": "Blocking a source after a burst of failed logins to stop a password-guessing run cold.",
+    "related": [
+      "api-security",
+      "broken-access-control",
+      "credential-harvesting-page"
+    ]
+  },
+  {
+    "term": "Web Application Firewall",
+    "slug": "web-application-firewall",
+    "aka": [
+      "WAF"
+    ],
+    "short": "A filter that inspects HTTP traffic to block web attacks.",
+    "definition": "A control positioned in front of a web application that analyzes incoming HTTP requests and responses against rules and signatures to detect and block attacks such as injection and cross-site scripting.",
+    "significance": "A WAF buys time and visibility against web exploitation and is a rich log source for investigations, though it is a mitigation rather than a fix and can be bypassed, so it complements secure code rather than replacing it.",
+    "example": "A rule pattern blocking requests that contain telltale SQL-injection syntax before they reach the app.",
+    "related": [
+      "sql-injection",
+      "cross-site-scripting",
+      "security-headers"
+    ]
+  },
+  {
+    "term": "Input Validation",
+    "slug": "input-validation",
+    "short": "Checking that incoming data matches expected type, format, and range.",
+    "definition": "The practice of verifying that data entering an application conforms to strict expectations — type, length, format, and allowed values — and rejecting anything that does not, ideally against an allow-list.",
+    "significance": "Most injection and tampering attacks stem from trusting input, so sound validation is a primary defense, and its gaps are usually the root cause traced back during an exploited-app investigation.",
+    "example": "Rejecting an order quantity field that contains letters or SQL syntax instead of a positive number.",
+    "related": [
+      "output-encoding",
+      "sql-injection",
+      "parameter-tampering"
+    ]
+  },
+  {
+    "term": "Output Encoding",
+    "slug": "output-encoding",
+    "aka": [
+      "Output Escaping"
+    ],
+    "short": "Encoding data for its context so it renders as text, not code.",
+    "definition": "The practice of transforming data into a context-appropriate, inert representation when it is written into HTML, attributes, JavaScript, or URLs, so that any special characters are displayed as data rather than interpreted as markup or code.",
+    "significance": "Correct, context-aware output encoding is the primary defense against XSS, and reviewers verify it because validation alone cannot safely handle every place untrusted data is rendered.",
+    "example": "Encoding a user's name so an embedded angle-bracket payload shows as text instead of running as script.",
+    "related": [
+      "cross-site-scripting",
+      "input-validation",
+      "content-security-policy"
+    ]
+  },
+  {
+    "term": "Parameter Tampering",
+    "slug": "parameter-tampering",
+    "short": "Altering request fields to change application behavior or access.",
+    "definition": "An attack that modifies values a client sends — URL parameters, form fields, hidden inputs, headers, or cookies — to manipulate prices, identifiers, or logic the server wrongly trusts as fixed.",
+    "significance": "Trusting client-supplied values leads to fraud and unauthorized access, and tampered parameters often surface in logs as the mechanism behind a business-logic abuse or access-control break.",
+    "example": "Editing a hidden price field at checkout to pay a fraction of the real amount.",
+    "related": [
+      "input-validation",
+      "broken-access-control",
+      "web-shell"
+    ]
+  },
+  {
+    "term": "Web Shell",
+    "slug": "web-shell",
+    "short": "A malicious script on a server granting remote command access.",
+    "definition": "A script — commonly in a server-side language like PHP or ASP — that an attacker plants on a compromised web server to receive commands over HTTP and execute them, providing persistent remote control.",
+    "significance": "Web shells are a classic foothold and persistence mechanism after web exploitation, so hunting for anomalous new scripts in web roots and suspicious POST requests to them is routine server forensics.",
+    "example": "A small uploaded script that runs whatever command is passed in a request parameter on the server.",
+    "related": [
+      "subdomain-takeover",
+      "web-application-firewall",
+      "sql-injection"
+    ]
+  },
+  {
+    "term": "Subdomain Takeover",
+    "slug": "subdomain-takeover",
+    "short": "Claiming a dangling DNS record that points to an unclaimed resource.",
+    "definition": "An attack where a DNS record still points to a third-party service or host that has been deprovisioned, letting the attacker register that resource and serve content under the victim's trusted subdomain.",
+    "significance": "Controlling a real subdomain lends huge credibility to phishing and can capture cookies or traffic, so dangling DNS entries are a high-value thing to inventory and clean up.",
+    "example": "Registering an abandoned cloud bucket a forgotten DNS alias still references, then hosting a phishing page there.",
+    "related": [
+      "lookalike-domain",
+      "credential-harvesting-page",
+      "web-shell"
+    ]
+  },
+  {
+    "term": "Dependency Confusion",
+    "slug": "dependency-confusion",
+    "aka": [
+      "Namespace Confusion"
+    ],
+    "short": "Hijacking a build by publishing a public package that shadows a private one.",
+    "definition": "A supply-chain attack that exploits package managers preferring a higher-version public package over a private internal one of the same name, so an attacker's malicious public package is pulled into a build instead of the intended internal dependency.",
+    "significance": "It can deliver attacker code straight into a trusted build pipeline with no user interaction, making it a serious software supply-chain risk that DFIR may trace through build logs and lockfiles.",
+    "example": "Publishing a public package matching an internal module's name at a higher version so the build resolves to it.",
+    "related": [
+      "web-shell",
+      "input-validation",
+      "api-security"
+    ]
+  },
+  {
+    "term": "Credential Harvesting Page",
+    "slug": "credential-harvesting-page",
+    "aka": [
+      "Phishing Page",
+      "Fake Login Page"
+    ],
+    "short": "A counterfeit login page built to capture entered credentials.",
+    "definition": "A web page that imitates a legitimate sign-in screen so closely that victims enter their username and password, which the page captures and sends to the attacker, often before redirecting to the real site.",
+    "significance": "These pages are the payoff of most phishing, and identifying the kit, the exfil destination, and which users submitted credentials drives password resets and scoping in an incident.",
+    "example": "A pixel-perfect copy of a webmail login that posts whatever is typed to an attacker-controlled endpoint.",
+    "related": [
+      "phishing",
+      "lookalike-domain",
+      "subdomain-takeover"
+    ]
+  },
+  {
+    "term": "OWASP Top 10",
+    "slug": "owasp-top-ten",
+    "short": "A community list of the most critical web application security risks.",
+    "definition": "A periodically updated, consensus-driven ranking of the most prevalent and impactful web application security risk categories, published by the Open Worldwide Application Security Project as an awareness and prioritization reference.",
+    "significance": "It gives developers, testers, and responders a shared baseline for the risks that matter most, and findings are routinely mapped to its categories to communicate severity and coverage.",
+    "example": "Classifying a discovered injection flaw and a missing access check against their respective Top 10 categories.",
+    "related": [
+      "broken-access-control",
+      "security-headers",
+      "sql-injection"
+    ]
+  },
+  {
+    "term": "Broken Access Control",
+    "slug": "broken-access-control",
+    "aka": [
+      "IDOR",
+      "Insecure Direct Object Reference"
+    ],
+    "short": "Failures that let users act or read outside their permissions.",
+    "definition": "A class of flaws where the application does not properly enforce what an authenticated user is allowed to do or see, including insecure direct object references that expose other users' records by changing an identifier.",
+    "significance": "It is consistently among the most common and damaging web risks, leading to data exposure and privilege abuse, and in investigations it appears as users reaching data or functions they should never touch.",
+    "example": "Changing an account number in a request URL to view a different customer's statement.",
+    "related": [
+      "parameter-tampering",
+      "api-security",
+      "owasp-top-ten"
+    ]
+  },
+  {
+    "term": "Security Headers",
+    "slug": "security-headers",
+    "short": "HTTP response headers that harden the browser's handling of a site.",
+    "definition": "A set of response headers — such as HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, and Content-Security-Policy — that instruct the browser to enforce protections against downgrade, sniffing, framing, and injection.",
+    "significance": "They are cheap, high-leverage defense-in-depth, so their presence and correctness are a quick early read on an application's security posture during a review or response.",
+    "example": "An HSTS header forcing browsers to use HTTPS so a user cannot be silently downgraded to plain HTTP.",
+    "related": [
+      "content-security-policy",
+      "cross-origin-resource-sharing",
+      "clickjacking"
+    ]
+  }
+]

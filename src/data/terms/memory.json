@@ -1,0 +1,332 @@
+[
+  {
+    "term": "Virtual Address Descriptor Tree",
+    "slug": "virtual-address-descriptor-tree",
+    "aka": ["VAD Tree", "VAD"],
+    "short": "Per-process map of reserved and committed virtual memory regions.",
+    "definition": "A balanced binary tree the Windows kernel keeps for each process to track every range of its virtual address space, recording the protection, type, and any backing file for each region. Walking it reveals what a process has mapped without trusting the process itself.",
+    "significance": "The VAD tree exposes memory regions that loaded modules and injected code occupy, including private executable regions that have no file on disk and no module-list entry. It is a primary structure for spotting code injection and unpacking in a memory image.",
+    "example": "A private, committed region marked PAGE_EXECUTE_READWRITE in a browser's VAD tree, with no mapped file behind it, pointing straight at injected shellcode.",
+    "related": ["eprocess", "code-injection", "malfind"]
+  },
+  {
+    "term": "EPROCESS",
+    "slug": "eprocess",
+    "aka": ["Executive Process Block"],
+    "short": "The kernel structure describing a running Windows process.",
+    "definition": "The executive process block is the kernel's master record for a process, holding its PID, name, parent reference, token, handle table, VAD tree root, and the links that thread it into the active-process list. Memory tools locate and parse these structures to enumerate processes.",
+    "significance": "Because every process has an EPROCESS, finding them directly in memory recovers processes that have been hidden from the OS or terminated, and their fields (parent PID, create time, exit time) anchor a process timeline that user-mode tooling cannot fake.",
+    "example": "Comparing the doubly linked active-process list against EPROCESS blocks found by scanning, and flagging one that was unlinked to hide a running implant.",
+    "related": ["process-environment-block", "handle-table", "direct-kernel-object-manipulation"]
+  },
+  {
+    "term": "Process Environment Block",
+    "slug": "process-environment-block",
+    "aka": ["PEB"],
+    "short": "User-mode struct holding a process's image path, modules, and parameters.",
+    "definition": "A user-mode data structure, reachable from a process's memory, that records its image path, command line, environment variables, and the linked lists of loaded modules the loader maintains. It is the user-space counterpart to the kernel's process record.",
+    "significance": "The PEB yields the command line and full image path that started a process, and its module lists can be compared against other views to reveal unlinked or hidden DLLs. Attackers sometimes tamper with PEB fields to spoof the apparent command line or image path.",
+    "example": "Reading the PEB to recover the full command line of a living-off-the-land script that the process list showed only as a generic interpreter name.",
+    "related": ["eprocess", "thread-environment-block", "reflective-dll-loading"]
+  },
+  {
+    "term": "Thread Environment Block",
+    "slug": "thread-environment-block",
+    "aka": ["TEB", "TIB"],
+    "short": "Per-thread struct holding stack bounds and thread-local state.",
+    "definition": "A per-thread user-mode structure that records a thread's stack base and limit, thread-local storage, last-error value, and a pointer back to its process's environment block. Each thread in a process has its own.",
+    "significance": "TEBs let an examiner enumerate a process's threads and locate each thread's stack in memory, which is where call history, arguments, and remnants of executed code can be recovered. Stack ranges from the TEB also help validate whether a thread's start address falls in a legitimate module.",
+    "example": "Using a thread's TEB to find its stack, then carving recently used strings and call frames that reveal what the thread was doing at capture time.",
+    "related": ["process-environment-block", "eprocess", "shellcode"]
+  },
+  {
+    "term": "Page Table",
+    "slug": "page-table",
+    "aka": ["Page Tables", "Page Table Entry", "PTE"],
+    "short": "The hardware mapping from virtual pages to physical frames.",
+    "definition": "The multi-level structures the CPU and OS use to translate a process's virtual addresses into physical memory frames, with each page-table entry recording the backing frame plus present, writable, and no-execute bits. Each process has its own top-level table.",
+    "significance": "Memory analysis depends on these tables to reconstruct what each process actually sees, and the per-page protection bits help flag executable writable regions typical of injected code. Page-table state also explains why parts of an address space may be paged out and absent from a RAM capture.",
+    "example": "Following a process's page tables to translate a suspicious virtual address into a physical offset, then reading the bytes that turned out to be staged shellcode.",
+    "related": ["virtual-to-physical-address-translation", "page-cache", "demand-paging"]
+  },
+  {
+    "term": "Virtual-to-Physical Address Translation",
+    "slug": "virtual-to-physical-address-translation",
+    "aka": ["Address Translation"],
+    "short": "Resolving a process virtual address to its physical RAM offset.",
+    "definition": "The procedure of converting a virtual address used by a process into the physical memory offset that holds the data, by walking the relevant page tables for that process's address space. A memory image is a physical capture, so analysis tools perform this translation to read process-relative data.",
+    "significance": "Without correct translation, a virtual address in one process points to entirely different bytes in physical memory, so getting it right is fundamental to reading the right data and to interpreting kernel and user pointers from a raw capture. It also reveals which pages were resident versus paged out at capture time.",
+    "example": "Translating a kernel pointer found in a driver structure down to a physical frame to confirm the code it referenced was an unsigned, in-memory-only payload.",
+    "related": ["page-table", "demand-paging", "pagefile-analysis"]
+  },
+  {
+    "term": "Pool Tag Scanning",
+    "slug": "pool-tag-scanning",
+    "aka": ["Pool Scanning", "Pool Tag Carving"],
+    "short": "Finding kernel objects by their fixed pool allocation tags.",
+    "definition": "A technique that scans physical memory for the four-byte tags the kernel stamps on pool allocations, then validates the surrounding bytes as a known object type. It recovers structures by signature rather than by following OS-maintained lists.",
+    "significance": "Because it does not rely on linked lists the OS exposes, pool tag scanning recovers objects that have been unlinked or that belong to exited processes, making it a key countermeasure against object-hiding rootkits. It is how many tools enumerate processes, files, mutants, and network objects independently of the live OS view.",
+    "example": "Scanning for the process-object pool tag to surface an EPROCESS that was unlinked from the active-process list to hide a running tool.",
+    "related": ["kernel-pool", "kernel-object", "direct-kernel-object-manipulation"]
+  },
+  {
+    "term": "Kernel Pool",
+    "slug": "kernel-pool",
+    "aka": ["Pool Allocation", "Paged and Nonpaged Pool"],
+    "short": "The kernel's heap, split into paged and nonpaged regions, for objects.",
+    "definition": "The kernel's dynamic memory allocator, divided into paged pool (which can be swapped) and nonpaged pool (always resident), from which drivers and the executive carve allocations for objects and buffers. Each allocation carries a header and a tag identifying its purpose.",
+    "significance": "Most kernel objects of forensic interest live in the pool, so understanding its layout underpins pool-tag scanning and the recovery of processes, handles, and network structures. Nonpaged allocations are guaranteed present in a RAM capture, while paged ones may have been swapped to the pagefile.",
+    "example": "Recognizing that a network-connection object sat in nonpaged pool, so it was reliably present in the memory image even though much of the process was paged out.",
+    "related": ["pool-tag-scanning", "kernel-object", "pagefile-analysis"]
+  },
+  {
+    "term": "Kernel Object",
+    "slug": "kernel-object",
+    "aka": ["Executive Object"],
+    "short": "Kernel-managed structures like processes, files, and events.",
+    "definition": "A managed structure the Windows object manager tracks, such as a process, thread, file, event, or mutant, each with a header, type, and reference count. Handles in user mode ultimately refer to these objects.",
+    "significance": "Enumerating kernel objects from memory reveals what a system was actually doing, files open, synchronization primitives in use, processes alive, independent of potentially subverted APIs. Specific objects, like named mutants, double as malware indicators.",
+    "example": "Listing kernel file objects from a memory image to find a handle to a staging directory that the malware kept open for exfiltration.",
+    "related": ["handle-table", "kernel-pool", "mutant"]
+  },
+  {
+    "term": "Handle Table",
+    "slug": "handle-table",
+    "aka": ["Object Handles"],
+    "short": "A process's table of open references to kernel objects.",
+    "definition": "The per-process structure that maps numeric handle values to the kernel objects a process has opened, along with the granted access rights for each. The kernel maintains it so a process can reference files, keys, events, and other objects.",
+    "significance": "Enumerating a process's handles reveals the files it has open, registry keys it touches, mutants it created, and other processes it has opened for injection, often the clearest evidence of intent. Handles outlive transient activity, capturing relationships that may not appear anywhere else.",
+    "example": "Finding that a benign-looking process held an open handle to another process with full access, consistent with it injecting code into that target.",
+    "related": ["kernel-object", "eprocess", "code-injection"]
+  },
+  {
+    "term": "Mutant",
+    "slug": "mutant",
+    "aka": ["Mutex", "Named Mutex"],
+    "short": "A named synchronization object malware often uses as an infection marker.",
+    "definition": "A kernel synchronization object, exposed to user mode as a mutex, used to coordinate exclusive access among threads or processes. When given a fixed name, it persists in the object namespace while a process holds it.",
+    "significance": "Malware frequently creates a uniquely named mutant to avoid reinfecting a host, so that name becomes a high-value indicator that can be hunted in memory and across an environment. Listing named mutants from a capture can fingerprint a specific malware family.",
+    "example": "Spotting a hardcoded, unusually named mutant in a memory image that matched a known family's infection marker, confirming the variant.",
+    "related": ["kernel-object", "handle-table", "indicator-extraction"]
+  },
+  {
+    "term": "Direct Kernel Object Manipulation",
+    "slug": "direct-kernel-object-manipulation",
+    "aka": ["DKOM"],
+    "short": "Editing in-memory kernel structures to hide processes or drivers.",
+    "definition": "A rootkit technique that alters live kernel structures directly, for example unlinking an EPROCESS from the active-process list, so the object still exists and runs but no longer appears in the lists the OS enumerates. It manipulates data rather than hooking code.",
+    "significance": "DKOM defeats tools that trust OS-maintained lists, which is exactly why memory forensics leans on signature-based scanning to find objects the manipulation tried to hide. The discrepancy between a scan and the linked list is itself a strong detection signal.",
+    "example": "A process invisible to the live task list but recovered by pool-tag scanning, its forward and backward list pointers rewritten to splice it out.",
+    "related": ["pool-tag-scanning", "eprocess", "kernel-object"]
+  },
+  {
+    "term": "System Service Dispatch Table Hooking",
+    "slug": "system-service-dispatch-table-hooking",
+    "aka": ["SSDT Hooking"],
+    "short": "Redirecting system-call entries to attacker code in the kernel.",
+    "definition": "A kernel hooking technique that overwrites entries in the system service dispatch table, which maps system-call numbers to their handler routines, so calls are diverted through malicious code first. The redirected entries point outside the legitimate kernel image.",
+    "significance": "SSDT hooks let a rootkit filter or falsify the results of core system calls, hiding files, processes, or registry keys from anything that asks the kernel. In memory analysis, dispatch-table entries pointing outside known modules are a reliable hooking indicator.",
+    "example": "A system service table entry resolving to an unsigned region rather than the kernel image, revealing a rootkit intercepting directory enumeration.",
+    "related": ["interrupt-descriptor-table-hooking", "irp-hooking", "inline-api-hooking"]
+  },
+  {
+    "term": "Interrupt Descriptor Table Hooking",
+    "slug": "interrupt-descriptor-table-hooking",
+    "aka": ["IDT Hooking"],
+    "short": "Hijacking interrupt handlers by editing the IDT in memory.",
+    "definition": "A technique that modifies entries in the interrupt descriptor table, the structure mapping interrupt and exception vectors to their handler routines, so an attacker's code runs when a chosen interrupt fires. The altered descriptors point at code outside the expected handlers.",
+    "significance": "Because interrupts are fundamental to system operation, hooking them gives a rootkit a stealthy, low-level execution and interception point that ordinary tools never inspect. Comparing IDT handler addresses against known-good modules in a memory image exposes the tampering.",
+    "example": "An IDT entry whose handler address fell inside an unbacked memory region instead of the kernel, flagging a low-level rootkit.",
+    "related": ["system-service-dispatch-table-hooking", "irp-hooking", "kernel-object"]
+  },
+  {
+    "term": "IRP Hooking",
+    "slug": "irp-hooking",
+    "aka": ["IRP Major Function Hooking", "Driver Dispatch Hooking"],
+    "short": "Hooking a driver's I/O request handlers to intercept device traffic.",
+    "definition": "A technique that overwrites the I/O request packet dispatch routine pointers in a driver object, so requests to that device or file-system stack pass through attacker code. The hooked function-table entries point away from the owning driver's image.",
+    "significance": "IRP hooks let malware tamper with file, disk, or network I/O at the driver layer, hiding or altering data as it flows through the stack. Driver dispatch entries that resolve outside the driver's own module are a clear hooking indicator in a memory image.",
+    "example": "A file-system filter driver's read dispatch pointer redirected into a hidden module that stripped malicious files from directory results.",
+    "related": ["system-service-dispatch-table-hooking", "interrupt-descriptor-table-hooking", "kernel-object"]
+  },
+  {
+    "term": "Inline API Hooking",
+    "slug": "inline-api-hooking",
+    "aka": ["API Hooking", "Inline Hooking", "Trampoline Hooking"],
+    "short": "Patching a function's first bytes to detour calls into malicious code.",
+    "definition": "A technique that overwrites the opening instructions of an API function in memory with a jump to attacker-controlled code, which can inspect or alter arguments and results before optionally returning to the original. It can target user-mode libraries or kernel routines.",
+    "significance": "Inline hooks let malware intercept security-relevant calls, filter what a process sees, or steal data such as credentials as it passes through an API. Comparing a function's in-memory prologue against the clean on-disk bytes makes the patch obvious.",
+    "example": "The first bytes of a network send routine replaced with a jump into injected code, revealing a hook that siphoned data before transmission.",
+    "related": ["malfind", "code-injection", "shellcode"]
+  },
+  {
+    "term": "Code Injection",
+    "slug": "code-injection",
+    "aka": ["Process Injection", "Memory Injection"],
+    "short": "Placing and running attacker code inside another process's memory.",
+    "definition": "A family of techniques that write executable code into the address space of another, often legitimate, process and cause it to run there, for example by allocating memory and creating a remote thread. The host process lends its identity and trust to the injected code.",
+    "significance": "Injection lets malware execute under a trusted process to evade detection and access that process's privileges and network reach, which is why comparing memory regions against backing files is central to memory analysis. Private executable regions with no file behind them are the hallmark.",
+    "example": "An attacker allocating an executable region in a trusted process, writing a payload, and starting a thread at its base, surfaced by an executable VAD region with no mapped image.",
+    "related": ["virtual-address-descriptor-tree", "malfind", "reflective-dll-loading"]
+  },
+  {
+    "term": "Injected Code Detection",
+    "slug": "malfind",
+    "aka": ["Malfind Technique", "Injected Region Hunting"],
+    "short": "Finding hidden code by pairing region protections with backing files.",
+    "definition": "An analysis method that scans each process's memory regions for ranges that are both executable and writable yet have no file mapped behind them, then inspects their contents for code. It cross-references VAD protection flags with what the OS records as the region's backing.",
+    "significance": "This is one of the fastest ways to surface injected payloads and shellcode in a memory image, since legitimate code almost always comes from a file-backed, non-writable mapping. It triages which processes to examine before any disassembly begins.",
+    "example": "Flagging an executable, writable, unbacked region inside a trusted service, then confirming its first bytes decoded as a reflective loader stub.",
+    "related": ["code-injection", "virtual-address-descriptor-tree", "shellcode"]
+  },
+  {
+    "term": "Shellcode",
+    "slug": "shellcode",
+    "aka": ["Position-Independent Code"],
+    "short": "Compact, self-contained machine code that runs from an injected buffer.",
+    "definition": "A small piece of position-independent machine code crafted to execute from wherever it is placed in memory, resolving the APIs it needs at runtime rather than relying on a loader. It is the typical first-stage payload of an exploit or injection.",
+    "significance": "Because shellcode runs from raw buffers with no file or module backing, memory forensics is often the only place to recover and analyze it. Disassembling shellcode from a capture reveals the API resolution, decoding, and follow-on stages an attacker used.",
+    "example": "Carving an executable buffer from a process's heap and disassembling it to find an API-hashing routine that built a download-and-run capability in memory.",
+    "related": ["code-injection", "malfind", "thread-environment-block"]
+  },
+  {
+    "term": "Reflective DLL Loading",
+    "slug": "reflective-dll-loading",
+    "aka": ["Reflective Loading", "Manual Mapping"],
+    "short": "Loading a DLL from memory while bypassing the OS loader and its lists.",
+    "definition": "A technique where code maps a DLL into a process directly from a memory buffer, performing relocation and import resolution itself instead of calling the normal loader. Because the OS loader is bypassed, the module never appears in the loaded-module lists.",
+    "significance": "Reflectively loaded modules run without touching disk and without registering in the loader's lists, so they evade module-walking tools and demand region-based hunting in memory. Executable regions whose contents parse as a PE but are not in any module list are the giveaway.",
+    "example": "Finding PE headers inside a private memory region of a process whose loaded-module list omitted any such DLL, the signature of a reflectively loaded implant.",
+    "related": ["code-injection", "process-environment-block", "malfind"]
+  },
+  {
+    "term": "Memory-Mapped File",
+    "slug": "memory-mapped-file",
+    "aka": ["Section Object", "File Mapping"],
+    "short": "A file whose contents are mapped into a process's address space.",
+    "definition": "A file or pagefile-backed range projected into virtual memory through a section object, so a process accesses its contents as if they were ordinary memory. Executable images and shared memory are commonly implemented this way.",
+    "significance": "Mapped files let an examiner recover the actual in-memory contents of executables and data files, which may differ from the on-disk copy after unpacking or tampering. Comparing a mapped image against its disk file is how process-replacement and patching are detected.",
+    "example": "Dumping the mapped image of a running process and finding its in-memory code diverged from the on-disk binary, exposing a hollowed-out process.",
+    "related": ["page-cache", "virtual-address-descriptor-tree", "demand-paging"]
+  },
+  {
+    "term": "Page Cache",
+    "slug": "page-cache",
+    "aka": ["File Cache", "Cached File Pages", "Standby List"],
+    "short": "File data kept resident in RAM that can be recovered from a capture.",
+    "definition": "The portion of physical memory the OS uses to hold recently accessed file contents so they need not be reread from disk, including pages on the standby list that are no longer actively used but not yet repurposed. These pages persist in RAM until reclaimed.",
+    "significance": "Cached pages let an examiner recover fragments or whole copies of files that were opened, including ones since deleted or never written back, straight from a memory image. The standby list in particular often retains data from recently closed files.",
+    "example": "Reconstructing a malicious script from cached file pages in RAM even though the dropper had already deleted the file from disk.",
+    "related": ["memory-mapped-file", "demand-paging", "registry-hive-in-memory"]
+  },
+  {
+    "term": "Registry Hive in Memory",
+    "slug": "registry-hive-in-memory",
+    "aka": ["In-Memory Hive", "Cached Registry"],
+    "short": "Live registry hives resident in RAM, recoverable from a capture.",
+    "definition": "The configuration-manager hives that Windows keeps mapped in kernel memory, including volatile keys that exist only at runtime. A memory image can yield current key and value data without touching the on-disk hive files.",
+    "significance": "In-memory hives expose the live state of persistence keys, recently set values, and volatile hives that never hit disk, sometimes the freshest evidence of an attacker's footholds. They also reveal values that were created and deleted between disk flushes.",
+    "example": "Recovering a run-key value from an in-memory hive that pointed at an implant, even though the value had not yet been written to the on-disk hive.",
+    "related": ["page-cache", "kernel-pool", "indicator-extraction"]
+  },
+  {
+    "term": "Access Token",
+    "slug": "access-token",
+    "aka": ["Security Token", "Token Object"],
+    "short": "The kernel object holding a process's identity and privileges.",
+    "definition": "A kernel object attached to a process or thread that carries the security identifiers, group memberships, and privileges defining what it may do. Threads can also carry an impersonation token reflecting another identity.",
+    "significance": "Examining tokens in memory reveals the effective rights a process was running with and uncovers privilege escalation or token theft, where a thread impersonates a more powerful account. Anomalous privileges or a mismatched impersonation token are strong indicators of abuse.",
+    "example": "Finding a normally low-privileged service thread carrying an impersonation token for a domain administrator, evidence of token theft in progress.",
+    "related": ["eprocess", "handle-table", "kernel-object"]
+  },
+  {
+    "term": "Console Command History",
+    "slug": "console-command-history",
+    "aka": ["Command History", "Console History Buffer"],
+    "short": "Typed commands and console output recoverable from RAM.",
+    "definition": "The buffers the console subsystem keeps for command-line sessions, holding the history of commands a user typed and, often, the screen output those commands produced. This state lives in the memory of the process that hosts the console.",
+    "significance": "Recovering command history from a memory image can reconstruct exactly what an attacker typed and saw at an interactive shell, even when no logging was enabled. It is some of the most direct evidence of hands-on-keyboard activity available.",
+    "example": "Pulling the full sequence of reconnaissance and credential commands an intruder ran from the console history buffers in a RAM capture.",
+    "related": ["eprocess", "access-token", "indicator-extraction"]
+  },
+  {
+    "term": "Network Connection Artifacts",
+    "slug": "network-connection-artifacts",
+    "aka": ["Socket Objects", "In-Memory Connections"],
+    "short": "Active and recent network endpoints recovered from kernel memory.",
+    "definition": "The kernel structures that track sockets and TCP/UDP endpoints, recording local and remote addresses, ports, state, and the owning process. Memory analysis recovers these to reconstruct a host's network activity.",
+    "significance": "These artifacts tie a suspicious remote address to the exact process that owned the connection, linking network indicators to a process in memory, including connections that closed before any flow logging caught them. They are central to identifying command-and-control from a capture.",
+    "example": "Recovering a connection object that mapped a beaconing remote address back to an injected thread inside an otherwise trusted process.",
+    "related": ["eprocess", "kernel-pool", "indicator-extraction"]
+  },
+  {
+    "term": "Hibernation File",
+    "slug": "hibernation-file",
+    "aka": ["Hiberfil.sys"],
+    "short": "A compressed snapshot of RAM written to disk when a system hibernates.",
+    "definition": "A file Windows writes when a machine hibernates, containing a compressed image of physical memory at that moment so the session can be restored. It is stored on the system volume and reflects the state when hibernation began.",
+    "significance": "Decompressed, a hibernation file is effectively a past memory image, letting an examiner analyze RAM from a point before the capture, sometimes the only volatile evidence left after a clean shutdown. It can preserve processes and secrets that no live capture caught.",
+    "example": "Decompressing a hibernation file from an imaged disk to recover the running processes and a decryption key present at the moment the laptop was hibernated.",
+    "related": ["crash-dump", "pagefile-analysis", "page-smear"]
+  },
+  {
+    "term": "Crash Dump",
+    "slug": "crash-dump",
+    "aka": ["Memory Dump", "Minidump", "Kernel Dump"],
+    "short": "An OS-generated memory snapshot written when the system or a process fails.",
+    "definition": "A file the operating system writes when it crashes or a process faults, ranging from a small minidump to a complete copy of physical memory. It records memory state at the moment of failure for debugging.",
+    "significance": "Crash dumps are an opportunistic source of volatile evidence: a complete dump can be analyzed much like a deliberate memory image, and a process minidump can preserve injected code or secrets after the fact. They may exist on a host even when no formal acquisition was performed.",
+    "example": "Analyzing a complete memory dump left by a system crash to recover the malicious driver that triggered the fault and the processes alive at the time.",
+    "related": ["hibernation-file", "pagefile-analysis", "page-smear"]
+  },
+  {
+    "term": "Pagefile Analysis",
+    "slug": "pagefile-analysis",
+    "aka": ["Swap Analysis", "Pagefile.sys"],
+    "short": "Recovering evidence from memory pages the OS swapped out to disk.",
+    "definition": "The examination of the backing store, the pagefile or swap, where the OS writes memory pages it has evicted from RAM to free physical memory. It holds data that was in memory but was not resident at capture time.",
+    "significance": "Because paged-out content is missing from a RAM image, the pagefile can supply the rest of a process's memory and recover secrets, strings, or code that swapping displaced. Correlating it with a memory capture mitigates the gaps that demand paging creates.",
+    "example": "Recovering the remainder of an injected payload from the pagefile after only part of its memory region was resident in the RAM image.",
+    "related": ["demand-paging", "memory-mapped-file", "crash-dump"]
+  },
+  {
+    "term": "Page Smear",
+    "slug": "page-smear",
+    "aka": ["Memory Smear", "Page Smearing"],
+    "short": "Inconsistency in a memory image from RAM changing during acquisition.",
+    "definition": "An artifact of capturing the memory of a live, running system, where contents change while the acquisition is underway, so different parts of the image reflect slightly different moments. The result can include structures that no longer agree with the page tables meant to describe them.",
+    "significance": "Smear can break address translation and corrupt the parsing of structures, producing missing or implausible results that an analyst must recognize rather than mistake for tampering. It motivates faster, atomic capture methods and careful interpretation of inconsistent findings.",
+    "example": "A pointer in a memory image translating to garbage because the page tables shifted mid-capture, a smear effect rather than evidence of a rootkit.",
+    "related": ["virtual-to-physical-address-translation", "crash-dump", "hibernation-file"]
+  },
+  {
+    "term": "Kernel Debugger Block",
+    "slug": "kernel-debugger-block",
+    "aka": ["KDBG", "KdDebuggerDataBlock"],
+    "short": "A kernel structure that anchors analysis of a Windows memory image.",
+    "definition": "A data block the Windows kernel maintains for debugging that points to core structures such as the active-process list head, loaded-module list, and version information. Memory tools locate it to bootstrap their parsing of an image.",
+    "significance": "Finding this block lets analysis tools orient themselves in a capture and confirm the OS build, so correct symbols are applied, getting it wrong yields unreliable output. Its presence and integrity are often the first thing validated when an image is opened.",
+    "example": "Locating the debugger block in a memory image to find the active-process list head and confirm the exact Windows build before deeper analysis.",
+    "related": ["page-table", "eprocess", "virtual-to-physical-address-translation"]
+  },
+  {
+    "term": "Demand Paging",
+    "slug": "demand-paging",
+    "aka": ["Paging", "On-Demand Paging"],
+    "short": "Loading pages into RAM only when accessed, leaving gaps in captures.",
+    "definition": "The memory-management scheme that brings a page into physical memory only when it is first touched and evicts inactive pages to the backing store under pressure. As a result, only a subset of a process's address space is resident at any moment.",
+    "significance": "Demand paging is why a RAM capture is incomplete: pages never touched or since evicted are absent, so analysts must turn to the pagefile or hibernation file to fill the gaps. Understanding it sets realistic expectations for what a memory image can and cannot contain.",
+    "example": "A process region appearing empty in the RAM image because those pages were never faulted in, with the data instead reconstructed from the pagefile.",
+    "related": ["pagefile-analysis", "page-table", "page-cache"]
+  },
+  {
+    "term": "Indicator Extraction from Memory",
+    "slug": "indicator-extraction",
+    "aka": ["String Extraction", "Memory Triage"],
+    "short": "Pulling addresses, names, and strings from RAM to drive a hunt.",
+    "definition": "The practice of harvesting observable artifacts, remote addresses, file paths, mutant names, URLs, and strings, from a memory image so they can be used to scope an incident. It turns raw memory contents into searchable indicators.",
+    "significance": "Indicators recovered from memory often surface activity that left nothing on disk, then seed sweeps across an environment to find other affected hosts. It bridges a single memory analysis to enterprise-wide detection and scoping.",
+    "example": "Extracting a command-and-control address and a mutant name from one host's memory image, then sweeping the fleet for both to find every infected machine.",
+    "related": ["network-connection-artifacts", "mutant", "console-command-history"]
+  }
+]

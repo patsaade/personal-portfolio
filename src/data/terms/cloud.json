@@ -1,0 +1,563 @@
+[
+  {
+    "term": "Shared Responsibility Model",
+    "slug": "shared-responsibility-model",
+    "short": "The split of security duties between a cloud provider and its customer.",
+    "definition": "A framework that divides security obligations between the cloud provider, who secures the underlying infrastructure, and the customer, who secures their data, identities, and configurations. Where the line falls shifts with the service model, from infrastructure to platform to fully managed offerings.",
+    "significance": "Most cloud breaches stem from the customer side of the line, so knowing exactly which controls you own determines what you can detect, log, and investigate after an incident.",
+    "example": "A responder traces a leaked customer database back to a bucket the team left world-readable, squarely on the customer's half of the model rather than the provider's.",
+    "related": [
+      "cloud-misconfiguration",
+      "cloud-audit-logging",
+      "identity-and-access-management"
+    ]
+  },
+  {
+    "term": "Identity and Access Management",
+    "slug": "identity-and-access-management",
+    "aka": [
+      "IAM"
+    ],
+    "short": "The system of identities, roles, and policies that gates access to cloud resources.",
+    "definition": "The collection of users, groups, roles, and policies that defines who or what can perform which actions on which cloud resources. It is the primary control plane for authorization across an account or organization.",
+    "significance": "IAM is the front door of every cloud environment, so misconfigured or over-broad policies are a leading root cause of compromise and a first stop in any cloud investigation.",
+    "example": "An analyst reviewing an intrusion finds a policy granting wildcard actions on all resources, the pivot point the attacker used to escalate.",
+    "related": [
+      "over-permissioned-role",
+      "role-assumption",
+      "cloud-privilege-escalation"
+    ]
+  },
+  {
+    "term": "Role Assumption",
+    "slug": "role-assumption",
+    "aka": [
+      "AssumeRole",
+      "Role chaining"
+    ],
+    "short": "Temporarily taking on a role's permissions to act as a different identity.",
+    "definition": "A mechanism by which a principal exchanges its own identity for the permissions of a defined role, receiving short-lived credentials scoped to that role. Chaining multiple assumptions lets one identity hop across permission boundaries or accounts.",
+    "significance": "Attackers abuse role assumption to launder their actions through trusted identities and cross account lines, which can fragment the audit trail unless every hop is logged and correlated.",
+    "example": "Reconstructing an incident, an investigator follows a chain of three assumed roles that carried the intruder from a low-privilege user into an administrative account.",
+    "related": [
+      "temporary-credentials",
+      "identity-and-access-management",
+      "cloud-privilege-escalation"
+    ]
+  },
+  {
+    "term": "Over-Permissioned Role",
+    "slug": "over-permissioned-role",
+    "aka": [
+      "Excessive privilege",
+      "Overprivileged identity"
+    ],
+    "short": "An identity granted far more access than its actual job requires.",
+    "definition": "A role, user, or service identity that holds permissions well beyond what its workload needs, often through broad wildcards or unused grants accumulated over time. It widens the blast radius of any compromise of that identity.",
+    "significance": "Excessive privilege turns a minor foothold into a major incident, so identifying and right-sizing these roles is central both to prevention and to scoping how far an attacker could have reached.",
+    "example": "During scoping, a responder notes the compromised build agent could delete any resource in the account because nobody trimmed its starter policy.",
+    "related": [
+      "identity-and-access-management",
+      "cloud-privilege-escalation",
+      "cloud-infrastructure-entitlement-management"
+    ]
+  },
+  {
+    "term": "Cloud Privilege Escalation",
+    "slug": "cloud-privilege-escalation",
+    "short": "Abusing IAM relationships to gain higher access than originally granted.",
+    "definition": "The act of leveraging permission misconfigurations, such as the ability to edit policies, create access keys, or pass roles, to elevate from limited access toward administrative control. Escalation paths in the cloud are usually identity logic rather than memory-corruption bugs.",
+    "significance": "Cloud escalation often hides in legitimate-looking API calls, so mapping the viable escalation paths in an environment is essential for both red teams and responders reconstructing how control was seized.",
+    "example": "An investigator finds the attacker used a single permission to attach an admin policy to their own user, the lone step that unlocked the whole account.",
+    "related": [
+      "over-permissioned-role",
+      "role-assumption",
+      "access-keys"
+    ]
+  },
+  {
+    "term": "Instance Metadata Service",
+    "slug": "instance-metadata-service",
+    "aka": [
+      "IMDS",
+      "Metadata endpoint"
+    ],
+    "short": "A link-local endpoint that hands instance credentials and config to a VM.",
+    "definition": "A non-routable endpoint reachable only from within a virtual machine that returns instance configuration and, critically, the temporary credentials of the instance's attached role. It exists so workloads can obtain credentials without embedding secrets.",
+    "significance": "Because a server-side request forgery flaw can trick an application into reading this endpoint, it is one of the most common bridges from a web vulnerability to live cloud credentials.",
+    "example": "Triaging a breach, an analyst sees outbound calls fetching the metadata credentials path moments before those exact keys appeared in API logs from an attacker IP.",
+    "related": [
+      "server-side-request-forgery-to-credentials",
+      "temporary-credentials",
+      "cloud-audit-logging"
+    ]
+  },
+  {
+    "term": "SSRF to Credential Theft",
+    "slug": "server-side-request-forgery-to-credentials",
+    "aka": [
+      "SSRF-to-IMDS"
+    ],
+    "short": "Using a server-side request forgery flaw to steal a VM's role credentials.",
+    "definition": "An attack chain where a server-side request forgery vulnerability is pointed at the instance metadata endpoint, causing a victim application to fetch and leak the underlying instance's temporary credentials. The application's own network position is what makes the metadata reachable.",
+    "significance": "This pattern converts a common web vulnerability directly into valid cloud credentials, making it a high-priority detection and a frequent first link in cloud breach timelines.",
+    "example": "A responder confirms the intruder coerced a vulnerable PDF generator into returning metadata credentials, then replayed them from outside the network.",
+    "related": [
+      "instance-metadata-service",
+      "temporary-credentials",
+      "cloud-audit-logging"
+    ]
+  },
+  {
+    "term": "Temporary Credentials",
+    "slug": "temporary-credentials",
+    "aka": [
+      "Short-lived credentials",
+      "STS tokens"
+    ],
+    "short": "Time-limited, automatically expiring credentials issued for a session or role.",
+    "definition": "Access credentials that carry a built-in expiry, typically minutes to hours, issued when an identity assumes a role or starts a session. They reduce the value of stolen secrets because they stop working once they lapse.",
+    "significance": "Their short life shapes investigations, since a stolen token narrows the attack window, but it also means responders must capture logs quickly before the relevant session context ages out.",
+    "example": "An analyst notes the attacker's stolen token was valid for only one hour, which neatly bounds the window of malicious API calls to investigate.",
+    "related": [
+      "role-assumption",
+      "instance-metadata-service",
+      "access-keys"
+    ]
+  },
+  {
+    "term": "Access Keys",
+    "slug": "access-keys",
+    "aka": [
+      "Long-lived keys",
+      "API keys"
+    ],
+    "short": "Static, long-lived credential pairs used to authenticate to cloud APIs.",
+    "definition": "Durable credential pairs, typically an identifier and a secret, attached to a user or service identity for programmatic API access. Unlike temporary credentials, they remain valid until explicitly rotated or revoked.",
+    "significance": "Leaked static keys are a perennial source of breaches because they often sit in code, history, or config files and keep working indefinitely, so hunting for exposed keys is a routine DFIR task.",
+    "example": "A reviewer discovers a developer's long-lived key committed to a public repository months earlier, matching the credential the intruder used to enumerate the account.",
+    "related": [
+      "temporary-credentials",
+      "secrets-management",
+      "cloud-privilege-escalation"
+    ]
+  },
+  {
+    "term": "Service Account",
+    "slug": "service-account",
+    "aka": [
+      "Machine identity",
+      "Non-human identity"
+    ],
+    "short": "A non-human identity used by an application or workload, not a person.",
+    "definition": "An identity created for software, automation, or a workload to authenticate and act on its own, rather than for a human user. It carries its own permissions and credentials and frequently runs unattended.",
+    "significance": "Service accounts are often over-permissioned, rarely rotated, and lightly monitored, which makes them attractive footholds and an easy way for attackers to blend into expected automation.",
+    "example": "An investigator flags after-hours activity from a deployment service account that normally only runs during business-hour pipelines.",
+    "related": [
+      "workload-identity",
+      "over-permissioned-role",
+      "secrets-management"
+    ]
+  },
+  {
+    "term": "Workload Identity",
+    "slug": "workload-identity",
+    "aka": [
+      "Workload identity federation"
+    ],
+    "short": "Giving running workloads short-lived identity without embedded static secrets.",
+    "definition": "An approach that assigns identity to a running workload, such as a pod or function, and lets it obtain short-lived credentials based on platform attestation rather than a stored secret. It binds permissions to the workload itself instead of to a copied key.",
+    "significance": "By removing long-lived secrets from the workload, this design shrinks the credential-theft attack surface, and understanding it tells responders where credentials actually come from during an incident.",
+    "example": "A responder confirms the breached pod had no static key to steal because its identity was minted on demand and scoped to a single namespace.",
+    "related": [
+      "service-account",
+      "temporary-credentials",
+      "kubernetes-rbac"
+    ]
+  },
+  {
+    "term": "Cloud Audit Logging",
+    "slug": "cloud-audit-logging",
+    "aka": [
+      "Control plane logs",
+      "API activity logs"
+    ],
+    "short": "The record of management-plane API calls made across a cloud account.",
+    "definition": "A service-generated log that records who called which management API, when, from where, and with what result, across an account or organization. It is the primary forensic timeline for cloud activity.",
+    "significance": "These logs are often the only durable evidence of an attacker's cloud actions, so confirming they are enabled, centralized, and tamper-resistant is one of the first things a responder checks.",
+    "example": "Pulling the audit trail, an analyst reconstructs the full sequence from the first stolen-credential call to the attempt to disable logging itself.",
+    "related": [
+      "shared-responsibility-model",
+      "cloud-persistence"
+    ]
+  },
+  {
+    "term": "Misconfigured Storage Bucket",
+    "slug": "misconfigured-storage-bucket",
+    "aka": [
+      "Open bucket",
+      "Exposed object store"
+    ],
+    "short": "An object-storage container whose permissions expose data more broadly than intended.",
+    "definition": "A storage container whose access policy or access-control settings allow unintended parties, often the entire internet, to list or read its contents. The exposure usually comes from a permissive policy rather than a software flaw.",
+    "significance": "Open buckets are among the most common and most damaging cloud data leaks, so checking object-store exposure is a standard part of both proactive review and post-incident scoping.",
+    "example": "A responder confirms a customer-data leak originated from a backup bucket left publicly listable after a hurried migration.",
+    "related": [
+      "cloud-misconfiguration",
+      "security-groups-and-nacls"
+    ]
+  },
+  {
+    "term": "Security Groups and NACLs",
+    "slug": "security-groups-and-nacls",
+    "aka": [
+      "Cloud firewall rules",
+      "Network ACLs"
+    ],
+    "short": "Virtual firewall rules that filter traffic to cloud workloads and subnets.",
+    "definition": "Cloud-native network controls where security groups act as stateful filters around instances and network access control lists act as stateless filters at the subnet boundary. Together they define what traffic can reach a workload.",
+    "significance": "Overly permissive rules are a common cause of exposure and lateral reach, and the rule history is valuable evidence when reconstructing how an attacker entered or moved.",
+    "example": "An investigator finds a security group changed to allow remote access from any address minutes before the unauthorized login.",
+    "related": [
+      "cloud-misconfiguration",
+      "cloud-lateral-movement"
+    ]
+  },
+  {
+    "term": "Cloud Misconfiguration",
+    "slug": "cloud-misconfiguration",
+    "short": "A security-weakening setting left in an insecure or default state.",
+    "definition": "Any cloud setting that diverges from a secure baseline, such as disabled logging, public access, weak encryption, or absent guardrails. It is a configuration error rather than a code vulnerability.",
+    "significance": "Misconfiguration is consistently the dominant root cause of cloud incidents, which is why automated posture checks and configuration review feature so heavily in cloud defense and investigation.",
+    "example": "A reviewer traces the breach to a single deployment that shipped with default credentials and public access both left on.",
+    "related": [
+      "cloud-security-posture-management",
+      "misconfigured-storage-bucket",
+      "infrastructure-as-code-scanning"
+    ]
+  },
+  {
+    "term": "Serverless Function Security",
+    "slug": "serverless-function-security",
+    "aka": [
+      "Function-as-a-Service security",
+      "FaaS security"
+    ],
+    "short": "Securing short-lived, event-driven functions and their permissions and inputs.",
+    "definition": "The practice of securing event-driven functions that run on demand without managed servers, covering their attached permissions, dependencies, environment variables, and untrusted event inputs. The provider runs the host, but the function's code and grants belong to the customer.",
+    "significance": "Functions are ephemeral and leave little to image, so investigations lean heavily on logs and configuration, and an over-permissioned function can become a quiet pivot point.",
+    "example": "A responder reconstructs abuse of a function whose role could write to every queue, using only its invocation logs since nothing persisted on disk.",
+    "related": [
+      "ephemeral-compute-forensics",
+      "over-permissioned-role",
+      "cloud-audit-logging"
+    ]
+  },
+  {
+    "term": "Container Escape",
+    "slug": "container-escape",
+    "aka": [
+      "Container breakout"
+    ],
+    "short": "Breaking out of a container's isolation to reach the host or other workloads.",
+    "definition": "An attack that defeats the isolation boundary of a container to gain code execution on the underlying host or access to neighboring containers. It typically exploits misconfiguration, excessive privileges, or a runtime vulnerability.",
+    "significance": "A successful escape collapses the boundary defenders rely on, exposing every workload on the node, so detecting and preventing escape conditions is a top container-security priority.",
+    "example": "An analyst confirms the attacker escaped a container by abusing a writable host path, then read secrets belonging to unrelated pods on the same node.",
+    "related": [
+      "privileged-container",
+      "pod-security"
+    ]
+  },
+  {
+    "term": "Privileged Container",
+    "slug": "privileged-container",
+    "short": "A container run with host-level capabilities that erase most isolation.",
+    "definition": "A container launched with elevated privileges and broad host capabilities, effectively granting it the access of the host rather than a constrained sandbox. This configuration removes most of the boundaries that normally separate a container from its host.",
+    "significance": "Privileged containers are a leading container-escape enabler, so finding one is both a serious misconfiguration to remediate and a likely escalation path to examine during an incident.",
+    "example": "A responder notes a debugging container left running in privileged mode, the exact route the intruder used to reach the host filesystem.",
+    "related": [
+      "container-escape",
+      "pod-security"
+    ]
+  },
+  {
+    "term": "Container Image Scanning",
+    "slug": "container-image-scanning",
+    "aka": [
+      "Image vulnerability scanning"
+    ],
+    "short": "Inspecting container images for known vulnerabilities and exposed secrets.",
+    "definition": "The automated analysis of a container image's layers and packages to surface known vulnerabilities, embedded secrets, and risky configuration before or after deployment. It examines the image contents rather than the running workload.",
+    "significance": "Scanning catches inherited flaws and accidentally baked-in credentials early, and during an incident the scan history helps determine whether a deployed image carried a known exploitable vulnerability.",
+    "example": "A responder confirms the exploited service shipped from an image flagged weeks earlier for a critical library flaw that was never patched.",
+    "related": [
+      "registry-security",
+      "image-provenance",
+      "cloud-workload-protection-platform"
+    ]
+  },
+  {
+    "term": "Image Provenance and Signing",
+    "slug": "image-provenance",
+    "aka": [
+      "Image signing",
+      "Software provenance"
+    ],
+    "short": "Cryptographically proving where a container image came from and that it is unaltered.",
+    "definition": "The practice of attaching verifiable metadata and cryptographic signatures to container images so consumers can confirm the image's origin and that it has not been tampered with. Verification can be enforced as an admission gate before deployment.",
+    "significance": "Provenance defends against supply-chain tampering and substituted images, and during an incident a signature mismatch is strong evidence that a malicious image slipped into the pipeline.",
+    "example": "An investigator finds the running image had no valid signature, indicating it bypassed the build pipeline and was pushed directly by the attacker.",
+    "related": [
+      "registry-security",
+      "container-image-scanning",
+      "secrets-management"
+    ]
+  },
+  {
+    "term": "Registry Security",
+    "slug": "registry-security",
+    "aka": [
+      "Container registry hardening"
+    ],
+    "short": "Protecting the store of container images from tampering and unauthorized access.",
+    "definition": "The controls that protect a container image registry, including access restrictions, signing enforcement, vulnerability gating, and audit logging of pushes and pulls. The registry is the distribution chokepoint for what runs in an environment.",
+    "significance": "A compromised registry can poison every downstream deployment, so its access and integrity controls are a critical supply-chain defense and a key place to look when malicious images appear.",
+    "example": "A responder discovers a stolen push credential let the attacker overwrite a trusted image tag with a backdoored build for everyone pulling it.",
+    "related": [
+      "image-provenance",
+      "container-image-scanning",
+      "secrets-management"
+    ]
+  },
+  {
+    "term": "Kubernetes RBAC",
+    "slug": "kubernetes-rbac",
+    "aka": [
+      "Cluster role-based access control"
+    ],
+    "short": "Role-based authorization governing what identities can do in a cluster.",
+    "definition": "The role-based access control system that governs which subjects can perform which actions on which resources within a Kubernetes cluster, expressed through roles and bindings. It is the cluster's primary authorization layer.",
+    "significance": "Loose cluster permissions, such as the ability to read all secrets or create privileged pods, are common escalation paths, so reviewing bindings is central to both hardening and incident scoping.",
+    "example": "An analyst finds a service account bound to read every secret in the cluster, which is how the intruder harvested credentials after compromising one pod.",
+    "related": [
+      "pod-security",
+      "workload-identity",
+      "cloud-privilege-escalation"
+    ]
+  },
+  {
+    "term": "Pod Security",
+    "slug": "pod-security",
+    "aka": [
+      "Pod security standards"
+    ],
+    "short": "Constraints that limit the privileges and host access a pod may request.",
+    "definition": "A set of admission-time constraints that restrict dangerous pod settings such as privilege escalation, host namespace sharing, and sensitive mounts. Enforcing baseline or restricted profiles keeps risky configurations out of the cluster.",
+    "significance": "Pod-level guardrails are a primary defense against container escape, so their presence or absence often explains how far an attacker could push after landing in a single pod.",
+    "example": "A responder confirms the cluster's missing pod restrictions allowed the attacker to schedule a privileged pod and break out to the node.",
+    "related": [
+      "privileged-container",
+      "container-escape",
+      "kubernetes-rbac"
+    ]
+  },
+  {
+    "term": "Secrets Management",
+    "slug": "secrets-management",
+    "short": "Centralized, controlled storage and delivery of credentials and keys.",
+    "definition": "The discipline and tooling for storing, distributing, rotating, and auditing sensitive values such as passwords, tokens, and keys, so they are not scattered through code or config. Access is brokered and logged rather than copied around.",
+    "significance": "Poor secret handling is a recurring breach cause, and a centralized store gives responders both an access audit trail and a single place to rotate everything once exposure is suspected.",
+    "example": "After a compromise, the team rotates every credential from the central secrets store and uses its access log to see which the attacker had retrieved.",
+    "related": [
+      "key-management-service",
+      "access-keys",
+      "service-account"
+    ]
+  },
+  {
+    "term": "Key Management and Envelope Encryption",
+    "slug": "key-management-service",
+    "aka": [
+      "KMS",
+      "Envelope encryption"
+    ],
+    "short": "Managing encryption keys and wrapping data keys with protected master keys.",
+    "definition": "A managed system for creating, storing, and controlling cryptographic keys, commonly using envelope encryption where a data key encrypts the data and a protected master key encrypts that data key. It centralizes key custody and access control.",
+    "significance": "Because access to the key system can unlock large volumes of data, its permission grants and usage logs are high-value both for protecting data at rest and for detecting bulk decryption during an incident.",
+    "example": "An analyst spots an unusual burst of decrypt operations against a sensitive key, evidence the attacker was reading encrypted data wholesale.",
+    "related": [
+      "secrets-management",
+      "cloud-audit-logging",
+      "snapshot-forensics"
+    ]
+  },
+  {
+    "term": "Cloud Security Posture Management",
+    "slug": "cloud-security-posture-management",
+    "aka": [
+      "CSPM"
+    ],
+    "short": "Continuously checking cloud configuration against secure baselines.",
+    "definition": "A category of capability that continuously inventories cloud resources and evaluates their configuration against security best practices and compliance baselines, flagging drift and misconfiguration. It focuses on the configuration state of the environment.",
+    "significance": "Posture management surfaces the exposures attackers exploit before they are used, and its findings often give responders a head start on where weaknesses already existed.",
+    "example": "A posture report flags a newly public database, and the team closes it before it appears in any of the internet scans they monitor.",
+    "related": [
+      "cloud-misconfiguration",
+      "cloud-workload-protection-platform"
+    ]
+  },
+  {
+    "term": "Cloud Workload Protection Platform",
+    "slug": "cloud-workload-protection-platform",
+    "aka": [
+      "CWPP"
+    ],
+    "short": "Runtime protection and visibility for VMs, containers, and serverless workloads.",
+    "definition": "A category of capability focused on securing running workloads across virtual machines, containers, and serverless, providing vulnerability visibility, integrity monitoring, and runtime threat detection. It watches the workload itself rather than just its configuration.",
+    "significance": "Workload protection supplies the runtime signals, such as unexpected processes or container drift, that turn a configuration finding into an actual detection during an active incident.",
+    "example": "A responder relies on workload telemetry showing a cryptominer process spawning inside a container to confirm hands-on-keyboard activity.",
+    "related": [
+      "cloud-security-posture-management",
+      "resource-hijacking",
+      "container-image-scanning"
+    ]
+  },
+  {
+    "term": "Cloud Infrastructure Entitlement Management",
+    "slug": "cloud-infrastructure-entitlement-management",
+    "aka": [
+      "CIEM"
+    ],
+    "short": "Analyzing and right-sizing who and what can access cloud resources.",
+    "definition": "A category of capability focused on discovering, analyzing, and right-sizing the entitlements held by every identity across a cloud estate, including unused and excessive permissions. It treats identity and access as the primary risk surface.",
+    "significance": "Since identity is the dominant cloud attack surface, entitlement analysis exposes the over-permissioned and dormant identities that escalation paths depend on, aiding both hardening and scoping.",
+    "example": "An entitlement review reveals dozens of identities that could escalate to admin, one of which the attacker had already used.",
+    "related": [
+      "over-permissioned-role",
+      "cloud-privilege-escalation",
+      "identity-and-access-management"
+    ]
+  },
+  {
+    "term": "Infrastructure-as-Code Scanning",
+    "slug": "infrastructure-as-code-scanning",
+    "aka": [
+      "IaC scanning"
+    ],
+    "short": "Checking infrastructure definitions for insecure settings before deployment.",
+    "definition": "The static analysis of infrastructure-as-code templates and manifests to catch insecure settings, such as public access or disabled encryption, before they are provisioned. It shifts configuration security left into the development pipeline.",
+    "significance": "Catching misconfiguration in the definition stops it from ever reaching production, and the code history also tells responders when and how a weakness was introduced.",
+    "example": "A pull-request scan blocks a template that would have created a public bucket, the same class of mistake behind a prior leak.",
+    "related": [
+      "cloud-misconfiguration",
+      "cloud-security-posture-management"
+    ]
+  },
+  {
+    "term": "Cloud Persistence",
+    "slug": "cloud-persistence",
+    "short": "Techniques that let an attacker retain cloud access across sessions.",
+    "definition": "The set of techniques an attacker uses to keep access to a cloud environment over time, such as creating new credentials, adding identity trust, or planting backdoor roles and automation. It survives the loss of the original foothold.",
+    "significance": "Cloud persistence often hides in legitimate identity and configuration changes, so a thorough investigation must hunt for planted access, not just evict the initial entry point.",
+    "example": "A responder finds the attacker created a second access key on a service account and added an external trust, ensuring a way back after cleanup.",
+    "related": [
+      "access-keys",
+      "role-assumption",
+      "cloud-audit-logging"
+    ]
+  },
+  {
+    "term": "Cloud Lateral Movement",
+    "slug": "cloud-lateral-movement",
+    "short": "Pivoting between cloud workloads, accounts, or identities after initial access.",
+    "definition": "The act of moving from an initial foothold to additional resources, accounts, or identities within a cloud environment, often by abusing trust relationships, network reach, or chained roles. It is how a single compromise spreads across the estate.",
+    "significance": "Cloud movement frequently rides on legitimate identity and network paths rather than malware, so mapping trust and reachability is essential to predicting and reconstructing how an attacker spread.",
+    "example": "An analyst traces movement from a compromised function, across an assumed role, into a separate account holding the prize data.",
+    "related": [
+      "role-assumption",
+      "security-groups-and-nacls"
+    ]
+  },
+  {
+    "term": "Cloud Resource Hijacking",
+    "slug": "resource-hijacking",
+    "aka": [
+      "Cryptojacking",
+      "Cloud cryptomining"
+    ],
+    "short": "Abusing compromised cloud compute to run attacker workloads like cryptomining.",
+    "definition": "The misuse of compromised cloud accounts or workloads to run the attacker's own compute-heavy tasks, most commonly cryptocurrency mining, at the victim's expense. The goal is the victim's resources rather than their data.",
+    "significance": "Beyond the surprise bill, resource hijacking is a reliable signal that credentials or workloads were compromised, so a cost or usage spike often becomes the first thread of an investigation.",
+    "example": "A sudden surge in expensive instances across regions tips off the team to a stolen key being used to spin up miners.",
+    "related": [
+      "cloud-workload-protection-platform",
+      "cloud-persistence",
+      "access-keys"
+    ]
+  },
+  {
+    "term": "Ephemeral Compute Forensics",
+    "slug": "ephemeral-compute-forensics",
+    "aka": [
+      "Short-lived workload forensics"
+    ],
+    "short": "Investigating workloads that vanish quickly, like containers and functions.",
+    "definition": "The forensic practice of collecting and reasoning about evidence from short-lived workloads such as containers, functions, and auto-scaled instances that may disappear before traditional acquisition. It leans on telemetry, logs, and rapid capture rather than disk imaging after the fact.",
+    "significance": "Because the host can be gone within minutes, defenders must arrange logging and automated evidence capture in advance, or the only record of an intrusion evaporates with the workload.",
+    "example": "With the malicious container long terminated, an analyst rebuilds its activity from runtime telemetry and centralized logs alone.",
+    "related": [
+      "serverless-function-security",
+      "snapshot-forensics",
+      "cloud-audit-logging"
+    ]
+  },
+  {
+    "term": "Snapshot Forensics",
+    "slug": "snapshot-forensics",
+    "aka": [
+      "Volume snapshot acquisition"
+    ],
+    "short": "Capturing a point-in-time copy of cloud disk or memory for analysis.",
+    "definition": "The technique of creating and preserving a point-in-time copy of a cloud volume or disk, then analyzing that copy as forensic evidence without disturbing the live workload. The cloud provider's snapshot capability stands in for physical imaging.",
+    "significance": "Snapshots let responders acquire evidence at scale and on demand, but they must be taken, isolated, and access-controlled correctly to preserve integrity and avoid tipping off the attacker.",
+    "example": "A responder snapshots the suspect instance's volume and analyzes the copy in an isolated account while the original stays untouched for the record.",
+    "related": [
+      "ephemeral-compute-forensics",
+      "key-management-service"
+    ]
+  },
+  {
+    "term": "Identity Federation",
+    "slug": "identity-federation",
+    "aka": [
+      "Identity broker",
+      "SSO federation"
+    ],
+    "short": "Trusting an external identity provider to authenticate users into the cloud.",
+    "definition": "An arrangement where a cloud environment trusts an external identity provider, via standards such as SAML or OIDC, to authenticate users and assert their identity rather than maintaining separate local accounts. A broker translates that external assertion into cloud access.",
+    "significance": "Federation centralizes authentication but also makes the identity provider a high-value target, since compromising it or its trust configuration can mint access into every connected environment.",
+    "example": "An investigator examines whether forged federation assertions, not stolen passwords, are how the attacker logged in as multiple users.",
+    "related": [
+      "illicit-oauth-grant",
+      "role-assumption",
+      "identity-and-access-management"
+    ]
+  },
+  {
+    "term": "Illicit OAuth Grant",
+    "slug": "illicit-oauth-grant",
+    "aka": [
+      "Consent phishing",
+      "Illicit consent grant"
+    ],
+    "short": "Tricking a user into authorizing a malicious app's access to their account.",
+    "definition": "An attack where a user is lured into granting a malicious application standing access to their account or data through a legitimate OAuth consent flow, rather than surrendering their password. The granted token, not a credential, becomes the attacker's access.",
+    "significance": "Because the access is authorized and token-based, it can survive password resets and multi-factor prompts, so reviewing granted application consents is a distinct and necessary part of cloud identity investigations.",
+    "example": "A responder finds a rogue application with mailbox read consent across several accounts, the real foothold that resetting passwords never removed.",
+    "related": [
+      "identity-federation",
+      "cloud-persistence",
+      "identity-and-access-management"
+    ]
+  }
+]

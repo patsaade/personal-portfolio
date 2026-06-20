@@ -7,7 +7,6 @@ import {
   daySerial,
   termIndexForDay,
   termForDate,
-  slimBank,
 } from '../src/data/securityTerms';
 
 const slugs = new Set(SECURITY_TERMS.map((t) => t.slug));
@@ -120,18 +119,5 @@ describe('termForDate', () => {
     expect(i2).toBe((i1 + 1) % SECURITY_TERMS.length);
     expect(termForDate(d1).slug).toBe(SECURITY_TERMS[i1].slug);
     expect(termForDate(d2).slug).toBe(SECURITY_TERMS[i2].slug);
-  });
-});
-
-describe('slimBank', () => {
-  it('mirrors the bank with term/slug/short/category', () => {
-    const slim = slimBank();
-    expect(slim).toHaveLength(SECURITY_TERMS.length);
-    expect(slim[0]).toEqual({
-      t: SECURITY_TERMS[0].term,
-      s: SECURITY_TERMS[0].slug,
-      d: SECURITY_TERMS[0].short,
-      c: SECURITY_TERMS[0].category,
-    });
   });
 });

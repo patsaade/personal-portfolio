@@ -95,6 +95,34 @@ Create `src/content/labs/<slug>.mdx` → `/labs/<slug>`.
 
 ---
 
+## Add a glossary term (Term of the Day)
+
+The bank lives in `src/data/securityTerms.ts` (a small curated core) and
+`src/data/terms/*.json` (per-domain batches). Add terms by appending objects to the
+matching `terms/<domain>.json` array:
+
+```json
+{
+  "term": "Kerberoasting",
+  "slug": "kerberoasting",
+  "aka": ["SPN roasting"],
+  "short": "Cracking service-account passwords from requested Kerberos tickets offline.",
+  "definition": "What it is, in 1–2 sentences.",
+  "significance": "Why it matters in DFIR / IR, in 1–2 sentences.",
+  "example": "One concrete, investigation-flavored sentence.",
+  "related": ["another-slug-in-the-bank"]
+}
+```
+
+Rules: **vendor-agnostic** (a concept/technique/artifact, never a product), `slug` is
+lowercase kebab-case, `short` ≤ 90 chars, `aka` optional. The bank de-duplicates by slug
+(curated wins) and drops any `related` slug that doesn't resolve, so cross-links can't
+break the build. Write each field as natural prose — see the Style Guide's
+[Glossary terms](STYLE_GUIDE.md) note. Run `npm test`; `test/securityTerms.test.ts`
+enforces the structure.
+
+---
+
 ## Formatting reference
 
 - **Code blocks** — fence with a language for syntax highlighting:

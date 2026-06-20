@@ -1,0 +1,281 @@
+[
+  {
+    "term": "Sysmon",
+    "slug": "sysmon",
+    "aka": ["System Monitor"],
+    "short": "Free Windows driver that logs rich process, network, and file telemetry.",
+    "definition": "Sysmon is a Windows system service and kernel driver that records detailed security-relevant events — process creation with full command lines and hashes, network connections, image loads, file creation, and registry changes — into a dedicated event channel. Its behavior is governed by an XML configuration that scopes what gets captured.",
+    "significance": "It fills gaps the default Windows audit policy leaves open, giving investigators process lineage, file hashes, and parent-child relationships that are invaluable for reconstructing an intrusion and writing behavioral detections. Because it is free and widely deployed, its event IDs are a lingua franca in detection content.",
+    "example": "A Sysmon Event ID 1 showing winword.exe spawning powershell.exe with an encoded command, exposing a malicious-document execution chain.",
+    "related": ["process-creation-auditing", "event-tracing-for-windows", "structured-logging"]
+  },
+  {
+    "term": "Event Tracing for Windows",
+    "slug": "event-tracing-for-windows",
+    "aka": ["ETW"],
+    "short": "The high-speed kernel and user-mode tracing framework underpinning Windows telemetry.",
+    "definition": "Event Tracing for Windows is a built-in, high-performance logging facility in which thousands of providers across the kernel and user mode emit events to in-memory buffers that consumers subscribe to. Much of the richest Windows telemetry — including the data EDR and Sysmon surface — flows through ETW providers.",
+    "significance": "It is the lowest-level, highest-fidelity source of Windows activity, exposing API calls, DNS queries, and PowerShell internals that never reach the classic Event Log. Adversaries increasingly try to blind defenders by patching or unhooking ETW, so monitoring its integrity is itself a detection opportunity.",
+    "example": "Subscribing to the Microsoft-Windows-DNS-Client ETW provider to capture every name resolution a host performs, including those that bypass the local hosts file.",
+    "related": ["sysmon", "endpoint-detection-telemetry", "powershell-logging"]
+  },
+  {
+    "term": "PowerShell Logging",
+    "slug": "powershell-logging",
+    "aka": ["Script Block Logging", "Module Logging", "Transcription"],
+    "short": "Recording PowerShell commands, scripts, and pipeline activity for audit.",
+    "definition": "A set of Windows features that capture PowerShell activity at increasing depth: module logging records pipeline execution, script block logging captures the actual code blocks run (including deobfuscated content), and transcription writes a full session transcript to disk. They are enabled via Group Policy or registry settings.",
+    "significance": "PowerShell is a favorite tool for living-off-the-land attacks, and script block logging in particular records the real, decoded commands even when an attacker layers on obfuscation. It is one of the highest-value Windows telemetry sources for catching fileless tradecraft.",
+    "example": "A script block log (Event ID 4104) revealing a base64-decoded download cradle that the original command line had hidden behind encoding.",
+    "related": ["event-tracing-for-windows", "amsi", "process-creation-auditing"]
+  },
+  {
+    "term": "Process Creation Auditing",
+    "slug": "process-creation-auditing",
+    "aka": ["Event ID 4688", "Process Tracking"],
+    "short": "Logging every new process start, ideally with its full command line.",
+    "definition": "A Windows audit capability that writes an event each time a process is created, capturing the executable, the parent process, and — when command-line auditing is also enabled — the full arguments. It corresponds to Security log Event ID 4688 and must be turned on through audit policy.",
+    "significance": "Process creation events with command lines are foundational for incident response: they reveal what ran, what launched it, and exactly how it was invoked, which exposes both malware and abuse of legitimate tools. Without command-line capture enabled, defenders see that something ran but not what it actually did.",
+    "example": "A 4688 event showing certutil.exe launched with -urlcache and a remote URL, flagging a built-in binary being abused to download a payload.",
+    "related": ["sysmon", "powershell-logging", "telemetry-gap"]
+  },
+  {
+    "term": "Antimalware Scan Interface",
+    "slug": "amsi",
+    "aka": ["AMSI"],
+    "short": "A Windows API that lets security tools inspect scripts and content at runtime.",
+    "definition": "The Antimalware Scan Interface is a Windows interface that applications — notably PowerShell, JScript, VBScript, and Office macros — call to submit content to the registered antivirus engine for inspection just before it executes, after any obfuscation has been resolved. It provides a deobfuscated view of dynamically generated code.",
+    "significance": "Because AMSI sees the final, decoded payload, it is a powerful source of detection telemetry against fileless and heavily obfuscated scripts. Attackers spend real effort attempting to bypass or patch AMSI in memory, and those tampering attempts are themselves valuable indicators.",
+    "example": "An AMSI-generated alert firing on the deobfuscated body of an in-memory script that no on-disk file would ever have revealed.",
+    "related": ["powershell-logging", "event-tracing-for-windows", "endpoint-detection-telemetry"]
+  },
+  {
+    "term": "Windows Event Forwarding",
+    "slug": "windows-event-forwarding",
+    "aka": ["WEF", "WEC", "Windows Event Collector"],
+    "short": "Native Windows mechanism to ship event logs to a central collector.",
+    "definition": "Windows Event Forwarding is a built-in capability that lets endpoints forward selected event logs over WinRM to one or more collector servers, defined by subscriptions that specify which events to pull. The collector role is the Windows Event Collector service.",
+    "significance": "It centralizes Windows telemetry without third-party agents, putting logs out of an attacker's reach on the local host and into a place where they can be retained and searched. Centralization also defeats a common anti-forensic step — clearing local logs — because forwarded copies already left the box.",
+    "example": "Configuring a subscription so all domain workstations forward Sysmon and Security logs to a hardened collector, preserving them even if an endpoint is wiped.",
+    "related": ["log-forwarding", "log-aggregation", "sysmon"]
+  },
+  {
+    "term": "auditd",
+    "slug": "auditd",
+    "aka": ["Linux Audit Daemon"],
+    "short": "The Linux kernel audit subsystem's user-space logging daemon.",
+    "definition": "auditd is the user-space component of the Linux Audit framework, which records security-relevant kernel events — system calls, file access, command execution, and authentication — according to rules loaded into the kernel. It writes structured audit records to disk for later analysis.",
+    "significance": "It is the closest Linux equivalent to detailed Windows process and object auditing, capturing execve calls, file modifications, and privilege changes that are essential for Linux intrusion forensics. Well-crafted audit rules turn an otherwise quiet Linux host into a source of high-fidelity execution evidence.",
+    "example": "An auditd execve record capturing a reverse-shell command run by the web-server account, pinpointing the moment a vulnerable application was exploited.",
+    "related": ["ebpf-telemetry", "syslog", "journald"]
+  },
+  {
+    "term": "syslog",
+    "slug": "syslog",
+    "aka": ["RFC 5424", "RFC 3164"],
+    "short": "The long-standing standard for emitting and forwarding system log messages.",
+    "definition": "syslog is a standardized protocol and message format for generating, storing, and transmitting log messages, in which each entry carries a facility, severity, timestamp, host, and free-text payload. It is the default logging mechanism across Unix-like systems and most network appliances.",
+    "significance": "Its ubiquity makes it the common denominator for collecting logs from servers, firewalls, switches, and appliances into a central pipeline. Because the classic protocol runs over UDP and is unauthenticated, investigators must account for messages that can be spoofed, dropped, or arrive out of order.",
+    "example": "Routers, firewalls, and Linux hosts all shipping syslog over the network to a single collector that normalizes them into one searchable timeline.",
+    "related": ["journald", "log-forwarding", "log-aggregation"]
+  },
+  {
+    "term": "journald",
+    "slug": "journald",
+    "aka": ["systemd journal"],
+    "short": "systemd's structured, indexed logging service for modern Linux.",
+    "definition": "journald is the logging service of systemd that collects messages from the kernel, services, and applications into a structured, indexed binary journal with rich metadata fields. It captures stdout/stderr of managed services and can forward to syslog for compatibility.",
+    "significance": "On modern Linux it is a primary source of service and boot activity, and its per-message metadata — unit name, PID, UID, boot ID — supports precise filtering during an investigation. Investigators must also remember the binary journal can roll over or be cleared, so off-host forwarding matters for retention.",
+    "example": "Querying the journal for a specific systemd unit to see exactly when a tampered service was restarted and under which user.",
+    "related": ["syslog", "structured-logging", "log-retention"]
+  },
+  {
+    "term": "eBPF Telemetry",
+    "slug": "ebpf-telemetry",
+    "aka": ["eBPF", "extended Berkeley Packet Filter"],
+    "short": "Safely running sandboxed programs in the Linux kernel to observe activity.",
+    "definition": "eBPF is a Linux kernel technology that runs verified, sandboxed programs at kernel hook points without modifying kernel source or loading custom modules. For security it powers tools that observe system calls, network flows, and process events with low overhead and high fidelity.",
+    "significance": "It has become the dominant approach for modern Linux and container runtime visibility, capturing in-kernel events that user-space monitoring would miss or that an attacker could tamper with from user space. Its kernel-level vantage point is hard for malware to evade without itself touching the kernel.",
+    "example": "An eBPF-based sensor recording every process exec and outbound connection inside a Kubernetes node to reconstruct a container breakout.",
+    "related": ["endpoint-detection-telemetry", "auditd", "syslog"]
+  },
+  {
+    "term": "Endpoint Detection Telemetry",
+    "slug": "endpoint-detection-telemetry",
+    "aka": ["EDR Telemetry"],
+    "short": "Continuous, detailed activity data collected by endpoint sensors.",
+    "definition": "Endpoint detection telemetry is the stream of process, file, registry, network, and module events that an endpoint sensor continuously records and often centralizes, typically sourced from kernel callbacks and tracing facilities. It captures granular host behavior beyond what native logs provide.",
+    "significance": "This depth of host visibility lets responders reconstruct an attack chain step by step and hunt for subtle behaviors across the fleet, often with retained history that survives endpoint cleanup. Gaps in sensor coverage — unmonitored hosts or evaded sensors — are a primary cause of missed intrusions.",
+    "example": "Following an EDR's recorded process tree from a phishing attachment all the way to credential access on the same host.",
+    "related": ["ebpf-telemetry", "event-tracing-for-windows", "telemetry-gap"]
+  },
+  {
+    "term": "DNS Logging",
+    "slug": "dns-logging",
+    "aka": ["DNS Query Logging"],
+    "short": "Recording the domain-name lookups that hosts request and resolve.",
+    "definition": "DNS logging captures the name-resolution queries and responses generated by clients and resolvers, recording which domains were requested, when, by whom, and what they resolved to. It can be collected at endpoints, internal resolvers, or recursive servers.",
+    "significance": "Because nearly every network action starts with a DNS lookup, these logs surface command-and-control, tunneling, and data exfiltration even when the payload traffic is encrypted. They also let investigators retroactively pivot from a known-bad domain to every host that ever queried it.",
+    "example": "DNS logs showing dozens of long, random subdomains under one parent domain, exposing a tunneling channel before any payload was inspected.",
+    "related": ["proxy-logs", "flow-logs", "firewall-logs"]
+  },
+  {
+    "term": "Proxy Logs",
+    "slug": "proxy-logs",
+    "aka": ["Web Proxy Logs"],
+    "short": "Records of outbound web requests passing through a forward proxy.",
+    "definition": "Proxy logs are produced by forward web proxies that broker users' outbound HTTP and HTTPS traffic, recording requested URLs, hosts, methods, status codes, user agents, bytes transferred, and frequently the associated user. They sit at the boundary between internal clients and the internet.",
+    "significance": "They give a per-request view of web activity that is ideal for spotting C2 over HTTP, suspicious downloads, and exfiltration to unusual destinations, while tying activity back to specific users. Where TLS is intercepted, proxies expose full URLs and content that flow logs alone cannot.",
+    "example": "Proxy logs revealing repeated POSTs of small, identically sized payloads to a newly registered domain — the fingerprint of an HTTP beacon.",
+    "related": ["web-access-logs", "dns-logging", "firewall-logs"]
+  },
+  {
+    "term": "Firewall Logs",
+    "slug": "firewall-logs",
+    "short": "Records of network connections a firewall allowed or denied.",
+    "definition": "Firewall logs document connection attempts evaluated against a rule set, recording source and destination addresses and ports, protocol, the action taken (allow or deny), and timestamps. They are generated at network and host firewalls alike.",
+    "significance": "They reveal which hosts talked to which, expose scanning and lateral-movement attempts, and show blocked outbound attempts that hint at malware trying to reach C2. Denied-connection patterns are often an early, high-signal indicator that something on the inside is misbehaving.",
+    "example": "A burst of denied outbound connections from a workstation to a sequence of foreign IPs, flagging an implant cycling through fallback C2 servers.",
+    "related": ["flow-logs", "proxy-logs", "dns-logging"]
+  },
+  {
+    "term": "Flow Logs",
+    "slug": "flow-logs",
+    "aka": ["NetFlow", "IPFIX", "VPC Flow Logs"],
+    "short": "Metadata records summarizing network conversations, without packet payloads.",
+    "definition": "Flow logs summarize network traffic as records describing each conversation — source and destination addresses and ports, protocol, byte and packet counts, and timing — without capturing the packet contents. Standards and implementations include NetFlow, IPFIX, sFlow, and cloud VPC flow logs.",
+    "significance": "They provide broad, storage-efficient visibility into who communicated with whom and how much data moved, which is ideal for spotting beaconing intervals and large exfiltration transfers across an entire network. Because they omit payloads, they retain well for long periods and remain useful even when traffic is encrypted.",
+    "example": "Flow records showing a steady, low-volume connection to one external IP every five minutes for weeks, betraying a patient beacon.",
+    "related": ["firewall-logs", "dns-logging", "log-retention"]
+  },
+  {
+    "term": "Web Access Logs",
+    "slug": "web-access-logs",
+    "aka": ["HTTP Access Logs"],
+    "short": "Server-side records of every HTTP request a web server handles.",
+    "definition": "Web access logs are written by web servers for each incoming HTTP request, recording the client address, timestamp, method and URL, response status and size, referrer, and user agent. The Common and Combined Log Formats are the most widespread layouts.",
+    "significance": "They are central to investigating web-facing compromises, exposing exploitation attempts, web-shell interactions, and unusual request patterns against an application. After a breach, they often hold the precise request that first delivered a payload or triggered a vulnerability.",
+    "example": "Access-log lines showing repeated POSTs to an unexpected .aspx file, pinpointing the web shell an attacker planted and used.",
+    "related": ["proxy-logs", "authentication-logs", "log-normalization"]
+  },
+  {
+    "term": "Authentication Logs",
+    "slug": "authentication-logs",
+    "aka": ["Auth Logs", "Logon Logs"],
+    "short": "Records of login attempts, successes, and failures across systems.",
+    "definition": "Authentication logs record identity events — successful and failed logons, logoffs, account lockouts, and credential use — across operating systems, directory services, applications, and cloud identity providers. Examples range from Windows logon events to Linux auth.log entries and identity-provider sign-in records.",
+    "significance": "They are the backbone of detecting credential abuse: brute force, password spraying, suspicious logon times or locations, and lateral movement via reused credentials all surface here. Correlating authentication events across sources is often what reveals the spread of an intrusion.",
+    "example": "A spray of failed logons across many accounts followed by one success from an unusual country, marking a compromised credential.",
+    "related": ["cloud-audit-logs", "web-access-logs", "log-enrichment"]
+  },
+  {
+    "term": "Cloud Audit Logs",
+    "slug": "cloud-audit-logs",
+    "aka": ["Control-Plane Logs"],
+    "short": "Records of management-plane API activity in a cloud environment.",
+    "definition": "Cloud audit logs capture control-plane activity — the API calls that create, modify, and delete resources, along with identity and access management changes — recording who did what, when, from where, and whether it succeeded. They are the cloud equivalent of an operating system's security log for the management layer.",
+    "significance": "In cloud intrusions, attacker actions are largely API calls, so these logs are the primary evidence of privilege escalation, persistence, and data access at the platform level. Disabling or failing to enable them creates a blind spot that can hide an entire breach of the management plane.",
+    "example": "An audit log entry showing an unfamiliar identity assigning itself an administrative role moments before exporting a storage bucket.",
+    "related": ["authentication-logs", "telemetry-gap", "log-retention"]
+  },
+  {
+    "term": "Log Normalization",
+    "slug": "log-normalization",
+    "aka": ["Field Normalization"],
+    "short": "Mapping diverse log formats onto a single common schema.",
+    "definition": "Log normalization transforms records from many different sources and formats into a consistent schema, so that equivalent concepts — a source IP, a username, an action — share the same field names and value conventions regardless of origin. It typically follows parsing in a log pipeline.",
+    "significance": "Normalized data is what makes cross-source correlation and detection rules possible, letting a single query span firewalls, endpoints, and cloud logs without per-source special-casing. Without it, analysts waste investigation time reconciling that source_ip, src, and ClientAddress all mean the same thing.",
+    "example": "Mapping a firewall's src field, a proxy's c-ip field, and a cloud log's sourceIPAddress all to one normalized source.ip field for unified searching.",
+    "related": ["structured-logging", "log-enrichment", "common-event-format"]
+  },
+  {
+    "term": "Log Enrichment",
+    "slug": "log-enrichment",
+    "aka": ["Context Enrichment"],
+    "short": "Adding external context to log events to make them more useful.",
+    "definition": "Log enrichment augments raw events with additional context drawn from other sources — geolocation and ownership for an IP, a hostname for an address, an asset's criticality, a user's department, or threat-intelligence reputation. The added fields travel with the event through the pipeline.",
+    "significance": "Enrichment lets analysts triage faster by surfacing the context a decision needs without manual lookups, and it powers detections that depend on outside knowledge, such as flagging traffic to a known-bad IP. The trade-off is that enriched values reflect the lookup's accuracy and freshness at ingest time.",
+    "example": "Tagging each outbound connection with the destination IP's reputation and country so an analyst spots a hit to flagged infrastructure at a glance.",
+    "related": ["log-normalization", "authentication-logs", "log-aggregation"]
+  },
+  {
+    "term": "Common Event Format",
+    "slug": "common-event-format",
+    "aka": ["CEF"],
+    "short": "A standardized, key-value log format for interoperable event sharing.",
+    "definition": "Common Event Format is a standardized log message format that pairs a fixed header — device vendor, product, version, event class, and severity — with an extensible set of key-value attributes. It is designed so that disparate devices can emit events a collector parses consistently.",
+    "significance": "Adopting a shared format like CEF reduces the parsing and normalization burden when onboarding many products, because fields arrive in a predictable structure. It illustrates the broader value of interoperable formats: less custom parser maintenance and fewer silent breakages as sources change.",
+    "example": "A network appliance emitting CEF so its events drop into the pipeline with their fields already keyed, needing no bespoke parser.",
+    "related": ["log-normalization", "structured-logging", "log-aggregation"]
+  },
+  {
+    "term": "Log Aggregation",
+    "slug": "log-aggregation",
+    "aka": ["Log Pipeline", "Centralized Logging"],
+    "short": "Collecting logs from many sources into a central, searchable store.",
+    "definition": "Log aggregation is the practice and infrastructure of gathering logs from across an environment into a centralized system where they are parsed, indexed, and made searchable. The end-to-end path from source to store — collection, transport, processing, indexing — is the log pipeline.",
+    "significance": "Centralization is what makes large-scale investigation and correlation feasible, and storing logs off the originating hosts protects them from tampering or destruction during an incident. The pipeline's capacity, reliability, and field coverage directly bound what defenders can actually detect and hunt.",
+    "example": "An aggregation pipeline ingesting endpoint, firewall, and cloud logs into one store so a single query can trace an attacker across all three.",
+    "related": ["log-forwarding", "log-enrichment", "windows-event-forwarding"]
+  },
+  {
+    "term": "Log Retention",
+    "slug": "log-retention",
+    "aka": ["Retention Policy"],
+    "short": "How long logs are kept available before deletion or archival.",
+    "definition": "Log retention is the policy and practice governing how long different log sources are stored and searchable before they are archived or purged, balancing investigative value, storage cost, and compliance obligations. Retention can differ by source and by tier of storage.",
+    "significance": "Because attackers often dwell for months before discovery, retention shorter than typical dwell time can erase the very evidence an investigation needs. Choosing what to keep, how long, and how quickly it is searchable is a core determinant of whether a past compromise can be reconstructed at all.",
+    "example": "Discovering an intrusion began four months ago, only to find the relevant proxy logs were rotated out after thirty days.",
+    "related": ["log-aggregation", "tamper-evident-logging", "flow-logs"]
+  },
+  {
+    "term": "Log Forwarding",
+    "slug": "log-forwarding",
+    "aka": ["Log Shipping"],
+    "short": "Transmitting logs off their source host to a remote collector.",
+    "definition": "Log forwarding is the transport of log events from where they are generated to a remote destination — a collector, relay, or central store — typically via an agent or a native mechanism over the network. Forwarders may buffer, batch, and secure the data in transit.",
+    "significance": "Getting logs off the originating host quickly is what preserves them when an attacker tries to clear or destroy local evidence, and it is the first hop that feeds centralized analysis. The reliability and security of forwarding determine whether events arrive intact, in order, and protected from spoofing.",
+    "example": "An endpoint agent forwarding security logs to a collector within seconds, so a copy survives even after the attacker wipes the local event log.",
+    "related": ["windows-event-forwarding", "log-aggregation", "syslog"]
+  },
+  {
+    "term": "Time Synchronization",
+    "slug": "time-synchronization",
+    "aka": ["NTP", "Clock Sync"],
+    "short": "Keeping system clocks aligned so log timestamps can be correlated.",
+    "definition": "Time synchronization keeps the clocks of systems across an environment aligned to a common reference, most commonly using the Network Time Protocol. Consistent, accurate time is what lets timestamps from different sources be placed on a single shared timeline.",
+    "significance": "Without synchronized clocks, correlating events across hosts and devices becomes unreliable and a coherent incident timeline may be impossible to build. Recording the time zone and offset alongside synchronization is equally important, since a skewed or misconfigured clock can scatter related events or hide their true order.",
+    "example": "Reconstructing an attacker's hop between two servers only because both were NTP-synced, so their logon timestamps lined up to the second.",
+    "related": ["log-aggregation", "log-normalization", "log-forwarding"]
+  },
+  {
+    "term": "Tamper-Evident Logging",
+    "slug": "tamper-evident-logging",
+    "aka": ["Log Integrity"],
+    "short": "Protecting logs so any alteration or deletion is detectable.",
+    "definition": "Tamper-evident logging protects log records so that any modification, deletion, or insertion can be detected, using techniques such as cryptographic hashing, hash chaining, append-only or write-once storage, and prompt off-host forwarding. The goal is integrity assurance, not merely access control.",
+    "significance": "Attackers routinely clear or edit logs to cover their tracks, so being able to prove that records are complete and unaltered is what makes them trustworthy as evidence in an investigation or in court. It also raises the bar for adversaries, since silently rewriting history becomes far harder.",
+    "example": "A hash-chained audit trail where a single deleted entry breaks the chain, immediately exposing an attacker's attempt to scrub their activity.",
+    "related": ["log-forwarding", "log-retention", "log-aggregation"]
+  },
+  {
+    "term": "Structured Logging",
+    "slug": "structured-logging",
+    "aka": ["Machine-Readable Logging"],
+    "short": "Emitting logs as well-defined fields rather than free-form text.",
+    "definition": "Structured logging is the practice of writing log events as discrete, machine-readable key-value fields — often JSON — at the source, instead of as unstructured prose. Each event carries explicitly named attributes rather than values buried in a sentence.",
+    "significance": "Because the fields are explicit from the start, structured logs need little or no fragile parsing and are far more reliable to search, correlate, and alert on. They reduce a whole class of silent detection failures caused by parser drift against free-text formats.",
+    "example": "An application emitting each event as a JSON object with named user, action, and result fields, so a query filters on them directly with no extraction step.",
+    "related": ["common-event-format", "journald", "log-normalization"]
+  },
+  {
+    "term": "Telemetry Gap",
+    "slug": "telemetry-gap",
+    "aka": ["Blind Spot", "Visibility Gap"],
+    "short": "An area of activity that produces no usable log or sensor data.",
+    "definition": "A telemetry gap is any portion of an environment whose activity is not captured by logging or sensors — an unmonitored host, a disabled audit setting, an unsupported platform, or a log source that was never onboarded. It is a region where defenders are effectively blind.",
+    "significance": "Adversaries gravitate toward exactly these gaps, since actions that emit no telemetry cannot be detected, investigated, or even confirmed after the fact. Deliberately mapping coverage against expected behaviors is how teams find and close blind spots before an attacker exploits them.",
+    "example": "An attacker pivoting through an unmonitored legacy server that forwards no logs, leaving a silent gap in an otherwise well-instrumented timeline.",
+    "related": ["endpoint-detection-telemetry", "cloud-audit-logs", "log-retention"]
+  }
+]
