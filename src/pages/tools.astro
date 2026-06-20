@@ -1,97 +1,222 @@
 ---
-// Tools page — categorized DFIR toolkit (free/open-source) with external links.
+// Tools page — free / open-source DFIR toolkit, grouped by the platform a tool
+// runs on (Cross-platform, Windows, macOS & Linux, Web). A star marks the tools
+// in my day-to-day kit; the rest are a wider set worth knowing. Searchable.
 // Static page — prerender to HTML served from the CDN (output: 'server' is on-demand by default).
 export const prerender = true;
 import { css } from 'styled-system/css';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
-import Badge from '../components/Badge.astro';
 import Icon from '../components/Icon.astro';
 
 interface Tool {
   name: string;
   use: string;
-  cost: 'Free' | 'Commercial';
+  fn: string; // function tag
   url: string;
+  core?: boolean; // in my day-to-day kit
+}
+interface Platform {
+  id: string;
+  title: string;
+  icon: string;
+  blurb: string;
+  tools: Tool[];
 }
 
-const categories: { title: string; icon: string; tools: Tool[] }[] = [
+const platforms: Platform[] = [
   {
-    title: 'Memory Forensics',
-    icon: 'cpu',
+    id: 'cross',
+    title: 'Cross-platform',
+    icon: 'layers',
+    blurb: 'Runs on Windows, macOS, and Linux.',
     tools: [
-      { name: 'Volatility 3', use: 'Memory image analysis & plugin framework', cost: 'Free', url: 'https://github.com/volatilityfoundation/volatility3' },
-      { name: 'MemProcFS', use: 'Mount memory as a file system for fast triage', cost: 'Free', url: 'https://github.com/ufrisk/MemProcFS' },
-      { name: 'WinDbg', use: 'Kernel/structure-level debugging of dumps', cost: 'Free', url: 'https://learn.microsoft.com/windows-hardware/drivers/debugger/' },
+      { name: 'Volatility 3', use: 'Memory image analysis & plugin framework', fn: 'Memory', url: 'https://github.com/volatilityfoundation/volatility3', core: true },
+      { name: 'MemProcFS', use: 'Mount a memory image as a browsable file system', fn: 'Memory', url: 'https://github.com/ufrisk/MemProcFS', core: true },
+      { name: 'Autopsy', use: 'GUI disk forensics & keyword/artifact analysis', fn: 'Host', url: 'https://www.autopsy.com/', core: true },
+      { name: 'The Sleuth Kit', use: 'Command-line disk & file-system forensics', fn: 'Host', url: 'https://www.sleuthkit.org/' },
+      { name: 'Plaso (log2timeline)', use: 'Super-timeline generation across artifacts', fn: 'Timeline', url: 'https://github.com/log2timeline/plaso', core: true },
+      { name: 'Timesketch', use: 'Collaborative timeline review & annotation (self-hosted)', fn: 'Timeline', url: 'https://timesketch.org/', core: true },
+      { name: 'Velociraptor', use: 'Endpoint visibility & remote collection at scale', fn: 'Triage', url: 'https://docs.velociraptor.app/', core: true },
+      { name: 'Wireshark', use: 'Deep packet capture & protocol analysis', fn: 'Network', url: 'https://www.wireshark.org/' },
+      { name: 'Zeek', use: 'Network security monitoring & rich connection logs', fn: 'Network', url: 'https://zeek.org/' },
+      { name: 'Suricata', use: 'IDS/IPS & network traffic analysis', fn: 'Network', url: 'https://suricata.io/' },
+      { name: 'Arkime', use: 'Full-packet capture, indexing & search', fn: 'Network', url: 'https://arkime.com/' },
+      { name: 'YARA', use: 'Pattern-matching to identify & classify malware', fn: 'Malware', url: 'https://virustotal.github.io/yara/' },
+      { name: 'Sigma', use: 'Vendor-neutral detection rule format & converter', fn: 'Detection', url: 'https://github.com/SigmaHQ/sigma' },
+      { name: 'Hayabusa', use: 'Sigma-based Windows event log threat hunting', fn: 'Logs', url: 'https://github.com/Yamato-Security/hayabusa' },
+      { name: 'Chainsaw', use: 'Fast EVTX & MFT hunting with Sigma rules', fn: 'Logs', url: 'https://github.com/WithSecureLabs/chainsaw' },
+      { name: 'Ghidra', use: 'Software reverse-engineering suite', fn: 'Malware', url: 'https://ghidra-sre.org/' },
+      { name: 'Cutter', use: 'Reverse-engineering platform built on rizin', fn: 'Malware', url: 'https://cutter.re/' },
+      { name: 'capa', use: 'Identify capabilities in executables & shellcode', fn: 'Malware', url: 'https://github.com/mandiant/capa' },
+      { name: 'Detect It Easy', use: 'File type, packer & compiler identification', fn: 'Malware', url: 'https://github.com/horsicq/Detect-It-Easy' },
+      { name: 'Hindsight', use: 'Browser history & artifact parsing', fn: 'Host', url: 'https://github.com/obsidianforensics/hindsight' },
     ],
   },
   {
-    title: 'Host Forensics',
-    icon: 'hard-drive',
+    id: 'windows',
+    title: 'Windows',
+    icon: 'monitor',
+    blurb: 'Run on a Windows analysis workstation.',
     tools: [
-      { name: 'KAPE', use: 'Targeted artifact collection & module processing', cost: 'Free', url: 'https://www.kroll.com/kape' },
-      { name: 'Eric Zimmerman Tools', use: 'MFTECmd, Registry Explorer, PECmd, and more', cost: 'Free', url: 'https://ericzimmerman.github.io/' },
-      { name: 'Autopsy', use: 'GUI disk forensics & keyword/artifact analysis', cost: 'Free', url: 'https://www.autopsy.com/' },
+      { name: 'KAPE', use: 'Targeted artifact collection & module processing', fn: 'Triage', url: 'https://www.kroll.com/kape', core: true },
+      { name: 'Eric Zimmerman Tools', use: 'MFTECmd, Registry Explorer, PECmd, EvtxECmd & more', fn: 'Host', url: 'https://ericzimmerman.github.io/', core: true },
+      { name: 'WinDbg', use: 'Kernel & user-mode debugging of dumps', fn: 'Memory', url: 'https://learn.microsoft.com/windows-hardware/drivers/debugger/', core: true },
+      { name: 'Sysinternals Suite', use: 'Procmon, Process Explorer, Autoruns, TCPView', fn: 'Triage', url: 'https://learn.microsoft.com/sysinternals/' },
+      { name: 'Sysmon', use: 'Detailed system-activity logging for detection', fn: 'Logs', url: 'https://learn.microsoft.com/sysinternals/downloads/sysmon' },
+      { name: 'System Informer', use: 'Live process, handle & token inspection', fn: 'Triage', url: 'https://systeminformer.sourceforge.io/' },
+      { name: 'FTK Imager', use: 'Disk & memory imaging plus preview (free)', fn: 'Imaging', url: 'https://www.exterro.com/digital-forensics-software/ftk-imager' },
+      { name: 'WinPmem', use: 'Windows physical-memory acquisition', fn: 'Memory', url: 'https://github.com/Velocidex/WinPmem' },
+      { name: 'RegRipper', use: 'Registry hive parsing with a plugin ecosystem', fn: 'Registry', url: 'https://github.com/keydet89/RegRipper3.0' },
+      { name: 'PEStudio', use: 'Static PE triage & malware indicators', fn: 'Malware', url: 'https://www.winitor.com/' },
+      { name: 'x64dbg', use: 'Open-source Windows debugger', fn: 'Malware', url: 'https://x64dbg.com/' },
+      { name: 'NirSoft Tools', use: 'Focused artifact viewers (browser, USB, more)', fn: 'Host', url: 'https://www.nirsoft.net/' },
+      { name: 'Loki', use: 'IOC & YARA scanner for compromise checks', fn: 'Malware', url: 'https://github.com/Neo23x0/Loki' },
     ],
   },
   {
-    title: 'Timeline Analysis',
-    icon: 'clock',
+    id: 'macos-linux',
+    title: 'macOS & Linux',
+    icon: 'terminal',
+    blurb: 'Run on a macOS or Linux workstation.',
     tools: [
-      { name: 'Plaso (log2timeline)', use: 'Super-timeline generation across artifacts', cost: 'Free', url: 'https://github.com/log2timeline/plaso' },
-      { name: 'Timesketch', use: 'Collaborative timeline review & annotation', cost: 'Free', url: 'https://timesketch.org/' },
+      { name: 'SANS SIFT Workstation', use: 'Pre-built DFIR analysis environment', fn: 'Platform', url: 'https://www.sans.org/tools/sift-workstation/', core: true },
+      { name: 'REMnux', use: 'Linux toolkit for malware analysis', fn: 'Malware', url: 'https://remnux.org/' },
+      { name: 'Tsurugi Linux', use: 'DFIR-focused Linux distribution', fn: 'Platform', url: 'https://tsurugi-linux.org/' },
+      { name: 'AVML', use: 'Acquire Linux memory to an image', fn: 'Memory', url: 'https://github.com/microsoft/avml' },
+      { name: 'LiME', use: 'Linux Memory Extractor (kernel module)', fn: 'Memory', url: 'https://github.com/504ensicsLabs/LiME' },
+      { name: 'UAC', use: 'Unix-like Artifacts Collector (Linux/macOS/ESXi)', fn: 'Triage', url: 'https://github.com/tclahr/uac' },
+      { name: 'mac_apt', use: 'macOS artifact parsing framework', fn: 'Host', url: 'https://github.com/ydkhatri/mac_apt' },
+      { name: 'AutoMacTC', use: 'Automated macOS triage collection', fn: 'Triage', url: 'https://github.com/CrowdStrike/automactc' },
+      { name: 'aftermath', use: 'macOS incident-response collection', fn: 'Triage', url: 'https://github.com/jamf/aftermath' },
+      { name: 'UnifiedLogReader', use: 'Parse macOS unified logs', fn: 'Logs', url: 'https://github.com/ydkhatri/UnifiedLogReader' },
     ],
   },
   {
-    title: 'Collection & Platforms',
-    icon: 'server',
+    id: 'web',
+    title: 'Web',
+    icon: 'globe',
+    blurb: 'Run in the browser — free to use (some have paid tiers).',
     tools: [
-      { name: 'Velociraptor', use: 'Endpoint visibility & remote collection at scale', cost: 'Free', url: 'https://docs.velociraptor.app/' },
-      { name: 'SANS SIFT', use: 'Pre-built DFIR analysis workstation', cost: 'Free', url: 'https://www.sans.org/tools/sift-workstation/' },
+      { name: 'VirusTotal', use: 'Multi-engine file/URL/hash reputation & intel', fn: 'Malware', url: 'https://www.virustotal.com/', core: true },
+      { name: 'CyberChef', use: 'Decode, deobfuscate & transform data', fn: 'Utility', url: 'https://gchq.github.io/CyberChef/', core: true },
+      { name: 'urlscan.io', use: 'Sandbox & inspect suspicious URLs', fn: 'OSINT', url: 'https://urlscan.io/' },
+      { name: 'ANY.RUN', use: 'Interactive online malware sandbox', fn: 'Malware', url: 'https://any.run/' },
+      { name: 'Hybrid Analysis', use: 'Free file & URL sandbox plus scanning', fn: 'Malware', url: 'https://www.hybrid-analysis.com/' },
+      { name: 'Joe Sandbox', use: 'Automated malware sandbox (Cloud Basic tier)', fn: 'Malware', url: 'https://www.joesandbox.com/' },
+      { name: 'MalwareBazaar', use: 'Search & download malware samples (abuse.ch)', fn: 'Intel', url: 'https://bazaar.abuse.ch/' },
+      { name: 'URLhaus', use: 'Malware URL feed & lookup (abuse.ch)', fn: 'Intel', url: 'https://urlhaus.abuse.ch/' },
+      { name: 'ThreatFox', use: 'IOC search & sharing (abuse.ch)', fn: 'Intel', url: 'https://threatfox.abuse.ch/' },
+      { name: 'AbuseIPDB', use: 'IP address reputation lookups', fn: 'OSINT', url: 'https://www.abuseipdb.com/' },
+      { name: 'Shodan', use: 'Search internet-exposed hosts & services', fn: 'OSINT', url: 'https://www.shodan.io/' },
+      { name: 'GreyNoise', use: 'Tell targeted activity from internet scan noise', fn: 'OSINT', url: 'https://viz.greynoise.io/' },
+      { name: 'crt.sh', use: 'Certificate transparency log search', fn: 'OSINT', url: 'https://crt.sh/' },
+      { name: 'MXToolbox', use: 'DNS, email & blocklist diagnostics', fn: 'OSINT', url: 'https://mxtoolbox.com/' },
+      { name: 'Unfurl', use: 'Break down & visualize complex URLs', fn: 'Utility', url: 'https://dfir.blog/unfurl/' },
     ],
   },
 ];
+
+const totalTools = platforms.reduce((n, p) => n + p.tools.length, 0);
+
+const cardClass = css({
+  display: 'flex',
+  flexDirection: { base: 'column', sm: 'row' },
+  sm: { alignItems: 'center' },
+  gap: '0.5rem 1rem',
+  p: '0.85rem 1.1rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  transition: 'border-color 200ms ease, transform 200ms ease',
+  _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
+});
+const fnTag = css({
+  flexShrink: 0,
+  fontFamily: 'mono',
+  fontSize: '0.66rem',
+  fontWeight: 600,
+  letterSpacing: '0.04em',
+  textTransform: 'uppercase',
+  color: 'textMuted',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'sm',
+  px: '0.45rem',
+  py: '0.15rem',
+});
 ---
 
-<BaseLayout title="Tools" description="The DFIR toolkit I actually use — free and open-source tooling across memory, host, timeline, and collection work.">
+<BaseLayout
+  title="Tools"
+  description="Free and open-source DFIR tools grouped by platform — Windows, macOS & Linux, cross-platform, and web — plus the online services worth knowing."
+>
   <PageHeader
     eyebrow="Tooling"
     title="The DFIR Toolkit"
-    description="What I reach for across memory, host, timeline, and collection work — with setup guides linked from the relevant posts."
+    description="Free and open-source tools, grouped by where they run. A star (★) marks what's in my day-to-day kit; the rest are a wider set worth knowing."
   />
+
+  {/* Search */}
+  <div class={css({ position: 'relative', mb: '0.6rem' })}>
+    <span class={css({ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)', color: 'textMuted', pointerEvents: 'none', display: 'inline-flex' })}>
+      <Icon name="search" size={17} />
+    </span>
+    <input
+      id="tools-search"
+      type="search"
+      autocomplete="off"
+      placeholder={`Search ${totalTools} tools…`}
+      aria-label="Search the toolkit"
+      class={css({
+        w: '100%',
+        pl: '2.6rem',
+        pr: '1rem',
+        py: '0.7rem',
+        fontSize: '0.95rem',
+        bg: 'bgCard',
+        color: 'text',
+        border: '1px solid token(colors.border)',
+        borderRadius: 'md',
+        outline: 'none',
+        transition: 'border-color 200ms ease',
+        _focusVisible: { borderColor: 'primary' },
+        _placeholder: { color: 'textMuted' },
+      })}
+    />
+  </div>
+  <p class={css({ color: 'textMuted', mb: '2.5rem', fontSize: '0.9rem' })}>
+    <span id="tools-result-count">{totalTools}</span> free tools across {platforms.length} groups.
+  </p>
 
   <div class={css({ display: 'flex', flexDirection: 'column', gap: '2.5rem' })}>
     {
-      categories.map((cat) => (
-        <section>
-          <h2 class={css({ fontSize: '1.25rem', fontWeight: 700, mb: '1rem', display: 'flex', alignItems: 'center', gap: '0.6rem' })}>
-            <Icon name={cat.icon as any} size={20} class={css({ color: 'primary' })} />
-            {cat.title}
+      platforms.map((p) => (
+        <section data-tools-group>
+          <h2 class={css({ display: 'flex', alignItems: 'baseline', gap: '0.6rem', mb: '1rem', flexWrap: 'wrap' })}>
+            <span class={css({ display: 'inline-flex', alignItems: 'center', gap: '0.55rem', fontSize: '1.25rem', fontWeight: 700 })}>
+              <Icon name={p.icon as any} size={20} class={css({ color: 'primary' })} />
+              {p.title}
+            </span>
+            <span class={css({ color: 'textMuted', fontSize: '0.85rem', fontWeight: 400 })}>{p.blurb}</span>
           </h2>
-          <div class={css({ display: 'flex', flexDirection: 'column', gap: '0.75rem' })}>
-            {cat.tools.map((tool) => (
+          <div class={css({ display: 'flex', flexDirection: 'column', gap: '0.6rem' })}>
+            {p.tools.map((t) => (
               <a
-                href={tool.url}
+                href={t.url}
                 target="_blank"
                 rel="noopener"
-                class={css({
-                  display: 'flex',
-                  flexDirection: { base: 'column', sm: 'row' },
-                  sm: { alignItems: 'center' },
-                  gap: '0.5rem 1rem',
-                  p: '1rem 1.25rem',
-                  bg: 'bgCard',
-                  border: '1px solid token(colors.border)',
-                  borderRadius: 'md',
-                  transition: 'border-color 200ms ease',
-                  _hover: { borderColor: 'primary' },
-                })}
+                class={cardClass}
+                data-tools-card={`${t.name} ${t.use} ${t.fn} ${p.title}`.toLowerCase()}
               >
-                <span class={css({ fontWeight: 700, fontFamily: 'mono', minW: { sm: '180px' } })}>
-                  {tool.name}
+                <span class={css({ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, fontFamily: 'mono', minW: { sm: '190px' } })}>
+                  {t.core && (
+                    <Icon name="star" size={13} strokeWidth={0} class={css({ color: 'accent', fill: 'token(colors.accent)' })} label="In my kit" />
+                  )}
+                  {t.name}
                 </span>
-                <span class={css({ color: 'textMuted', fontSize: '0.92rem', flex: 1 })}>{tool.use}</span>
-                <Badge variant={tool.cost === 'Free' ? 'accent' : 'default'}>{tool.cost}</Badge>
+                <span class={css({ color: 'textMuted', fontSize: '0.92rem', flex: 1 })}>{t.use}</span>
+                <span class={fnTag}>{t.fn}</span>
                 <Icon name="external-link" size={15} class={css({ color: 'textMuted', flexShrink: 0 })} />
               </a>
             ))}
@@ -100,4 +225,35 @@ const categories: { title: string; icon: string; tools: Tool[] }[] = [
       ))
     }
   </div>
+
+  <p id="tools-empty" hidden class={css({ color: 'textMuted', textAlign: 'center', py: '3rem' })}>
+    No tools match your search.
+  </p>
+
+  <script is:inline>
+    (function () {
+      var input = document.getElementById('tools-search');
+      if (!input) return;
+      var cards = Array.prototype.slice.call(document.querySelectorAll('[data-tools-card]'));
+      var groups = Array.prototype.slice.call(document.querySelectorAll('[data-tools-group]'));
+      var empty = document.getElementById('tools-empty');
+      var countEl = document.getElementById('tools-result-count');
+      function apply() {
+        var q = input.value.trim().toLowerCase();
+        var shown = 0;
+        for (var i = 0; i < cards.length; i++) {
+          var match = !q || cards[i].getAttribute('data-tools-card').indexOf(q) !== -1;
+          cards[i].style.display = match ? '' : 'none';
+          if (match) shown++;
+        }
+        for (var g = 0; g < groups.length; g++) {
+          var anyVisible = groups[g].querySelector('[data-tools-card]:not([style*="display: none"])');
+          groups[g].style.display = anyVisible ? '' : 'none';
+        }
+        if (empty) empty.hidden = shown !== 0;
+        if (countEl) countEl.textContent = String(shown);
+      }
+      input.addEventListener('input', apply);
+    })();
+  </script>
 </BaseLayout>
