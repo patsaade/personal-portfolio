@@ -6,6 +6,16 @@ html {
   scroll-padding-top: 80px;
 }
 
+/* Prevent the theme flash (FOUC): <html> ships with .theme-preload so the
+   pre-paint theme script can set the correct theme without animating the
+   html/body color transitions. BaseHead removes the class after first paint. */
+.theme-preload,
+.theme-preload *,
+.theme-preload *::before,
+.theme-preload *::after {
+  transition: none !important;
+}
+
 /* Visible keyboard focus on every interactive element (accessibility). Uses the
    active theme's primary color; only shows for keyboard nav, not mouse clicks. */
 :focus-visible {

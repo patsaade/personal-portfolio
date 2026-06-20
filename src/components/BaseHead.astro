@@ -160,5 +160,15 @@ const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': grap
       getPalette: getPalette,
     };
     apply();
+
+    // The <html> ships with class "theme-preload", which disables all transitions
+    // so applying the correct theme above never animates (no dark/light flash on
+    // load). Drop it after the first paint — via double rAF — so manual theme
+    // toggles still animate smoothly afterward.
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        root.classList.remove('theme-preload');
+      });
+    });
   })();
 </script>
