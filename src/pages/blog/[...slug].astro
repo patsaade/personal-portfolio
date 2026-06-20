@@ -64,7 +64,7 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
   tags={post.data.tags}
   tools={post.data.tools}
   headings={headings}
-  path={`/blog/${post.id}`}
+  path={`/blog/${post.id}/`}
   linkTags
 >
   <Content />
@@ -84,7 +84,7 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
           })}
         >
           {older ? (
-            <a href={`/blog/${older.id}`} class={navLink}>
+            <a href={`/blog/${older.id}/`} class={navLink}>
               <span class={navMeta}>
                 <Icon name="arrow-left" size={13} /> Older
               </span>
@@ -94,7 +94,7 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
             <span />
           )}
           {newer ? (
-            <a href={`/blog/${newer.id}`} class={`${navLink} ${css({ textAlign: 'right', alignItems: 'flex-end' })}`}>
+            <a href={`/blog/${newer.id}/`} class={`${navLink} ${css({ textAlign: 'right', alignItems: 'flex-end' })}`}>
               <span class={navMeta}>
                 Newer <Icon name="arrow-right" size={13} />
               </span>

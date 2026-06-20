@@ -27,10 +27,20 @@ export async function GET(context: APIContext) {
     })),
   ].sort((a, b) => b.pubDate.valueOf() - a.pubDate.valueOf());
 
+  // Channel metadata mirrors the live site: title/tagline/description come from
+  // src/consts.ts; lastBuildDate tracks the newest item.
+  const lastBuild = items[0]?.pubDate ?? new Date();
+
   return rss({
     title: `${SITE.title} — ${SITE.tagline}`,
     description: SITE.description,
     site: context.site ?? SITE.url,
     items,
+    trailingSlash: true,
+    customData: [
+      '<language>en-us</language>',
+      `<lastBuildDate>${lastBuild.toUTCString()}</lastBuildDate>`,
+      `<copyright>© ${new Date().getFullYear()} ${SITE.author}</copyright>`,
+    ].join(''),
   });
 }

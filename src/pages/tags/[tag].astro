@@ -32,7 +32,7 @@ const { tag, posts } = Astro.props;
 <BaseLayout title={`#${tag}`} description={`Posts tagged ${tag}.`}>
   <p class={css({ mb: '1rem' })}>
     <a
-      href="/tags"
+      href="/tags/"
       class={css({ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', color: 'textMuted', _hover: { color: 'primary' } })}
     >
       <Icon name="arrow-left" size={14} /> All topics
@@ -55,7 +55,7 @@ const { tag, posts } = Astro.props;
     {
       posts.map((p) => (
         <BlogCard
-          href={`/blog/${p.id}`}
+          href={`/blog/${p.id}/`}
           title={p.data.title}
           excerpt={p.data.excerpt}
           category={p.data.category}

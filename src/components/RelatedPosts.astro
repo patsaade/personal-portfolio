@@ -29,7 +29,7 @@ const { posts } = Astro.props;
       >
         {posts.map((p) => (
           <a
-            href={`/blog/${p.id}`}
+            href={`/blog/${p.id}/`}
             class={css({
               display: 'flex',
               flexDirection: 'column',

@@ -82,7 +82,7 @@ const chip = css({
         </button>
       ))}
       <a
-        href="/tags"
+        href="/tags/"
         class={css({
           ml: { sm: 'auto' },
           display: 'inline-flex',
@@ -116,7 +116,7 @@ const chip = css({
             data-search={`${p.data.title} ${p.data.excerpt} ${p.data.tags.join(' ')} ${p.data.tools.join(' ')} ${p.data.category}`.toLowerCase()}
           >
             <BlogCard
-              href={`/blog/${p.id}`}
+              href={`/blog/${p.id}/`}
               title={p.data.title}
               excerpt={p.data.excerpt}
               category={p.data.category}

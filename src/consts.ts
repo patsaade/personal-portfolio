@@ -23,10 +23,10 @@ export const SOCIALS = {
 export const REPO = 'https://github.com/patsaade/personal-portfolio';
 
 export const NAV_LINKS = [
-  { href: '/blog', label: 'Blog' },
-  { href: '/labs', label: 'Labs' },
-  { href: '/tools', label: 'Tools' },
-  { href: '/about', label: 'About' },
+  { href: '/blog/', label: 'Blog' },
+  { href: '/labs/', label: 'Labs' },
+  { href: '/tools/', label: 'Tools' },
+  { href: '/about/', label: 'About' },
 ] as const;
 
 // Icon name (see Icon.astro) for each content pillar / category.
