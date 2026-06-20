@@ -1,11 +1,11 @@
 // ─────────────────────────────────────────────────────────────────────────
-// Cybersecurity "Term of the Day" bank — the single source of truth.
+// Cybersecurity glossary bank — the single source of truth.
 //
 // Vendor-agnostic on purpose: every entry is a concept, technique, artifact, or
 // model — never a product. Each field is natural prose (see docs/STYLE_GUIDE.md →
 // "Glossary terms"); task instructions must never leak into a definition. This
-// data drives the site-wide ticker, the /term-of-the-day/ glossary index, and
-// each prerendered detail page.
+// data drives the /glossary/ index, the prerendered /glossary/[slug]/ detail pages,
+// and the site-wide "Term of the Day" ticker.
 //
 // A small curated core lives inline below; the bulk is authored per-domain in
 // src/data/terms/*.json and merged, de-duplicated, and link-sanitized at load.

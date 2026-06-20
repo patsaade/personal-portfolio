@@ -1,11 +1,10 @@
 ---
-// Compatibility redirect. The glossary was briefly published at /word-of-the-day/
-// before being renamed to /term-of-the-day/; this static page redirects the old
-// URL so no early link 404s. A meta-refresh is used (rather than config redirects)
+// Compatibility redirect for the original /word-of-the-day/ URL (the glossary has
+// since moved to /glossary/). A meta-refresh is used (rather than config redirects)
 // because it composes cleanly with trailingSlash: 'always'.
 // Static page — prerender to HTML served from the CDN (output: 'server' is on-demand by default).
 export const prerender = true;
-const dest = '/term-of-the-day/';
+const dest = '/glossary/';
 ---
 
 <!doctype html>
@@ -15,9 +14,9 @@ const dest = '/term-of-the-day/';
     <meta http-equiv="refresh" content={`0; url=${dest}`} />
     <link rel="canonical" href={dest} />
     <meta name="robots" content="noindex" />
-    <title>Moved — Term of the Day</title>
+    <title>Moved — Glossary</title>
   </head>
   <body>
-    <p>This page has moved to <a href={dest}>Term of the Day</a>.</p>
+    <p>This page has moved to the <a href={dest}>Glossary</a>.</p>
   </body>
 </html>

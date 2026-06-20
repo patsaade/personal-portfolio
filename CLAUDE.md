@@ -97,22 +97,23 @@ npm test         # vitest unit suite
    `package.json` `version` plus the commit SHA from `VERCEL_GIT_COMMIT_SHA` (falling back to
    local `git`), and links it to the GitHub commit. Bump `version` for a notable release.
 
-10. **Term of the Day = one bank, client-side daily rotation.** The glossary bank is
+10. **Glossary + "Term of the Day" = one bank, client-side daily rotation.** The bank is
     `src/data/securityTerms.ts`: a small curated core inline + per-domain batches in
     `src/data/terms/*.json`, merged, de-duplicated by slug (curated wins), and link-sanitized at
     module load (vendor-agnostic concepts only — never products). It drives the site-wide ticker
-    (`Ticker.astro` in `BaseLayout`, above the nav), the searchable `/term-of-the-day/` glossary
-    index, and the prerendered `/term-of-the-day/[slug]/` detail pages (each with `DefinedTerm`
-    JSON-LD). **The daily term is picked in the browser**, not at build: the ticker fetches the
-    compact, prerendered `/term-of-the-day/bank.json` (one cached file, so the whole ~500-term bank
-    isn't inlined into every page) and computes `daySerial(localY/M/D) mod bankLength` — identical
-    math to `termForDate()` — so it changes at local midnight with no rebuild (the whole site is
-    CDN-static, so a build-time pick would freeze until redeploy). Prerendered HTML carries the
-    build-day term as a no-JS/crawler fallback. Add terms by appending to a `terms/*.json` batch
-    (or the curated core); `test/securityTerms.test.ts` guards slug uniqueness, related-link
-    integrity, ≤90-char shorts, and the rotation math. The ticker is a scrolling monospace
-    marquee; its keyframes live in `global.css` (`@keyframes totd-marquee`, reduced-motion stops it). Old `/word-of-the-day/` URLs 308-redirect to the new
-    path (`astro.config.mjs`). **Note:** the sticky nav `<header>` has `backdrop-filter`, which
+    (`Ticker.astro` in `BaseLayout`, above the nav — the "**Term of the Day**" feature), the
+    searchable `/glossary/` index, and the prerendered `/glossary/[slug]/` detail pages (each with
+    `DefinedTerm` JSON-LD). The *page* is the **Glossary**; "Term of the Day" names only the ticker.
+    **The daily term is picked in the browser**, not at build: the ticker fetches the compact,
+    prerendered `/glossary/bank.json` (one cached file, so the whole ~500-term bank isn't inlined
+    into every page) and computes `daySerial(localY/M/D) mod bankLength` — identical math to
+    `termForDate()` — so it changes at local midnight with no rebuild (the whole site is CDN-static,
+    so a build-time pick would freeze until redeploy). Prerendered HTML carries the build-day term
+    as a no-JS/crawler fallback. Add terms by appending to a `terms/*.json` batch (or the curated
+    core); `test/securityTerms.test.ts` guards slug uniqueness, related-link integrity, ≤90-char
+    shorts, and the rotation math. The ticker is a scrolling monospace marquee; its keyframes live
+    in `global.css` (`@keyframes totd-marquee`, reduced-motion stops it). The old `/word-of-the-day/`
+    and `/term-of-the-day/` URLs meta-refresh-redirect to `/glossary/`. **Note:** the sticky nav `<header>` has `backdrop-filter`, which
     makes it the *containing block* for the theme picker's `position: fixed` mobile menu — that's
     why the picker's `top: calc(64px + 8px)` lands just below the header even though the ticker
     makes the page taller. Don't "fix" it with viewport-coordinate math (it double-counts the ticker).
