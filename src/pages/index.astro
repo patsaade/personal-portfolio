@@ -58,7 +58,7 @@ const latest = (featured.length ? featured : posts).slice(0, 3);
     </p>
     <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' })}>
       <a
-        href="/blog"
+        href="/blog/"
         class={css({
           display: 'inline-flex',
           alignItems: 'center',
@@ -76,7 +76,7 @@ const latest = (featured.length ? featured : posts).slice(0, 3);
         Read the latest posts <Icon name="arrow-right" size={17} />
       </a>
       <a
-        href="/labs"
+        href="/labs/"
         class={css({
           display: 'inline-flex',
           alignItems: 'center',
@@ -162,7 +162,7 @@ const latest = (featured.length ? featured : posts).slice(0, 3);
       <h2 class={css({ fontSize: '1.5rem', fontWeight: 700 })}>
         {featured.length ? 'Featured writeups' : 'Latest posts'}
       </h2>
-      <a href="/blog" class={css({ fontSize: '0.9rem', color: 'primary', _hover: { textDecoration: 'underline' } })}>
+      <a href="/blog/" class={css({ fontSize: '0.9rem', color: 'primary', _hover: { textDecoration: 'underline' } })}>
         View all →
       </a>
     </div>
@@ -178,7 +178,7 @@ const latest = (featured.length ? featured : posts).slice(0, 3);
         >
           {latest.map((p) => (
             <BlogCard
-              href={`/blog/${p.id}`}
+              href={`/blog/${p.id}/`}
               title={p.data.title}
               excerpt={p.data.excerpt}
               category={p.data.category}
@@ -216,7 +216,7 @@ const latest = (featured.length ? featured : posts).slice(0, 3);
     <div class={css({ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' })}>
       <a href={SOCIALS.linkedin} target="_blank" rel="noopener" class={css({ color: 'primary', fontWeight: 600, _hover: { textDecoration: 'underline' } })}>LinkedIn</a>
       <span class={css({ color: 'border' })}>·</span>
-      <a href={SOCIALS.github} target="_blank" rel="noopener" class={css({ color: 'primary', fontWeight: 600, _hover: { textDecoration: 'underline' } })}>GitHub (home lab)</a>
+      <a href={SOCIALS.github} target="_blank" rel="noopener" class={css({ color: 'primary', fontWeight: 600, _hover: { textDecoration: 'underline' } })}>GitHub</a>
     </div>
   </section>
 </BaseLayout>

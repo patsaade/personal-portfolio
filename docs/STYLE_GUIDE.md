@@ -138,6 +138,10 @@ distinct, intentional pattern; keep it to the key guarantees, not proper nouns.
   hover `bg: 'primaryHover'` + lift; ghost = `border` + transparent, hover `borderColor: 'primary'`.
 - **Links:** `color: 'primary'`, underline-on-hover (or persistent underline in prose).
   External links: `target="_blank" rel="noopener"` + an `external-link` icon when it aids clarity.
+- **Internal links must end with a trailing slash** — `/blog/`, `/tools/`, `` `/blog/${id}/` ``,
+  `` `/tags/${slug}/` ``. The site sets `trailingSlash: 'always'`, so an unslashed internal link
+  **404s in `astro dev`** and 308-redirects in production. File URLs keep their extension and no
+  slash (`/rss.xml`). The site root is just `/`.
 - **Section heading:** an `<Icon>` (primary) + sentence-case title; see About/Tools.
 - **Experience: detailed vs. condensed.** Headline/relevant roles get full timeline cards
   (company header, per-role title + dates + one-sentence summary + skill tags). Earlier,

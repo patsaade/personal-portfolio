@@ -34,7 +34,7 @@ const chip = css({
     tags.length > 0 ? (
       <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' })}>
         {tags.map((t) => (
-          <a href={`/tags/${t.slug}`} class={chip}>
+          <a href={`/tags/${t.slug}/`} class={chip}>
             <Icon name="tag" size={14} />
             {t.tag}
             <span class={css({ color: 'textMuted' })}>{t.count}</span>
