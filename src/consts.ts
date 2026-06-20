@@ -19,6 +19,9 @@ export const SOCIALS = {
   credly: 'https://www.credly.com/users/patsaade',
 } as const;
 
+// Source repository — used for the footer version/commit link (see utils/version.ts).
+export const REPO = 'https://github.com/patsaade/personal-portfolio';
+
 export const NAV_LINKS = [
   { href: '/blog', label: 'Blog' },
   { href: '/labs', label: 'Labs' },

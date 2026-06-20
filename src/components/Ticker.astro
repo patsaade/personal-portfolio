@@ -1,37 +1,29 @@
 ---
-// Site-wide "Word of the Day" ticker — a scrolling digital banner pinned to the
+// Site-wide "Term of the Day" ticker — a scrolling monospace banner pinned to the
 // top of every page. The build renders the build-day term (a valid no-JS /
-// crawler fallback); the inline script below recomputes the term for the
-// VISITOR'S local day and swaps it in, so it genuinely changes daily without a
-// rebuild. The marquee track holds the content twice and animates to -50% for a
-// seamless loop (see global.css → @keyframes wotd-marquee).
+// crawler fallback); the inline script recomputes the term for the VISITOR'S
+// local day and swaps it in, so it changes daily without a rebuild. The marquee
+// track holds the content twice and animates to -50% for a seamless loop (see
+// global.css → @keyframes totd-marquee).
 import { css } from 'styled-system/css';
 import Icon from './Icon.astro';
-import { SECURITY_TERMS, termForDate } from '../data/securityTerms';
+import { termForDate } from '../data/securityTerms';
 
 const today = termForDate(new Date());
-const href = `/word-of-the-day/${today.slug}/`;
-
-// Slim bank for the client-side daily recompute (term, slug, short only).
-const bank = SECURITY_TERMS.map((t) => ({ t: t.term, s: t.slug, d: t.short }));
+const href = `/term-of-the-day/${today.slug}/`;
 
 // Identical copies; -50% translate lands on a matching frame. Enough copies to
 // span ultra-wide viewports without a gap.
 const COPIES = 12;
 
-const itemClass = css({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '0.5rem',
-  flexShrink: 0,
-});
-const termClass = css({ color: 'primary', fontWeight: 700, letterSpacing: '0.02em' });
+const itemClass = css({ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 });
+const termClass = css({ color: 'primary', fontWeight: 700, letterSpacing: '0.03em' });
 const dashClass = css({ color: 'textMuted', opacity: 0.7 });
-const shortClass = css({ color: 'text' });
-const sepClass = css({ color: 'primary', opacity: 0.45, px: '0.95rem', fontSize: '0.7em' });
+const shortClass = css({ color: 'text', fontWeight: 500 });
+const sepClass = css({ color: 'primary', opacity: 0.4, px: '1.1rem', fontSize: '0.7em' });
 ---
 
-<aside aria-label="Cybersecurity word of the day" class={css({
+<aside aria-label="Cybersecurity term of the day" class={css({
   position: 'relative',
   w: '100%',
   bg: 'bgSubtle',
@@ -41,17 +33,17 @@ const sepClass = css({ color: 'primary', opacity: 0.45, px: '0.95rem', fontSize:
   lineHeight: 1,
 })}>
   <a
-    id="wotd-ticker-link"
+    id="totd-ticker-link"
     href={href}
-    aria-label={`Cybersecurity word of the day: ${today.term}. ${today.short} Read the full entry.`}
+    aria-label={`Cybersecurity term of the day: ${today.term}. ${today.short} Read the full entry.`}
     class={css({
       display: 'flex',
       alignItems: 'stretch',
       h: { base: '34px', sm: '36px' },
       color: 'text',
       _hover: {
-        '& .wotd-marquee-track': { animationPlayState: 'paused' },
-        '& .wotd-cue': { color: 'primary', transform: 'translateX(2px)' },
+        '& .totd-marquee-track': { animationPlayState: 'paused' },
+        '& .totd-cue': { color: 'primary', transform: 'translateX(2px)' },
       },
     })}
   >
@@ -71,15 +63,15 @@ const sepClass = css({ color: 'primary', opacity: 0.45, px: '0.95rem', fontSize:
       textTransform: 'uppercase',
       whiteSpace: 'nowrap',
     })}>
-      <span class={`wotd-pulse-dot ${css({
+      <span class={`totd-pulse-dot ${css({
         w: '6px',
         h: '6px',
         borderRadius: 'full',
         bg: 'currentColor',
         flexShrink: 0,
-        animation: 'wotd-pulse 2s ease-in-out infinite',
+        animation: 'totd-pulse 2s ease-in-out infinite',
       })}`} aria-hidden="true"></span>
-      <span>Word of the Day</span>
+      <span>Term of the Day</span>
     </span>
 
     {/* Scrolling viewport (decorative; the link's aria-label carries the text) */}
@@ -96,22 +88,22 @@ const sepClass = css({ color: 'primary', opacity: 0.45, px: '0.95rem', fontSize:
         WebkitMaskImage: 'linear-gradient(to right, transparent, #000 1.25rem, #000 calc(100% - 1.25rem), transparent)',
       })}
     >
-      <span class={`wotd-marquee-track ${css({
+      <span class={`totd-marquee-track ${css({
         display: 'inline-flex',
         alignItems: 'center',
         flexShrink: 0,
         whiteSpace: 'nowrap',
         pl: '1.25rem',
-        fontSize: { base: '0.72rem', sm: '0.8rem' },
+        fontSize: { base: '0.78rem', sm: '0.85rem' },
         willChange: 'transform',
-        animation: 'wotd-marquee 38s linear infinite',
+        animation: 'totd-marquee 60s linear infinite',
       })}`}>
         {
           Array.from({ length: COPIES }).map(() => (
             <span class={itemClass}>
-              <strong class={`js-wotd-term ${termClass}`}>{today.term}</strong>
+              <strong class={`js-totd-term ${termClass}`}>{today.term}</strong>
               <span class={dashClass}>—</span>
-              <span class={`js-wotd-short ${shortClass}`}>{today.short}</span>
+              <span class={`js-totd-short ${shortClass}`}>{today.short}</span>
               <span class={sepClass}>◆</span>
             </span>
           ))
@@ -120,7 +112,7 @@ const sepClass = css({ color: 'primary', opacity: 0.45, px: '0.95rem', fontSize:
     </span>
 
     {/* "More" cue */}
-    <span class={`wotd-cue ${css({
+    <span class={`totd-cue ${css({
       display: { base: 'none', sm: 'inline-flex' },
       alignItems: 'center',
       flexShrink: 0,
@@ -133,25 +125,30 @@ const sepClass = css({ color: 'primary', opacity: 0.45, px: '0.95rem', fontSize:
     </span>
   </a>
 
-  <script is:inline define:vars={{ bank }}>
+  <script is:inline>
     (function () {
-      var link = document.getElementById('wotd-ticker-link');
-      if (!link || !Array.isArray(bank) || !bank.length) return;
-      // Same calendar math as termForDate(): local Y/M/D → day serial → index.
-      var d = new Date();
-      var serial = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
-      var t = bank[((serial % bank.length) + bank.length) % bank.length];
-      var href = '/word-of-the-day/' + t.s + '/';
-      if (link.getAttribute('href') === href) return; // build day == visitor day
-      link.setAttribute('href', href);
-      link.setAttribute(
-        'aria-label',
-        'Cybersecurity word of the day: ' + t.t + '. ' + t.d + ' Read the full entry.',
-      );
-      var terms = link.querySelectorAll('.js-wotd-term');
-      var shorts = link.querySelectorAll('.js-wotd-short');
-      for (var i = 0; i < terms.length; i++) terms[i].textContent = t.t;
-      for (var j = 0; j < shorts.length; j++) shorts[j].textContent = t.d;
+      var link = document.getElementById('totd-ticker-link');
+      if (!link) return;
+      // Fetch the compact bank (cached) and recompute the term for the visitor's
+      // local day. The build-day term is already shown as a no-JS fallback.
+      fetch('/term-of-the-day/bank.json')
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (bank) {
+          if (!Array.isArray(bank) || !bank.length) return;
+          // Same calendar math as termForDate(): local Y/M/D → day serial → index.
+          var d = new Date();
+          var serial = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+          var e = bank[((serial % bank.length) + bank.length) % bank.length]; // [slug, term, short, cat]
+          var href = '/term-of-the-day/' + e[0] + '/';
+          if (link.getAttribute('href') === href) return; // build day == visitor day
+          link.setAttribute('href', href);
+          link.setAttribute('aria-label', 'Cybersecurity term of the day: ' + e[1] + '. ' + e[2] + ' Read the full entry.');
+          var terms = link.querySelectorAll('.js-totd-term');
+          var shorts = link.querySelectorAll('.js-totd-short');
+          for (var i = 0; i < terms.length; i++) terms[i].textContent = e[1];
+          for (var j = 0; j < shorts.length; j++) shorts[j].textContent = e[2];
+        })
+        .catch(function () {});
     })();
   </script>
 </aside>

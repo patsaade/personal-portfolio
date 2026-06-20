@@ -1,90 +1,131 @@
 ---
-// Site footer — brand, nav links, and social/RSS icon links.
+// Site footer — brand + social, two link columns, and a version/commit line.
 import { css } from 'styled-system/css';
 import { SITE, SOCIALS, NAV_LINKS } from '../consts';
+import { VERSION, SHORT_COMMIT, COMMIT_URL } from '../utils/version';
 import Icon from './Icon.astro';
+
 const year = new Date().getFullYear();
 
-const iconLink = css({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '0.35rem',
+const colHead = css({
+  fontFamily: 'mono',
+  fontSize: '0.7rem',
+  textTransform: 'uppercase',
+  letterSpacing: '0.12em',
   color: 'textMuted',
+  mb: '0.9rem',
+});
+const fLink = css({
+  display: 'block',
+  fontSize: '0.9rem',
+  color: 'textMuted',
+  py: '0.22rem',
+  transition: 'color 150ms ease',
   _hover: { color: 'primary' },
 });
+const socialBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '34px',
+  h: '34px',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  color: 'textMuted',
+  transition: 'color 200ms ease, border-color 200ms ease, transform 200ms ease',
+  _hover: { color: 'primary', borderColor: 'primary', transform: 'translateY(-2px)' },
+});
+
+const moreLinks = [
+  { href: '/term-of-the-day/', label: 'Term of the Day' },
+  { href: '/tags', label: 'Tags' },
+  { href: '/rss.xml', label: 'RSS feed' },
+  { href: '/privacy', label: 'Privacy' },
+  { href: '/colophon', label: 'Colophon' },
+];
 ---
 
-<footer
-  class={css({
-    borderTop: '1px solid token(colors.border)',
-    mt: '4rem',
-    bg: 'bgSubtle',
-  })}
->
+<footer class={css({ borderTop: '1px solid token(colors.border)', mt: '5rem', bg: 'bgSubtle' })}>
   <div
     class={css({
       maxW: '960px',
       mx: 'auto',
       px: '1.25rem',
-      py: '2.5rem',
-      display: 'flex',
-      flexDirection: { base: 'column', sm: 'row' },
-      justifyContent: 'space-between',
-      alignItems: { base: 'flex-start', sm: 'center' },
-      gap: '1.5rem',
+      py: '3rem',
+      display: 'grid',
+      gridTemplateColumns: { base: '1fr', sm: '1.6fr 1fr 1fr' },
+      gap: { base: '2rem', sm: '2.5rem' },
     })}
   >
+    {/* Brand + social */}
     <div>
-      <p class={css({ fontFamily: 'mono', fontWeight: 700, color: 'text' })}>
+      <a
+        href="/"
+        class={css({ fontFamily: 'mono', fontWeight: 700, fontSize: '1.05rem', color: 'text', letterSpacing: '-0.01em' })}
+      >
         {SITE.brand}
+      </a>
+      <p class={css({ fontSize: '0.875rem', color: 'textMuted', mt: '0.6rem', lineHeight: 1.65, maxW: '320px' })}>
+        {SITE.tagline} — writeups, labs, tooling, and a daily security term.
       </p>
-      <p class={css({ fontSize: '0.875rem', color: 'textMuted', mt: '0.25rem' })}>
-        {SITE.tagline} · writeups, labs & tooling.
-      </p>
-    </div>
-
-    <div
-      class={css({
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.6rem',
-        alignItems: { base: 'flex-start', sm: 'flex-end' },
-      })}
-    >
-      {/* Row 1: pages */}
-      <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.875rem' })}>
-        {
-          NAV_LINKS.map((l) => (
-            <a href={l.href} class={css({ color: 'textMuted', _hover: { color: 'primary' } })}>
-              {l.label}
-            </a>
-          ))
-        }
-        <a href="/word-of-the-day/" class={css({ color: 'textMuted', _hover: { color: 'primary' } })}>Word of the Day</a>
-        <a href="/tags" class={css({ color: 'textMuted', _hover: { color: 'primary' } })}>Tags</a>
-        <a href="/privacy" class={css({ color: 'textMuted', _hover: { color: 'primary' } })}>Privacy</a>
-        <a href="/colophon" class={css({ color: 'textMuted', _hover: { color: 'primary' } })}>Colophon</a>
-      </div>
-
-      {/* Row 2: feed & social */}
-      <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.875rem' })}>
-        <a href="/rss.xml" class={iconLink}><Icon name="rss" size={15} />RSS</a>
-        <a href={SOCIALS.linkedin} target="_blank" rel="noopener" class={iconLink}><Icon name="linkedin" size={15} />LinkedIn</a>
-        <a href={SOCIALS.github} target="_blank" rel="noopener" class={iconLink}><Icon name="github" size={15} />GitHub</a>
-        <a href={SOCIALS.credly} target="_blank" rel="noopener" class={iconLink}><Icon name="award" size={15} />Credly</a>
+      <div class={css({ display: 'flex', gap: '0.6rem', mt: '1.4rem' })}>
+        <a href={SOCIALS.linkedin} target="_blank" rel="noopener" aria-label="LinkedIn" class={socialBtn}><Icon name="linkedin" size={17} /></a>
+        <a href={SOCIALS.github} target="_blank" rel="noopener" aria-label="GitHub" class={socialBtn}><Icon name="github" size={17} /></a>
+        <a href={SOCIALS.credly} target="_blank" rel="noopener" aria-label="Credly" class={socialBtn}><Icon name="award" size={17} /></a>
+        <a href="/rss.xml" aria-label="RSS feed" class={socialBtn}><Icon name="rss" size={16} /></a>
       </div>
     </div>
+
+    {/* Explore */}
+    <nav aria-label="Footer — site sections">
+      <p class={colHead}>Explore</p>
+      {NAV_LINKS.map((l) => <a href={l.href} class={fLink}>{l.label}</a>)}
+    </nav>
+
+    {/* More */}
+    <nav aria-label="Footer — more">
+      <p class={colHead}>More</p>
+      {moreLinks.map((l) => <a href={l.href} class={fLink}>{l.label}</a>)}
+    </nav>
   </div>
 
-  <div
-    class={css({
-      borderTop: '1px solid token(colors.border)',
-      py: '1rem',
-      textAlign: 'center',
-      fontSize: '0.8rem',
-      color: 'textMuted',
-    })}
-  >
-    © {year} {SITE.author}. Built with Astro + Panda CSS.
+  {/* Bottom bar */}
+  <div class={css({ borderTop: '1px solid token(colors.border)' })}>
+    <div
+      class={css({
+        maxW: '960px',
+        mx: 'auto',
+        px: '1.25rem',
+        py: '1.1rem',
+        display: 'flex',
+        flexDirection: { base: 'column', sm: 'row' },
+        justifyContent: 'space-between',
+        alignItems: { base: 'flex-start', sm: 'center' },
+        gap: '0.6rem',
+        fontSize: '0.8rem',
+        color: 'textMuted',
+      })}
+    >
+      <span>© {year} {SITE.author}. Built with Astro + Panda CSS.</span>
+      <a
+        href={COMMIT_URL}
+        target="_blank"
+        rel="noopener"
+        aria-label={`Version ${VERSION}${SHORT_COMMIT ? `, commit ${SHORT_COMMIT}` : ''} on GitHub`}
+        class={css({
+          fontFamily: 'mono',
+          fontSize: '0.75rem',
+          color: 'textMuted',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.4rem',
+          transition: 'color 150ms ease',
+          _hover: { color: 'primary' },
+        })}
+      >
+        <Icon name="github" size={13} />
+        v{VERSION}{SHORT_COMMIT ? ` · ${SHORT_COMMIT}` : ''}
+      </a>
+    </div>
   </div>
 </footer>

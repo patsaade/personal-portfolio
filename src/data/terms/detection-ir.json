@@ -1,0 +1,383 @@
+[
+  {
+    "term": "SIEM",
+    "slug": "siem",
+    "aka": ["Security Information and Event Management"],
+    "short": "Central platform that aggregates logs to alert, search, and investigate.",
+    "definition": "A Security Information and Event Management system collects, normalizes, and stores logs and events from across an environment so they can be searched, correlated, and alerted on. It is the primary place analysts run detections and pivot through evidence.",
+    "significance": "A SIEM is usually the backbone of a detection program — it holds the historical data hunts and investigations depend on, and a gap in what it ingests is a gap in what defenders can see.",
+    "example": "Pivoting from a single endpoint alert to every authentication event for that account by querying months of logs in the SIEM.",
+    "related": ["correlation", "telemetry-gap", "detection-rule"]
+  },
+  {
+    "term": "EDR",
+    "slug": "edr",
+    "aka": ["Endpoint Detection and Response"],
+    "short": "Endpoint agent that records host activity and supports response actions.",
+    "definition": "Endpoint Detection and Response refers to a category of tooling that continuously records process, file, registry, and network telemetry on endpoints and can detect, alert on, and respond to malicious behavior. It typically supports remote actions like isolating a host or killing a process.",
+    "significance": "EDR telemetry is often the richest source for reconstructing what an attacker did on a host, and its isolation capability is a frontline containment tool during an active incident.",
+    "example": "Using EDR process-lineage data to trace a malicious child process back to the phishing document that spawned it.",
+    "related": ["xdr", "containment", "telemetry-gap"]
+  },
+  {
+    "term": "XDR",
+    "slug": "xdr",
+    "aka": ["Extended Detection and Response"],
+    "short": "Detection and response correlated across endpoint, network, and cloud.",
+    "definition": "Extended Detection and Response is an approach that unifies and correlates telemetry from multiple domains — endpoint, network, identity, email, and cloud — into a single detection and response workflow. The aim is to connect signals that look benign in isolation.",
+    "significance": "By stitching together cross-domain evidence, XDR can surface an attack chain that no single sensor would catch alone, reducing the manual correlation analysts otherwise do by hand.",
+    "example": "An XDR workflow linking a suspicious email, the endpoint that opened it, and the outbound connection that followed into one incident.",
+    "related": ["edr", "correlation", "siem"]
+  },
+  {
+    "term": "Detection Engineering",
+    "slug": "detection-engineering",
+    "short": "The discipline of designing, building, and maintaining detections.",
+    "definition": "Detection engineering is the practice of systematically designing, building, testing, and maintaining the rules and analytics that identify malicious activity. It treats detections as engineered artifacts with requirements, validation, and lifecycle management rather than one-off rules.",
+    "significance": "Mature detection engineering is what keeps a program's coverage deliberate and measurable instead of ad hoc, and it is where hunt findings get converted into durable, repeatable detections.",
+    "example": "Turning a one-time hunt finding about a suspicious script into a tested, documented detection rule that fires automatically going forward.",
+    "related": ["detection-as-code", "detection-rule", "detection-coverage"]
+  },
+  {
+    "term": "Detection as Code",
+    "slug": "detection-as-code",
+    "short": "Managing detections in version control with testing and CI like software.",
+    "definition": "Detection as code is the practice of authoring, reviewing, testing, and deploying detection logic through the same engineering workflows used for software — version control, code review, and automated testing pipelines. Each rule lives as a file with history and tests.",
+    "significance": "It brings repeatability and auditability to detection content: changes are reviewed and tracked, regressions are caught by tests, and it becomes possible to see exactly when and why a detection changed during an investigation.",
+    "example": "Catching a broken rule in a pull request's automated test run before it ever reaches production and floods analysts.",
+    "related": ["detection-engineering", "detection-rule", "tuning"]
+  },
+  {
+    "term": "Alert",
+    "slug": "alert",
+    "short": "A notification raised when a detection's conditions are met.",
+    "definition": "An alert is a signal generated when a detection's conditions are satisfied, flagging activity that may warrant analyst attention. It is the unit of work that flows into triage queues.",
+    "significance": "Alerts are the front door of most incidents, but their volume and quality determine whether real threats get noticed or buried — making alert quality a central concern of any detection program.",
+    "example": "An alert for an account logging in from two countries minutes apart, dropped into the triage queue for review.",
+    "related": ["triage", "false-positive", "alert-fatigue"]
+  },
+  {
+    "term": "False Positive",
+    "slug": "false-positive",
+    "aka": ["FP"],
+    "short": "An alert that flags benign activity as malicious.",
+    "definition": "A false positive is an alert that fires on activity that turns out to be benign — the detection matched, but no real threat was present. It is the most visible cost of a noisy or poorly scoped detection.",
+    "significance": "High false-positive rates erode trust in alerts, waste analyst time, and drive the alert fatigue that lets real incidents slip through, which is why tuning targets them directly.",
+    "example": "A nightly backup job repeatedly triggering a data-exfiltration alert until the detection is tuned to exclude it.",
+    "related": ["false-negative", "tuning", "precision-and-recall"]
+  },
+  {
+    "term": "False Negative",
+    "slug": "false-negative",
+    "aka": ["FN"],
+    "short": "Malicious activity that no detection caught.",
+    "definition": "A false negative is real malicious activity that fails to generate an alert — the threat occurred but the detection missed it, whether through a gap in logic, telemetry, or coverage. By nature, false negatives are invisible until uncovered later.",
+    "significance": "False negatives are the most dangerous detection failure because nobody is alerted to them; finding and closing them is much of why threat hunting and coverage analysis exist.",
+    "example": "Discovering during an incident that the attacker's initial access went unalerted for weeks because no rule covered that technique.",
+    "related": ["false-positive", "telemetry-gap", "detection-coverage"]
+  },
+  {
+    "term": "Alert Fatigue",
+    "slug": "alert-fatigue",
+    "short": "Desensitization to alerts caused by overwhelming volume and noise.",
+    "definition": "Alert fatigue is the analyst desensitization that sets in when alert volume — especially noisy, low-value alerts — exceeds what a team can meaningfully review. Over time, alerts get rushed, deprioritized, or ignored.",
+    "significance": "Fatigue directly causes missed detections: a genuine alert is easy to dismiss when it looks like the hundred false positives before it, making noise reduction a security control in its own right.",
+    "example": "A real intrusion alert closed without investigation because it was indistinguishable from the flood of benign ones that day.",
+    "related": ["false-positive", "tuning", "triage"]
+  },
+  {
+    "term": "Triage",
+    "slug": "triage",
+    "short": "Quickly assessing alerts to decide what's real and what's urgent.",
+    "definition": "Triage is the initial assessment of an alert or event to determine whether it represents a real threat, how serious it is, and what should happen next. It is about fast prioritization, not full investigation.",
+    "significance": "Triage is the filter that decides where limited analyst attention goes, so consistent, efficient triage is what keeps real incidents from waiting behind noise.",
+    "example": "An analyst spending two minutes enriching an alert, confirming the host and user are sensitive, and escalating it as a likely incident.",
+    "related": ["alert", "enrichment", "escalation"]
+  },
+  {
+    "term": "Enrichment",
+    "slug": "enrichment",
+    "short": "Adding context to an alert to speed up and sharpen decisions.",
+    "definition": "Enrichment is the act of automatically adding context to an alert or indicator — such as asset ownership, user role, geolocation, or reputation data — so analysts can judge it faster and more accurately. It augments raw signals with the surrounding facts.",
+    "significance": "Good enrichment cuts triage time and reduces mistakes by putting the context an analyst would otherwise hunt for right next to the alert, often deciding whether something is benign at a glance.",
+    "example": "Automatically attaching the business criticality of a host and the user's department to every alert before it reaches an analyst.",
+    "related": ["triage", "correlation", "soar"]
+  },
+  {
+    "term": "Correlation",
+    "slug": "correlation",
+    "short": "Combining multiple events into a single, higher-confidence signal.",
+    "definition": "Correlation is the linking of multiple events or alerts — across time, hosts, or data sources — to identify a pattern that no single event reveals on its own. It turns scattered observations into one coherent picture.",
+    "significance": "Many attacks only become visible through correlation, because each individual step looks ordinary; relating them is how defenders reconstruct an attack chain from disparate logs.",
+    "example": "Correlating a failed-logon burst, a successful logon, and a new admin account into one account-compromise narrative.",
+    "related": ["siem", "enrichment", "xdr"]
+  },
+  {
+    "term": "Detection Rule",
+    "slug": "detection-rule",
+    "aka": ["Analytic"],
+    "short": "Logic that defines the conditions under which an alert fires.",
+    "definition": "A detection rule, sometimes called an analytic, is the codified logic that defines the conditions under which activity is flagged and an alert is raised. It can match a specific signature or describe a suspicious behavior.",
+    "significance": "Detection rules are the building blocks of automated monitoring; their precision and coverage directly determine how many real threats are caught and how much noise analysts must wade through.",
+    "example": "A rule that fires when a process spawns a command interpreter from an office application, indicating a likely macro payload.",
+    "related": ["detection-engineering", "signature-based-detection", "behavioral-detection"]
+  },
+  {
+    "term": "Signature-Based Detection",
+    "slug": "signature-based-detection",
+    "short": "Detecting known-bad by matching specific, predefined patterns.",
+    "definition": "Signature-based detection identifies threats by matching activity against predefined patterns of known-bad — specific hashes, byte sequences, strings, or rule conditions. It excels at recognizing previously seen threats precisely.",
+    "significance": "Signatures are fast and low-noise for known threats, but they are blind to anything novel or slightly modified, which is why they are paired with anomaly and behavioral approaches.",
+    "example": "Flagging a file the instant its hash matches a known malware sample, while a repacked variant slips by untouched.",
+    "related": ["anomaly-detection", "behavioral-detection", "detection-rule"]
+  },
+  {
+    "term": "Anomaly Detection",
+    "slug": "anomaly-detection",
+    "short": "Flagging activity that deviates from an established normal baseline.",
+    "definition": "Anomaly detection identifies activity that statistically deviates from an established baseline of normal behavior, rather than matching a known-bad pattern. It surfaces the unusual, on the theory that attacks often look different from routine operations.",
+    "significance": "It can catch novel threats that have no signature, but it depends on a solid baseline and tends to be noisier, since unusual is not always malicious.",
+    "example": "Alerting when a service account that normally touches one server suddenly authenticates to fifty.",
+    "related": ["baselining", "signature-based-detection", "ueba"]
+  },
+  {
+    "term": "Behavioral Detection",
+    "slug": "behavioral-detection",
+    "short": "Detecting threats by the actions they take, not static indicators.",
+    "definition": "Behavioral detection identifies threats by the sequence and nature of actions taken — the techniques and behaviors of an attack — rather than by static artifacts like hashes or domains. It focuses on what an adversary does, not what tool they used.",
+    "significance": "Because attackers can swap tools and indicators easily but must still perform the same fundamental actions, behavioral detection is harder to evade and forces adversaries to change their tradecraft.",
+    "example": "Detecting credential theft by the behavior of a process reading another process's memory, regardless of which tool performed it.",
+    "related": ["signature-based-detection", "anomaly-detection", "ueba"]
+  },
+  {
+    "term": "Baselining",
+    "slug": "baselining",
+    "aka": ["Known-Good Baseline"],
+    "short": "Establishing what 'normal' looks like so deviations stand out.",
+    "definition": "Baselining is the process of characterizing normal activity — for a host, account, network, or system image — so that deviations from it can be recognized. A known-good baseline captures the expected state to compare future observations against.",
+    "significance": "Without a baseline, analysts cannot tell unusual from routine; a sound baseline is the foundation that makes anomaly detection and hunting feasible and is itself a reference for verifying a clean rebuild.",
+    "example": "Comparing a suspect server's running services against a known-good baseline to spot the one that does not belong.",
+    "related": ["anomaly-detection", "recovery", "ueba"]
+  },
+  {
+    "term": "UEBA",
+    "slug": "ueba",
+    "aka": ["User and Entity Behavior Analytics"],
+    "short": "Analytics that profile users and entities to flag risky deviations.",
+    "definition": "User and Entity Behavior Analytics builds per-user and per-entity baselines of normal activity and applies analytics to flag deviations that may indicate compromise, insider misuse, or account takeover. It scores behavior against learned norms rather than fixed rules.",
+    "significance": "UEBA is well suited to catching credential abuse and insider threats that look like authorized activity, where there is no malware or signature to match — only a change in how an account behaves.",
+    "example": "Raising risk on an account that begins accessing financial records it has never touched and at hours it never works.",
+    "related": ["anomaly-detection", "baselining", "behavioral-detection"]
+  },
+  {
+    "term": "Precision and Recall",
+    "slug": "precision-and-recall",
+    "aka": ["Fidelity"],
+    "short": "Metrics for how accurate and how complete a detection is.",
+    "definition": "Precision is the share of a detection's alerts that are true positives, while recall is the share of actual threats that the detection catches. Together they describe how clean and how complete a detection is, and improving one often costs the other.",
+    "significance": "These metrics turn vague notions of detection quality into something measurable, letting teams reason explicitly about whether a rule is too noisy, too leaky, or appropriately tuned.",
+    "example": "A rule with high recall but low precision that catches every intrusion but buries each one under a hundred false alarms.",
+    "related": ["false-positive", "false-negative", "tuning"]
+  },
+  {
+    "term": "Tuning",
+    "slug": "tuning",
+    "short": "Adjusting detection logic to cut noise without losing real catches.",
+    "definition": "Tuning is the iterative adjustment of a detection's logic, thresholds, or exclusions to reduce false positives while preserving its ability to catch real threats. It is the ongoing maintenance that keeps detections useful.",
+    "significance": "Untuned detections either drown analysts in noise or get switched off entirely, so disciplined tuning is what keeps the alert stream trustworthy and combats alert fatigue.",
+    "example": "Refining a noisy rule to exclude a known administrative tool's legitimate usage while still alerting on its abuse.",
+    "related": ["false-positive", "alert-fatigue", "precision-and-recall"]
+  },
+  {
+    "term": "Hunt Hypothesis",
+    "slug": "hunt-hypothesis",
+    "aka": ["Hunt Loop"],
+    "short": "A testable assumption about adversary activity that guides a hunt.",
+    "definition": "A hunt hypothesis is a specific, testable assumption about how an adversary might be operating in the environment, used to focus a threat hunt and define what evidence to look for. The hunt loop iterates: form a hypothesis, gather data, test it, and refine.",
+    "significance": "A clear hypothesis turns hunting from aimless data browsing into a directed, repeatable search, and whether it is confirmed or refuted, the result often becomes a new detection or a coverage gap to close.",
+    "example": "Hypothesizing that an attacker abused a scheduling mechanism for persistence, then hunting every scheduled task created in the last month.",
+    "related": ["crown-jewel-analysis", "anomaly-detection", "detection-coverage"]
+  },
+  {
+    "term": "Crown Jewel Analysis",
+    "slug": "crown-jewel-analysis",
+    "short": "Identifying an org's most critical assets to focus defense on them.",
+    "definition": "Crown jewel analysis is the exercise of identifying an organization's most critical assets and data, and the systems and access paths that lead to them. It prioritizes defensive and detection effort around what matters most if compromised.",
+    "significance": "Because no team can watch everything equally, focusing detection, hunting, and monitoring around the crown jewels concentrates limited resources where an attacker's impact would be greatest.",
+    "example": "Mapping every account and host with a path to the financial database, then prioritizing detections along those paths.",
+    "related": ["hunt-hypothesis", "scoping", "detection-coverage"]
+  },
+  {
+    "term": "Playbook",
+    "slug": "playbook",
+    "aka": ["Runbook"],
+    "short": "A documented, repeatable procedure for handling a scenario.",
+    "definition": "A playbook is a documented, step-by-step procedure for responding to a specific type of alert or incident, defining the actions, decisions, and roles involved. A runbook is the closely related operational checklist for a recurring task.",
+    "significance": "Playbooks make response consistent, faster, and less reliant on individual memory under pressure, ensuring critical steps like evidence preservation and notification are not skipped during a stressful incident.",
+    "example": "Following a ransomware playbook step by step — isolate, preserve, identify scope, notify — instead of improvising mid-crisis.",
+    "related": ["soar", "incident-commander", "containment"]
+  },
+  {
+    "term": "SOAR",
+    "slug": "soar",
+    "aka": ["Security Orchestration, Automation and Response"],
+    "short": "Automating and orchestrating response steps across security tools.",
+    "definition": "Security Orchestration, Automation and Response refers to tooling that automates and coordinates response actions — enrichment, ticketing, containment steps — across multiple security tools, often by executing codified playbooks. It reduces the manual, repetitive work of handling alerts.",
+    "significance": "By automating routine steps, SOAR shortens response time and frees analysts for judgment-heavy work, but its automated actions must be designed carefully so they do not, for example, destroy evidence or take down a critical system.",
+    "example": "A SOAR workflow that auto-enriches a phishing alert, detonates the attachment, and opens a ticket before an analyst even looks.",
+    "related": ["playbook", "enrichment", "escalation"]
+  },
+  {
+    "term": "Escalation",
+    "slug": "escalation",
+    "short": "Routing an incident to higher tiers or authority as it grows.",
+    "definition": "Escalation is the process of moving an incident to more senior responders, specialized teams, or decision-makers when its severity, scope, or complexity exceeds the current handler's level. It defines who gets pulled in and when.",
+    "significance": "Clear escalation paths ensure that serious incidents reach the right expertise and authority quickly, preventing a major breach from languishing in a frontline queue or stalling for lack of a decision.",
+    "example": "A tier-one analyst escalating to the incident response team the moment triage confirms domain-wide compromise.",
+    "related": ["triage", "incident-severity", "incident-commander"]
+  },
+  {
+    "term": "Incident Severity",
+    "slug": "incident-severity",
+    "aka": ["Severity Matrix"],
+    "short": "A classification of an incident's seriousness that drives response.",
+    "definition": "Incident severity is a classification of how serious an incident is, typically derived from a severity matrix that weighs factors like business impact, scope, and data sensitivity. It maps an incident to a level that dictates urgency and resourcing.",
+    "significance": "Consistent severity ratings ensure incidents get a proportionate response and that scarce resources and after-hours attention go to the most damaging events first, while also driving notification timing.",
+    "example": "Rating an intrusion that reached a regulated data store as critical, triggering executive notification and a full response.",
+    "related": ["escalation", "scoping", "on-call"]
+  },
+  {
+    "term": "Scoping",
+    "slug": "scoping",
+    "short": "Determining the full extent of an incident — every affected asset.",
+    "definition": "Scoping is the investigative work of determining the full extent of an incident: which hosts, accounts, and data were affected, and how far the adversary reached. It draws the boundary of what has been compromised.",
+    "significance": "Accurate scoping is the linchpin of effective response — eradication and recovery fail if even one compromised system or account is missed, so under-scoping lets an adversary quietly persist through the cleanup.",
+    "example": "Sweeping for the attacker's indicators across every endpoint to confirm the breach reached three hosts and not thirty.",
+    "related": ["containment", "eradication", "crown-jewel-analysis"]
+  },
+  {
+    "term": "Containment",
+    "slug": "containment",
+    "short": "Stopping an incident from spreading while you investigate.",
+    "definition": "Containment is the set of actions taken to limit an incident's spread and prevent further damage while the investigation continues — isolating hosts, disabling accounts, or blocking C2. It buys time without necessarily removing the threat yet.",
+    "significance": "Prompt containment caps the blast radius of an incident, but it must be balanced against evidence preservation and the risk of tipping off an adversary who may react by escalating or destroying data.",
+    "example": "Network-isolating a compromised laptop through the endpoint agent so the attacker loses access while forensics proceed.",
+    "related": ["eradication", "recovery", "scoping"]
+  },
+  {
+    "term": "Eradication",
+    "slug": "eradication",
+    "short": "Removing the threat and the attacker's footholds from the environment.",
+    "definition": "Eradication is the removal of the adversary and all of their artifacts from the environment — malware, persistence mechanisms, backdoors, and unauthorized accounts. It addresses the root presence, not just the visible symptoms.",
+    "significance": "Incomplete eradication is a leading cause of reinfection; if any persistence mechanism or credential is missed, the attacker simply returns, which is why thorough scoping must precede it.",
+    "example": "Removing every scheduled task, service, and rogue account the attacker created — not just the one malware sample that triggered the alert.",
+    "related": ["containment", "recovery", "scoping"]
+  },
+  {
+    "term": "Recovery",
+    "slug": "recovery",
+    "short": "Restoring systems to normal, trusted operation after an incident.",
+    "definition": "Recovery is the phase of restoring affected systems and services to normal, trusted operation after a threat has been eradicated — rebuilding hosts, restoring data, and validating that systems are clean before returning them to production. It re-establishes business operations safely.",
+    "significance": "Recovery determines how quickly an organization gets back to normal, and rushing it risks restoring a still-compromised system or a backup the attacker had already tampered with, undoing the entire response.",
+    "example": "Rebuilding compromised servers from a trusted known-good image and monitoring them closely before declaring the incident closed.",
+    "related": ["eradication", "baselining", "post-incident-review"]
+  },
+  {
+    "term": "Post-Incident Review",
+    "slug": "post-incident-review",
+    "aka": ["Lessons Learned"],
+    "short": "A blameless review after an incident to learn and improve.",
+    "definition": "A post-incident review is a structured, retrospective discussion held after an incident to capture what happened, what worked, what did not, and what to improve. Done well, it is blameless, focusing on systemic fixes rather than individual fault.",
+    "significance": "It is how an incident becomes durable improvement — feeding new detections, closing telemetry gaps, and refining playbooks — and a program that skips it tends to repeat the same failures.",
+    "example": "A review revealing that a missing log source delayed detection, leading to a project to onboard that source.",
+    "related": ["root-cause-analysis", "detection-engineering", "playbook"]
+  },
+  {
+    "term": "Root Cause Analysis",
+    "slug": "root-cause-analysis",
+    "aka": ["RCA"],
+    "short": "Finding the underlying reason an incident was able to happen.",
+    "definition": "Root cause analysis is the investigation of the fundamental reason an incident occurred — the initial access vector and the underlying weakness that allowed it — rather than just its visible effects. It traces the chain back to the origin.",
+    "significance": "Without identifying the root cause, fixes treat only symptoms and the same incident recurs; pinpointing how the adversary first got in is what enables the change that actually prevents a repeat.",
+    "example": "Tracing a ransomware incident back to a single exposed remote-access service as the true entry point, not the encrypted files.",
+    "related": ["post-incident-review", "scoping", "detection-engineering"]
+  },
+  {
+    "term": "Mean Time to Detect",
+    "slug": "mean-time-to-detect",
+    "aka": ["MTTD"],
+    "short": "Average time from an intrusion starting to its detection.",
+    "definition": "Mean Time to Detect is the average elapsed time between when a threat or incident begins and when it is detected. It is a core program metric measuring how quickly defenders notice activity.",
+    "significance": "Lower MTTD means adversaries have less time to act before defenders respond, so it is a headline measure of detection effectiveness and a primary target for hunting and detection-engineering investment.",
+    "example": "Tracking MTTD across incidents and finding it dropped from weeks to days after a new detection program took hold.",
+    "related": ["mean-time-to-respond", "detection-coverage", "triage"]
+  },
+  {
+    "term": "Mean Time to Respond",
+    "slug": "mean-time-to-respond",
+    "aka": ["MTTR"],
+    "short": "Average time from detecting an incident to responding to it.",
+    "definition": "Mean Time to Respond is the average elapsed time between detecting an incident and taking effective response action, such as containment. It measures how quickly a team acts once it knows something is wrong.",
+    "significance": "Detection alone is not enough — slow response still lets damage accumulate, so MTTR captures the operational speed of containment and is often a driver behind automation and clear escalation paths.",
+    "example": "Reducing MTTR by automating host isolation so containment happens in minutes instead of waiting for manual action.",
+    "related": ["mean-time-to-detect", "containment", "soar"]
+  },
+  {
+    "term": "On-Call",
+    "slug": "on-call",
+    "short": "A rotation ensuring someone is always available to respond.",
+    "definition": "On-call is a staffing arrangement in which designated responders are available outside normal hours to handle incidents, typically on a rotating schedule. It ensures coverage for events that do not wait for business hours.",
+    "significance": "Attacks frequently happen overnight or on weekends precisely because defenders are thin then, so a reliable on-call rotation is what lets an organization contain an after-hours incident instead of discovering it Monday morning.",
+    "example": "The on-call analyst being paged at 3 a.m. for a critical alert and beginning containment within minutes.",
+    "related": ["escalation", "incident-commander", "incident-severity"]
+  },
+  {
+    "term": "Incident Commander",
+    "slug": "incident-commander",
+    "aka": ["IC"],
+    "short": "The single person who directs and owns an incident response.",
+    "definition": "The incident commander is the individual designated to lead an incident response, holding decision authority and coordinating the people and tasks involved. The role is about command and communication, not necessarily deep technical work.",
+    "significance": "A clear incident commander prevents the confusion and stalled decisions that plague leaderless responses, ensuring someone owns priorities, communication, and the call on actions like containment or shutdown.",
+    "example": "The incident commander deciding to take a business system offline despite the disruption, after weighing it against the breach risk.",
+    "related": ["escalation", "playbook", "on-call"]
+  },
+  {
+    "term": "Purple Teaming",
+    "slug": "purple-teaming",
+    "short": "Offense and defense collaborating to test and improve detections.",
+    "definition": "Purple teaming is a collaborative exercise in which an offensive team executes known adversary techniques while the defensive team observes whether their telemetry and detections catch them, working together in real time. The goal is measuring and improving detection, not scoring a win.",
+    "significance": "It directly validates detection coverage against real techniques, turning theoretical defenses into tested ones and rapidly closing the gaps it exposes, which makes it one of the highest-value ways to improve detections.",
+    "example": "Running a credential-dumping technique during a purple team session and discovering it produced no alert, then building one on the spot.",
+    "related": ["detection-coverage", "detection-engineering", "telemetry-gap"]
+  },
+  {
+    "term": "Detection Coverage",
+    "slug": "detection-coverage",
+    "aka": ["ATT&CK Gap Analysis"],
+    "short": "How much of relevant adversary behavior your detections actually catch.",
+    "definition": "Detection coverage is a measure of how much of the relevant adversary behavior an organization is actually able to detect, often assessed by mapping detections against a framework of techniques to find the gaps. It answers what a program can and cannot see.",
+    "significance": "Mapping coverage exposes blind spots before an attacker finds them, lets a team prioritize building detections where it matters most, and turns an abstract sense of preparedness into a concrete, trackable map.",
+    "example": "Mapping current detections against adversary techniques and discovering the program has no visibility into a whole class of lateral movement.",
+    "related": ["telemetry-gap", "detection-engineering", "purple-teaming"]
+  },
+  {
+    "term": "Telemetry Gap",
+    "slug": "telemetry-gap",
+    "aka": ["Visibility Gap"],
+    "short": "A blind spot where the data needed to detect activity isn't collected.",
+    "definition": "A telemetry gap is an area where the data needed to detect or investigate activity is not being collected or retained, leaving defenders blind regardless of how good their detection logic is. It is a gap in evidence, not in rules.",
+    "significance": "You cannot detect or investigate what you cannot see, so telemetry gaps quietly cap the entire program's effectiveness and are a common reason an incident goes unnoticed or cannot be fully reconstructed.",
+    "example": "Realizing during an investigation that command-line logging was never enabled, so there is no record of what the attacker ran.",
+    "related": ["detection-coverage", "siem", "false-negative"]
+  },
+  {
+    "term": "Honeytoken",
+    "slug": "honeytoken",
+    "aka": ["Canary Token", "Honey Credential"],
+    "short": "Fake data planted to fire an alert the moment it is touched.",
+    "definition": "A honeytoken is a piece of decoy data — a fake credential, file, account, or URL — deliberately planted where legitimate users have no reason to touch it, so that any access generates a high-confidence alert. It exists only to be triggered by an intruder.",
+    "significance": "Honeytokens are among the lowest-noise detections available because there is no benign reason to interact with them, making a fired token a strong indicator of compromise or insider activity that often catches attackers during reconnaissance.",
+    "example": "Seeding a fake administrator credential in a password vault and alerting the instant anyone attempts to use it.",
+    "related": ["behavioral-detection", "false-positive", "ueba"]
+  }
+]

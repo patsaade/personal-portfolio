@@ -1,0 +1,402 @@
+[
+  {
+    "term": "Open-Source Intelligence",
+    "slug": "open-source-intelligence",
+    "aka": ["OSINT"],
+    "short": "Collecting target intel from public sources before touching the network.",
+    "definition": "The practice of gathering information about a target from publicly available sources such as websites, job postings, social media, code repositories, and DNS records. It is reconnaissance that leaves no trace on the victim's own systems.",
+    "significance": "OSINT shapes the rest of an intrusion by revealing employee names, technologies, email formats, and exposed assets that feed phishing and exploitation. Because it happens off-network, defenders rarely see it directly and instead reduce their own attack surface and footprint.",
+    "example": "Pulling employee names and email patterns from a company's LinkedIn presence to build a convincing spearphishing list.",
+    "related": ["spearphishing", "active-scanning", "initial-access-broker"]
+  },
+  {
+    "term": "Active Scanning",
+    "slug": "active-scanning",
+    "aka": ["Port Scanning", "Network Scanning"],
+    "short": "Probing a target's hosts and services to map the attack surface.",
+    "definition": "Sending traffic directly to a target's IP ranges or services to discover live hosts, open ports, running services, and software versions. Unlike passive OSINT, it interacts with the target and can be logged.",
+    "significance": "Scanning often precedes exploitation, so a burst of connection attempts across many ports or hosts is an early warning sign. Perimeter and firewall logs frequently capture it, giving defenders a chance to spot interest before the breach.",
+    "example": "A spike of sequential connection attempts to thousands of ports on an edge appliance, recorded in firewall logs the night before an exploit lands.",
+    "related": ["open-source-intelligence", "exploitation-of-public-facing-application", "network-service-discovery"]
+  },
+  {
+    "term": "Spearphishing",
+    "slug": "spearphishing",
+    "aka": ["Targeted Phishing"],
+    "short": "A tailored phishing message aimed at a specific person or team.",
+    "definition": "A phishing attack crafted for a particular individual or small group, using personalized details to increase credibility. The lure may carry a malicious attachment, a link to a credential-harvesting page, or a request to take an action.",
+    "significance": "Spearphishing is one of the most common initial-access vectors, and because it is targeted it often bypasses generic spam filtering. Email headers, attachment artifacts, and the first user click are key pivot points in tracing how an intrusion began.",
+    "example": "An accounts-payable clerk receives a spoofed invoice email referencing a real vendor, and opening the attachment kicks off the first malicious process.",
+    "related": ["open-source-intelligence", "drive-by-compromise", "valid-accounts"]
+  },
+  {
+    "term": "Watering Hole Attack",
+    "slug": "watering-hole-attack",
+    "aka": ["Strategic Web Compromise"],
+    "short": "Compromising a site the target group is known to visit.",
+    "definition": "An attacker compromises a legitimate website frequented by a specific community or organization, then waits for victims to visit and be served malicious content. The targeting is indirect: the trap is set where the intended victims already go.",
+    "significance": "Watering holes let attackers reach a population without phishing them directly, and the host site's reputation lends the attack legitimacy. Investigations often trace an infection back to a trusted third-party site that was silently altered.",
+    "example": "An industry association's news page is injected with a script that profiles and exploits visitors from a handful of targeted member companies.",
+    "related": ["drive-by-compromise", "supply-chain-compromise", "spearphishing"]
+  },
+  {
+    "term": "Drive-by Compromise",
+    "slug": "drive-by-compromise",
+    "aka": ["Drive-by Download"],
+    "short": "Infecting a victim just by loading a malicious or hijacked web page.",
+    "definition": "A technique where simply visiting a web page leads to code execution on the visitor's system, typically by exploiting a browser or plugin vulnerability or coaxing the user into running content. No deliberate download or install is required.",
+    "significance": "Drive-by compromise turns ordinary browsing into an infection vector, which makes browser telemetry, proxy logs, and patch levels central to both prevention and root-cause analysis. It frequently pairs with watering holes and malvertising.",
+    "example": "A user browses a hijacked ad network, an exploit fires against an unpatched browser, and a payload runs without any click on a download button.",
+    "related": ["watering-hole-attack", "exploitation-of-public-facing-application", "obfuscation"]
+  },
+  {
+    "term": "Supply Chain Compromise",
+    "slug": "supply-chain-compromise",
+    "aka": ["Third-Party Compromise"],
+    "short": "Tampering with software or hardware before it reaches the victim.",
+    "definition": "An attack that subverts a product, dependency, update, or service upstream of the target so that the target is compromised through something it trusts. This can mean poisoned software updates, malicious libraries, or tampered hardware.",
+    "significance": "Because the malicious code arrives through a trusted channel, supply chain attacks bypass many defenses and can scale to thousands of downstream victims at once. They have reshaped how teams think about software provenance, signing, and dependency review.",
+    "example": "A trojanized update to a widely used IT utility installs a backdoor on every customer that applied it during a specific release window.",
+    "related": ["valid-accounts", "watering-hole-attack", "signed-binary-proxy-execution"]
+  },
+  {
+    "term": "Valid Accounts",
+    "slug": "valid-accounts",
+    "aka": ["Account Abuse"],
+    "short": "Logging in with legitimate stolen or default credentials.",
+    "definition": "Using real, authorized credentials, whether stolen, purchased, default, or otherwise obtained, to access systems as a sanctioned user. The activity rides on legitimate authentication rather than exploiting a flaw.",
+    "significance": "Valid-account abuse blends into normal logins and can grant initial access, persistence, privilege, and lateral movement all at once, making it one of the hardest behaviors to detect. Anomalous logon times, locations, and impossible travel are the main tells.",
+    "example": "An attacker uses a contractor's leaked VPN credentials to log in from an unusual country at 3 a.m. and is mistaken for routine remote work.",
+    "related": ["spearphishing", "initial-access-broker", "account-discovery"]
+  },
+  {
+    "term": "Exploitation of a Public-Facing Application",
+    "slug": "exploitation-of-public-facing-application",
+    "aka": ["Public App Exploitation"],
+    "short": "Attacking an internet-exposed app to gain a first foothold.",
+    "definition": "Exploiting a vulnerability in an internet-reachable service, such as a web application, VPN gateway, mail server, or API, to gain initial access. The weakness may be a known unpatched flaw or a zero-day.",
+    "significance": "Externally exposed services are a primary entry point because they are reachable by anyone, so unpatched edge devices are a recurring breach origin. Web and application logs around the exploit time are often the earliest evidence an investigation has.",
+    "example": "A web shell appears under an internet-facing server's directory minutes after a crafted request hits an unpatched upload endpoint.",
+    "related": ["active-scanning", "drive-by-compromise", "service-execution"]
+  },
+  {
+    "term": "Scheduled Task Abuse",
+    "slug": "scheduled-task-abuse",
+    "aka": ["Cron Abuse", "Scheduled Job"],
+    "short": "Using the OS task scheduler to run or relaunch attacker code.",
+    "definition": "Abusing built-in job schedulers, such as Windows Task Scheduler or cron, to execute code at a chosen time or trigger. Tasks can run with elevated rights and survive reboots, serving execution, persistence, or privilege goals.",
+    "significance": "Scheduled tasks are a favored persistence and execution mechanism because they are native, flexible, and easy to overlook among thousands of legitimate jobs. Task creation events and the task store itself are high-value artifacts during eradication.",
+    "example": "A newly created task that launches a script every morning is found re-establishing the attacker's foothold after each cleanup attempt.",
+    "related": ["service-execution", "wmi-abuse", "hands-on-keyboard-activity"]
+  },
+  {
+    "term": "WMI Abuse",
+    "slug": "wmi-abuse",
+    "aka": ["Windows Management Instrumentation Abuse"],
+    "short": "Using Windows management plumbing to run code and move quietly.",
+    "definition": "Abusing Windows Management Instrumentation, a built-in management framework, to execute commands, query systems, or persist via event subscriptions. It is trusted, scriptable, and can operate locally or against remote hosts.",
+    "significance": "Because WMI is a normal administrative interface, its abuse blends into legitimate activity and can drive execution, discovery, lateral movement, and stealthy persistence. WMI activity logging and the repository are important but often overlooked evidence sources.",
+    "example": "A permanent WMI event subscription is discovered silently launching a payload whenever the system boots.",
+    "related": ["scheduled-task-abuse", "service-execution", "system-information-discovery"]
+  },
+  {
+    "term": "Service Execution",
+    "slug": "service-execution",
+    "aka": ["Service Creation"],
+    "short": "Creating or hijacking a system service to run attacker code.",
+    "definition": "Installing a new system service or modifying an existing one so that attacker-controlled code runs, typically with high privileges and automatic start. Services can be created locally or pushed to remote hosts over management protocols.",
+    "significance": "Service execution offers both high-privilege code execution and durable persistence, and remote service creation is a classic lateral-movement step. Service installation events and the registry's services hive are core artifacts for spotting it.",
+    "example": "A service with a random name is created on a file server to execute a remote-access tool as SYSTEM during lateral movement.",
+    "related": ["scheduled-task-abuse", "wmi-abuse", "access-token-manipulation"]
+  },
+  {
+    "term": "Signed Binary Proxy Execution",
+    "slug": "signed-binary-proxy-execution",
+    "aka": ["LOLBin Proxy Execution"],
+    "short": "Hiding code execution behind a trusted, signed system binary.",
+    "definition": "Using a legitimate, digitally signed operating-system binary to load, run, or proxy the execution of attacker-supplied code. The trusted binary acts as a launcher so the malicious payload inherits its reputation.",
+    "significance": "This defeats simple allow-listing and signature checks because the executing image is a sanctioned Microsoft-signed tool, pushing detection toward command-line and parent-child process analysis. It is a cornerstone of stealthy, malware-light intrusions.",
+    "example": "An analyst spots a signed scripting host being invoked with an unusual command line that loads a remote payload, despite the binary itself being legitimate.",
+    "related": ["masquerading", "dll-search-order-hijacking", "obfuscation"]
+  },
+  {
+    "term": "DLL Search-Order Hijacking",
+    "slug": "dll-search-order-hijacking",
+    "aka": ["DLL Hijacking", "DLL Preloading"],
+    "short": "Planting a malicious library where a trusted program will load it.",
+    "definition": "Exploiting the order in which an application searches directories for a dynamic library by placing a malicious DLL in a location checked before the legitimate one. The trusted program then loads attacker code at startup.",
+    "significance": "Hijacking gives execution and persistence under the cover of a legitimate, often signed, application, which helps evade detection and allow-listing. Examining a process's loaded modules and their paths is the practical way to catch it.",
+    "example": "A signed application is found loading a same-named DLL dropped into its own folder, silently running attacker code each time it launches.",
+    "related": ["signed-binary-proxy-execution", "com-hijacking", "masquerading"]
+  },
+  {
+    "term": "COM Hijacking",
+    "slug": "com-hijacking",
+    "aka": ["Component Object Model Hijacking"],
+    "short": "Redirecting a registered COM object to attacker code via the registry.",
+    "definition": "Abusing the Windows Component Object Model by altering registry entries so that a referenced COM object resolves to attacker-controlled code instead of the legitimate component. When an application invokes the object, the malicious code runs.",
+    "significance": "COM hijacking is a quiet persistence and execution technique because it leverages normal application behavior and lives in often-ignored registry keys. Comparing per-user and system COM registrations is a reliable way to surface it.",
+    "example": "A user-writable registry key is modified so a common COM object loads a malicious library whenever a scheduled application starts.",
+    "related": ["dll-search-order-hijacking", "scheduled-task-abuse", "indicator-removal"]
+  },
+  {
+    "term": "BITS Jobs",
+    "slug": "bits-jobs",
+    "aka": ["Background Intelligent Transfer Service Abuse"],
+    "short": "Using Windows' background transfer service to fetch or run payloads.",
+    "definition": "Abusing the Background Intelligent Transfer Service, a built-in Windows mechanism for resilient file transfers, to download payloads or execute commands. Jobs persist across reboots and run under a trusted system service.",
+    "significance": "BITS traffic resembles ordinary update activity and survives logoff and restart, giving attackers a low-profile channel for download, execution, and persistence. Its job queue and dedicated logs are evidence sources defenders frequently miss.",
+    "example": "An investigation finds a long-lived BITS job quietly re-downloading a payload from an external host hours after the original file was deleted.",
+    "related": ["signed-binary-proxy-execution", "service-execution", "indicator-removal"]
+  },
+  {
+    "term": "Accessibility Features Abuse",
+    "slug": "accessibility-features-abuse",
+    "aka": ["Sticky Keys Backdoor"],
+    "short": "Hijacking login-screen accessibility tools to get a SYSTEM shell.",
+    "definition": "Replacing or redirecting Windows accessibility utilities that are reachable from the login screen, such as the sticky-keys or on-screen-keyboard helpers, so that triggering them launches a command shell. The shell runs with high privilege before any user logs in.",
+    "significance": "This yields a pre-authentication, high-privilege backdoor that is trivial to trigger over remote desktop, making it both a persistence and an access technique. Checking the integrity and registered debuggers of these binaries is a standard hunt.",
+    "example": "Pressing the sticky-keys shortcut at a locked RDP screen opens a SYSTEM command prompt because the helper was swapped for a shell.",
+    "related": ["service-execution", "masquerading", "valid-accounts"]
+  },
+  {
+    "term": "User Account Control Bypass",
+    "slug": "uac-bypass",
+    "aka": ["UAC Bypass"],
+    "short": "Elevating from a normal user to admin without a consent prompt.",
+    "definition": "Techniques that abuse auto-elevating processes, trusted directories, or registry hijacks to gain administrative rights on Windows without triggering the User Account Control consent prompt. They turn a medium-integrity process into a high-integrity one quietly.",
+    "significance": "Bypassing UAC lets an attacker reach full local admin with no user interaction, unlocking credential theft, persistence, and tampering. Detecting it usually means watching for known auto-elevation chains and unexpected high-integrity child processes.",
+    "example": "A standard-user implant launches a trusted auto-elevating utility that loads its payload at high integrity, with no prompt shown to the user.",
+    "related": ["access-token-manipulation", "dll-search-order-hijacking", "disabling-security-tools"]
+  },
+  {
+    "term": "Access Token Manipulation",
+    "slug": "access-token-manipulation",
+    "aka": ["Token Impersonation", "Token Theft"],
+    "short": "Stealing or forging Windows tokens to act as another account.",
+    "definition": "Manipulating Windows access tokens, the objects that carry a process's security context, by stealing, duplicating, or impersonating them so code runs under a different user's identity. This includes impersonating a logged-on admin or a service account.",
+    "significance": "Token abuse lets an attacker assume privileged identities without knowing their passwords, enabling stealthy privilege escalation and lateral movement. Process privilege and impersonation telemetry, plus unexpected token use, are the signals to watch.",
+    "example": "An attacker with SYSTEM duplicates a domain admin's token from an active session to run commands as that admin against remote hosts.",
+    "related": ["uac-bypass", "service-execution", "active-directory-reconnaissance"]
+  },
+  {
+    "term": "Masquerading",
+    "slug": "masquerading",
+    "aka": ["Filename Spoofing"],
+    "short": "Disguising malicious files or processes as legitimate ones.",
+    "definition": "Making attacker artifacts appear benign by mimicking the names, locations, icons, or metadata of legitimate software. A payload might be named like a system process or placed in a trusted directory to avoid scrutiny.",
+    "significance": "Masquerading exploits the human and tooling tendency to trust familiar names and paths, helping malware survive casual inspection. Verifying file paths, hashes, and signatures against known-good baselines is the practical countermeasure.",
+    "example": "A binary named after a core Windows process is found running from a user's temp folder rather than the system directory, a classic giveaway.",
+    "related": ["signed-binary-proxy-execution", "obfuscation", "dll-search-order-hijacking"]
+  },
+  {
+    "term": "Obfuscation",
+    "slug": "obfuscation",
+    "aka": ["Command Obfuscation", "Encoding"],
+    "short": "Encoding or scrambling code and commands to dodge detection.",
+    "definition": "Deliberately transforming scripts, commands, or files, through encoding, string splitting, encryption, or convoluted syntax, so their true intent is hidden from signatures and casual review. The behavior is unchanged; only its readable form is disguised.",
+    "significance": "Obfuscation defeats simple keyword and pattern matching and slows analysts, forcing detection toward decoded behavior and runtime effects. Heavily encoded command lines are themselves a useful anomaly signal.",
+    "example": "A scheduled task launches a base64-encoded, string-concatenated script whose decoded form reveals a download-and-execute payload.",
+    "related": ["masquerading", "signed-binary-proxy-execution", "sandbox-evasion"]
+  },
+  {
+    "term": "Indicator Removal",
+    "slug": "indicator-removal",
+    "aka": ["Anti-Forensics Cleanup", "Defense Evasion"],
+    "short": "Deleting the traces an intrusion leaves behind to evade detection.",
+    "definition": "Actively removing or altering the evidence of activity, such as deleting files, clearing command history, wiping registry keys, or stripping logs, to frustrate detection and analysis. It is defensive housekeeping performed by the attacker.",
+    "significance": "Indicator removal both delays discovery and complicates root-cause analysis, so the act of deletion can itself become a detection opportunity. Gaps, missing artifacts, and tampering markers often point investigators to where evidence used to be.",
+    "example": "Command history and recently dropped tools are wiped right before exfiltration, leaving a suspicious void in an otherwise busy timeline.",
+    "related": ["log-clearing", "anti-forensics", "disabling-security-tools"]
+  },
+  {
+    "term": "Log Clearing",
+    "slug": "log-clearing",
+    "aka": ["Event Log Wiping"],
+    "short": "Erasing or truncating logs to destroy the record of activity.",
+    "definition": "Deleting, truncating, or selectively editing event and audit logs to remove the record of attacker actions. This ranges from wiping entire Windows event logs to surgically removing individual entries.",
+    "significance": "Logs are a primary evidence source, so their destruction is a high-impact anti-forensic move that also signals intent and capability. A cleared log, or the specific event that records the clearing, is itself a strong indicator of compromise.",
+    "example": "Security event logs show a single 'log cleared' record and nothing before it, marking the point an attacker tried to cover their tracks.",
+    "related": ["indicator-removal", "anti-forensics", "disabling-security-tools"]
+  },
+  {
+    "term": "Disabling Security Tools",
+    "slug": "disabling-security-tools",
+    "aka": ["Defense Tampering", "Impair Defenses"],
+    "short": "Turning off or blinding antivirus, EDR, and logging.",
+    "definition": "Stopping, uninstalling, misconfiguring, or otherwise impairing defensive software and telemetry, such as antivirus, endpoint detection, firewalls, or audit logging, to operate undetected. It may target services, drivers, exclusions, or configuration.",
+    "significance": "Blinding the defenses removes the very sensors an investigation relies on, so unexplained tampering with security products is a serious, high-fidelity alert. It often immediately precedes loud actions like ransomware deployment.",
+    "example": "An attacker adds broad antivirus exclusions and stops the EDR service minutes before launching their payload across the network.",
+    "related": ["bring-your-own-vulnerable-driver", "log-clearing", "indicator-removal"]
+  },
+  {
+    "term": "Bring Your Own Vulnerable Driver",
+    "slug": "bring-your-own-vulnerable-driver",
+    "aka": ["BYOVD"],
+    "short": "Loading a legitimate but flawed driver to reach the kernel.",
+    "definition": "Installing a legitimately signed but vulnerable kernel driver and then exploiting its flaw to gain kernel-level execution or to disable protections. The driver is trusted by the OS, so loading it raises few alarms by itself.",
+    "significance": "Kernel access lets attackers terminate protected security processes, tamper with the OS, and hide deeply, defeating user-mode defenses. Monitoring for the loading of known-vulnerable drivers is a key, high-value detection.",
+    "example": "A known-vulnerable signed driver is dropped and loaded specifically so the attacker can kill the endpoint agent that user-mode methods could not touch.",
+    "related": ["disabling-security-tools", "access-token-manipulation", "anti-forensics"]
+  },
+  {
+    "term": "Anti-Forensics",
+    "slug": "anti-forensics",
+    "aka": ["Counter-Forensics"],
+    "short": "Techniques meant to defeat or mislead forensic analysis.",
+    "definition": "The broad set of methods attackers use to hinder evidence collection and interpretation, including secure deletion, encryption, timestamp tampering, log manipulation, and operating only in memory. The goal is to make investigation slower, harder, or inconclusive.",
+    "significance": "Anti-forensics directly attacks the reliability of an investigation, so recognizing its signatures helps analysts gauge sophistication and avoid drawing wrong conclusions. Inconsistencies and missing data are frequently the residue it leaves.",
+    "example": "A host shows wiped logs, secure-deleted tooling, and only in-memory artifacts, signaling a deliberate effort to defeat the forensic process.",
+    "related": ["indicator-removal", "log-clearing", "time-based-evasion"]
+  },
+  {
+    "term": "Sandbox Evasion",
+    "slug": "sandbox-evasion",
+    "aka": ["Anti-Analysis", "Environment Awareness"],
+    "short": "Malware checking if it's in an analysis environment before acting.",
+    "definition": "Techniques by which malware detects automated analysis or virtualized sandboxes, by checking for artifacts, low resource counts, missing user activity, or analysis tools, and withholds its payload when it suspects observation. It behaves benignly under inspection.",
+    "significance": "Sandbox evasion lets malware pass automated detonation and only detonate on real victims, which is why dynamic analysis can return a false clean verdict. Knowing the checks helps analysts harden sandboxes and interpret quiet samples with suspicion.",
+    "example": "A sample that does nothing in the analysis sandbox is later observed deploying its payload only after confirming a real user's mouse activity and domain membership.",
+    "related": ["time-based-evasion", "obfuscation", "disabling-security-tools"]
+  },
+  {
+    "term": "Time-Based Evasion",
+    "slug": "time-based-evasion",
+    "aka": ["Logic Bomb", "Execution Delay"],
+    "short": "Delaying or time-gating actions to slip past monitoring and sandboxes.",
+    "definition": "Withholding malicious behavior until a delay elapses, a specific date or condition is met, or activity is timed to blend with normal hours. This includes long sleeps to outlast sandbox analysis and logic bombs that trigger on a future event.",
+    "significance": "Timing controls let malware evade short-lived automated analysis and operate when defenders are least attentive, stretching dwell time. Detecting them often means correlating dormancy with later bursts of activity tied to specific triggers.",
+    "example": "A sample sleeps for a long interval to outlast the sandbox window, then springs to life days later during a holiday weekend.",
+    "related": ["sandbox-evasion", "anti-forensics", "ransomware-deployment"]
+  },
+  {
+    "term": "Account Discovery",
+    "slug": "account-discovery",
+    "aka": ["User Enumeration"],
+    "short": "Enumerating local and domain accounts to plan the next move.",
+    "definition": "Querying a system or directory to list user and group accounts, their membership, and privileges. It establishes who exists, which accounts are privileged, and which are worth targeting.",
+    "significance": "Account discovery maps the identity terrain that fuels privilege escalation and lateral movement, so a single host suddenly enumerating domain admins is a meaningful signal. Built-in enumeration commands and directory queries are the activity to watch.",
+    "example": "Shortly after foothold, a host runs commands listing all members of the domain administrators group to pick its next target.",
+    "related": ["active-directory-reconnaissance", "system-information-discovery", "valid-accounts"]
+  },
+  {
+    "term": "System Information Discovery",
+    "slug": "system-information-discovery",
+    "aka": ["Host Enumeration"],
+    "short": "Profiling a host's OS, hardware, software, and configuration.",
+    "definition": "Collecting details about a compromised host such as operating-system version, patch level, hostname, hardware, installed software, and security products. It tells the attacker where they landed and how to proceed.",
+    "significance": "This reconnaissance decides exploit choice, evasion needs, and value of the host, so a flurry of enumeration commands right after access is a classic post-compromise pattern. Process-creation logs capturing those commands are prime evidence.",
+    "example": "Within seconds of a new shell, an attacker runs a string of commands dumping the OS build, logged-on users, and installed antivirus.",
+    "related": ["account-discovery", "network-service-discovery", "sandbox-evasion"]
+  },
+  {
+    "term": "Network Service Discovery",
+    "slug": "network-service-discovery",
+    "aka": ["Internal Scanning", "Service Enumeration"],
+    "short": "Scanning the internal network from a foothold to find targets.",
+    "definition": "Enumerating reachable hosts and the services they expose from inside a compromised environment, typically to identify file shares, remote-management ports, and other systems worth pivoting to. It is reconnaissance conducted after initial access.",
+    "significance": "Internal scanning maps the lateral-movement paths available to an attacker, so east-west scanning from a workstation that normally never does it is a strong indicator. Internal flow records and connection logs reveal the sweep.",
+    "example": "A compromised workstation begins probing SMB and remote-desktop ports across the subnet, exposing the attacker's hunt for its next hop.",
+    "related": ["active-scanning", "system-information-discovery", "active-directory-reconnaissance"]
+  },
+  {
+    "term": "Active Directory Reconnaissance",
+    "slug": "active-directory-reconnaissance",
+    "aka": ["AD Recon", "Domain Enumeration"],
+    "short": "Mapping users, groups, trusts, and paths inside a Windows domain.",
+    "definition": "Querying Active Directory to enumerate users, groups, computers, trusts, group policies, and privilege relationships, often to chart attack paths toward high-value accounts. Standard directory protocols make much of this look like normal lookups.",
+    "significance": "AD recon reveals the shortest route to domain dominance, so heavy or unusual directory querying from a non-admin host is a hunt-worthy signal. Domain controller query logs and graph-style path analysis are central to catching and understanding it.",
+    "example": "A foothold host issues a wave of directory queries enumerating privileged groups and trust relationships to plot a path to domain admin.",
+    "related": ["account-discovery", "network-service-discovery", "access-token-manipulation"]
+  },
+  {
+    "term": "Data Staging",
+    "slug": "data-staging",
+    "aka": ["Collection", "Staging"],
+    "short": "Gathering and packing target data in one place before exfiltration.",
+    "definition": "Collecting data of interest from across an environment and consolidating it, often compressed or encrypted, into a staging location in preparation for exfiltration. It is the marshaling step between collection and theft.",
+    "significance": "Staging is a chokepoint just before data leaves, so spotting large archives appearing in unusual directories can interrupt a breach before exfiltration completes. Unexpected compression activity and bulky temp files are practical detection cues.",
+    "example": "An investigation finds a large password-protected archive assembled in a temp folder, holding sensitive files pulled from multiple shares.",
+    "related": ["hands-on-keyboard-activity", "double-extortion", "ransomware-deployment"]
+  },
+  {
+    "term": "Hands-on-Keyboard Activity",
+    "slug": "hands-on-keyboard-activity",
+    "aka": ["Interactive Intrusion", "Hands-on Keyboard"],
+    "short": "A human operator actively driving the intrusion in real time.",
+    "definition": "Intrusion activity carried out interactively by a live human operator typing commands and adapting in real time, as opposed to fully automated malware. It is recognizable by exploratory commands, mistakes, typos, and decisions that respond to the environment.",
+    "significance": "Human-driven activity tends to be more adaptive and dangerous than automation, and signals an attacker is actively pursuing objectives, which raises urgency for containment. The cadence and improvisation in command-line telemetry help analysts distinguish it from scripted runs.",
+    "example": "Command logs show an operator probing, correcting a typo, and changing tactics on the fly, marking a live human rather than a self-running tool.",
+    "related": ["data-staging", "active-directory-reconnaissance", "ransomware-deployment"]
+  },
+  {
+    "term": "Ransomware Deployment",
+    "slug": "ransomware-deployment",
+    "aka": ["Encryption for Impact"],
+    "short": "Pushing file-encrypting payloads across an environment for extortion.",
+    "definition": "The impact phase in which an attacker distributes and executes encryption payloads broadly, often via management tooling or scripts, to lock files across many systems and demand payment. It is typically the loud finale of a longer intrusion.",
+    "significance": "Deployment is the moment damage becomes visible and recovery clocks start, so detecting the staging and distribution steps beforehand is far better than reacting after encryption. The push usually rides on the same tooling used for legitimate administration.",
+    "example": "After disabling defenses and staging data, the attacker uses a remote-execution tool to launch the encryptor on hundreds of hosts at once.",
+    "related": ["double-extortion", "data-destruction", "disabling-security-tools"]
+  },
+  {
+    "term": "Double Extortion",
+    "slug": "double-extortion",
+    "aka": ["Encrypt-and-Leak"],
+    "short": "Stealing data and encrypting it, then threatening to publish.",
+    "definition": "An extortion model that pairs file encryption with prior data theft, so victims are pressured to pay both to recover files and to prevent stolen data from being leaked publicly. The exfiltration usually happens before any encryption.",
+    "significance": "Double extortion means a working backup is no longer enough to neutralize the threat, which reframes ransomware response around the breach of confidentiality. Evidence of bulk outbound transfers before encryption is critical to scoping the leak risk.",
+    "example": "Even though the victim restores from backups, the attacker still demands payment by threatening to publish the gigabytes of data they exfiltrated first.",
+    "related": ["ransomware-deployment", "data-staging", "data-destruction"]
+  },
+  {
+    "term": "Data Destruction",
+    "slug": "data-destruction",
+    "aka": ["Wiping", "Disk Wiping"],
+    "short": "Irreversibly deleting or corrupting data to cause harm.",
+    "definition": "Deliberately overwriting, corrupting, or deleting data, files, or entire disk structures to render systems and information unrecoverable. Unlike ransomware, the intent is destruction rather than payment, though some attacks pose as ransomware.",
+    "significance": "Destructive attacks aim at availability and can be unrecoverable, making rapid containment and offline backups essential. Distinguishing a true wiper from ransomware shapes whether recovery is even possible, so the destruction method matters to triage.",
+    "example": "An attacker overwrites the boot records and key files across servers with no recovery path, masquerading the wipe as a ransom event.",
+    "related": ["ransomware-deployment", "defacement", "denial-of-service"]
+  },
+  {
+    "term": "Defacement",
+    "slug": "defacement",
+    "aka": ["Website Defacement"],
+    "short": "Altering public-facing content to send a message or signal control.",
+    "definition": "Visibly modifying a victim's content, most often a website, to display the attacker's message, imagery, or claim of responsibility. It targets integrity and is meant to be seen.",
+    "significance": "Defacement is a public, reputation-focused impact that often signals hacktivism or a desire to demonstrate access, and it can mask deeper compromise. Comparing live content against known-good baselines and watching file-change times helps detect and scope it.",
+    "example": "A company's home page is replaced with a political banner, and the underlying web shell reveals the access was deeper than the visible damage.",
+    "related": ["exploitation-of-public-facing-application", "data-destruction", "denial-of-service"]
+  },
+  {
+    "term": "Cryptojacking",
+    "slug": "cryptojacking",
+    "aka": ["Cryptomining", "Resource Hijacking"],
+    "short": "Hijacking a victim's compute to secretly mine cryptocurrency.",
+    "definition": "Covertly using a victim's CPU, GPU, or cloud resources to mine cryptocurrency for the attacker's benefit. It is a form of resource hijacking that prioritizes staying unnoticed over destruction.",
+    "significance": "Cryptojacking inflates costs, degrades performance, and often indicates a broader unpatched exposure being exploited opportunistically. Sustained high resource use and connections to mining pools are the practical indicators.",
+    "example": "A cloud bill spikes as compromised instances quietly run mining software and beacon to a mining pool around the clock.",
+    "related": ["exploitation-of-public-facing-application", "denial-of-service", "valid-accounts"]
+  },
+  {
+    "term": "Denial of Service",
+    "slug": "denial-of-service",
+    "aka": ["DoS", "DDoS"],
+    "short": "Overwhelming or crashing a service to make it unavailable.",
+    "definition": "An attack on availability that floods, exhausts, or crashes a system or service so legitimate users cannot reach it. Distributed variants coordinate many sources at once to amplify the effect.",
+    "significance": "Denial of service directly impacts availability and is sometimes used as a distraction to mask a concurrent intrusion, so traffic anomalies deserve scrutiny beyond the outage itself. Volumetric spikes and unusual source distributions are the core signals.",
+    "example": "A flood of junk traffic knocks a public portal offline, and investigators later find it coincided with quiet data theft on another system.",
+    "related": ["data-destruction", "defacement", "cryptojacking"]
+  },
+  {
+    "term": "Initial Access Broker",
+    "slug": "initial-access-broker",
+    "aka": ["IAB"],
+    "short": "An actor who sells ready-made access into compromised networks.",
+    "definition": "A specialized threat actor who gains a foothold in organizations and then sells that access, such as valid credentials, web shells, or VPN entry, to other criminals rather than acting on it directly. It reflects a division of labor in the criminal ecosystem.",
+    "significance": "Access brokers shorten the path between compromise and a damaging follow-on attack like ransomware, so detecting the initial foothold early is essential to break the handoff. The access on offer often traces back to phishing, exposed services, or leaked credentials.",
+    "example": "Network access first obtained through a leaked VPN credential is sold on, and weeks later a different group uses it to deploy ransomware.",
+    "related": ["valid-accounts", "spearphishing", "ransomware-deployment"]
+  }
+]

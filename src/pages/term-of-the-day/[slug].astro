@@ -1,5 +1,5 @@
 ---
-// Word-of-the-day detail page — one prerendered page per term, with definition,
+// Term-of-the-day detail page — one prerendered page per term, with definition,
 // significance, an example, related terms, and DefinedTerm structured data.
 // Prerender to static HTML (required: getStaticPaths is ignored under output: 'server').
 export const prerender = true;
@@ -31,9 +31,9 @@ const jsonLd = JSON.stringify({
   name: term.term,
   ...(term.aka && term.aka.length ? { alternateName: term.aka } : {}),
   description: term.definition,
-  inDefinedTermSet: `${SITE.url}/word-of-the-day/`,
+  inDefinedTermSet: `${SITE.url}/term-of-the-day/`,
   termCode: term.slug,
-  url: `${SITE.url}/word-of-the-day/${term.slug}/`,
+  url: `${SITE.url}/term-of-the-day/${term.slug}/`,
 });
 
 const sectionH2 = css({
@@ -63,7 +63,7 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
 
 <BaseLayout title={term.term} description={`${term.term} — ${term.short}`}>
   <a
-    href="/word-of-the-day/"
+    href="/term-of-the-day/"
     class={css({
       display: 'inline-flex',
       alignItems: 'center',
@@ -75,7 +75,7 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
       _hover: { color: 'primary' },
     })}
   >
-    <Icon name="arrow-left" size={14} /> Word of the Day
+    <Icon name="arrow-left" size={14} /> Term of the Day
   </a>
 
   <header class={css({ mb: '1.5rem' })}>
@@ -119,7 +119,7 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
         <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' })}>
           {related.map((r) => (
             <a
-              href={`/word-of-the-day/${r!.slug}/`}
+              href={`/term-of-the-day/${r!.slug}/`}
               class={css({
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -157,7 +157,7 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
     })}
   >
     {prev ? (
-      <a href={`/word-of-the-day/${prev.slug}/`} class={navLink}>
+      <a href={`/term-of-the-day/${prev.slug}/`} class={navLink}>
         <span class={navMeta}>← Previous</span>
         <span class={navTitle}>{prev.term}</span>
       </a>
@@ -165,7 +165,7 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
       <span />
     )}
     {next ? (
-      <a href={`/word-of-the-day/${next.slug}/`} class={`${navLink} ${css({ textAlign: 'right', alignItems: 'flex-end' })}`}>
+      <a href={`/term-of-the-day/${next.slug}/`} class={`${navLink} ${css({ textAlign: 'right', alignItems: 'flex-end' })}`}>
         <span class={navMeta}>Next →</span>
         <span class={navTitle}>{next.term}</span>
       </a>

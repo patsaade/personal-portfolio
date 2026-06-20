@@ -1,0 +1,302 @@
+[
+  {
+    "term": "Shell History Files",
+    "slug": "shell-history",
+    "aka": [".bash_history", ".zsh_history", "command history"],
+    "short": "Per-user logs of typed shell commands; a key record of operator activity on Unix.",
+    "definition": "Plain-text files in a user's home directory (~/.bash_history, ~/.zsh_history, ~/.local/share/fish/fish_history and similar) where interactive shells record the commands a user ran. Zsh and fish can also store timestamps; bash does so only when HISTTIMEFORMAT or extended history is enabled.",
+    "significance": "On Linux and macOS this is often the closest thing to a keystroke log of hands-on-keyboard activity, exposing downloaded tooling, lateral movement, and cleanup. Investigators also watch for tampering — a truncated file, HISTFILE pointed at /dev/null, or unset HISTFILE all signal anti-forensics.",
+    "example": "A trimmed .bash_history paired with a HISTSIZE=0 line in .bashrc showed the intruder disabling history right after their first wget of a rootkit.",
+    "related": ["sudoers", "auth-log", "anti-forensics-log-tampering"]
+  },
+  {
+    "term": "auth.log / secure",
+    "slug": "auth-log",
+    "aka": ["/var/log/auth.log", "/var/log/secure"],
+    "short": "Linux authentication log recording logins, sudo use, SSH activity, and PAM events.",
+    "definition": "The system log that captures authentication and authorization events on Linux — successful and failed logins, su/sudo invocations, SSH session start and key acceptance, and PAM module messages. Debian-family systems write /var/log/auth.log; RHEL-family systems use /var/log/secure.",
+    "significance": "It is the first place to scope account compromise: brute-force bursts, anomalous source IPs, off-hours sudo, and new SSH key acceptances all surface here. Correlating it with wtmp/btmp and the systemd journal builds an authoritative login timeline.",
+    "example": "Repeated 'Failed password' lines from one IP, then a single 'Accepted publickey', pinpointed the moment a weak SSH account fell over.",
+    "related": ["wtmp-btmp-lastlog", "systemd-journal", "sudoers"]
+  },
+  {
+    "term": "wtmp / btmp / lastlog",
+    "slug": "wtmp-btmp-lastlog",
+    "aka": ["utmp", "login accounting", "last/lastb"],
+    "short": "Binary Unix login-accounting databases behind the last, lastb, and lastlog commands.",
+    "definition": "A family of fixed-record binary files tracking login activity: utmp holds currently logged-in sessions, wtmp the historical login/logout record, btmp the failed login attempts, and lastlog each user's most recent login. They are parsed with last, lastb, and lastlog rather than read as text.",
+    "significance": "These give login times, durations, terminals, and source hosts that anchor a session timeline and reveal which accounts were used and from where. Because attackers sometimes zero or surgically edit wtmp/utmp to hide a session, gaps or impossibly clean records are themselves indicators.",
+    "example": "A wtmp record showing a root pts session from an external IP at 03:00 contradicted the user's claim of being offline, and the matching utmp entry confirmed it was live during collection.",
+    "related": ["auth-log", "systemd-journal", "anti-forensics-log-tampering"]
+  },
+  {
+    "term": "systemd Journal",
+    "slug": "systemd-journal",
+    "aka": ["journald", "journalctl", "/var/log/journal"],
+    "short": "Structured, indexed binary log managed by systemd-journald on modern Linux.",
+    "definition": "The logging service of systemd that stores events as structured, indexed binary records under /run/log/journal (volatile) or /var/log/journal (persistent), queried with journalctl. Each entry carries rich metadata fields such as the unit, PID, UID, boot ID, and an optional cryptographic seal (FSS).",
+    "significance": "On systemd distributions it consolidates kernel, service, and authentication events into one queryable source, letting an investigator filter by unit, boot, or time and tie a process back to the service that spawned it. Forward-secure sealing can also detect after-the-fact tampering of the journal.",
+    "example": "journalctl _SYSTEMD_UNIT filtering tied an outbound-beacon process to a rogue systemd service that had been masquerading as an updater.",
+    "related": ["auth-log", "cron-systemd-timers", "loadable-kernel-module-rootkit"]
+  },
+  {
+    "term": "cron and systemd Timers",
+    "slug": "cron-systemd-timers",
+    "aka": ["crontab", "anacron", ".timer units", "scheduled tasks"],
+    "short": "Time-based job schedulers on Unix and a classic persistence and execution vector.",
+    "definition": "Mechanisms that run commands on a schedule: classic cron (per-user crontabs plus /etc/crontab, /etc/cron.d, and the cron.daily/weekly/monthly directories), anacron for missed jobs on machines that aren't always on, and systemd .timer units that trigger service units. Each defines a schedule and a command or unit to run.",
+    "significance": "Attackers plant cron entries or timer units to re-establish access on a cadence, so enumerating every scheduling source — including obscure per-user crontabs and drop-in cron.d files — is core to persistence hunting. Execution logs in cron and the journal corroborate when a malicious job actually fired.",
+    "example": "An innocuous-looking /etc/cron.d file ran a base64-decoded reverse shell every ten minutes, which the journal confirmed by the repeating spawn cadence.",
+    "related": ["systemd-journal", "launch-agents-daemons"]
+  },
+  {
+    "term": "/etc/passwd and /etc/shadow",
+    "slug": "passwd-shadow",
+    "aka": ["shadow file", "account database"],
+    "short": "Unix account and password-hash files; a focus for backdoor accounts and cracking.",
+    "definition": "/etc/passwd lists user accounts with UID, GID, home directory, and login shell, while /etc/shadow stores the hashed passwords and aging fields, readable only by root. Together they define who can log in and how credentials are verified.",
+    "significance": "Investigators inspect them for backdoor accounts (especially extra UID 0 entries), service accounts given an interactive shell, or recently changed hashes. The shadow hashes are also what an attacker targets for offline cracking once they obtain a copy.",
+    "example": "A second account with UID 0 and a recently modified shadow entry revealed a root-equivalent backdoor hidden among legitimate service users.",
+    "related": ["sudoers", "suid-sgid-binaries", "credential-store-keychain"]
+  },
+  {
+    "term": "sudoers Configuration",
+    "slug": "sudoers",
+    "aka": ["/etc/sudoers", "sudoers.d", "sudo rules"],
+    "short": "Policy file granting privileged command execution; a prime privilege-escalation target.",
+    "definition": "The /etc/sudoers file and its /etc/sudoers.d drop-ins define which users and groups may run which commands as other users (commonly root), with options like NOPASSWD and command restrictions. The policy is edited safely with visudo to avoid syntax lockouts.",
+    "significance": "Overly broad or tampered rules — a user granted NOPASSWD ALL, or a drop-in file added to sudoers.d — are a direct route to root and a frequent post-exploitation modification. Comparing the current policy against a known baseline quickly exposes such grants.",
+    "example": "A one-line file dropped into /etc/sudoers.d gave a low-privilege web account NOPASSWD: ALL, neatly explaining how the attacker reached root without cracking a password.",
+    "related": ["passwd-shadow", "suid-sgid-binaries", "auth-log"]
+  },
+  {
+    "term": "SUID / SGID Binaries",
+    "slug": "suid-sgid-binaries",
+    "aka": ["setuid", "setgid", "set-user-ID"],
+    "short": "Executables that run with the file owner's or group's privileges regardless of caller.",
+    "definition": "Files carrying the setuid or setgid permission bit execute with the privileges of the binary's owner or group rather than the invoking user — the mechanism that lets tools like passwd update root-owned files. The bits appear as an 's' in the permission string.",
+    "significance": "An unexpected SUID-root binary, or a standard tool granted SUID where it shouldn't be, is a classic privilege-escalation foothold and persistence trick. Enumerating every SUID/SGID file on a host and diffing against package expectations is routine in Linux triage.",
+    "example": "A copy of an interpreter dropped in /tmp with the setuid-root bit set let any user spawn a root shell on demand — a textbook escalation backdoor.",
+    "related": ["sudoers", "passwd-shadow", "ld-preload-hijack"]
+  },
+  {
+    "term": "LD_PRELOAD Hijacking",
+    "slug": "ld-preload-hijack",
+    "aka": ["LD_PRELOAD injection", "userland library hooking", "ld.so.preload"],
+    "short": "Forcing a malicious shared library to load first so it overrides legitimate functions.",
+    "definition": "By setting the LD_PRELOAD environment variable or adding a path to /etc/ld.so.preload, an attacker makes the dynamic linker load a chosen shared object before all others, letting its symbols shadow standard library calls. The malicious library can then intercept functions like readdir or open.",
+    "significance": "This is the userland counterpart to a kernel rootkit: a preloaded library can hide files, processes, and network connections from ordinary tools without touching the kernel. Checking /etc/ld.so.preload and process environments for unexpected entries is a key rootkit-hunting step.",
+    "example": "An entry in /etc/ld.so.preload loaded a library that hooked directory listings to hide the attacker's working folder from ls.",
+    "related": ["loadable-kernel-module-rootkit", "proc-filesystem", "suid-sgid-binaries"]
+  },
+  {
+    "term": "Loadable Kernel Module Rootkit",
+    "slug": "loadable-kernel-module-rootkit",
+    "aka": ["LKM rootkit", "kernel module implant"],
+    "short": "Malicious kernel modules that hide artifacts and hook the system from ring 0.",
+    "definition": "A loadable kernel module (LKM) is code inserted into the running Linux kernel to extend it, normally for drivers. A malicious LKM abuses this to run with full kernel privilege, patching syscall behavior or kernel structures to conceal processes, files, ports, and even itself.",
+    "significance": "Because they operate beneath userland, LKM rootkits can defeat tools that rely on the very kernel they have subverted, making detection a matter of comparing in-memory kernel state, checking lsmod against expectations, and using out-of-band memory analysis. They represent some of the stealthiest Linux persistence.",
+    "example": "A module missing from lsmod yet present in kernel memory was hiding a backdoor port, only revealed by carving the module list from a RAM image.",
+    "related": ["ld-preload-hijack", "proc-filesystem", "systemd-journal"]
+  },
+  {
+    "term": "/proc Filesystem",
+    "slug": "proc-filesystem",
+    "aka": ["procfs", "/proc"],
+    "short": "Virtual filesystem exposing live process and kernel state on Linux.",
+    "definition": "/proc is a virtual (memory-backed) filesystem that presents a directory per running process plus kernel and system information as readable files. Per-process entries expose the command line (cmdline), environment (environ), open file descriptors (fd), memory maps (maps), and the executable link (exe).",
+    "significance": "On a live Linux host it is the richest source for triage: an analyst can recover a deleted-but-running binary via /proc/PID/exe, list real open files and sockets, and read a process's environment and memory. It is also where userland rootkit deception is exposed by cross-checking against hidden processes.",
+    "example": "Even though the malware had deleted itself from disk, /proc/PID/exe still linked to the running image, letting the responder dump the binary intact.",
+    "related": ["loadable-kernel-module-rootkit", "ld-preload-hijack", "ext-xfs-timestamps"]
+  },
+  {
+    "term": "ext4 / XFS Timestamps",
+    "slug": "ext-xfs-timestamps",
+    "aka": ["inode timestamps", "MACB on Linux", "crtime"],
+    "short": "The atime/mtime/ctime (and ext4 crtime) fields that anchor a Linux file timeline.",
+    "definition": "On Linux filesystems each inode stores timestamps — access (atime), content modification (mtime), and inode/metadata change (ctime) — with ext4 adding a true creation time (crtime) and XFS likewise tracking creation. ctime updates whenever metadata changes and cannot be set by ordinary user tools.",
+    "significance": "These fields drive Linux super-timelines and help reconstruct when files were created, used, or altered. Because ctime is hard to forge from userland, a file whose mtime predates its ctime, or whose timestamps don't fit the install timeline, is a strong tampering signal.",
+    "example": "A backdoor's mtime had been back-dated to match system binaries, but its ctime sat at the real intrusion time, exposing the timestamp manipulation.",
+    "related": ["proc-filesystem", "anti-forensics-log-tampering", "fsevents"]
+  },
+  {
+    "term": "Anti-Forensic Log Tampering",
+    "slug": "anti-forensics-log-tampering",
+    "aka": ["log wiping", "timeline manipulation", "log clearing"],
+    "short": "Deleting, editing, or zeroing host logs and history to hide intruder activity.",
+    "definition": "A category of techniques in which an attacker removes or alters evidence on Unix-like hosts — truncating shell history, deleting or editing /var/log files, zeroing wtmp/utmp records, or disabling logging daemons — to frustrate reconstruction. The goal is to break the timeline and hide the means of access.",
+    "significance": "Recognizing tampering is as important as reading the logs themselves: gaps, impossibly clean files, mismatched inode timestamps, and disabled audit services all betray that cleanup occurred. Cross-referencing multiple independent sources, including the journal's tamper sealing and surviving snapshots, can reconstruct what was erased.",
+    "example": "A log directory whose files all shared one suspicious modification time, alongside a stopped auditd service, made clear the timeline had been deliberately scrubbed.",
+    "related": ["wtmp-btmp-lastlog", "shell-history", "apfs-snapshots"]
+  },
+  {
+    "term": "macOS Unified Logging",
+    "slug": "unified-logging",
+    "aka": ["Apple Unified Log", "AUL", ".tracev3", "log show"],
+    "short": "Apple's consolidated, compressed system log spanning macOS and iOS.",
+    "definition": "Introduced in macOS Sierra and iOS 10, the Unified Logging System replaced older text logs with a structured, high-volume stream stored in compressed .tracev3 files under /var/db/diagnostics, queried live with the log command. Entries carry subsystem, category, process, and activity context, and many messages are redacted as <private> by default.",
+    "significance": "It is the central event source on modern Apple systems, covering process launches, network changes, and security decisions, but its volume, short retention, and privacy redaction make focused querying essential. Parsing the .tracev3 archives offline is often the only way to recover events past the live window.",
+    "example": "Filtering the unified log by the Gatekeeper subsystem reconstructed the exact moment a quarantined app was approved and first executed.",
+    "related": ["fsevents", "knowledgec-database", "gatekeeper-quarantine-xattr"]
+  },
+  {
+    "term": "FSEvents",
+    "slug": "fsevents",
+    "aka": ["File System Events", ".fseventsd"],
+    "short": "macOS filesystem-change log that records directory-level activity over time.",
+    "definition": "FSEvents is the macOS mechanism that records filesystem changes into log files under the hidden .fseventsd directory at each volume's root, using opaque event IDs and per-directory change flags (created, removed, renamed, modified). It is designed to let applications efficiently learn what changed since they last checked.",
+    "significance": "Because the logs persist and reference directories that may no longer exist, parsing FSEvents can prove that files were created, moved, or deleted in a folder even after the items are gone — a powerful complement to timeline analysis when direct file metadata is missing. Event IDs also help order activity chronologically.",
+    "example": "FSEvents flags on a since-emptied Downloads folder confirmed that a malicious DMG had been created and then deleted within the same hour.",
+    "related": ["unified-logging", "apfs-snapshots", "gatekeeper-quarantine-xattr"]
+  },
+  {
+    "term": "KnowledgeC Database",
+    "slug": "knowledgec-database",
+    "aka": ["knowledgeC.db", "Biome", "Screen Time data"],
+    "short": "Apple SQLite store of user-activity events used to reconstruct device usage.",
+    "definition": "knowledgeC.db is a SQLite database, present on both macOS and iOS, that aggregates user-activity 'events' — app usage and focus, device lock/unlock, Now Playing, Bluetooth, and more — feeding features like Screen Time and Siri suggestions. On newer systems the related Biome framework streams similar segment-based activity data.",
+    "significance": "It is one of the richest behavioral timelines on Apple devices, letting an examiner show which apps were in use, when the screen was on, and patterns of activity around an incident. Because users rarely know it exists, it often survives attempts to clean up more obvious traces.",
+    "example": "KnowledgeC app-usage events placed a messaging app in the foreground at the precise minute a disputed message was sent.",
+    "related": ["unified-logging", "sqlite-app-databases", "ios-backup-artifacts"]
+  },
+  {
+    "term": "Gatekeeper Quarantine",
+    "slug": "gatekeeper-quarantine-xattr",
+    "aka": ["com.apple.quarantine", "extended attributes", "Gatekeeper"],
+    "short": "macOS provenance flag on downloaded files that records source and triggers checks.",
+    "definition": "When an app downloads a file, macOS attaches the com.apple.quarantine extended attribute recording the download agent, a timestamp, and often the source URL. Gatekeeper reads this flag on first launch to enforce notarization and code-signing policy, prompting the user before running quarantined software.",
+    "significance": "The quarantine xattr is direct evidence of how and when a file arrived on a system and which application fetched it, while its absence on an executed binary can indicate the attacker stripped it to bypass Gatekeeper. It pairs naturally with unified-log Gatekeeper events to time first execution.",
+    "example": "A trojanized app still carried its quarantine attribute, naming the browser and timestamp of the download that introduced it to the host.",
+    "related": ["unified-logging", "fsevents", "launch-agents-daemons"]
+  },
+  {
+    "term": "LaunchAgents and LaunchDaemons",
+    "slug": "launch-agents-daemons",
+    "aka": ["launchd jobs", "plist", "/Library/LaunchDaemons", "~/Library/LaunchAgents"],
+    "short": "launchd jobs that start programs at boot or login — macOS's top persistence path.",
+    "definition": "On macOS the launchd init system runs jobs defined by property-list (plist) files in well-known directories: LaunchDaemons (in /Library and /System/Library) run system-wide at boot, while LaunchAgents (in /Library and a user's ~/Library) run in a user context at login. Each plist names the program to launch and conditions like RunAtLoad or KeepAlive.",
+    "significance": "These are the most common macOS persistence locations, so enumerating every LaunchAgent and LaunchDaemon plist — and checking the binaries they point to — is essential triage. A job with a deceptive label pointing at an unsigned binary in a user-writable path is a hallmark of macOS malware.",
+    "example": "A LaunchDaemon labeled com.apple.softwareupdate but pointing to a binary in /Users/Shared revealed boot-time persistence masquerading as an Apple service.",
+    "related": ["tcc-database", "gatekeeper-quarantine-xattr", "cron-systemd-timers"]
+  },
+  {
+    "term": "TCC Database",
+    "slug": "tcc-database",
+    "aka": ["TCC.db", "Transparency, Consent, and Control", "privacy permissions"],
+    "short": "macOS privacy database recording which apps were granted sensitive access.",
+    "definition": "Transparency, Consent, and Control (TCC) governs app access to protected resources — camera, microphone, full disk, location, contacts, automation — and records each decision in SQLite TCC.db files (a system store plus a per-user one under ~/Library/Application Support/com.apple.TCC). Each row notes the client, the resource, and whether access was allowed.",
+    "significance": "The database shows exactly which applications obtained powerful permissions and when, helping an examiner spot malware that talked the user into granting full-disk or accessibility access. Unexpected grants — or evidence of TCC manipulation — are strong indicators of compromise on macOS.",
+    "example": "A TCC.db entry granting an unknown app Accessibility access explained how the malware was able to log keystrokes and control the UI.",
+    "related": ["launch-agents-daemons", "credential-store-keychain", "sqlite-app-databases"]
+  },
+  {
+    "term": "Credential Store / Keychain",
+    "slug": "credential-store-keychain",
+    "aka": ["macOS Keychain", "GNOME Keyring", "Secret Service"],
+    "short": "OS-managed encrypted vaults holding passwords, keys, and certificates.",
+    "definition": "Operating systems provide protected stores for secrets: macOS Keychain (login.keychain-db and the iOS-style data-protection keychain) and on Linux the GNOME Keyring / KDE Wallet behind the Secret Service API. They encrypt passwords, tokens, private keys, and certificates, typically unlocked by the user's login credential.",
+    "significance": "These vaults are high-value targets for credential theft and, for investigators, a potential source of stored secrets when access is authorized and the unlock material is available. Evidence of keychain access, dumping, or exported items is a meaningful sign of credential-harvesting activity.",
+    "example": "Logs showing a non-browser process repeatedly reading the login keychain pointed to a stealer attempting to harvest saved passwords.",
+    "related": ["passwd-shadow", "tcc-database", "mobile-keystore-secure-enclave"]
+  },
+  {
+    "term": "APFS Snapshots",
+    "slug": "apfs-snapshots",
+    "aka": ["Apple File System snapshots", "local snapshots", "tmutil snapshots"],
+    "short": "Read-only point-in-time copies of an APFS volume usable to recover prior state.",
+    "definition": "The Apple File System can create read-only snapshots that preserve a volume's exact state at a moment in time by retaining the original blocks, listed and mounted with tmutil and diskutil. Time Machine and the OS create them automatically, and they persist until space pressure or policy removes them.",
+    "significance": "Mounting a snapshot lets an examiner view and recover files as they existed before deletion, encryption, or tampering, effectively providing historical versions of the filesystem without extra tooling. They can defeat anti-forensic cleanup that targeted only the live volume.",
+    "example": "An APFS snapshot taken hours before the wipe still held the original documents the attacker had deleted from the live volume.",
+    "related": ["fsevents", "anti-forensics-log-tampering", "mobile-disk-encryption"]
+  },
+  {
+    "term": "Mobile Acquisition Methods",
+    "slug": "mobile-acquisition-methods",
+    "aka": ["logical extraction", "file-system extraction", "physical acquisition"],
+    "short": "The logical, file-system, and physical tiers of getting data off a phone.",
+    "definition": "Mobile evidence is collected at different depths: logical acquisition pulls data the device exposes through normal interfaces (often via backup APIs), file-system acquisition copies the app and OS file tree including databases, and physical acquisition captures a bit-for-bit image of storage. Each tier yields progressively more data but demands greater access.",
+    "significance": "The chosen method dictates what artifacts — deleted records, app sandboxes, system databases — are recoverable, so understanding the tiers is fundamental to setting expectations and defending methodology. Device encryption and lock state frequently cap how deep an acquisition can reach.",
+    "example": "A logical extraction returned only current chat content, whereas a later file-system acquisition recovered the app's full SQLite database with deleted messages intact.",
+    "related": ["ios-backup-artifacts", "bfu-afu-state", "mobile-disk-encryption"]
+  },
+  {
+    "term": "iOS Backup Artifacts",
+    "slug": "ios-backup-artifacts",
+    "aka": ["MobileSync", "iTunes/Finder backup", "Manifest.db"],
+    "short": "The structured backup an iPhone produces, a rich offline source of app and system data.",
+    "definition": "When synced to a computer, an iPhone writes a backup under the MobileSync/Backup directory in which files are stored under hashed names indexed by a Manifest.db SQLite catalog, with Info.plist and Status.plist describing the device and backup. Encrypted backups (recommended by Apple) protect the contents with a user password but also include extra data like saved credentials.",
+    "significance": "Backups are a practical, consent-friendly way to obtain message databases, call history, app data, and system plists without a deep device acquisition. Mapping the hashed filenames back to real paths via Manifest.db is the key skill, and an encrypted backup's password materially changes what is recoverable.",
+    "example": "Resolving Manifest.db pointed an examiner to the SMS database inside an iPhone backup, recovering the full text thread under review.",
+    "related": ["mobile-acquisition-methods", "sqlite-app-databases", "knowledgec-database"]
+  },
+  {
+    "term": "SQLite App Databases",
+    "slug": "sqlite-app-databases",
+    "aka": ["app SQLite stores", "WAL", "freelist records"],
+    "short": "The SQLite files mobile and desktop apps use to store messages, history, and state.",
+    "definition": "SQLite is the embedded database that most mobile and many desktop apps use to store structured data — messages, contacts, browsing history, caches — as .sqlite/.db files often accompanied by write-ahead log (-wal) and shared-memory (-shm) sidecars. Records deleted from a table may persist in freelist pages, unallocated areas, and the WAL.",
+    "significance": "These databases are the heart of mobile forensics, and recovering deleted rows from freelists, unused page space, and the WAL frequently restores 'deleted' messages and history. Forgetting to collect the -wal/-shm files, or to check them, risks missing the most recent and the most-deleted records.",
+    "example": "Carving freelist pages and the -wal sidecar of a chat app's database recovered messages the user had deleted from the conversation view.",
+    "related": ["ios-backup-artifacts", "android-logcat", "knowledgec-database"]
+  },
+  {
+    "term": "APK Package",
+    "slug": "apk-package",
+    "aka": ["Android Package", ".apk", "AndroidManifest.xml"],
+    "short": "Android's app-distribution archive; the unit analysts reverse to assess mobile malware.",
+    "definition": "An APK is the ZIP-based package format for Android apps, bundling compiled Dalvik bytecode (classes.dex), the AndroidManifest.xml, resources, native libraries, and a signing block. The manifest declares the package name, components, and the permissions the app requests.",
+    "significance": "Examining an APK's requested permissions, declared components, signing certificate, and decompiled DEX is how analysts judge whether an Android app is malicious and what it can access. A side-loaded APK requesting accessibility or device-admin rights is a common indicator of mobile compromise.",
+    "example": "Decompiling a sideloaded APK showed it requesting SMS and accessibility permissions to intercept one-time passcodes — clearly banking malware.",
+    "related": ["android-logcat", "jailbreak-root"]
+  },
+  {
+    "term": "Android Logcat",
+    "slug": "android-logcat",
+    "aka": ["logcat", "Android system log"],
+    "short": "Android's runtime logging stream capturing system and application messages.",
+    "definition": "Logcat is the Android logging system that collects messages from the OS and apps into ring buffers (main, system, events, radio, crash), viewable with the logcat tool over ADB. Entries are tagged by priority, process, and component, providing a live and recent record of device activity.",
+    "significance": "It surfaces app crashes, permission grants, network and component activity, and error traces that help reconstruct what ran and when on an Android device. Because the buffers are volatile and quickly overwritten, capturing logcat early in live response preserves otherwise fleeting evidence.",
+    "example": "Logcat entries showed a malicious service repeatedly restarting and requesting accessibility access just before fraudulent transactions appeared.",
+    "related": ["apk-package", "sqlite-app-databases"]
+  },
+  {
+    "term": "Mobile Keystore / Secure Enclave",
+    "slug": "mobile-keystore-secure-enclave",
+    "aka": ["Android Keystore", "Secure Enclave", "hardware-backed keys", "TEE"],
+    "short": "Hardware-isolated subsystems that store and use cryptographic keys off the main CPU.",
+    "definition": "Mobile platforms protect cryptographic material in dedicated security hardware: Apple's Secure Enclave is an isolated coprocessor handling keys and biometrics, while Android's Keystore can be backed by a Trusted Execution Environment or StrongBox secure element. Keys generated there are designed to be used but never exported in plaintext.",
+    "significance": "Because the keys that protect device encryption and app secrets live in hardware and are bound to user authentication, they are central to why modern phones resist offline attack and why lock state matters so much. For examiners, hardware-backed keys define the boundary of what is feasibly recoverable without the user's credential.",
+    "example": "Because the disk-encryption key was sealed in the Secure Enclave and tied to the passcode, the data stayed inaccessible without the user unlocking the device.",
+    "related": ["mobile-disk-encryption", "bfu-afu-state", "credential-store-keychain"]
+  },
+  {
+    "term": "Mobile Full-Disk Encryption",
+    "slug": "mobile-disk-encryption",
+    "aka": ["file-based encryption", "data protection", "FBE"],
+    "short": "Always-on encryption that ties phone data to user credentials and device hardware.",
+    "definition": "Modern smartphones encrypt user data by default — iOS Data Protection assigns files protection classes keyed to the passcode and hardware, while Android uses File-Based Encryption with credential-encrypted and device-encrypted storage. The keys derive from the user's passcode combined with hardware secrets, so data is unreadable without them.",
+    "significance": "This encryption is the single biggest constraint in mobile forensics: without the passcode or a key in a usable state, a physical image yields only ciphertext. It is why acquisition strategy hinges on lock state, the available credential, and whether the device is cooperating.",
+    "example": "A powered-off phone produced an encrypted physical image whose user data could not be decrypted until the correct passcode was supplied.",
+    "related": ["mobile-keystore-secure-enclave", "bfu-afu-state", "mobile-acquisition-methods"]
+  },
+  {
+    "term": "BFU vs AFU State",
+    "slug": "bfu-afu-state",
+    "aka": ["Before First Unlock", "After First Unlock"],
+    "short": "Whether a phone was unlocked since boot, which governs how much data is decryptable.",
+    "definition": "A device is in Before First Unlock (BFU) state after a reboot until the user first enters their passcode, and in After First Unlock (AFU) state thereafter until it is rebooted or powered off. In BFU most user data remains encrypted and keys are not yet available, whereas in AFU many decryption keys are resident in memory.",
+    "significance": "The distinction is decisive in mobile acquisition: an AFU device exposes far more decrypted data and is more likely to permit a meaningful file-system extraction, so responders prioritize keeping a seized phone powered and unlocked-since-boot. Letting an AFU device reboot can collapse it to BFU and lock data away.",
+    "example": "Because the seized phone was still in AFU state, a file-system extraction recovered decrypted app databases that a BFU device would have kept encrypted.",
+    "related": ["mobile-disk-encryption", "mobile-keystore-secure-enclave", "mobile-acquisition-methods"]
+  },
+  {
+    "term": "Jailbreak / Root",
+    "slug": "jailbreak-root",
+    "aka": ["jailbreaking", "rooting", "privilege removal"],
+    "short": "Removing a phone's OS restrictions to gain privileged, system-wide access.",
+    "definition": "Jailbreaking (iOS) and rooting (Android) defeat the platform's built-in restrictions to grant administrative access to the operating system, bypassing the normal app sandbox and code-signing controls. They may be performed by a user, by malware, or by an examiner to enable deeper acquisition.",
+    "significance": "A jailbroken or rooted device is both a risk and an opportunity: it weakens the security model that protects user data, but it can also enable file-system or physical acquisition that a locked-down device forbids. Detecting unauthorized jailbreak/root artifacts is itself an indicator of compromise or tampering.",
+    "example": "Traces of a jailbreak — an unexpected package manager and modified system paths — explained how spyware had escaped the app sandbox to read other apps' data.",
+    "related": ["mobile-disk-encryption", "mobile-acquisition-methods", "apk-package"]
+  }
+]
