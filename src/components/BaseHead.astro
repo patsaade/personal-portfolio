@@ -131,6 +131,11 @@ const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': grap
       var em = effectiveMode();
       root.setAttribute('data-mode', em);
       root.setAttribute('data-theme', getPalette(em));
+      // Set color-scheme inline (not just via the theme CSS) so the browser paints
+      // its canvas backdrop in the right scheme with zero CSS dependency. This kills
+      // the white flash when *reloading* a dark page (the reload repaints the default
+      // backdrop for a sub-frame before the page background is drawn).
+      root.style.colorScheme = em;
       try {
         document.dispatchEvent(new CustomEvent('themechange'));
       } catch (e) {}
