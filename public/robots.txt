@@ -1,4 +1,87 @@
+# robots.txt — patricksaade.com
+#
+# Goal: maximum discoverability. Allow every well-behaved search engine and AI
+# search/answer assistant (so the site can be found and cited), while opting the
+# content out of AI model-training crawls.
+
+# Default — all crawlers may index everything.
 User-agent: *
 Allow: /
 
+# ───────────────── AI search & answer assistants — allowed ─────────────────
+# These fetch pages to cite them in live answers / search results. Keeping them
+# means the site can surface in AI-powered search. (Allowed via * too; listed
+# explicitly so intent is unambiguous and they aren't confused with the training
+# crawlers from the same vendors below.)
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+# ───────────────── AI training / dataset crawlers — blocked ─────────────────
+# Opts the site's content out of model-training corpora. Note: Google-Extended
+# and Applebot-Extended are control tokens only — blocking them excludes the site
+# from Gemini/Apple training without affecting Google or Apple Search ranking.
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Meta-ExternalAgent
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Omgilibot
+Disallow: /
+
+User-agent: cohere-ai
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
+
+User-agent: ImagesiftBot
+Disallow: /
+
+User-agent: Timpibot
+Disallow: /
+
+User-agent: PanguBot
+Disallow: /
+
+User-agent: Ai2Bot
+Disallow: /
+
+# Sitemap (global directive — applies regardless of user-agent).
 Sitemap: https://patricksaade.com/sitemap-index.xml
