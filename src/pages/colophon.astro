@@ -17,38 +17,39 @@ const term = css({ color: 'text', fontWeight: 600 });
   title="Colophon"
   description="How patricksaade.com is built — the stack, design choices, and principles behind the site."
 >
-  <PageHeader eyebrow="Colophon" title="How this site is built" description="The stack, the choices, and the principles behind it." />
+  <PageHeader eyebrow="Colophon" title="How this site is built" description="What it's built with, and why it works the way it does." />
 
-  <h2 class={h2}>Stack</h2>
-  <ul class={list}>
-    <li><span class={term}>Astro</span> — content-driven framework; pages are prerendered to HTML, with minimal client JS.</li>
-    <li><span class={term}>Panda CSS</span> — type-safe, zero-runtime styling generated at build time.</li>
-    <li><span class={term}>MDX</span> — posts authored in Markdown via Astro content collections.</li>
-    <li><span class={term}>Shiki</span> — build-time syntax highlighting with light/dark themes.</li>
-    <li><span class={term}>Vercel</span> — hosting via the <code class={css({ fontFamily: 'mono', fontSize: '0.9em' })}>@astrojs/vercel</code> adapter, global CDN, plus cookieless Web Analytics &amp; Speed Insights.</li>
-  </ul>
-
-  <h2 class={h2}>Design</h2>
-  <ul class={list}>
-    <li>Ten color themes (five dark, five light), chosen independently per mode.</li>
-    <li>System UI font stack (Inter where available) for text; a monospace stack for code and metadata.</li>
-    <li>Icons are inline SVGs (lucide-style), drawn with <code class={css({ fontFamily: 'mono', fontSize: '0.9em' })}>currentColor</code> so they follow the theme.</li>
-    <li>A subtle ambient "node field" background, themed to the active palette.</li>
-    <li>A searchable <span class={term}>Glossary</span> of 500+ vendor-agnostic security terms, with a daily <span class={term}>Term of the Day</span> in the top ticker.</li>
-  </ul>
-
-  <h2 class={h2}>Principles</h2>
-  <ul class={list}>
-    <li><span class={term}>Fast & light</span> — no client frameworks; interactivity is small inline scripts, plus Vercel Web Analytics & Speed Insights.</li>
-    <li><span class={term}>Privacy-first</span> — cookieless Web Analytics & Speed Insights, no marketing trackers. See the <a class={link} href="/privacy/">privacy policy</a>.</li>
-    <li><span class={term}>Accessible</span> — semantic markup, keyboard-friendly controls, and reduced-motion support (the background animation disables itself when you prefer reduced motion).</li>
-  </ul>
-
-  <h2 class={h2}>Build</h2>
   <p class={para}>
-    The site's design and front-end were built with AI assistance
+    I designed this to be fast, readable, and private — static HTML with a little inline
+    JavaScript, and nothing following you around. No cookies, no marketing trackers, and the
+    analytics are cookieless (the full story is in the <a class={link} href="/privacy/">privacy
+    policy</a>). It's semantic, keyboard-friendly, and it respects reduced motion.
+  </p>
+
+  <h2 class={h2}>Built with</h2>
+  <ul class={list}>
+    <li><a class={link} href="https://astro.build" target="_blank" rel="noopener">Astro</a> — the framework; every page is prerendered to static HTML.</li>
+    <li><a class={link} href="https://panda-css.com" target="_blank" rel="noopener">Panda CSS</a> — zero-runtime styling, generated at build time.</li>
+    <li><a class={link} href="https://mdxjs.com" target="_blank" rel="noopener">MDX</a> — how I write the posts.</li>
+    <li><a class={link} href="https://shiki.style" target="_blank" rel="noopener">Shiki</a> — syntax highlighting, themed light and dark.</li>
+    <li><a class={link} href="https://floating-ui.com" target="_blank" rel="noopener">Floating UI</a> — the hover cards on terms, tools, and companies.</li>
+    <li><a class={link} href="https://vercel.com" target="_blank" rel="noopener">Vercel</a> — hosting, the global CDN, and cookieless Web Analytics &amp; Speed Insights.</li>
+    <li>Type &amp; icons — <a class={link} href="https://rsms.me/inter/" target="_blank" rel="noopener">Inter</a> where you have it (a system stack otherwise), a monospace stack for code, and <a class={link} href="https://lucide.dev" target="_blank" rel="noopener">lucide</a>-style icons I draw inline so they follow the theme.</li>
+  </ul>
+
+  <h2 class={h2}>A few details</h2>
+  <p class={para}>
+    Ten color themes — five dark, five light — that you pick independently per mode. An ambient
+    node-field background tuned to whatever palette is active. And a searchable
+    <span class={term}>Glossary</span> of 500+ security concepts, techniques, and artifacts, with a
+    fresh <span class={term}>Term of the Day</span> in the ticker each morning.
+  </p>
+
+  <h2 class={h2}>The build</h2>
+  <p class={para}>
+    Straight up: I built the design and front-end with AI assistance
     (<a class={link} href="https://claude.com/claude-code" target="_blank" rel="noopener">Claude Code</a>),
-    then reviewed and refined. The source is on
+    then reviewed and refined every piece myself. The source is on
     <a class={link} href="https://github.com/patsaade/personal-portfolio" target="_blank" rel="noopener">GitHub</a>,
     and the footer links the exact build version and commit.
   </p>
