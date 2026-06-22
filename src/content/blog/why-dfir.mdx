@@ -1,0 +1,49 @@
+---
+title: "Why DFIR"
+date: 2026-06-22
+category: "Notes"
+excerpt: "How did this actually happen on the machine, and how do I prove it? That question is what moved me from detection work into DFIR. Here's why, and what I'll write about."
+tags: ["career", "dfir", "intro"]
+tools: []
+featured: true
+---
+import Term from '../../components/Term.astro';
+
+Every Threat that gets worked should come down to the same question: **how did this actually occur on the machine, and how do I prove it?** That question — Root Cause Analysis — is what pulled me out of detection-analyst work and into Incident Response. Some people focus on repairing the environment after the fact. I focus on how we got here, and how we keep it from happening again.
+
+## How I got here
+
+I didn't start in forensics. I started on a help desk — imaging machines, resetting passwords, racking switches, and pulling cable. It wasn't glamorous, but it taught me how real environments actually fit together, which matters more than you'd think when you're trying to rebuild one after an incident.
+
+From there I took a SOC analyst seat at ReliaQuest, where alerts stopped being noise and became investigations, and where I learned to tune detections to each environment. Then Red Canary, as a Threat Response Engineer: live response and containment on real endpoints, following the EDR telemetry down to what actually ran. Today I work at the Information Security Operations Center at First American.
+
+Every step pulled me one layer closer to the machine itself, and forensics is where that road ends. Not "an EDR flagged this," but why it's malicious, when it happened, and how I'd prove it.
+
+## What forensics lets me do
+
+Specializing means giving up some breadth to be able to:
+
+- Pull a process out of a memory dump and explain why it's malicious, not just that something flagged it.
+- Rebuild a timeline from `$MFT`, the USN journal, Prefetch, and registry hives that holds up to scrutiny.
+- Follow an intrusion from initial access to <Term slug="persistence">persistence</Term> to <Term slug="command-and-control">C2</Term>, tying each step to a real artifact.
+- Turn the root cause into prevention — push the bad <Term slug="indicator-of-compromise">indicators</Term> into EDR and firewall blocks, tighten the detection that missed it, and wire up a <Term slug="soar">SOAR</Term> playbook so the next instance is contained automatically.
+
+That last step is the payoff. Every finding becomes a control, and every control makes the same Threat less likely to land twice — fewer repeat incidents and shorter <Term slug="dwell-time">dwell time</Term>, instead of just cleaning up after the fact.
+
+That's the skill set I'm building, and the certs I'm working toward — GCFA, GCFE, and GCIH, with the CISSP already done — point the same way.
+
+## What you'll find here
+
+I write the posts I wish I'd had when I started, mostly around the two areas I care about most:
+
+1. **Host forensics** — registry persistence, `$MFT`/USN/Prefetch/Shellbags, and timeline reconstruction.
+2. **Memory forensics** — Volatility 3, MemProcFS, and finding malicious code in RAM.
+3. **EDR artifact analysis** — turning telemetry into a story that holds up.
+4. **Lab & CTF writeups** — CyberDefenders, 13Cubed, MemLabs, Magnet. Full solutions, not just flags.
+5. **Tools & exam prep** — my workflow, and notes as I work toward GCFA, GCFE, and GCIH.
+
+## A note on sources
+
+Everything here comes from public lab and CTF challenges — CyberDefenders, 13Cubed, MemLabs, Magnet — and my own home lab. Nothing from any employer's casework shows up on this site: no client data, no real-incident details. The public datasets are the point. They let me show the full work in the open.
+
+If you're on the same road — toward GCFA, toward a forensics role, toward actually understanding the machine instead of just the Threat — you're in the right place.

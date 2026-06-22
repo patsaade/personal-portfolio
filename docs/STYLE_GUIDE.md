@@ -40,6 +40,11 @@ The decisions every change should serve:
   or meta-phrasing leak into user-facing text (no "vendor-agnostic", "as requested", "never a
   product", "this glossary", etc.). State the thing itself, plainly; if a rule shaped the copy,
   the rule belongs in this guide, not on the page.
+- **Signature capitalization.** Patrick capitalizes **Threat**, **Root Cause Analysis**, and
+  **Incident Response** as a deliberate voice tic — but only inside first-person narrative he
+  authored (hero, About, colophon, posts). Keep them lowercase everywhere else (headings, meta
+  descriptions, glossary definitions, card/label microcopy); they land *because* they're rare.
+  (Distinct from DFIR/SIEM/EDR/SOC/IR, which are capped everywhere as acronyms.)
 
 ### Glossary terms (Term of the Day)
 
