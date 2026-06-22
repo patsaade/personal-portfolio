@@ -138,6 +138,42 @@
   font-size: inherit;
 }
 
+/* Copy button injected into each code block by PostLayout. */
+.prose pre .copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--fonts-mono);
+  font-size: 0.7rem;
+  line-height: 1;
+  color: var(--colors-text-muted);
+  background: var(--colors-bg-card);
+  border: 1px solid var(--colors-border);
+  border-radius: 6px;
+  padding: 0.3rem 0.45rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+.prose pre:hover .copy-btn,
+.prose pre .copy-btn:focus-visible {
+  opacity: 1;
+}
+.prose pre .copy-btn:hover,
+.prose pre .copy-btn[data-copied] {
+  color: var(--colors-primary);
+  border-color: var(--colors-primary);
+}
+/* Touch devices have no hover — keep the button visible. */
+@media (hover: none) {
+  .prose pre .copy-btn {
+    opacity: 1;
+  }
+}
+
 /* Light/dark dual-theme Shiki: swap variables driven by data-mode */
 [data-mode='dark'] .prose .astro-code,
 [data-mode='dark'] .prose .astro-code span {

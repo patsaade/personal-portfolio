@@ -47,6 +47,25 @@ const {
   type="article"
   publishedDate={date}
 >
+  <div
+    id="read-progress"
+    aria-hidden="true"
+    class={css({
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      w: '100%',
+      h: '3px',
+      bg: 'primary',
+      transformOrigin: 'left',
+      transform: 'scaleX(0)',
+      willChange: 'transform',
+      zIndex: 90,
+      pointerEvents: 'none',
+    })}
+  >
+  </div>
+
   <article>
     <header class={css({ mb: '2rem' })}>
       <div class={css({ display: 'flex', gap: '0.5rem', mb: '1rem', flexWrap: 'wrap' })}>
@@ -125,4 +144,40 @@ const {
 
     <slot name="footer" />
   </article>
+
+  <script is:inline>
+    (function () {
+      // Reading-progress bar: scaleX with scroll through the article.
+      var bar = document.getElementById('read-progress');
+      var article = document.querySelector('article');
+      if (bar && article) {
+        var update = function () {
+          var total = article.offsetHeight - window.innerHeight;
+          var scrolled = Math.min(Math.max(-article.getBoundingClientRect().top, 0), total);
+          bar.style.transform = 'scaleX(' + (total > 0 ? scrolled / total : 0) + ')';
+        };
+        update();
+        window.addEventListener('scroll', update, { passive: true });
+        window.addEventListener('resize', update, { passive: true });
+      }
+      // Copy button on each code block.
+      document.querySelectorAll('.prose pre').forEach(function (pre) {
+        var code = pre.querySelector('code');
+        if (!code) return;
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'copy-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy code to clipboard');
+        btn.addEventListener('click', function () {
+          navigator.clipboard.writeText(code.textContent || '').then(function () {
+            btn.textContent = 'Copied';
+            btn.setAttribute('data-copied', '');
+            setTimeout(function () { btn.textContent = 'Copy'; btn.removeAttribute('data-copied'); }, 1600);
+          }).catch(function () {});
+        });
+        pre.appendChild(btn);
+      });
+    })();
+  </script>
 </BaseLayout>
