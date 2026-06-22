@@ -14,7 +14,7 @@ const labs = await getSortedLabs();
 const sources = [...new Set(labs.map((l) => l.data.source))];
 
 const chip = css({
-  fontFamily: 'mono',
+  fontFamily: 'sans',
   fontSize: '0.82rem',
   px: '0.8rem',
   py: '0.4rem',
@@ -88,7 +88,7 @@ const chip = css({
                 flexWrap: 'wrap',
                 gap: '0.5rem 1.25rem',
                 fontSize: '0.78rem',
-                fontFamily: 'mono',
+                fontFamily: 'sans',
                 color: 'textMuted',
                 pt: '0.5rem',
                 borderTop: '1px solid token(colors.border)',

@@ -56,10 +56,10 @@ const cardClass = css({
     })}
   >
     <div class={css({ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', mb: '1rem', flexWrap: 'wrap' })}>
-      <span class={css({ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontFamily: 'mono', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'primary', fontWeight: 700 })}>
+      <span class={css({ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontFamily: 'sans', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'primary', fontWeight: 700 })}>
         <Icon name="radio" size={15} /> Today’s term
       </span>
-      <span id="totd-feat-date" class={css({ fontFamily: 'mono', fontSize: '0.8rem', color: 'textMuted' })}>{todayDate}</span>
+      <span id="totd-feat-date" class={css({ fontFamily: 'sans', fontSize: '0.8rem', color: 'textMuted' })}>{todayDate}</span>
     </div>
 
     <div class={css({ mb: '0.75rem' })}>
@@ -136,7 +136,7 @@ const cardClass = css({
                 <Icon name={CATEGORY_META[cat].icon as any} size={19} class={css({ color: 'primary' })} />
                 {cat}
               </span>
-              <span class={css({ color: 'textMuted', fontSize: '0.8rem', fontWeight: 400, fontFamily: 'mono' })}>{terms.length}</span>
+              <span class={css({ color: 'textMuted', fontSize: '0.8rem', fontWeight: 400, fontFamily: 'sans' })}>{terms.length}</span>
             </h3>
             <div class={css({ display: 'grid', gridTemplateColumns: { base: '1fr', sm: '1fr 1fr' }, gap: '0.75rem' })}>
               {terms.map((t) => (
@@ -145,7 +145,7 @@ const cardClass = css({
                   class={cardClass}
                   data-totd-card={`${t.term} ${t.short} ${(t.aka ?? []).join(' ')} ${t.category}`.toLowerCase()}
                 >
-                  <span class={css({ fontFamily: 'mono', fontWeight: 700, color: 'text' })}>{t.term}</span>
+                  <span class={css({ fontFamily: 'sans', fontWeight: 700, color: 'text' })}>{t.term}</span>
                   <span class={css({ fontSize: '0.88rem', color: 'textMuted', lineHeight: 1.4 })}>{t.short}</span>
                 </a>
               ))}

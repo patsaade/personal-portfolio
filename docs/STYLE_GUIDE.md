@@ -80,11 +80,22 @@ background, and the theme system:
 
 ## Typography
 
-- **Sans** (`fontFamily: 'sans'`) for all reading content, headings, titles, and stat values.
-- **Mono** (`fontFamily: 'mono'`) only for: code, dates/metadata, eyebrow labels, badges,
-  and small uppercase section labels.
-- **Do not** set large display text (stat "values", hero) in mono — mono reads as clunky at
-  size. Big = sans + `fontWeight: 700`. (Numbers like "3+ yrs" can be mono if small.)
+The site uses **only two faces**, both under the SIL Open Font License: **Redaction** (by Jeremy
+Mickel / MCKL, for Titus Kaphar & Reginald Dwayne Betts' *The Redaction*) for everything readable,
+and **Fira Mono** (Mozilla) for code. Both are self-hosted under `public/fonts/`, declared in
+`src/styles/fonts.css`, and credited on the colophon. Redaction is a serif with seven optical
+**grades of degradation** (0 = clean … 100 = heavily eroded).
+
+- **`fontFamily: 'sans'`** is Redaction **grade 0** (clean), with a Georgia/Times serif
+  fallback. Use it for everything readable — body, headings, titles, stat values, and
+  metadata/eyebrows/badges.
+- **`fontFamily: 'mono'`** is **Fira Mono**, reserved for **code-like text only**: code blocks,
+  inline `code`, file paths, IOCs, commands, and the footer version hash. Don't put labels/dates in mono.
+- **Degraded grades** are tokens — `redaction20`, `redaction35`, `redaction50` — used only on
+  specific display areas: **ticker → 50, hero → 35, wordmark → 50** (applied statically, no
+  hover swap). Keep degradation to the *medium* range (≤ 50) and to large/display text; the
+  grades share metrics with grade 0. The heavier grades (70/100) are self-hosted but reserved
+  for big one-off display, never body or small text.
 - Headings/eyebrows are **sentence case** ("DFIR deep dives", not "DFIR Deep Dives") except
   proper nouns and the site/brand wordmark "Patrick Saade".
 

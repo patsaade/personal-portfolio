@@ -67,7 +67,7 @@ const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': grap
 <meta name="description" content={description} />
 <meta name="author" content={SITE.author} />
 <meta name="robots" content="index, follow, max-image-preview:large" />
-<meta name="theme-color" content="#030712" />
+<meta name="theme-color" content="#1b1518" />
 <link rel="canonical" href={canonicalURL} />
 <link rel="sitemap" href="/sitemap-index.xml" />
 <link
@@ -81,6 +81,10 @@ const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': grap
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 <link rel="manifest" href="/site.webmanifest" />
+
+<!-- Preload the always-visible Redaction faces: body (grade 0) + wordmark (grade 50). -->
+<link rel="preload" href="/fonts/redaction/redaction-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/redaction/redaction-50-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
 
 <!-- Structured data -->
 <script type="application/ld+json" is:inline set:html={jsonLd} />

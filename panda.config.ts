@@ -49,13 +49,27 @@ export default defineConfig({
           },
         },
         fonts: {
+          // Redaction (grade 0, clean) is the site's official typeface — body,
+          // headings, display, and metadata. Georgia/Times is the serif fallback
+          // so there's minimal shift while the webfont loads (see styles/fonts.css).
           sans: {
-            value:
-              'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+            value: 'Redaction, Georgia, "Times New Roman", "Iowan Old Style", serif',
           },
+          // Degraded grades for specific areas (ticker, hero, wordmark). Same
+          // metrics as grade 0, so they're hover-swappable with no reflow.
+          redaction20: {
+            value: '"Redaction 20", Georgia, "Times New Roman", serif',
+          },
+          redaction35: {
+            value: '"Redaction 35", Georgia, "Times New Roman", serif',
+          },
+          redaction50: {
+            value: '"Redaction 50", Georgia, "Times New Roman", serif',
+          },
+          // Fira Mono is the site's monospace for all code-like text (code blocks,
+          // inline code, paths, IOCs, commands, version hashes). See styles/fonts.css.
           mono: {
-            value:
-              'ui-monospace, "JetBrains Mono", "SF Mono", "Cascadia Code", Menlo, Consolas, monospace',
+            value: '"Fira Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace',
           },
         },
         radii: {
