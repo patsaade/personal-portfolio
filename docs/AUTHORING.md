@@ -135,9 +135,13 @@ enforces the structure.
 - **Inline code** — `` `vol.py` ``.
 - **Images** — place under `public/images/blog/` or `public/images/labs/` and reference
   with an absolute path (`/images/blog/foo.png`). They're styled with rounded borders.
-- **Internal links** — link related posts with root-relative paths, e.g.
-  `[Memory Forensics 101](/blog/memory-forensics-101)`. This powers discoverability and
-  the related-posts block (which also auto-matches by category + shared tags).
+- **Internal links** — link related posts with root-relative paths **ending in a slash**, e.g.
+  `[Memory Forensics 101](/blog/memory-forensics-101/)` (the site uses `trailingSlash: 'always'`).
+  This powers discoverability and the related-posts block (auto-matches by category + shared tags).
+- **Hover cards** — companies, certs, and key tools get context cards automatically. To give a
+  glossary term an inline hover/tap card, import the component once and wrap the word:
+  `import Term from '../../components/Term.astro';` then
+  `<Term slug="order-of-volatility">order of volatility</Term>` (slug must exist in the glossary).
 - **Tables, blockquotes, lists** — standard Markdown; all are styled in
   [`src/styles/markdown.css`](../src/styles/markdown.css).
 

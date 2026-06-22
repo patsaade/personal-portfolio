@@ -8,6 +8,7 @@ difficulty: "Beginner"
 tools: []
 featured: true
 ---
+import Term from '../../components/Term.astro';
 
 Every alert ends at the same question: **what actually happened on this machine — and can I prove it?** Chasing that question is what pulled me out of IT and into security, and then out of "the alert fired" and into "here's the artifact that proves it." This blog is me going all the way down that path.
 
@@ -25,7 +26,7 @@ Going deep means trading some breadth for the ability to:
 
 - Pull a process out of a memory dump and explain *why* its presence is malicious, not just that something flagged it.
 - Reconstruct a timeline from `$MFT`, the USN journal, Prefetch, and registry hives that holds up to scrutiny.
-- Follow execution from initial access to persistence to C2, and tie each step to a concrete artifact.
+- Follow execution from initial access to <Term slug="persistence">persistence</Term> to <Term slug="command-and-control">C2</Term>, and tie each step to a concrete artifact.
 
 That's the muscle I want to build in public — and the certs I'm working toward (GCFA, GCFE, and GCIH, with the CISSP already done) are pointed in the same direction.
 

@@ -8,6 +8,7 @@ import Background from '../components/Background.astro';
 import Ticker from '../components/Ticker.astro';
 import Navigation from '../components/Navigation.astro';
 import Footer from '../components/Footer.astro';
+import HoverCards from '../components/HoverCards.astro';
 import SpeedInsights from '@vercel/speed-insights/astro';
 import { DEFAULT_DARK } from '../themes';
 
@@ -69,6 +70,10 @@ const props = Astro.props;
     </main>
 
     <Footer />
+
+    {/* Site-wide hover/tap context cards (Floating UI). Auto-wraps companies,
+        certs, and key tools; <Term> handles glossary terms. */}
+    <HoverCards />
 
     {/* Vercel Web Analytics is injected by the @astrojs/vercel adapter
         (webAnalytics.enabled in astro.config.mjs). Speed Insights below. */}
