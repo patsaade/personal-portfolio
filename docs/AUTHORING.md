@@ -79,8 +79,7 @@ Create `src/content/labs/<slug>.mdx` → `/labs/<slug>/`.
 | `iocCount`   |   | number | Feeds the CTF/labs stats. |
 | `draft`      |   | boolean | |
 
-**Recommended section structure** (matches the example in
-[`examples/labs/szechuan-sauce-memory.mdx`](../examples/labs/szechuan-sauce-memory.mdx)):
+**Recommended section structure:**
 
 ```
 ## Challenge Summary
@@ -150,9 +149,11 @@ enforces the structure.
 ## Drafts & preview
 
 - `draft: true` keeps a post out of **production** builds (`npm run build`) and RSS, but
-  it's still visible in `npm run dev` so you can preview it.
-- To stage a lab as a template without publishing, keep it under `examples/` (not built,
-  not deployed).
+  it's still visible in `npm run dev` so you can preview it. Use this when you're fine
+  having the work-in-progress file in the repo.
+- To keep an unfinished post **entirely off GitHub**, draft it under `_local/` — that
+  directory is gitignored (and Vercel-ignored), so it never reaches the repo, the build,
+  or the deploy. The `examples/`, `_local/`, and `evidence/` dirs are all local-only.
 
 ## Publishing checklist
 

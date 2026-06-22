@@ -75,8 +75,12 @@ npm test         # vitest unit suite
    `dist/`. An `.npmrc` sets `legacy-peer-deps=true` because the Vercel analytics/speed-insights
    packages declare an optional SvelteKit peer that conflicts with this project's Vite version.
 
-7. **`examples/` is never built or deployed** (outside content collections + in
-   `.vercelignore`). It holds reference templates only.
+7. **Local-only dirs are gitignored, never built or deployed.** `examples/` (reference
+   templates), `_local/` (scratch + private/WIP drafts), and `evidence/` (downloaded lab
+   data) live on the local machine only — they're in both `.gitignore` and `.vercelignore`,
+   sit outside the content collections, and never reach the repo, the build, or the deploy.
+   Forensic artifacts (`*.raw`, `*.vmem`, `*.dmp`, `*.pcap`, …) and archives (`*.zip`, …) are
+   gitignored too, so lab evidence can't be committed by accident.
 
 8. **Page background color lives on `<html>`, not `<body>`.** `Background.astro` paints a
    fixed `<canvas>` at `z-index: -1` (the ambient node field), which sits *above* the root
