@@ -6,6 +6,21 @@ html {
   scroll-padding-top: 80px;
 }
 
+/* Hover/tap context-card triggers (see components/HoverCards.astro): a subtle
+   dotted underline that strengthens on hover/focus. Theme-aware via the primary var. */
+.hovercard {
+  text-decoration: underline dotted;
+  text-decoration-color: color-mix(in srgb, var(--colors-primary) 80%, transparent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  cursor: help;
+}
+.hovercard:hover,
+.hovercard:focus-visible {
+  text-decoration-color: var(--colors-primary);
+  text-underline-offset: 2px;
+}
+
 /* Prevent the theme flash (FOUC): <html> ships with .theme-preload so the
    pre-paint theme script can set the correct theme without animating the
    html/body color transitions. BaseHead removes the class after first paint. */

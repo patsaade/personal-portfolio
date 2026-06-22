@@ -57,9 +57,10 @@ npm test         # vitest unit suite
    while in light mode just updates the dark preference for later.
 
 5. **Minimal JS.** No client frameworks. Interactivity is small `<script is:inline>` blocks.
-   The only third-party client JS is Vercel Web Analytics (injected by the adapter's
-   `webAnalytics`) and Speed Insights (`<SpeedInsights/>` from `@vercel/speed-insights/astro`
-   in `BaseLayout`). Keep it that way unless there's a strong reason.
+   Third-party client JS is limited to: Vercel Web Analytics (injected by the adapter's
+   `webAnalytics`), Speed Insights (`<SpeedInsights/>` from `@vercel/speed-insights/astro` in
+   `BaseLayout`), and **`@floating-ui/dom`** — bundled (self-hosted) for the hover-card system
+   (invariant 11). Keep it that way unless there's a strong reason.
 
 6. **SSR adapter, but prerender everything.** `astro.config.mjs` uses `@astrojs/vercel`
    with `output: 'server'`, where routes render on-demand by default. So **every page sets
@@ -117,6 +118,19 @@ npm test         # vitest unit suite
     makes it the *containing block* for the theme picker's `position: fixed` mobile menu — that's
     why the picker's `top: calc(64px + 8px)` lands just below the header even though the ticker
     makes the page taller. Don't "fix" it with viewport-coordinate math (it double-counts the ticker).
+
+11. **Hover/tap context cards.** `Ticker`-style preview cards powered by `@floating-ui/dom`
+    (bundled), wired in `BaseLayout` via `HoverCards.astro`. Two trigger sources: (a) **auto** —
+    companies, certifications, and a few distinctive tools from `src/data/hovercards.ts` are
+    matched in `<main>` and the **first mention** is wrapped (links, code, and headings are
+    skipped); (b) **manual** — glossary terms are tagged in MDX with `<Term slug="…">…</Term>`
+    and resolved on demand from the prerendered `/glossary/bank.json`. The card engine is a
+    bundled `<script>` (not `is:inline`, so it can `import` Floating UI) with `// @ts-nocheck` at
+    the top (vanilla DOM). Desktop shows on hover/focus; **tap/click toggles on every device**
+    (covers touch + hybrids), and outside-tap / Esc / scroll close. Cards are visible immediately
+    (no opacity/transition gating — a hidden tab pauses rAF/transitions). Triggers carry the
+    `.hovercard` class (styled in `global.css`). Add entities to `hovercards.ts` (keep tool
+    aliases distinctive to avoid matching common words); tag terms with `<Term>`.
 
 ## Conventions
 

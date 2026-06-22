@@ -1,0 +1,262 @@
+---
+// Site-wide hover/tap context cards, powered by Floating UI (@floating-ui/dom).
+//
+// - Glossary TERMS are tagged manually with <Term slug> and resolved from
+//   /glossary/bank.json on demand.
+// - Companies, certifications, and distinctive tools (src/data/hovercards.ts)
+//   are auto-detected: their first mention in <main> prose is wrapped in a
+//   trigger. (Links, code, and headings are skipped.)
+// Desktop = hover/focus; touch = tap to toggle, tap-away / Esc / scroll to close.
+import { css } from 'styled-system/css';
+import { HOVER_ENTITIES } from '../data/hovercards';
+
+// Slim dictionary for the client (everything the card + matcher needs).
+const entities = HOVER_ENTITIES.map((e) => ({
+  id: e.id,
+  type: e.type,
+  name: e.name,
+  aliases: e.aliases,
+  blurb: e.blurb,
+  url: e.url,
+}));
+
+const cardCls = css({
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  zIndex: 100,
+  w: 'max-content',
+  maxW: 'min(300px, calc(100vw - 1.5rem))',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'lg',
+  boxShadow: 'cardHover',
+  p: '0.85rem 1rem',
+  fontFamily: 'sans',
+  lineHeight: 1.5,
+});
+const arrowCls = css({
+  position: 'absolute',
+  w: '10px',
+  h: '10px',
+  bg: 'bgCard',
+  borderRight: '1px solid token(colors.border)',
+  borderBottom: '1px solid token(colors.border)',
+  transform: 'rotate(45deg)',
+});
+const headCls = css({ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.5rem', mb: '0.3rem' });
+const nameCls = css({ fontWeight: 700, fontSize: '0.95rem', color: 'text', lineHeight: 1.25 });
+const typeCls = css({ flexShrink: 0, fontFamily: 'mono', fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'primary' });
+const blurbCls = css({ fontSize: '0.85rem', color: 'textMuted', m: 0 });
+const linkCls = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', mt: '0.6rem', fontSize: '0.82rem', fontWeight: 600, color: 'primary', _hover: { textDecoration: 'underline' } });
+---
+
+{/* Card template — cloned by the engine, positioned by Floating UI */}
+<template id="hc-template">
+  <div class={`hc-pop ${cardCls}`} role="tooltip">
+    <span class={arrowCls} data-hc-arrow></span>
+    <div class={headCls}>
+      <span class={nameCls} data-hc-name></span>
+      <span class={typeCls} data-hc-type></span>
+    </div>
+    <p class={blurbCls} data-hc-blurb></p>
+    <a class={linkCls} data-hc-link></a>
+  </div>
+</template>
+
+<script is:inline define:vars={{ entities }}>
+  window.__HC_ENTITIES = entities;
+</script>
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  import { computePosition, offset, flip, shift, arrow, autoUpdate } from '@floating-ui/dom';
+
+  (function () {
+    var tmpl = document.getElementById('hc-template');
+    if (!tmpl) return;
+    var entities = window.__HC_ENTITIES || [];
+    var byId = {};
+    entities.forEach(function (e) { byId[e.id] = e; });
+
+    var hoverCapable = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+    // ── Lazy glossary-term data (from the prerendered bank) ──────────────
+    var termMap = null, termLoading = null;
+    function loadTerms() {
+      if (termMap) return Promise.resolve(termMap);
+      if (termLoading) return termLoading;
+      termLoading = fetch('/glossary/bank.json')
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (arr) {
+          termMap = {};
+          arr.forEach(function (e) { termMap[e[0]] = { term: e[1], short: e[2] }; });
+          return termMap;
+        })
+        .catch(function () { return (termMap = {}); });
+      return termLoading;
+    }
+
+    // ── Auto-wrap companies/certs/tools (first mention in <main>) ────────
+    function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+    function autoWrap() {
+      var main = document.querySelector('main');
+      if (!main) return;
+      var matchers = [];
+      entities.forEach(function (e) {
+        (e.aliases || []).forEach(function (a) { matchers.push({ alias: a, id: e.id }); });
+      });
+      matchers.sort(function (a, b) { return b.alias.length - a.alias.length; });
+      var used = {};
+      var walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT, {
+        acceptNode: function (node) {
+          if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+          var p = node.parentElement;
+          if (!p || p.closest('a, code, pre, kbd, button, h1, h2, h3, h4, h5, h6, .hovercard, [data-no-hovercard]'))
+            return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
+        },
+      });
+      var nodes = [], n;
+      while ((n = walker.nextNode())) nodes.push(n);
+      nodes.forEach(function (node) {
+        for (var i = 0; i < matchers.length; i++) {
+          var m = matchers[i];
+          if (used[m.id]) continue;
+          var re = new RegExp('\\b' + escapeRe(m.alias) + '\\b');
+          var match = node.nodeValue.match(re);
+          if (!match) continue;
+          var idx = match.index;
+          var before = node.nodeValue.slice(0, idx);
+          var matched = match[0];
+          var after = node.nodeValue.slice(idx + matched.length);
+          var span = document.createElement('span');
+          span.className = 'hovercard';
+          span.setAttribute('data-card-entity', m.id);
+          span.setAttribute('tabindex', '0');
+          span.setAttribute('role', 'button');
+          span.setAttribute('aria-expanded', 'false');
+          span.textContent = matched;
+          var frag = document.createDocumentFragment();
+          if (before) frag.appendChild(document.createTextNode(before));
+          frag.appendChild(span);
+          if (after) frag.appendChild(document.createTextNode(after));
+          node.parentNode.replaceChild(frag, node);
+          used[m.id] = true;
+          return;
+        }
+      });
+    }
+
+    // ── Card lifecycle ──────────────────────────────────────────────────
+    var card = null, activeTrigger = null, cleanup = null, showT = null, hideT = null;
+
+    function dataFor(trigger) {
+      var slug = trigger.getAttribute('data-card-term');
+      if (slug) {
+        return loadTerms().then(function (map) {
+          var t = map[slug];
+          if (!t) return null;
+          return { name: t.term, type: 'Term', blurb: t.short, url: '/glossary/' + slug + '/', linkText: 'Read the full entry', external: false };
+        });
+      }
+      var e = byId[trigger.getAttribute('data-card-entity')];
+      if (!e) return Promise.resolve(null);
+      var label = e.type === 'company' ? 'Company' : e.type === 'cert' ? 'Certification' : 'Tool';
+      var linkText = e.type === 'company' ? 'Visit website' : e.type === 'cert' ? 'View certification' : 'Learn more';
+      return Promise.resolve({ name: e.name, type: label, blurb: e.blurb, url: e.url, linkText: linkText, external: true });
+    }
+
+    function fill(el, data) {
+      el.querySelector('[data-hc-name]').textContent = data.name;
+      el.querySelector('[data-hc-type]').textContent = data.type;
+      el.querySelector('[data-hc-blurb]').textContent = data.blurb;
+      var link = el.querySelector('[data-hc-link]');
+      link.textContent = data.linkText + ' →';
+      link.setAttribute('href', data.url);
+      if (data.external) { link.setAttribute('target', '_blank'); link.setAttribute('rel', 'noopener'); }
+      else { link.removeAttribute('target'); link.removeAttribute('rel'); }
+    }
+
+    function place(trigger, el) {
+      var arrowEl = el.querySelector('[data-hc-arrow]');
+      return computePosition(trigger, el, {
+        strategy: 'fixed',
+        placement: 'top',
+        middleware: [offset(10), flip({ padding: 8 }), shift({ padding: 8 }), arrow({ element: arrowEl, padding: 8 })],
+      }).then(function (pos) {
+        Object.assign(el.style, { left: pos.x + 'px', top: pos.y + 'px' });
+        var ad = pos.middlewareData.arrow;
+        var side = pos.placement.split('-')[0];
+        var staticSide = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' }[side];
+        if (ad) {
+          el.querySelector('[data-hc-arrow]').style.left = ad.x != null ? ad.x + 'px' : '';
+          el.querySelector('[data-hc-arrow]').style.top = ad.y != null ? ad.y + 'px' : '';
+          el.querySelector('[data-hc-arrow]').style.right = '';
+          el.querySelector('[data-hc-arrow]').style.bottom = '';
+          el.querySelector('[data-hc-arrow]').style[staticSide] = '-5px';
+        }
+      });
+    }
+
+    function hide() {
+      clearTimeout(showT); clearTimeout(hideT);
+      if (cleanup) { cleanup(); cleanup = null; }
+      if (card) { card.remove(); card = null; }
+      if (activeTrigger) { activeTrigger.setAttribute('aria-expanded', 'false'); activeTrigger = null; }
+    }
+    function show(trigger) {
+      if (activeTrigger === trigger && card) return;
+      hide();
+      activeTrigger = trigger;
+      dataFor(trigger).then(function (data) {
+        if (!data || activeTrigger !== trigger) return;
+        card = tmpl.content.firstElementChild.cloneNode(true);
+        fill(card, data);
+        document.body.appendChild(card);
+        trigger.setAttribute('aria-expanded', 'true');
+        if (hoverCapable) {
+          card.addEventListener('pointerenter', function () { clearTimeout(hideT); });
+          card.addEventListener('pointerleave', scheduleHide);
+        }
+        cleanup = autoUpdate(trigger, card, function () { place(trigger, card); });
+      });
+    }
+    function scheduleShow(t) { clearTimeout(hideT); showT = setTimeout(function () { show(t); }, 120); }
+    function scheduleHide() { clearTimeout(showT); hideT = setTimeout(hide, 160); }
+
+    function closestTrigger(el) { return el && el.closest ? el.closest('.hovercard') : null; }
+
+    if (hoverCapable) {
+      document.addEventListener('pointerover', function (e) { var t = closestTrigger(e.target); if (t) scheduleShow(t); });
+      document.addEventListener('pointerout', function (e) {
+        var t = closestTrigger(e.target);
+        if (t && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.hc-pop'))) scheduleHide();
+      });
+      document.addEventListener('focusin', function (e) { var t = closestTrigger(e.target); if (t) show(t); });
+      document.addEventListener('focusout', function (e) { var t = closestTrigger(e.target); if (t) scheduleHide(); });
+    }
+    // Tap/click toggles the card on every device (so touch works even on hybrid
+    // devices that report hover support); hover is additive on hover-capable ones.
+    document.addEventListener('click', function (e) {
+      var t = closestTrigger(e.target);
+      if (t) {
+        e.preventDefault();
+        if (activeTrigger === t && card) hide();
+        else show(t);
+        return;
+      }
+      if (card && !(e.target.closest && e.target.closest('.hc-pop'))) hide();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { hide(); }
+      else if ((e.key === 'Enter' || e.key === ' ')) {
+        var t = closestTrigger(document.activeElement);
+        if (t) { e.preventDefault(); if (activeTrigger === t) hide(); else show(t); }
+      }
+    });
+    window.addEventListener('scroll', function () { if (!hoverCapable) hide(); }, { passive: true });
+
+    autoWrap();
+  })();
+</script>

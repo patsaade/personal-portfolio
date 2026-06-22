@@ -143,6 +143,9 @@ distinct, intentional pattern; keep it to the key guarantees, not proper nouns.
   **404s in `astro dev`** and 308-redirects in production. File URLs keep their extension and no
   slash (`/rss.xml`). The site root is just `/`.
 - **Section heading:** an `<Icon>` (primary) + sentence-case title; see About/Tools.
+- **Hover cards:** companies, certs, and key tools auto-render context cards site-wide; tag a
+  glossary term inline with `<Term slug="…">` (see AUTHORING + CLAUDE.md invariant 11). Triggers
+  show a subtle dotted underline; keep them in prose, not headings.
 - **Experience: detailed vs. condensed.** Headline/relevant roles get full timeline cards
   (company header, per-role title + dates + one-sentence summary + skill tags). Earlier,
   contract, or foundational roles go in **one condensed block** below — a single bordered
