@@ -8,6 +8,7 @@ import PageHeader from '../components/PageHeader.astro';
 import Badge from '../components/Badge.astro';
 import Icon from '../components/Icon.astro';
 import { SOCIALS } from '../consts';
+import { FEATURED_CERTS, PURSUING_CERTS } from '../data/certifications';
 
 const expertise = [
   'Memory forensics',
@@ -109,18 +110,10 @@ const earlierExperience = [
   { title: 'Student Aide, Makerspace', org: 'Moreno Valley College', type: 'Part-time', period: '2019–2021' },
 ];
 
-// Featured certifications, ranked strongest-first. Each links to its Credly
-// badge for verification. The full set (incl. CompTIA stackable certs) lives on
-// the Credly profile — see the "view all" link, so this stays uncluttered.
-const certs = [
-  { name: 'CISSP', issuer: 'ISC2', url: 'https://www.credly.com/badges/66ba2583-f710-413c-989f-6ab2eaca6a8e/public_url' },
-  { name: 'SecurityX (CASP+)', issuer: 'CompTIA', url: 'https://www.credly.com/badges/75b925a7-fe2a-48a2-9976-21648d24a20c/public_url' },
-  { name: 'CySA+', issuer: 'CompTIA', url: 'https://www.credly.com/badges/fc07214a-db98-4fac-8b78-c4b2d350c433/public_url' },
-  { name: 'PenTest+', issuer: 'CompTIA', url: 'https://www.credly.com/badges/b918b8d7-9eef-4e64-b6fb-36dbd1c69a29/public_url' },
-  { name: 'Cloud+', issuer: 'CompTIA', url: 'https://www.credly.com/badges/e40c4bdf-9ce5-4004-b23e-e61879e9cb92/public_url' },
-  { name: 'Server+', issuer: 'CompTIA', url: 'https://www.credly.com/badges/9ab10287-084a-45ab-8d93-0880a9145e89/public_url' },
-];
-const certsPursuing = ['GCFA', 'GCFE', 'GCIH'];
+// Certifications are the single source of truth in src/data/certifications.ts
+// (shared with the /certifications/ page so the two can't drift).
+const certs = FEATURED_CERTS;
+const certsPursuing = PURSUING_CERTS;
 
 const certChip = css({
   display: 'inline-flex',
@@ -223,7 +216,7 @@ const connectLink = css({
                 <h3 class={css({ fontWeight: 700, fontSize: '1.1rem' })}>{company.company}</h3>
                 {company.current && <Badge variant="accent">Current</Badge>}
               </div>
-              <p class={css({ color: 'textMuted', fontFamily: 'mono', fontSize: '0.82rem', mt: '0.2rem' })}>
+              <p class={css({ color: 'textMuted', fontFamily: 'sans', fontSize: '0.82rem', mt: '0.2rem' })}>
                 {company.meta}
               </p>
             </div>
@@ -261,7 +254,7 @@ const connectLink = css({
                 />
                 <div class={css({ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '0.3rem 0.75rem' })}>
                   <span class={css({ fontWeight: 600 })}>{role.title}</span>
-                  <span class={css({ color: 'textMuted', fontFamily: 'mono', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' })}>
+                  <span class={css({ color: 'textMuted', fontFamily: 'sans', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' })}>
                     <Icon name="calendar" size={12} /> {role.period}
                   </span>
                 </div>
@@ -285,7 +278,7 @@ const connectLink = css({
     }
   </div>
 
-  <p class={css({ fontSize: '0.8rem', fontWeight: 700, color: 'textMuted', fontFamily: 'mono', textTransform: 'uppercase', letterSpacing: '0.08em', mt: '1.75rem', mb: '0.6rem' })}>
+  <p class={css({ fontSize: '0.8rem', fontWeight: 700, color: 'textMuted', fontFamily: 'sans', textTransform: 'uppercase', letterSpacing: '0.08em', mt: '1.75rem', mb: '0.6rem' })}>
     Earlier &amp; contract experience
   </p>
   <ul
@@ -315,7 +308,7 @@ const connectLink = css({
             <span class={css({ fontWeight: 600 })}>{r.title}</span>
             <span class={css({ color: 'textMuted' })}> · {r.org}</span>
           </span>
-          <span class={css({ fontFamily: 'mono', fontSize: '0.8rem', color: 'textMuted', whiteSpace: 'nowrap' })}>
+          <span class={css({ fontFamily: 'sans', fontSize: '0.8rem', color: 'textMuted', whiteSpace: 'nowrap' })}>
             {r.type} · {r.period}
           </span>
         </li>
@@ -343,23 +336,59 @@ const connectLink = css({
       ))
     }
   </div>
-  <p class={css({ mt: '0.85rem', fontSize: '0.9rem' })}>
+  <p class={css({ mt: '0.85rem', fontSize: '0.9rem', color: 'textMuted' })}>
+    The full set — including the CompTIA stackable credentials and the GIAC track in pursuit.
+  </p>
+  <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', mt: '0.9rem' })}>
+    <a
+      href="/certifications/"
+      class={css({
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        flex: { base: '1 1 100%', sm: '1' },
+        justifyContent: 'center',
+        bg: 'primary',
+        color: 'onPrimary',
+        fontWeight: 600,
+        px: '1.1rem',
+        py: '0.65rem',
+        borderRadius: 'md',
+        transition: 'background 200ms ease, transform 200ms ease',
+        _hover: { bg: 'primaryHover', transform: 'translateY(-1px)' },
+      })}
+    >
+      <Icon name="award" size={16} /> All certifications
+    </a>
     <a
       href={SOCIALS.credly}
       target="_blank"
       rel="noopener"
-      class={css({ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: 'primary', fontWeight: 600, _hover: { textDecoration: 'underline' } })}
+      class={css({
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        flex: { base: '1 1 100%', sm: '1' },
+        justifyContent: 'center',
+        border: '1px solid token(colors.border)',
+        color: 'text',
+        fontWeight: 600,
+        px: '1.1rem',
+        py: '0.65rem',
+        borderRadius: 'md',
+        transition: 'border-color 200ms ease, transform 200ms ease',
+        _hover: { borderColor: 'primary', transform: 'translateY(-1px)' },
+      })}
     >
-      View all credentials on Credly <Icon name="external-link" size={14} />
+      <Icon name="external-link" size={15} /> Verify on Credly
     </a>
-    <span class={css({ color: 'textMuted' })}> — incl. CompTIA stackable certifications.</span>
-  </p>
+  </div>
 
-  <p class={css({ fontSize: '0.8rem', fontWeight: 700, color: 'textMuted', fontFamily: 'mono', textTransform: 'uppercase', letterSpacing: '0.08em', mt: '1.5rem', mb: '0.6rem' })}>
+  <p class={css({ fontSize: '0.8rem', fontWeight: 700, color: 'textMuted', fontFamily: 'sans', textTransform: 'uppercase', letterSpacing: '0.08em', mt: '1.5rem', mb: '0.6rem' })}>
     In pursuit
   </p>
   <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' })}>
-    {certsPursuing.map((c) => <Badge>{c}</Badge>)}
+    {certsPursuing.map((c) => <Badge>{c.name}</Badge>)}
   </div>
 
   <h2 class={sectionTitle}>
