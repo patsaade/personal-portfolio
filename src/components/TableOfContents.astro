@@ -76,9 +76,13 @@ const toc = Astro.props.headings.filter((h) => h.depth === 2 || h.depth === 3);
           if (entry.isIntersecting) {
             links.forEach(function (l) {
               l.removeAttribute('data-active');
+              l.removeAttribute('aria-current');
             });
             var active = byId[entry.target.id];
-            if (active) active.setAttribute('data-active', '');
+            if (active) {
+              active.setAttribute('data-active', '');
+              active.setAttribute('aria-current', 'location');
+            }
           }
         });
       },

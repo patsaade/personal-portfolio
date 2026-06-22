@@ -160,6 +160,14 @@ const {
         window.addEventListener('scroll', update, { passive: true });
         window.addEventListener('resize', update, { passive: true });
       }
+      // Visually-hidden live region so screen readers hear the copy confirmation
+      // (the button keeps a stable aria-label, so its name never carries it).
+      var copyStatus = document.createElement('div');
+      copyStatus.setAttribute('role', 'status');
+      copyStatus.setAttribute('aria-live', 'polite');
+      copyStatus.style.cssText =
+        'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;';
+      document.body.appendChild(copyStatus);
       // Copy button on each code block.
       document.querySelectorAll('.prose pre').forEach(function (pre) {
         var code = pre.querySelector('code');
@@ -173,7 +181,12 @@ const {
           navigator.clipboard.writeText(code.textContent || '').then(function () {
             btn.textContent = 'Copied';
             btn.setAttribute('data-copied', '');
-            setTimeout(function () { btn.textContent = 'Copy'; btn.removeAttribute('data-copied'); }, 1600);
+            copyStatus.textContent = 'Code copied to clipboard';
+            setTimeout(function () {
+              btn.textContent = 'Copy';
+              btn.removeAttribute('data-copied');
+              copyStatus.textContent = '';
+            }, 1600);
           }).catch(function () {});
         });
         pre.appendChild(btn);

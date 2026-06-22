@@ -100,6 +100,7 @@ const isActive = (href: string) =>
         type="button"
         aria-label="Toggle navigation menu"
         aria-expanded="false"
+        aria-controls="mobile-menu"
         class={css({
           display: { base: 'inline-flex', md: 'none' },
           alignItems: 'center',
@@ -161,15 +162,30 @@ const isActive = (href: string) =>
     var toggle = document.getElementById('mobile-menu-toggle');
     var menu = document.getElementById('mobile-menu');
     if (!toggle || !menu) return;
+    // Dismiss on outside click / Escape, mirroring ThemePicker. Listeners are
+    // attached only while open (capture phase, so the toggle's own click that
+    // opened it doesn't immediately re-close it) and removed on close.
+    function onDocClick(e) {
+      if (!menu.contains(e.target) && !toggle.contains(e.target)) close();
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') { close(); toggle.focus(); }
+    }
+    function open() {
+      menu.removeAttribute('hidden');
+      toggle.setAttribute('aria-expanded', 'true');
+      document.addEventListener('click', onDocClick, true);
+      document.addEventListener('keydown', onKey);
+    }
+    function close() {
+      menu.setAttribute('hidden', '');
+      toggle.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('click', onDocClick, true);
+      document.removeEventListener('keydown', onKey);
+    }
     toggle.addEventListener('click', function () {
-      var open = menu.hasAttribute('hidden');
-      if (open) {
-        menu.removeAttribute('hidden');
-        toggle.setAttribute('aria-expanded', 'true');
-      } else {
-        menu.setAttribute('hidden', '');
-        toggle.setAttribute('aria-expanded', 'false');
-      }
+      if (menu.hasAttribute('hidden')) open();
+      else close();
     });
   })();
 </script>

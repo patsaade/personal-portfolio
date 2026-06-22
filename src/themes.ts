@@ -225,6 +225,12 @@ export const THEME_MODES: Record<string, 'dark' | 'light'> = Object.fromEntries(
   THEMES.map((t) => [t.id, t.mode]),
 );
 
+/** Map of theme id -> page bg, so the pre-paint script can keep the mobile
+ *  browser-chrome `theme-color` meta in sync with the active palette. */
+export const THEME_BG: Record<string, string> = Object.fromEntries(
+  THEMES.map((t) => [t.id, t.colors.bg]),
+);
+
 /** CSS-var name for each color key (matches Panda's generated names).
  *  `onPrimary` is excluded — it's emitted separately (with a default) in buildThemeCss. */
 const VAR_NAMES: Record<Exclude<keyof ThemeColors, 'onPrimary'>, string> = {

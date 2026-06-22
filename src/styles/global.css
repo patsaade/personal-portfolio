@@ -36,7 +36,6 @@ html {
 :focus-visible {
   outline: 2px solid var(--colors-primary);
   outline-offset: 2px;
-  border-radius: 1px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -49,10 +48,14 @@ html {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
-  /* Fully stop the ticker (the global 0.01ms rule would still cycle it). */
+  /* Fully stop the ticker and its live-indicator pulse (the global 0.01ms rule
+     would otherwise keep both infinite animations cycling). */
   .totd-marquee-track {
     animation: none !important;
     transform: none !important;
+  }
+  .totd-pulse-dot {
+    animation: none !important;
   }
 }
 

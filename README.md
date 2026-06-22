@@ -63,7 +63,7 @@ Technical details: [docs/AUTHORING.md](docs/AUTHORING.md) (writing posts) ·
 [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) (design & direction) ·
 [CLAUDE.md](CLAUDE.md) (architecture). Design & front-end built with AI assistance
 ([Claude Code](https://claude.com/claude-code)), then reviewed & refined — see
-[/colophon](https://patricksaade.com/colophon).
+[/colophon/](https://patricksaade.com/colophon/).
 
 </details>
 

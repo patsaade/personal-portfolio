@@ -74,10 +74,6 @@ export default defineConfig({
           '0%': { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
-        fadeInScale: {
-          '0%': { opacity: '0', transform: 'scale(0.98)' },
-          '100%': { opacity: '1', transform: 'scale(1)' },
-        },
       },
       semanticTokens: {
         colors: {
