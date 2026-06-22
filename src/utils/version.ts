@@ -27,10 +27,7 @@ const commit = resolveCommit();
 
 /** Semantic version from package.json (e.g. "1.1.0"). */
 export const VERSION: string = pkg.version;
-/** Full commit SHA, or "" when unavailable. */
-export const COMMIT = commit;
 /** First 7 chars of the commit SHA, or "". */
 export const SHORT_COMMIT = commit ? commit.slice(0, 7) : '';
 /** Link to the exact commit on GitHub (falls back to the repo root). */
 export const COMMIT_URL = commit ? `${REPO}/commit/${commit}` : REPO;
-export const REPO_URL = REPO;

@@ -1,6 +1,6 @@
 ---
 import { SITE, SOCIALS } from '../consts';
-import { THEME_MODES, DEFAULT_DARK, DEFAULT_LIGHT } from '../themes';
+import { THEME_MODES, THEME_BG, DEFAULT_DARK, DEFAULT_LIGHT } from '../themes';
 
 interface Props {
   title?: string;
@@ -100,7 +100,7 @@ const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': grap
 )}
 
 <!-- Theme controller. Runs before first paint to avoid flash; exposes window.__theme. -->
-<script is:inline define:vars={{ THEME_MODES, DEFAULT_DARK, DEFAULT_LIGHT }}>
+<script is:inline define:vars={{ THEME_MODES, THEME_BG, DEFAULT_DARK, DEFAULT_LIGHT }}>
   (function () {
     var root = document.documentElement;
     var mql = window.matchMedia('(prefers-color-scheme: dark)');
@@ -129,13 +129,18 @@ const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': grap
     }
     function apply() {
       var em = effectiveMode();
+      var pal = getPalette(em);
       root.setAttribute('data-mode', em);
-      root.setAttribute('data-theme', getPalette(em));
+      root.setAttribute('data-theme', pal);
       // Set color-scheme inline (not just via the theme CSS) so the browser paints
       // its canvas backdrop in the right scheme with zero CSS dependency. This kills
       // the white flash when *reloading* a dark page (the reload repaints the default
       // backdrop for a sub-frame before the page background is drawn).
       root.style.colorScheme = em;
+      // Keep the mobile browser-chrome color in sync with the active palette (the
+      // static meta is only the dark build-day fallback).
+      var tc = document.querySelector('meta[name="theme-color"]');
+      if (tc && THEME_BG[pal]) tc.setAttribute('content', THEME_BG[pal]);
       try {
         document.dispatchEvent(new CustomEvent('themechange'));
       } catch (e) {}

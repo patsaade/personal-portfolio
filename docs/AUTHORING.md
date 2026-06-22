@@ -18,7 +18,7 @@ the build, which is intentional.
 ## Add a blog post
 
 Create `src/content/blog/<slug>.mdx`. The filename (minus extension) becomes the URL:
-`src/content/blog/volatility3-installation.mdx` → `/blog/volatility3-installation`.
+`src/content/blog/volatility3-installation.mdx` → `/blog/volatility3-installation/`.
 
 ### Blog frontmatter
 
@@ -26,7 +26,7 @@ Create `src/content/blog/<slug>.mdx`. The filename (minus extension) becomes the
 | ------------ | :------: | ------------- | ----- |
 | `title`      | ✅ | string | Post title. |
 | `date`       | ✅ | date (`YYYY-MM-DD`) | Publish date; used for sorting & RSS. |
-| `category`   | ✅ | `Memory Forensics` \| `Host Forensics` \| `EDR Analysis` \| `Labs` \| `Tools` | Drives the category badge + icon. |
+| `category`   | ✅ | `Memory Forensics` \| `Host Forensics` \| `EDR Analysis` \| `Labs` \| `Tools` \| `Notes` | Drives the category badge + icon. |
 | `excerpt`    | ✅ | string | 1–2 sentence summary (cards, SEO, RSS). |
 | `tags`       |   | string[] | Lowercase topic tags, e.g. `["volatility3", "malware"]`. |
 | `tools`      |   | string[] | Tools featured, shown as accent badges. |
@@ -61,7 +61,7 @@ Headings render into the auto table of contents (h2 + h3 only).
 
 ## Add a lab writeup
 
-Create `src/content/labs/<slug>.mdx` → `/labs/<slug>`.
+Create `src/content/labs/<slug>.mdx` → `/labs/<slug>/`.
 
 ### Lab frontmatter
 

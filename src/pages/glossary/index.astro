@@ -40,7 +40,7 @@ const cardClass = css({
   title="Glossary"
   description="A vendor-agnostic cybersecurity & DFIR glossary — concepts, techniques, and artifacts explained in plain English, with why each one matters in an investigation."
 >
-  <PageHeader eyebrow="Reference" title="Cybersecurity Glossary" />
+  <PageHeader eyebrow="Reference" title="Cybersecurity glossary" />
 
   {/* ── Today's featured term (client-updated to the visitor's local day) ── */}
   <section
@@ -119,7 +119,7 @@ const cardClass = css({
       })}
     />
   </div>
-  <p class={css({ color: 'textMuted', mb: '2rem', fontSize: '0.9rem' })}>
+  <p role="status" aria-live="polite" class={css({ color: 'textMuted', mb: '2rem', fontSize: '0.9rem' })}>
     <span id="totd-result-count">{total}</span> terms — every one a concept, technique, or artifact you’ll meet in a real investigation.
   </p>
 
@@ -156,7 +156,7 @@ const cardClass = css({
     }
   </div>
 
-  <p id="totd-empty" hidden class={css({ color: 'textMuted', textAlign: 'center', py: '3rem' })}>
+  <p id="totd-empty" hidden role="status" aria-live="polite" class={css({ color: 'textMuted', textAlign: 'center', py: '3rem' })}>
     No terms match your search.
   </p>
 

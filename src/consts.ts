@@ -10,7 +10,6 @@ export const SITE = {
     'Hands-on DFIR — digital forensics & incident response: memory & host forensics, EDR investigation, timeline reconstruction, and public lab & CTF writeups.',
   url: 'https://patricksaade.com',
   author: 'Patrick Saade',
-  email: 'contact@patricksaade.com',
 } as const;
 
 export const SOCIALS = {

@@ -10,15 +10,9 @@
 import { css } from 'styled-system/css';
 import { HOVER_ENTITIES } from '../data/hovercards';
 
-// Slim dictionary for the client (everything the card + matcher needs).
-const entities = HOVER_ENTITIES.map((e) => ({
-  id: e.id,
-  type: e.type,
-  name: e.name,
-  aliases: e.aliases,
-  blurb: e.blurb,
-  url: e.url,
-}));
+// Client entity dictionary (everything the card + matcher needs). HoverEntity has
+// only client-safe fields, so it ships as-is; add a map here if that ever changes.
+const entities = HOVER_ENTITIES;
 
 const cardCls = css({
   position: 'fixed',
@@ -99,12 +93,23 @@ const linkCls = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25re
 
     // ── Auto-wrap companies/certs/tools (first mention in <main>) ────────
     function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+    // Word-boundary regex for an alias. Plain \b can't match next to a non-word
+    // edge (e.g. the '+' in "CySA+"/"PenTest+"), so only add a boundary on
+    // word-char edges — equivalent to \b where it works, correct where it doesn't.
+    function aliasRe(a) {
+      return new RegExp(
+        (/\w/.test(a[0]) ? '(?<!\\w)' : '') +
+          escapeRe(a) +
+          (/\w/.test(a[a.length - 1]) ? '(?!\\w)' : ''),
+      );
+    }
     function autoWrap() {
       var main = document.querySelector('main');
       if (!main) return;
+      // Precompile one regex per alias once (it's constant across nodes); longest first.
       var matchers = [];
       entities.forEach(function (e) {
-        (e.aliases || []).forEach(function (a) { matchers.push({ alias: a, id: e.id }); });
+        (e.aliases || []).forEach(function (a) { matchers.push({ alias: a, id: e.id, re: aliasRe(a) }); });
       });
       matchers.sort(function (a, b) { return b.alias.length - a.alias.length; });
       var used = {};
@@ -119,12 +124,13 @@ const linkCls = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25re
       });
       var nodes = [], n;
       while ((n = walker.nextNode())) nodes.push(n);
-      nodes.forEach(function (node) {
+      // Wrap the first not-yet-used entity in a node, then re-scan the surrounding
+      // text so additional entities co-mentioned in the same node still get a card.
+      function scanNode(node) {
         for (var i = 0; i < matchers.length; i++) {
           var m = matchers[i];
           if (used[m.id]) continue;
-          var re = new RegExp('\\b' + escapeRe(m.alias) + '\\b');
-          var match = node.nodeValue.match(re);
+          var match = node.nodeValue.match(m.re);
           if (!match) continue;
           var idx = match.index;
           var before = node.nodeValue.slice(0, idx);
@@ -138,18 +144,23 @@ const linkCls = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25re
           span.setAttribute('aria-expanded', 'false');
           span.textContent = matched;
           var frag = document.createDocumentFragment();
-          if (before) frag.appendChild(document.createTextNode(before));
+          var beforeNode = before ? document.createTextNode(before) : null;
+          var afterNode = after ? document.createTextNode(after) : null;
+          if (beforeNode) frag.appendChild(beforeNode);
           frag.appendChild(span);
-          if (after) frag.appendChild(document.createTextNode(after));
+          if (afterNode) frag.appendChild(afterNode);
           node.parentNode.replaceChild(frag, node);
           used[m.id] = true;
+          if (beforeNode) scanNode(beforeNode);
+          if (afterNode) scanNode(afterNode);
           return;
         }
-      });
+      }
+      nodes.forEach(scanNode);
     }
 
     // ── Card lifecycle ──────────────────────────────────────────────────
-    var card = null, activeTrigger = null, cleanup = null, showT = null, hideT = null;
+    var card = null, activeTrigger = null, cleanup = null, showT = null, hideT = null, hcSeq = 0;
 
     function dataFor(trigger) {
       var slug = trigger.getAttribute('data-card-term');
@@ -189,12 +200,12 @@ const linkCls = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25re
         var ad = pos.middlewareData.arrow;
         var side = pos.placement.split('-')[0];
         var staticSide = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' }[side];
-        if (ad) {
-          el.querySelector('[data-hc-arrow]').style.left = ad.x != null ? ad.x + 'px' : '';
-          el.querySelector('[data-hc-arrow]').style.top = ad.y != null ? ad.y + 'px' : '';
-          el.querySelector('[data-hc-arrow]').style.right = '';
-          el.querySelector('[data-hc-arrow]').style.bottom = '';
-          el.querySelector('[data-hc-arrow]').style[staticSide] = '-5px';
+        if (ad && arrowEl) {
+          arrowEl.style.left = ad.x != null ? ad.x + 'px' : '';
+          arrowEl.style.top = ad.y != null ? ad.y + 'px' : '';
+          arrowEl.style.right = '';
+          arrowEl.style.bottom = '';
+          arrowEl.style[staticSide] = '-5px';
         }
       });
     }
@@ -203,7 +214,7 @@ const linkCls = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25re
       clearTimeout(showT); clearTimeout(hideT);
       if (cleanup) { cleanup(); cleanup = null; }
       if (card) { card.remove(); card = null; }
-      if (activeTrigger) { activeTrigger.setAttribute('aria-expanded', 'false'); activeTrigger = null; }
+      if (activeTrigger) { activeTrigger.setAttribute('aria-expanded', 'false'); activeTrigger.removeAttribute('aria-describedby'); activeTrigger = null; }
     }
     function show(trigger) {
       if (activeTrigger === trigger && card) return;
@@ -212,9 +223,12 @@ const linkCls = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25re
       dataFor(trigger).then(function (data) {
         if (!data || activeTrigger !== trigger) return;
         card = tmpl.content.firstElementChild.cloneNode(true);
+        card.id = 'hc-pop-' + (++hcSeq);
         fill(card, data);
         document.body.appendChild(card);
         trigger.setAttribute('aria-expanded', 'true');
+        // Link trigger → card so AT can reach the popup (role="tooltip").
+        trigger.setAttribute('aria-describedby', card.id);
         if (hoverCapable) {
           card.addEventListener('pointerenter', function () { clearTimeout(hideT); });
           card.addEventListener('pointerleave', scheduleHide);
@@ -246,7 +260,9 @@ const linkCls = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25re
         else show(t);
         return;
       }
-      if (card && !(e.target.closest && e.target.closest('.hc-pop'))) hide();
+      // Also close while a card is still resolving (card null, trigger set) so a
+      // slow <Term> fetch can't pop an orphan card after the user tapped away.
+      if ((card || activeTrigger) && !(e.target.closest && e.target.closest('.hc-pop'))) hide();
     });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') { hide(); }
