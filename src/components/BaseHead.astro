@@ -1,6 +1,7 @@
 ---
 import { SITE, SOCIALS } from '../consts';
 import { THEME_MODES, THEME_BG, DEFAULT_DARK, DEFAULT_LIGHT } from '../themes';
+import { ogSlugForPath } from '../og/routes';
 
 interface Props {
   title?: string;
@@ -13,14 +14,17 @@ interface Props {
 const {
   title,
   description = SITE.description,
-  image = '/og.png',
+  image,
   type = 'website',
   publishedDate,
 } = Astro.props;
 
 const pageTitle = title ? `${title} · ${SITE.title}` : `${SITE.title} — ${SITE.tagline}`;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? SITE.url);
-const ogImage = new URL(image, Astro.site ?? SITE.url);
+// Social card: a per-page image generated at build by /og/[...slug].png (matched
+// to this route), unless a page passes an explicit `image`.
+const ogImage = new URL(image ?? `/og/${ogSlugForPath(Astro.url.pathname)}.png`, Astro.site ?? SITE.url);
+const ogImageAlt = title ? `${title} — ${SITE.author}` : `${SITE.author} — ${SITE.tagline}`;
 
 // Structured data (JSON-LD): a Person + WebSite graph site-wide, plus a
 // BlogPosting node on article pages. Helps search engines and rich results.
@@ -97,11 +101,20 @@ const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': grap
 <meta property="og:image" content={ogImage} />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content={`${SITE.author} — ${SITE.tagline}`} />
+<meta property="og:image:alt" content={ogImageAlt} />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:secure_url" content={ogImage} />
 <meta property="og:site_name" content={SITE.title} />
 {publishedDate && (
   <meta property="article:published_time" content={publishedDate.toISOString()} />
 )}
+
+<!-- Twitter / X card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={pageTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
+<meta name="twitter:image:alt" content={ogImageAlt} />
 
 <!-- Theme controller. Runs before first paint to avoid flash; exposes window.__theme. -->
 <script is:inline define:vars={{ THEME_MODES, THEME_BG, DEFAULT_DARK, DEFAULT_LIGHT }}>
