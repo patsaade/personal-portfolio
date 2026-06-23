@@ -1,8 +1,9 @@
 ---
 // Site-wide "Term of the Day" ticker — a scrolling monospace banner pinned to the
 // top of every page. The build renders the build-day term (a valid no-JS /
-// crawler fallback); the inline script recomputes the term for the VISITOR'S
-// local day and swaps it in, so it changes daily without a rebuild. The marquee
+// crawler fallback); the inline script recomputes the term for the current UTC
+// day and swaps it in, so it changes daily without a rebuild — identically for
+// everyone worldwide (rolls at 00:00 UTC). The marquee
 // track holds the content twice and animates to -50% for a seamless loop (see
 // global.css → @keyframes totd-marquee).
 import { css } from 'styled-system/css';
@@ -129,15 +130,16 @@ const sepClass = css({ color: 'primary', opacity: 0.4, px: '1.1rem', fontSize: '
     (function () {
       var link = document.getElementById('totd-ticker-link');
       if (!link) return;
-      // Fetch the compact bank (cached) and recompute the term for the visitor's
-      // local day. The build-day term is already shown as a no-JS fallback.
+      // Fetch the compact bank (cached) and recompute the term for the current
+      // UTC day. The build-day term is already shown as a no-JS fallback.
       fetch('/glossary/bank.json')
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (bank) {
           if (!Array.isArray(bank) || !bank.length) return;
-          // Same calendar math as termForDate(): local Y/M/D → day serial → index.
+          // Same math as termForDate(): UTC Y/M/D → day serial → index. Keyed to UTC
+          // so the term is identical for every visitor worldwide (rolls at 00:00 UTC).
           var d = new Date();
-          var serial = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+          var serial = Math.floor(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 86400000);
           var e = bank[((serial % bank.length) + bank.length) % bank.length]; // [slug, term, short, cat]
           var href = '/glossary/' + e[0] + '/';
           if (link.getAttribute('href') === href) return; // build day == visitor day

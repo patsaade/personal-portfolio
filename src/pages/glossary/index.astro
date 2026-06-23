@@ -20,6 +20,7 @@ const todayDate = new Date().toLocaleDateString('en-US', {
   year: 'numeric',
   month: 'long',
   day: 'numeric',
+  timeZone: 'UTC',
 });
 const total = SECURITY_TERMS.length;
 
@@ -168,14 +169,14 @@ const cardClass = css({
         .then(function (bank) {
           if (!Array.isArray(bank) || !bank.length) return;
           var d = new Date();
-          var serial = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+          var serial = Math.floor(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 86400000);
           var e = bank[((serial % bank.length) + bank.length) % bank.length]; // [slug, term, short, cat]
           var set = function (id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
           set('totd-feat-term', e[1]);
           set('totd-feat-short', e[2]);
           set('totd-feat-cat', e[3]);
           var dateEl = document.getElementById('totd-feat-date');
-          if (dateEl) { try { dateEl.textContent = d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }); } catch (err) {} }
+          if (dateEl) { try { dateEl.textContent = d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }); } catch (err) {} }
           var link = document.getElementById('totd-feat-link');
           if (link) link.setAttribute('href', '/glossary/' + e[0] + '/');
         })

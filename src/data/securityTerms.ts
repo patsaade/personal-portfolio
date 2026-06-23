@@ -605,8 +605,8 @@ export function termBySlug(slug: string): SecurityTerm | undefined {
 
 /**
  * Whole days since the Unix epoch for a given calendar date. Timezone-free:
- * it treats the supplied Y/M/D as the date, so the build (UTC) and the client
- * (visitor-local) compute the same serial from the same calendar day.
+ * it treats the supplied Y/M/D as a UTC date, so the build and every client
+ * compute the same serial from the same (UTC) calendar day.
  */
 export function daySerial(year: number, monthIndex: number, day: number): number {
   return Math.floor(Date.UTC(year, monthIndex, day) / 86_400_000);
@@ -617,8 +617,9 @@ export function termIndexForDay(serial: number, count = SECURITY_TERMS.length): 
   return ((serial % count) + count) % count;
 }
 
-/** The term for a given date, using that date's local calendar day. */
+/** The term for a given date, keyed to its UTC calendar day — so the term is
+ *  identical for every visitor worldwide and rolls over at 00:00 UTC. */
 export function termForDate(date: Date): SecurityTerm {
-  const serial = daySerial(date.getFullYear(), date.getMonth(), date.getDate());
+  const serial = daySerial(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
   return SECURITY_TERMS[termIndexForDay(serial)];
 }

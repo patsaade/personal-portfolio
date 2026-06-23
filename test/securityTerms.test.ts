@@ -106,14 +106,22 @@ describe('termIndexForDay', () => {
 
 describe('termForDate', () => {
   it('is deterministic for a given date', () => {
-    const a = termForDate(new Date(2026, 5, 19));
-    const b = termForDate(new Date(2026, 5, 19));
+    const a = termForDate(new Date(Date.UTC(2026, 5, 19)));
+    const b = termForDate(new Date(Date.UTC(2026, 5, 19)));
     expect(a.slug).toBe(b.slug);
   });
 
+  it('keys off the UTC calendar day (same term regardless of runner timezone)', () => {
+    // Two instants on the same UTC day but far apart within it resolve identically.
+    const morning = termForDate(new Date('2026-06-19T00:30:00Z'));
+    const evening = termForDate(new Date('2026-06-19T23:30:00Z'));
+    expect(morning.slug).toBe(evening.slug);
+    expect(morning.slug).toBe(SECURITY_TERMS[termIndexForDay(daySerial(2026, 5, 19))].slug);
+  });
+
   it('advances to the next term the following day', () => {
-    const d1 = new Date(2026, 5, 19);
-    const d2 = new Date(2026, 5, 20);
+    const d1 = new Date(Date.UTC(2026, 5, 19));
+    const d2 = new Date(Date.UTC(2026, 5, 20));
     const i1 = termIndexForDay(daySerial(2026, 5, 19));
     const i2 = termIndexForDay(daySerial(2026, 5, 20));
     expect(i2).toBe((i1 + 1) % SECURITY_TERMS.length);
