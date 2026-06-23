@@ -1,0 +1,57 @@
+---
+// Opt-in UI sound switch. Off by default; persists to localStorage ('sound') via
+// the shared window.__sound controller (defined in SoundEngine). Renders both
+// icons and toggles which is shown, so there's no innerHTML churn or layout shift.
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+
+const btn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '34px',
+  h: '34px',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  bg: 'bgSubtle',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { color: 'text', borderColor: 'primary' },
+  '&[aria-pressed=true]': { color: 'primary' },
+});
+---
+
+<button
+  type="button"
+  data-sound-toggle
+  aria-pressed="false"
+  aria-label="Enable interface sounds"
+  title="Interface sounds: off"
+  class={btn}
+>
+  <span data-snd-icon="off" class={css({ display: 'inline-flex' })}><Icon name="volume-x" size={16} /></span>
+  <span data-snd-icon="on" hidden class={css({ display: 'inline-flex' })}><Icon name="volume-2" size={16} /></span>
+</button>
+
+<script is:inline>
+  (function () {
+    var btn = document.querySelector('[data-sound-toggle]');
+    if (!btn || !window.__sound) return;
+    var iconOff = btn.querySelector('[data-snd-icon=off]');
+    var iconOn = btn.querySelector('[data-snd-icon=on]');
+
+    function sync() {
+      var on = window.__sound.isEnabled();
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      btn.setAttribute('aria-label', on ? 'Disable interface sounds' : 'Enable interface sounds');
+      btn.setAttribute('title', on ? 'Interface sounds: on' : 'Interface sounds: off');
+      if (on) { iconOff.setAttribute('hidden', ''); iconOn.removeAttribute('hidden'); }
+      else { iconOn.setAttribute('hidden', ''); iconOff.removeAttribute('hidden'); }
+    }
+
+    btn.addEventListener('click', function () { window.__sound.toggle(); });
+    document.addEventListener('soundchange', sync);
+    sync();
+  })();
+</script>

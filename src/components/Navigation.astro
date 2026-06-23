@@ -4,6 +4,7 @@ import { css } from 'styled-system/css';
 import { NAV_LINKS, SITE } from '../consts';
 import ThemePicker from './ThemePicker.astro';
 import ModeToggle from './ModeToggle.astro';
+import SoundToggle from './SoundToggle.astro';
 import Icon from './Icon.astro';
 
 const pathname = Astro.url.pathname;
@@ -90,6 +91,8 @@ const isActive = (href: string) =>
           ))
         }
       </ul>
+
+      <SoundToggle />
 
       <ThemePicker />
 

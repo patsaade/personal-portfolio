@@ -5,6 +5,7 @@ export const prerender = true;
 import { css } from 'styled-system/css';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Icon from '../components/Icon.astro';
+import PixelStar from '../components/PixelStar.astro';
 
 const primaryBtn = css({
   display: 'inline-flex',
@@ -45,6 +46,7 @@ const ghostBtn = css({
       gap: '1rem',
     })}
   >
+    <PixelStar size={84} />
     <p
       class={css({
         fontFamily: 'sans',

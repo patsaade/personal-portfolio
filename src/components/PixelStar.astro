@@ -1,0 +1,47 @@
+---
+// On-page pixelated 5-point star (the brand mark, sans tile). Same deterministic
+// geometry as the favicon/social card via the shared star module. The star inherits
+// `currentColor` (defaults to the theme `primary`); when `twinkle`, pixels shimmer
+// in a staggered wave — disabled under prefers-reduced-motion (see global.css).
+import { css } from 'styled-system/css';
+import { starCells, STAR_GRID } from '../og/star.mjs';
+
+interface Props {
+  size?: number;
+  twinkle?: boolean;
+  label?: string; // accessible name; omitted → decorative (aria-hidden)
+  class?: string;
+}
+
+const { size = 72, twinkle = true, label, class: className } = Astro.props;
+const cells = starCells();
+const overlap = 1.04; // slight rect overlap kills hairline seams between pixels
+---
+
+<span
+  class={`pixel-star ${twinkle ? 'twinkle' : ''} ${css({ color: 'primary', display: 'inline-flex', lineHeight: 0 })} ${className ?? ''}`}
+>
+  <svg
+    width={size}
+    height={size}
+    viewBox={`0 0 ${STAR_GRID} ${STAR_GRID}`}
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+    role={label ? 'img' : undefined}
+    aria-label={label}
+    aria-hidden={label ? undefined : 'true'}
+  >
+    {
+      cells.map(([x, y]) => (
+        <rect
+          class="px"
+          x={x}
+          y={y}
+          width={overlap}
+          height={overlap}
+          style={`animation-delay:${((((x + y) * 0.17) % 1.4)).toFixed(2)}s`}
+        />
+      ))
+    }
+  </svg>
+</span>

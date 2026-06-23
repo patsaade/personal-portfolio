@@ -7,6 +7,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import Badge from '../../components/Badge.astro';
 import Icon from '../../components/Icon.astro';
+import PixelStar from '../../components/PixelStar.astro';
 import { getFormattedDate } from '../../utils/date';
 import { getSortedLabs } from '../../utils/posts';
 
@@ -116,21 +117,7 @@ const chip = css({
           borderRadius: 'xl',
         })}
       >
-        <span
-          class={css({
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            w: '3.5rem',
-            h: '3.5rem',
-            borderRadius: 'lg',
-            bg: 'color-mix(in srgb, token(colors.primary) 13%, transparent)',
-            color: 'primary',
-          })}
-          aria-hidden="true"
-        >
-          <Icon name="flask" size={26} />
-        </span>
+        <PixelStar size={64} />
         <h2 class={css({ fontSize: '1.4rem', fontWeight: 700 })}>Writeups in the works</h2>
         <p class={css({ color: 'textMuted', maxW: '480px', lineHeight: 1.7 })}>
           Full walkthroughs of public lab &amp; CTF challenges — CyberDefenders, 13Cubed,

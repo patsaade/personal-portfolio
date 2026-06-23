@@ -24,14 +24,14 @@ const latest = (featured.length ? featured : posts).slice(0, 3);
     })}
   >
     <h1
-      class={css({
+      class={`declassify-hero ${css({
         fontFamily: 'redaction35',
         fontSize: { base: '2.4rem', md: '3.5rem' },
         fontWeight: 700,
         lineHeight: 1.1,
         letterSpacing: '-0.03em',
         mb: '1.25rem',
-      })}
+      })}`}
     >
       DFIR-focused.<br />
       <span class={css({ color: 'primary' })}>SOC & Incident Response @ First American.</span><br />
