@@ -1,8 +1,8 @@
 # Style Guide
 
 The design language for patricksaade.com. Follow this for any new page, component, or
-copy so the site stays consistent. (Architecture rules live in [../CLAUDE.md](../CLAUDE.md);
-content/frontmatter rules in [AUTHORING.md](AUTHORING.md).)
+copy so the site stays consistent. (Architecture rules live in `CLAUDE.md`, kept local to the
+project; content/frontmatter rules in [AUTHORING.md](AUTHORING.md).)
 
 ## Project direction
 
@@ -40,6 +40,12 @@ The decisions every change should serve:
   or meta-phrasing leak into user-facing text (no "vendor-agnostic", "as requested", "never a
   product", "this glossary", etc.). State the thing itself, plainly; if a rule shaped the copy,
   the rule belongs in this guide, not on the page.
+  - **In particular, never restate the content-source / confidentiality constraint as an on-page
+    disclaimer** — no "no client data", "no real-incident details", "nothing from employer
+    casework", "no redacted real cases". That rule (public-only sources; see CLAUDE.md) governs
+    *what* you write, not something to announce. Name the public sources positively instead
+    (e.g. "public data lets me walk the whole investigation in the open") and stop there. It
+    reads as a compliance disclaimer, not Patrick's voice.
 - **Signature capitalization.** Patrick capitalizes **Threat**, **Root Cause Analysis**, and
   **Incident Response** as a deliberate voice tic — but only inside first-person narrative he
   authored (hero, About, colophon, posts). Keep them lowercase everywhere else (headings, meta
