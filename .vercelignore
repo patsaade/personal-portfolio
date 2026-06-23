@@ -26,6 +26,7 @@ CLAUDE.md
 README.md
 .github/
 .nvmrc
+scripts/
 # Note: .npmrc is intentionally NOT ignored — Vercel needs it at install time
 # (legacy-peer-deps=true).
 
