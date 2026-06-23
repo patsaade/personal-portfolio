@@ -6,6 +6,7 @@ import satori from 'satori';
 import sharp from 'sharp';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { starCells, STAR_GRID } from './star.mjs';
 
 const FONT = (name) => readFileSync(resolve(process.cwd(), 'src/og/fonts', name));
 const FONTS = [
@@ -30,48 +31,51 @@ const C = {
 
 const h = (type, style, children) => ({ type, props: { style, ...(children !== undefined ? { children } : {}) } });
 
-// The "ps" monogram mark — a rounded tile with an eroded-Redaction wordmark and
-// a small accent underbar. Used in the card lockup and (full-bleed) as the icon.
-function mark(size, { bleed = false, eroded = false } = {}) {
+// ── Brand mark: a pixelated 5-point star (a nod to "Patrick" Star) in soft pink,
+//    on the rounded theme tile. Drives the favicon/app icons and the card lockup.
+const STAR = '#f4a3c0'; // soft Patrick-pink, pops on the dark mauve tile
+const GRID = STAR_GRID; // star raster resolution (chunky, legible at 16px)
+const STAR_PAD = 0.13; // tile padding around the star, as a fraction of size
+
+// The mark as a self-contained SVG string (rounded tile + pixel-star rects).
+function markSvg(size, { bleed = true } = {}) {
+  const tileR = Math.round(size * (bleed ? 0.2 : 0.24));
+  const pad = size * STAR_PAD;
+  const cell = (size - pad * 2) / GRID;
+  const px = (cell + 0.6).toFixed(2); // overlap avoids hairline seams when rasterized
+  const rects = starCells(GRID)
+    .map(([x, y]) => `<rect x="${(pad + x * cell).toFixed(2)}" y="${(pad + y * cell).toFixed(2)}" width="${px}" height="${px}" fill="${STAR}"/>`)
+    .join('');
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">` +
+    `<rect width="${size}" height="${size}" rx="${tileR}" fill="${bleed ? C.bg : C.card}"/>` +
+    `<rect x="0.75" y="0.75" width="${(size - 1.5).toFixed(2)}" height="${(size - 1.5).toFixed(2)}" rx="${Math.max(0, tileR - 1)}" fill="none" stroke="#5a4b58" stroke-width="1.5"/>` +
+    rects +
+    '</svg>'
+  );
+}
+
+// The same mark as a satori node, for the social-card lockup tile.
+function markNode(size) {
+  const pad = size * STAR_PAD;
+  const cell = (size - pad * 2) / GRID;
+  const pixels = starCells(GRID).map(([x, y]) =>
+    h('div', { position: 'absolute', left: pad + x * cell, top: pad + y * cell, width: cell + 0.6, height: cell + 0.6, backgroundColor: STAR }),
+  );
   return h(
     'div',
     {
+      position: 'relative',
+      display: 'flex',
       width: size,
       height: size,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-      borderRadius: Math.round(size * (bleed ? 0.2 : 0.24)),
-      backgroundColor: bleed ? C.bg : C.card,
-      borderWidth: Math.max(1, Math.round(size * 0.02)),
+      borderRadius: Math.round(size * 0.24),
+      backgroundColor: C.card,
+      borderWidth: 1,
       borderStyle: 'solid',
-      borderColor: bleed ? '#5a4b58' : C.border,
+      borderColor: C.border,
     },
-    [
-      h(
-        'div',
-        {
-          // Eroded grade for the large card lockup; clean Redaction for the small
-          // favicon/icons so the "ps" stays legible at 16px.
-          fontFamily: eroded ? 'Redaction 50' : 'Redaction',
-          fontWeight: 700,
-          fontSize: Math.round(size * (eroded ? 0.46 : 0.5)),
-          lineHeight: 1,
-          color: C.primary,
-        },
-        'ps',
-      ),
-      h('div', {
-        position: 'absolute',
-        bottom: Math.round(size * 0.18),
-        width: Math.round(size * 0.34),
-        height: Math.max(2, Math.round(size * 0.05)),
-        borderRadius: 99,
-        backgroundColor: C.accent,
-      }),
-    ],
+    pixels,
   );
 }
 
@@ -113,7 +117,7 @@ function cardTree({ title, eyebrow }) {
       [
         // brand lockup
         h('div', { display: 'flex', alignItems: 'center' }, [
-          mark(58, { eroded: true }),
+          markNode(58),
           h('div', { fontFamily: 'Redaction 50', fontWeight: 700, fontSize: 34, color: C.text, marginLeft: 20 }, 'Patrick Saade'),
         ]),
         // eyebrow + title
@@ -141,18 +145,15 @@ export async function renderCardPng({ title, eyebrow }) {
   return sharp(Buffer.from(svg)).png().toBuffer();
 }
 
-/** Render the brand mark as a self-contained SVG (glyphs as paths) at `size`px.
- *  satori already emits width/height + viewBox, so it scales cleanly as a favicon. */
+/** The brand mark as a self-contained SVG (pixel-star, scales cleanly as a favicon). */
 export async function renderMarkSvg(size) {
-  const tree = h('div', { display: 'flex', width: size, height: size }, [mark(size, { bleed: true })]);
-  return toSvg(tree, size, size);
+  return markSvg(size, { bleed: true });
 }
 
 /** Render the brand mark to a PNG of `size`px (icons / apple-touch). */
 export async function renderMarkPng(size) {
-  // Render large for crispness, downscale with sharp.
-  const svg = await renderMarkSvg(512);
-  return sharp(Buffer.from(svg)).resize(size, size).png().toBuffer();
+  // Render large for crisp pixels, downscale with sharp.
+  return sharp(Buffer.from(markSvg(512, { bleed: true }))).resize(size, size).png().toBuffer();
 }
 
 export { C as OG_PALETTE };
