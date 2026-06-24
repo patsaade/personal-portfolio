@@ -496,12 +496,12 @@ export const TERM_REFERENCES: Record<string, Reference> = {
     "url": "https://csrc.nist.gov/glossary/term/federated_identity_management"
   },
   "serverless-function-security": {
-    "name": "MITRE ATT&CK T1610 — Deploy Container",
-    "url": "https://attack.mitre.org/techniques/T1610/"
+    "name": "OWASP Serverless Top 10",
+    "url": "https://owasp.org/www-project-serverless-top-10/"
   },
   "identity-and-access-management": {
-    "name": "NIST CSRC Glossary — Cloud Computing",
-    "url": "https://csrc.nist.gov/glossary/term/cloud_computing"
+    "name": "NIST — Identity & Access Management",
+    "url": "https://www.nist.gov/identity-access-management"
   },
   "privileged-container": {
     "name": "MITRE ATT&CK T1611 — Escape to Host",
@@ -532,8 +532,8 @@ export const TERM_REFERENCES: Record<string, Reference> = {
     "url": "https://www.sans.org/tools/the-pyramid-of-pain"
   },
   "diamond-model": {
-    "name": "Active Response - The Diamond Model of Intrusion Analysis (Caltagirone, Pendergast, Betz)",
-    "url": "https://www.activeresponse.org/publications/"
+    "name": "The Diamond Model of Intrusion Analysis (Caltagirone, Pendergast, Betz) — DTIC",
+    "url": "https://apps.dtic.mil/sti/tr/pdf/ADA586960.pdf"
   },
   "buffer-overflow": {
     "name": "NIST CSRC Glossary: buffer overflow",
@@ -586,10 +586,6 @@ export const TERM_REFERENCES: Record<string, Reference> = {
   "control-flow-integrity": {
     "name": "Microsoft Learn: Control Flow Guard",
     "url": "https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard"
-  },
-  "return-oriented-programming": {
-    "name": "CAPEC-100: Overflow Buffers",
-    "url": "https://capec.mitre.org/data/definitions/100.html"
   },
   "heap-spray": {
     "name": "CWE-122: Heap-based Buffer Overflow",
@@ -680,12 +676,12 @@ export const TERM_REFERENCES: Record<string, Reference> = {
     "url": "https://attack.mitre.org/techniques/T1566/001/"
   },
   "whaling": {
-    "name": "MITRE ATT&CK T1566.002: Spearphishing Link",
-    "url": "https://attack.mitre.org/techniques/T1566/002/"
+    "name": "MITRE ATT&CK T1566 — Phishing",
+    "url": "https://attack.mitre.org/techniques/T1566/"
   },
   "email-spoofing": {
-    "name": "RFC 7208: Sender Policy Framework (SPF)",
-    "url": "https://www.rfc-editor.org/rfc/rfc7208"
+    "name": "MITRE ATT&CK T1684.002 — Social Engineering: Email Spoofing",
+    "url": "https://attack.mitre.org/techniques/T1684/002/"
   },
   "lookalike-domain": {
     "name": "MITRE ATT&CK T1583.001: Acquire Infrastructure: Domains",
@@ -704,8 +700,8 @@ export const TERM_REFERENCES: Record<string, Reference> = {
     "url": "https://www.rfc-editor.org/rfc/rfc7489"
   },
   "thread-hijacking": {
-    "name": "MITRE ATT&CK T1566.002: Spearphishing Link",
-    "url": "https://attack.mitre.org/techniques/T1566/002/"
+    "name": "MITRE ATT&CK T1566 — Phishing",
+    "url": "https://attack.mitre.org/techniques/T1566/"
   },
   "attachment-based-delivery": {
     "name": "MITRE ATT&CK T1566.001: Spearphishing Attachment",
@@ -744,8 +740,8 @@ export const TERM_REFERENCES: Record<string, Reference> = {
     "url": "https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html"
   },
   "json-web-token": {
-    "name": "OWASP JSON Web Token Cheat Sheet",
-    "url": "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
+    "name": "RFC 7519 — JSON Web Token (JWT)",
+    "url": "https://www.rfc-editor.org/rfc/rfc7519"
   },
   "oauth": {
     "name": "RFC 6749: The OAuth 2.0 Authorization Framework",
@@ -886,6 +882,30 @@ export const TERM_REFERENCES: Record<string, Reference> = {
   "systemd-journal": {
     "name": "systemd.journal-fields(7) — systemd journal fields manual page (man7.org)",
     "url": "https://man7.org/linux/man-pages/man7/systemd.journal-fields.7.html"
+  },
+  "process-injection": {
+    "name": "MITRE ATT&CK T1055 — Process Injection",
+    "url": "https://attack.mitre.org/techniques/T1055/"
+  },
+  "service-creation": {
+    "name": "MITRE ATT&CK T1543.003 — Create or Modify System Process: Windows Service",
+    "url": "https://attack.mitre.org/techniques/T1543/003/"
+  },
+  "hide-artifacts": {
+    "name": "MITRE ATT&CK T1564 — Hide Artifacts",
+    "url": "https://attack.mitre.org/techniques/T1564/"
+  },
+  "process-discovery": {
+    "name": "MITRE ATT&CK T1057 — Process Discovery",
+    "url": "https://attack.mitre.org/techniques/T1057/"
+  },
+  "web-service-c2": {
+    "name": "MITRE ATT&CK T1102 — Web Service",
+    "url": "https://attack.mitre.org/techniques/T1102/"
+  },
+  "inhibit-system-recovery": {
+    "name": "MITRE ATT&CK T1490 — Inhibit System Recovery",
+    "url": "https://attack.mitre.org/techniques/T1490/"
   }
 };
 
@@ -896,6 +916,10 @@ export interface AttackTechnique {
   url: string;
   /** Glossary term that documents this technique, if any. */
   glossarySlug?: string;
+  /** One-line "what it is" for the technique detail page. */
+  summary?: string;
+  /** Why it matters / how it's detected (DFIR framing). */
+  significance?: string;
 }
 
 /** MITRE ATT&CK Enterprise tactics in kill-chain order (only populated ones render). */
@@ -920,218 +944,297 @@ export const ATTACK_TECHNIQUES: AttackTechnique[] = [
     "id": "T1566",
     "name": "Phishing",
     "tactic": "Initial Access",
-    "url": "https://attack.mitre.org/techniques/T1566/"
+    "url": "https://attack.mitre.org/techniques/T1566/",
+    "glossarySlug": "phishing",
+    "summary": "Sending deceptive messages — usually email — to trick recipients into opening a malicious attachment or link, or into handing over credentials.",
+    "significance": "Phishing is the most common initial-access vector, so email-gateway logs, attachment detonation, and user-reported messages are a front line for catching intrusions early."
   },
   {
     "id": "T1078",
     "name": "Valid Accounts",
     "tactic": "Defense Evasion",
-    "url": "https://attack.mitre.org/techniques/T1078/"
+    "url": "https://attack.mitre.org/techniques/T1078/",
+    "glossarySlug": "valid-accounts",
+    "summary": "Accessing systems with legitimate, stolen, or default credentials as an authorized user, rather than deploying malware.",
+    "significance": "Because it looks like normal authentication, it slips past malware-based detection; anomalous logon times, source locations, and impossible travel are the tells."
   },
   {
     "id": "T1059",
     "name": "Command and Scripting Interpreter",
     "tactic": "Execution",
     "url": "https://attack.mitre.org/techniques/T1059/",
-    "glossarySlug": "living-off-the-land"
+    "glossarySlug": "living-off-the-land",
+    "summary": "Abusing built-in interpreters — PowerShell, cmd, bash, WScript — to execute commands and scripts directly on a host.",
+    "significance": "It underlies most living-off-the-land activity; command-line and script-block logging turn these interpreters from blind spots into rich telemetry."
   },
   {
     "id": "T1218",
     "name": "System Binary Proxy Execution",
     "tactic": "Defense Evasion",
     "url": "https://attack.mitre.org/techniques/T1218/",
-    "glossarySlug": "living-off-the-land"
+    "glossarySlug": "living-off-the-land",
+    "summary": "Proxying execution of malicious code through trusted, signed system binaries (LOLBins) such as rundll32 or mshta.",
+    "significance": "Signed-binary execution bypasses naive allow-listing, so detection shifts to unusual parent–child process chains and command-line arguments."
   },
   {
     "id": "T1547",
     "name": "Boot or Logon Autostart Execution",
     "tactic": "Persistence",
     "url": "https://attack.mitre.org/techniques/T1547/",
-    "glossarySlug": "persistence"
+    "glossarySlug": "persistence",
+    "summary": "Persisting by configuring code to run automatically at boot or logon — registry Run keys, the Startup folder, and similar autostart points.",
+    "significance": "These autostart locations are a finite, well-known set, which makes them prime hunting ground for persistence during triage."
   },
   {
     "id": "T1543.003",
     "name": "Create or Modify System Process: Windows Service",
     "tactic": "Persistence",
-    "url": "https://attack.mitre.org/techniques/T1543/003/"
+    "url": "https://attack.mitre.org/techniques/T1543/003/",
+    "glossarySlug": "service-creation",
+    "summary": "Creating or modifying a Windows service so the service control manager launches attacker code, typically as SYSTEM and across reboots.",
+    "significance": "Service installs are durable and high-privilege; event ID 7045 and the service registry keys make new or altered services a reliable detection."
   },
   {
     "id": "T1053.005",
     "name": "Scheduled Task/Job: Scheduled Task",
     "tactic": "Persistence",
-    "url": "https://attack.mitre.org/techniques/T1053/005/"
+    "url": "https://attack.mitre.org/techniques/T1053/005/",
+    "glossarySlug": "scheduled-task-abuse",
+    "summary": "Using the Windows Task Scheduler to run attacker code on a schedule or trigger, for persistence or delayed execution.",
+    "significance": "Tasks survive reboots and can run as SYSTEM; the Task Scheduler operational log and on-disk task XML are key forensic artifacts."
   },
   {
     "id": "T1068",
     "name": "Exploitation for Privilege Escalation",
     "tactic": "Privilege Escalation",
     "url": "https://attack.mitre.org/techniques/T1068/",
-    "glossarySlug": "privilege-escalation"
+    "glossarySlug": "privilege-escalation",
+    "summary": "Exploiting a software or kernel vulnerability to gain higher privileges than the current context allows.",
+    "significance": "It often follows initial access on a low-privilege foothold; crashes, unusual driver loads, and unexpected SYSTEM-level child processes can signal it."
   },
   {
     "id": "T1055",
     "name": "Process Injection",
     "tactic": "Defense Evasion",
-    "url": "https://attack.mitre.org/techniques/T1055/"
+    "url": "https://attack.mitre.org/techniques/T1055/",
+    "glossarySlug": "process-injection",
+    "summary": "Executing code inside the address space of another live process to evade detection and inherit that process’s privileges.",
+    "significance": "It defeats process-name allow-listing; finding it usually means comparing a process’s on-disk image to what is actually mapped in memory."
   },
   {
     "id": "T1055.012",
     "name": "Process Injection: Process Hollowing",
     "tactic": "Defense Evasion",
     "url": "https://attack.mitre.org/techniques/T1055/012/",
-    "glossarySlug": "process-hollowing"
+    "glossarySlug": "process-hollowing",
+    "summary": "Launching a legitimate process suspended, unmapping its image, and replacing it with malicious code before resuming it.",
+    "significance": "The process keeps a trusted name and path while running attacker code; a mismatch between the on-disk and in-memory image is the classic tell."
   },
   {
     "id": "T1014",
     "name": "Rootkit",
     "tactic": "Defense Evasion",
     "url": "https://attack.mitre.org/techniques/T1014/",
-    "glossarySlug": "rootkit"
+    "glossarySlug": "rootkit",
+    "summary": "Malware that hides its own presence, and that of other tools, by hooking or modifying the OS at the user or kernel level.",
+    "significance": "Because rootkits subvert the very APIs investigators rely on, memory forensics — which bypasses the running OS — is essential to surface them."
   },
   {
     "id": "T1027",
     "name": "Obfuscated Files or Information",
     "tactic": "Defense Evasion",
     "url": "https://attack.mitre.org/techniques/T1027/",
-    "glossarySlug": "entropy"
+    "glossarySlug": "entropy",
+    "summary": "Making files or commands hard to analyze through encoding, encryption, or packing to defeat static detection.",
+    "significance": "Obfuscation hides strings and logic from signatures; high entropy and decode-then-execute patterns are strong triage signals."
   },
   {
     "id": "T1027.002",
     "name": "Obfuscated Files or Information: Software Packing",
     "tactic": "Defense Evasion",
     "url": "https://attack.mitre.org/techniques/T1027/002/",
-    "glossarySlug": "packing"
+    "glossarySlug": "packing",
+    "summary": "Compressing or encrypting an executable so its real code is only restored in memory at runtime.",
+    "significance": "Packing defeats static analysis and signatures, so analysts unpack — often by controlled detonation — to reveal the true payload."
   },
   {
     "id": "T1070",
     "name": "Indicator Removal",
     "tactic": "Defense Evasion",
     "url": "https://attack.mitre.org/techniques/T1070/",
-    "glossarySlug": "indicator-of-compromise"
+    "glossarySlug": "indicator-of-compromise",
+    "summary": "Deleting or altering evidence — logs, files, command history — to hamper detection and investigation.",
+    "significance": "It is anti-forensics in action, but the clearing is often itself logged (e.g., event ID 1102), turning the cover-up into a detection."
   },
   {
     "id": "T1070.006",
     "name": "Indicator Removal: Timestomp",
     "tactic": "Defense Evasion",
     "url": "https://attack.mitre.org/techniques/T1070/006/",
-    "glossarySlug": "timestomping"
+    "glossarySlug": "timestomping",
+    "summary": "Altering a file’s timestamps to blend a malicious file into normal activity or to break timeline analysis.",
+    "significance": "NTFS keeps two timestamp sets ($STANDARD_INFORMATION and $FILE_NAME); mismatches between them reliably expose timestomping."
   },
   {
     "id": "T1564",
     "name": "Hide Artifacts",
     "tactic": "Defense Evasion",
-    "url": "https://attack.mitre.org/techniques/T1564/"
+    "url": "https://attack.mitre.org/techniques/T1564/",
+    "glossarySlug": "hide-artifacts",
+    "summary": "Concealing files, processes, windows, or accounts so operators and tooling overlook attacker activity.",
+    "significance": "Hidden artifacts let intrusions operate in plain sight; knowing where attackers hide things, and which views omit them, is what surfaces them."
   },
   {
     "id": "T1564.004",
     "name": "Hide Artifacts: NTFS File Attributes",
     "tactic": "Defense Evasion",
     "url": "https://attack.mitre.org/techniques/T1564/004/",
-    "glossarySlug": "alternate-data-streams"
+    "glossarySlug": "alternate-data-streams",
+    "summary": "Hiding data in NTFS alternate data streams or extended attributes, behind an innocuous-looking file.",
+    "significance": "ADS content does not appear in normal directory listings; the Zone.Identifier stream also records mark-of-the-web provenance."
   },
   {
     "id": "T1003",
     "name": "OS Credential Dumping",
     "tactic": "Credential Access",
     "url": "https://attack.mitre.org/techniques/T1003/",
-    "glossarySlug": "credential-dumping"
+    "glossarySlug": "credential-dumping",
+    "summary": "Extracting account secrets — plaintext passwords, hashes, or tickets — from memory, the registry, or credential stores.",
+    "significance": "Stolen credentials fuel lateral movement and privilege escalation, which is why monitoring access to stores like LSASS is critical."
   },
   {
     "id": "T1003.001",
     "name": "OS Credential Dumping: LSASS Memory",
     "tactic": "Credential Access",
     "url": "https://attack.mitre.org/techniques/T1003/001/",
-    "glossarySlug": "memory-acquisition"
+    "glossarySlug": "memory-acquisition",
+    "summary": "Reading the LSASS process memory to harvest the credentials Windows caches there for authenticated sessions.",
+    "significance": "LSASS access by unusual processes is a high-fidelity detection; Credential Guard and Protected Process Light raise the bar against it."
   },
   {
     "id": "T1550.002",
     "name": "Use Alternate Authentication Material: Pass the Hash",
     "tactic": "Lateral Movement",
     "url": "https://attack.mitre.org/techniques/T1550/002/",
-    "glossarySlug": "pass-the-hash"
+    "glossarySlug": "pass-the-hash",
+    "summary": "Authenticating with a captured NTLM password hash instead of the cleartext password, without ever cracking it.",
+    "significance": "It renders strong passwords moot once a hash is captured; logon type and NTLM-authentication patterns help spot the reuse."
   },
   {
     "id": "T1021",
     "name": "Remote Services",
     "tactic": "Lateral Movement",
     "url": "https://attack.mitre.org/techniques/T1021/",
-    "glossarySlug": "lateral-movement"
+    "glossarySlug": "lateral-movement",
+    "summary": "Using remote-access services — SMB, RDP, WinRM, SSH — with valid credentials to move between systems.",
+    "significance": "It is the backbone of lateral movement; new sessions, logon events, and service-specific logs reveal the hops."
   },
   {
     "id": "T1057",
     "name": "Process Discovery",
     "tactic": "Discovery",
-    "url": "https://attack.mitre.org/techniques/T1057/"
+    "url": "https://attack.mitre.org/techniques/T1057/",
+    "glossarySlug": "process-discovery",
+    "summary": "Enumerating running processes to learn what is installed — security agents, sandboxes, and candidate injection targets.",
+    "significance": "It often precedes evasion or escalation; the discovery commands themselves (e.g., tasklist) are a behavioral signal."
   },
   {
     "id": "T1071",
     "name": "Application Layer Protocol",
     "tactic": "Command and Control",
     "url": "https://attack.mitre.org/techniques/T1071/",
-    "glossarySlug": "command-and-control"
+    "glossarySlug": "command-and-control",
+    "summary": "Hiding command-and-control inside common application protocols like HTTP(S), DNS, or SMTP to blend with normal traffic.",
+    "significance": "Because the protocol is expected, detection leans on traffic patterns — regular beacons, odd user-agents, and volume anomalies."
   },
   {
     "id": "T1071.004",
     "name": "Application Layer Protocol: DNS",
     "tactic": "Command and Control",
     "url": "https://attack.mitre.org/techniques/T1071/004/",
-    "glossarySlug": "dns-tunneling"
+    "glossarySlug": "dns-tunneling",
+    "summary": "Tunnelling command-and-control or data through DNS queries and responses, abusing a protocol that is almost always allowed out.",
+    "significance": "DNS is rarely blocked and often under-inspected; long, high-entropy, or high-volume subdomains are the tell."
   },
   {
     "id": "T1568.002",
     "name": "Dynamic Resolution: Domain Generation Algorithms",
     "tactic": "Command and Control",
     "url": "https://attack.mitre.org/techniques/T1568/002/",
-    "glossarySlug": "domain-generation-algorithm"
+    "glossarySlug": "domain-generation-algorithm",
+    "summary": "Algorithmically generating many candidate C2 domains so an implant can still find its server as domains are taken down.",
+    "significance": "It defeats static domain blocklists, so detection leans on the statistical randomness of the queried names."
   },
   {
     "id": "T1573",
     "name": "Encrypted Channel",
     "tactic": "Command and Control",
     "url": "https://attack.mitre.org/techniques/T1573/",
-    "glossarySlug": "beaconing"
+    "glossarySlug": "beaconing",
+    "summary": "Encrypting command-and-control traffic — with standard TLS or a custom scheme — to conceal its content.",
+    "significance": "Payloads are hidden, so detection shifts to metadata: JA3/JA4 fingerprints, certificate oddities, and beacon timing."
   },
   {
     "id": "T1102",
     "name": "Web Service",
     "tactic": "Command and Control",
-    "url": "https://attack.mitre.org/techniques/T1102/"
+    "url": "https://attack.mitre.org/techniques/T1102/",
+    "glossarySlug": "web-service-c2",
+    "summary": "Routing command-and-control through legitimate web services — paste sites, cloud storage, social platforms — so traffic goes to reputable domains.",
+    "significance": "Trusted destinations evade reputation and blocklist controls, so behavioral cues and content inspection are needed instead."
   },
   {
     "id": "T1560",
     "name": "Archive Collected Data",
     "tactic": "Collection",
-    "url": "https://attack.mitre.org/techniques/T1560/"
+    "url": "https://attack.mitre.org/techniques/T1560/",
+    "glossarySlug": "data-staging",
+    "summary": "Compressing and often encrypting collected data into an archive to stage it for exfiltration.",
+    "significance": "Staging archives in temp or user directories just before an outbound transfer is a strong pre-exfiltration signal."
   },
   {
     "id": "T1041",
     "name": "Exfiltration Over C2 Channel",
     "tactic": "Exfiltration",
     "url": "https://attack.mitre.org/techniques/T1041/",
-    "glossarySlug": "data-exfiltration"
+    "glossarySlug": "data-exfiltration",
+    "summary": "Sending stolen data back out over the same channel the implant already uses for command-and-control.",
+    "significance": "Reusing the C2 channel avoids new connections; unusual outbound volume on an existing beacon is the tell."
   },
   {
     "id": "T1567",
     "name": "Exfiltration Over Web Service",
     "tactic": "Exfiltration",
-    "url": "https://attack.mitre.org/techniques/T1567/"
+    "url": "https://attack.mitre.org/techniques/T1567/",
+    "glossarySlug": "data-exfiltration",
+    "summary": "Uploading stolen data to a legitimate external web service — cloud storage or a sharing site — to blend with normal usage.",
+    "significance": "Exfil to trusted SaaS domains evades blocklists, so DLP, upload-volume baselines, and egress monitoring are the controls."
   },
   {
     "id": "T1029",
     "name": "Scheduled Transfer",
     "tactic": "Exfiltration",
-    "url": "https://attack.mitre.org/techniques/T1029/"
+    "url": "https://attack.mitre.org/techniques/T1029/",
+    "glossarySlug": "data-exfiltration",
+    "summary": "Timing data exfiltration to specific hours or intervals so it blends with normal business traffic.",
+    "significance": "Scheduling dampens the signal of a single large transfer; correlating periodic outbound spikes helps surface it."
   },
   {
     "id": "T1486",
     "name": "Data Encrypted for Impact",
     "tactic": "Impact",
-    "url": "https://attack.mitre.org/techniques/T1486/"
+    "url": "https://attack.mitre.org/techniques/T1486/",
+    "glossarySlug": "ransomware",
+    "summary": "Encrypting files, drives, or systems to deny access — the core action of ransomware.",
+    "significance": "It is the destructive endgame; mass file-modification rates, shadow-copy deletion, and ransom notes are detection and triage anchors."
   },
   {
     "id": "T1490",
     "name": "Inhibit System Recovery",
     "tactic": "Impact",
-    "url": "https://attack.mitre.org/techniques/T1490/"
+    "url": "https://attack.mitre.org/techniques/T1490/",
+    "glossarySlug": "inhibit-system-recovery",
+    "summary": "Deleting or disabling recovery options — Volume Shadow Copies, backups, automatic repair — to prevent rollback.",
+    "significance": "Shadow-copy deletion (e.g., via vssadmin) is a high-fidelity ransomware precursor that defenders alert on aggressively."
   }
 ];

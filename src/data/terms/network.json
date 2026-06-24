@@ -375,5 +375,21 @@
     "significance": "Low-and-slow behavior defeats volume- and rate-based detection, so finding it usually requires correlating small events over long time windows rather than watching for spikes.",
     "example": "Uncovering an exfiltration that dribbled a few megabytes out each night for weeks, each transfer small enough to slip past the data-loss alerts.",
     "related": ["beacon-analysis", "exfiltration-over-dns", "covert-channel"]
+  },
+  {
+    "term": "Web Service C2",
+    "slug": "web-service-c2",
+    "aka": [
+      "Dead Drop Resolver"
+    ],
+    "short": "Hiding command-and-control inside trusted web services like paste or cloud apps.",
+    "definition": "Command-and-control that routes through legitimate third-party web services — paste sites, cloud storage, social platforms, or developer APIs — so malicious traffic blends in with ordinary HTTPS to popular, reputable domains.",
+    "significance": "Because the destination is a trusted service, domain and IP blocklists and reputation checks miss it and the traffic looks normal. Detection leans on behavioral cues and content inspection rather than the endpoint’s reputation.",
+    "example": "An implant fetching its next command from a public paste URL and posting stolen data to a cloud storage bucket.",
+    "related": [
+      "command-and-control",
+      "beaconing",
+      "data-exfiltration"
+    ]
   }
 ]

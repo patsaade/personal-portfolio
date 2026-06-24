@@ -5,6 +5,7 @@
 import type { APIRoute } from 'astro';
 import { getSortedPosts, getSortedLabs } from '../utils/posts';
 import { SECURITY_TERMS } from '../data/securityTerms';
+import { ATTACK_TECHNIQUES } from '../data/references';
 
 export const prerender = true;
 
@@ -43,6 +44,13 @@ export const GET: APIRoute = async () => {
       kind: 'Term',
       desc: t.short,
       keywords: `${(t.aka ?? []).join(' ')} ${t.category}`.toLowerCase(),
+    })),
+    ...ATTACK_TECHNIQUES.map((t) => ({
+      title: `${t.id} ${t.name}`,
+      url: `/attack-map/${t.id}/`,
+      kind: 'ATT&CK',
+      desc: t.summary ?? '',
+      keywords: `${t.tactic} mitre att&ck technique`.toLowerCase(),
     })),
     ...STATIC_PAGES,
   ];

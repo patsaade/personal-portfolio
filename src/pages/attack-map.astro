@@ -24,8 +24,19 @@ const tactics = ATTACK_TACTIC_ORDER.filter((name) => byTactic[name]?.length);
 
 const linkedCount = ATTACK_TECHNIQUES.filter((t) => t.glossarySlug).length;
 
-const tacticHead = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.05rem', fontWeight: 700, mb: '0.85rem' });
-const grid = css({ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))', gap: '0.65rem' });
+// Each tactic is a collapsible <details>, matching the glossary / Tools / Certifications pages.
+const groupDetails = css({ borderTop: '1px solid token(colors.border)', py: '1.25rem' });
+const groupSummary = css({
+  cursor: 'pointer',
+  listStyle: 'none',
+  userSelect: 'none',
+  '&::-webkit-details-marker': { display: 'none' },
+  '&::marker': { display: 'none' },
+  _hover: { '& .tactic-title': { color: 'primary' } },
+});
+const chevCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 200ms ease', 'details[open] &': { transform: 'rotate(90deg)' } });
+const tacticHead = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', m: 0, fontSize: '1.05rem', fontWeight: 700 });
+const grid = css({ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))', gap: '0.65rem', mt: '1rem' });
 const chip = css({
   display: 'flex',
   flexDirection: 'column',
@@ -35,8 +46,10 @@ const chip = css({
   border: '1px solid token(colors.border)',
   borderRadius: 'md',
   transition: 'border-color 200ms ease, transform 200ms ease',
+  scrollMarginTop: '90px', // clear the sticky header when linked to via #<id>
   _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
   '&[data-covered]': { borderLeftWidth: '3px', borderLeftColor: 'accent' },
+  '&:target': { borderColor: 'primary', boxShadow: 'cardHover' },
 });
 const chipTop = css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' });
 const chipId = css({ fontFamily: 'mono', fontSize: '0.72rem', fontWeight: 600, color: 'primary' });
@@ -56,6 +69,27 @@ const chipGloss = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25
     description="The adversary techniques I reference across the glossary and writeups, laid out by tactic. Each links to its official MITRE page; many link straight to the glossary entry that explains it."
   />
 
+  <aside
+    class={css({
+      bg: 'bgSubtle',
+      border: '1px solid token(colors.border)',
+      borderLeftWidth: '3px',
+      borderLeftColor: 'primary',
+      borderRadius: 'md',
+      p: '1rem 1.25rem',
+      mb: '1.5rem',
+    })}
+  >
+    <p class={css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', m: 0 })}>
+      <strong class={css({ color: 'text' })}>MITRE ATT&CK</strong> — short for <em>Adversarial Tactics,
+      Techniques, and Common Knowledge</em> — is a free, openly maintained knowledge base of how real
+      attackers operate. <em>Tactics</em> are the adversary's goals (the <em>why</em>, e.g. Persistence);
+      <em>techniques</em> are the specific methods used to reach them (the <em>how</em>, e.g. Process
+      Injection). Mapping detections and writeups to it gives defenders a shared vocabulary for
+      describing intrusions.
+    </p>
+  </aside>
+
   <p class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 1.25rem', color: 'textMuted', fontSize: '0.9rem', mb: '2rem' })}>
     <span>{ATTACK_TECHNIQUES.length} techniques across {tactics.length} tactics</span>
     <span>·</span>
@@ -66,27 +100,30 @@ const chipGloss = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25
     </a>
   </p>
 
-  <div class={css({ display: 'flex', flexDirection: 'column', gap: '2.25rem' })}>
+  <div class={css({ display: 'flex', flexDirection: 'column' })}>
     {
       tactics.map((tactic) => (
-        <section>
-          <h2 class={tacticHead}>
-            <Icon name="crosshair" size={18} class={css({ color: 'primary' })} />
-            {tactic}
-            <span class={css({ fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 400, color: 'textMuted' })}>{byTactic[tactic].length}</span>
-          </h2>
+        <details open class={groupDetails}>
+          <summary class={groupSummary}>
+            <h2 class={tacticHead}>
+              <Icon name="chevron-right" size={17} class={chevCls} />
+              <Icon name="crosshair" size={18} class={css({ color: 'primary', flexShrink: 0 })} />
+              <span class="tactic-title">{tactic}</span>
+              <span class={css({ fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 400, color: 'textMuted' })}>{byTactic[tactic].length}</span>
+            </h2>
+          </summary>
           <div class={grid}>
             {byTactic[tactic].map((t) => {
               const gloss = t.glossarySlug ? termBySlug(t.glossarySlug) : undefined;
               return (
-                <div class={chip} {...(covered.has(t.id) ? { 'data-covered': true } : {})}>
+                <div id={t.id} class={chip} {...(covered.has(t.id) ? { 'data-covered': true } : {})}>
                   <div class={chipTop}>
                     <span class={chipId}>{t.id}</span>
                     {covered.has(t.id) && <span class={coveredBadge}>covered</span>}
                   </div>
-                  <a href={t.url} target="_blank" rel="noopener" class={chipName}>
+                  <a href={`/attack-map/${t.id}/`} class={chipName}>
                     {t.name}
-                    <Icon name="external-link" size={12} class={css({ color: 'textMuted', flexShrink: 0 })} />
+                    <Icon name="arrow-right" size={12} class={css({ color: 'textMuted', flexShrink: 0 })} />
                   </a>
                   {gloss && (
                     <a href={`/glossary/${gloss.slug}/`} class={chipGloss}>
@@ -97,7 +134,7 @@ const chipGloss = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25
               );
             })}
           </div>
-        </section>
+        </details>
       ))
     }
   </div>

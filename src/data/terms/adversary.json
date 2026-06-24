@@ -398,5 +398,73 @@
     "significance": "Access brokers shorten the path between compromise and a damaging follow-on attack like ransomware, so detecting the initial foothold early is essential to break the handoff. The access on offer often traces back to phishing, exposed services, or leaked credentials.",
     "example": "Network access first obtained through a leaked VPN credential is sold on, and weeks later a different group uses it to deploy ransomware.",
     "related": ["valid-accounts", "spearphishing", "ransomware-deployment"]
+  },
+  {
+    "term": "Process Injection",
+    "slug": "process-injection",
+    "short": "Running malicious code inside another live process to inherit its trust and hide.",
+    "definition": "A family of techniques that execute attacker code within the address space of a separate, usually legitimate, process. Living inside a trusted process lets the code borrow that process’s identity, privileges, and network access.",
+    "significance": "It is one of the most common defense-evasion methods and defeats naive process-name allow-listing, since the malicious activity appears to come from a benign program. Detecting it usually means comparing a process’s on-disk image to what is actually mapped in memory — which is why memory forensics is central to finding it.",
+    "example": "Malware allocating memory in a running browser and starting a thread there, so its code and traffic look like the browser’s.",
+    "related": [
+      "process-hollowing",
+      "dll-injection",
+      "memory-acquisition"
+    ]
+  },
+  {
+    "term": "Service Creation",
+    "slug": "service-creation",
+    "aka": [
+      "Malicious Service"
+    ],
+    "short": "Installing or hijacking a Windows service so attacker code runs at every boot.",
+    "definition": "Creating a new Windows service, or modifying an existing one, so the service control manager launches an attacker’s binary automatically — typically with SYSTEM privileges and across reboots.",
+    "significance": "Services are a durable persistence and privilege mechanism that survive logoff and restart, so a single missed malicious service can re-establish an intrusion after remediation. Service installs are logged (e.g., Windows event ID 7045), which makes them a reliable hunting signal.",
+    "example": "An attacker registering a service that points to a dropped binary so it relaunches with SYSTEM rights at the next boot.",
+    "related": [
+      "persistence",
+      "windows-event-log",
+      "living-off-the-land"
+    ]
+  },
+  {
+    "term": "Hide Artifacts",
+    "slug": "hide-artifacts",
+    "short": "Concealing files, processes, or accounts so defenders and tools overlook them.",
+    "definition": "A set of defense-evasion techniques that make malicious files, windows, users, or execution invisible to operators and tooling — for example hidden files, NTFS alternate data streams, hidden windows, or hidden user accounts.",
+    "significance": "Hidden artifacts let an intrusion persist and operate in plain sight; knowing where attackers hide things, and which default views omit them, is what lets an examiner surface them. Many host-forensic artifacts exist precisely because the OS still records activity the attacker tried to conceal.",
+    "example": "Stashing a payload in an NTFS alternate data stream so it never appears in a normal directory listing.",
+    "related": [
+      "alternate-data-streams",
+      "timestomping",
+      "rootkit"
+    ]
+  },
+  {
+    "term": "Process Discovery",
+    "slug": "process-discovery",
+    "short": "Listing running processes to spot security tools and pick injection targets.",
+    "definition": "Reconnaissance in which an attacker enumerates the processes running on a host to learn what is installed — endpoint agents, sandboxes, and candidate processes to inject into or terminate.",
+    "significance": "It often precedes evasion and privilege escalation: spotting an EDR process can trigger defense evasion, and finding a high-privilege process offers an injection target. The discovery commands themselves are a behavioral detection opportunity.",
+    "example": "An implant running a process listing on landing to check for endpoint security before deploying its next stage.",
+    "related": [
+      "process-injection",
+      "living-off-the-land",
+      "lateral-movement"
+    ]
+  },
+  {
+    "term": "Inhibit System Recovery",
+    "slug": "inhibit-system-recovery",
+    "short": "Deleting backups and shadow copies so victims can't roll back an attack.",
+    "definition": "Actions that remove or corrupt a system’s recovery options — deleting Volume Shadow Copies, clearing backup catalogs, or disabling automatic repair — usually carried out immediately before or during destructive encryption.",
+    "significance": "It maximizes the impact of a destructive attack by removing the victim’s ability to restore, which is why shadow-copy deletion is a high-fidelity ransomware precursor that defenders alert on aggressively.",
+    "example": "Ransomware deleting all Volume Shadow Copies seconds before it begins encrypting files.",
+    "related": [
+      "ransomware",
+      "windows-event-log",
+      "data-exfiltration"
+    ]
   }
 ]
