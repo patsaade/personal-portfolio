@@ -37,24 +37,30 @@
     }
 
     // One short, soft blip. Low gain + fast decay keep it a tick, not a beep.
+    // Every Web Audio call is wrapped: an audio hiccup (bad/closed context, node
+    // limit, ramp edge case) must never surface as an error or break the click.
     function blip(o) {
-      if (!enabled) return;
+      if (!enabled || !o) return;
       var c = unlock();
       if (!c) return;
-      var t = c.currentTime;
-      var dur = o.dur || 0.07;
-      var osc = c.createOscillator();
-      var gain = c.createGain();
-      osc.type = o.type || 'sine';
-      osc.frequency.setValueAtTime(o.freq || 600, t);
-      if (o.freq2) osc.frequency.exponentialRampToValueAtTime(o.freq2, t + dur);
-      gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(o.vol || 0.05, t + 0.005);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      osc.connect(gain);
-      gain.connect(c.destination);
-      osc.start(t);
-      osc.stop(t + dur + 0.02);
+      try {
+        var t = c.currentTime;
+        var dur = o.dur || 0.07;
+        var osc = c.createOscillator();
+        var gain = c.createGain();
+        osc.type = o.type || 'sine';
+        osc.frequency.setValueAtTime(o.freq || 600, t);
+        if (o.freq2) osc.frequency.exponentialRampToValueAtTime(o.freq2, t + dur);
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(o.vol || 0.05, t + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        osc.connect(gain);
+        gain.connect(c.destination);
+        osc.start(t);
+        osc.stop(t + dur + 0.02);
+      } catch (e) {
+        /* swallow — sound is a non-essential enhancement */
+      }
     }
 
     // Soft-blip palette: one distinguishable cue per interaction class. `vol` is
@@ -72,11 +78,11 @@
 
     window.__sound = {
       isEnabled: function () { return enabled; },
-      play: function (name) { blip(SOUNDS[name] || SOUNDS.tick); },
+      play: function (name) { try { blip(SOUNDS[name] || SOUNDS.tick); } catch (e) {} },
       set: function (on) {
         enabled = !!on;
         try { localStorage.setItem(KEY, enabled ? 'on' : 'off'); } catch (e) {}
-        document.dispatchEvent(new CustomEvent('soundchange'));
+        try { document.dispatchEvent(new CustomEvent('soundchange')); } catch (e) {}
         // The toggle click is a user gesture, so this confirming chirp is allowed.
         if (enabled) { unlock(); blip(SOUNDS.on); }
       },
@@ -112,22 +118,26 @@
       'click',
       function (e) {
         if (!enabled) return;
-        var t = e.target;
-        if (!t || !t.closest) return;
-        var explicit = t.closest('[data-sound]');
-        if (explicit) { window.__sound.play(explicit.getAttribute('data-sound') || 'tick'); return; }
-        if (t.closest('.copy-btn')) { window.__sound.play('copy'); return; }
-        var link = t.closest('a[href]');
-        if (link) {
-          var href = link.getAttribute('href') || '';
-          if (href[0] === '#') { window.__sound.play('tick'); return; } // in-page anchor
-          if (!link.hasAttribute('download') && !/^(mailto:|tel:|javascript:)/i.test(href)) {
-            window.__sound.play('nav'); return; // internal or external navigation
+        try {
+          var t = e.target;
+          if (!t || !t.closest) return;
+          var explicit = t.closest('[data-sound]');
+          if (explicit) { window.__sound.play(explicit.getAttribute('data-sound') || 'tick'); return; }
+          if (t.closest('.copy-btn')) { window.__sound.play('copy'); return; }
+          var link = t.closest('a[href]');
+          if (link) {
+            var href = link.getAttribute('href') || '';
+            if (href[0] === '#') { window.__sound.play('tick'); return; } // in-page anchor
+            if (!link.hasAttribute('download') && !/^(mailto:|tel:|javascript:)/i.test(href)) {
+              window.__sound.play('nav'); return; // internal or external navigation
+            }
           }
+          // Any button gives feedback (filters, share, etc.) — not just header ones.
+          // The sound toggle and search trigger are excluded: they voice their own cue.
+          if (t.closest('button') && !t.closest('[data-sound-toggle]') && !t.closest('[data-search-trigger]')) { window.__sound.play('tick'); return; }
+        } catch (err) {
+          /* a cue must never interfere with a click */
         }
-        // Any button gives feedback (filters, share, etc.) — not just header ones.
-        // The sound toggle and search trigger are excluded: they voice their own cue.
-        if (t.closest('button') && !t.closest('[data-sound-toggle]') && !t.closest('[data-search-trigger]')) { window.__sound.play('tick'); return; }
       },
       true,
     );

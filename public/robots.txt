@@ -31,6 +31,9 @@ Allow: /
 User-agent: Perplexity-User
 Allow: /
 
+User-agent: DuckAssistBot
+Allow: /
+
 # ───────────────── AI training / dataset crawlers — blocked ─────────────────
 # Opts the site's content out of model-training corpora. Note: Google-Extended
 # and Applebot-Extended are control tokens only — blocking them excludes the site
@@ -81,6 +84,12 @@ User-agent: PanguBot
 Disallow: /
 
 User-agent: Ai2Bot
+Disallow: /
+
+User-agent: Meta-ExternalFetcher
+Disallow: /
+
+User-agent: Amazonbot
 Disallow: /
 
 # Sitemap (global directive — applies regardless of user-agent).

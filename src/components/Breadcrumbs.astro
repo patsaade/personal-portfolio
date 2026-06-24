@@ -26,7 +26,7 @@ const jsonLd = JSON.stringify({
     name: c.label,
     ...(c.href ? { item: new URL(c.href, SITE.url).toString() } : {}),
   })),
-});
+}).replace(/</g, '\\u003c'); // escape `<` so it can't break out of the <script> tag
 ---
 
 <nav aria-label="Breadcrumb" class={`${css({ mb: '1.25rem' })} ${className ?? ''}`}>

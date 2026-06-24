@@ -60,7 +60,8 @@ if (type === 'article') {
     mainEntityOfPage: canonicalURL.toString(),
   });
 }
-const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
+// `.replace` escapes `<` so authored content can never break out of the <script> tag.
+const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(/</g, '\\u003c');
 ---
 
 <meta charset="utf-8" />
