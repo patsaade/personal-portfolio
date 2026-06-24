@@ -57,13 +57,17 @@
       osc.stop(t + dur + 0.02);
     }
 
-    // Soft-blip palette: one distinguishable cue per interaction class.
+    // Soft-blip palette: one distinguishable cue per interaction class. `vol` is
+    // the peak gain (linear amplitude, 0–1). UI feedback conventionally sits around
+    // -18…-13 dBFS peak (amplitude = 10^(dB/20): -18≈0.13, -15≈0.18, -13≈0.22);
+    // pure tones read louder than samples, so these stay at the conservative end
+    // and keep their relative balance — `card` faintest, the `on` chirp loudest.
     var SOUNDS = {
-      tick: { freq: 520, freq2: 700, type: 'triangle', dur: 0.05, vol: 0.045 }, // UI controls
-      copy: { freq: 720, freq2: 1080, type: 'triangle', dur: 0.08, vol: 0.05 }, // copy code
-      card: { freq: 660, freq2: 840, type: 'sine', dur: 0.045, vol: 0.035 }, // context card / term
-      nav: { freq: 600, freq2: 460, type: 'sine', dur: 0.08, vol: 0.045 }, // page navigation
-      on: { freq: 480, freq2: 900, type: 'sine', dur: 0.13, vol: 0.06 }, // enable confirmation
+      tick: { freq: 520, freq2: 700, type: 'triangle', dur: 0.05, vol: 0.14 }, // UI controls
+      copy: { freq: 720, freq2: 1080, type: 'triangle', dur: 0.08, vol: 0.16 }, // copy code
+      card: { freq: 660, freq2: 840, type: 'sine', dur: 0.045, vol: 0.12 }, // context card / term
+      nav: { freq: 600, freq2: 460, type: 'sine', dur: 0.08, vol: 0.15 }, // page navigation
+      on: { freq: 480, freq2: 900, type: 'sine', dur: 0.13, vol: 0.2 }, // enable confirmation
     };
 
     window.__sound = {
