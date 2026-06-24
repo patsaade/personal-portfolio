@@ -34,7 +34,10 @@ Create `src/content/blog/<slug>.mdx`. The filename (minus extension) becomes the
 | `author`     |   | string | Defaults to `Patrick Saade`. |
 | `readTime`   |   | number | Overrides the auto estimate (minutes). |
 | `updated`    |   | date | Last-updated date. |
-| `heroImage`  |   | string | Path under `public/`. |
+| `heroImage`  |   | string | Path under `public/`. For post-body images, prefer local relative paths so Astro auto-optimizes them. |
+| `series`     |   | string | Group multi-part posts — those sharing this value render a linked series box. |
+| `seriesOrder`|   | number | Position within the series (1, 2, 3…). |
+| `attack`     |   | string[] | MITRE ATT&CK technique IDs covered, e.g. `["T1003","T1055.012"]`; marks them "covered" on `/attack-map/`. |
 | `featured`   |   | boolean | `true` surfaces it on the home page. |
 | `draft`      |   | boolean | `true` hides it from production builds. |
 
@@ -77,6 +80,9 @@ Create `src/content/labs/<slug>.mdx` → `/labs/<slug>/`.
 | `tags`       |   | string[] | |
 | `tools`      |   | string[] | |
 | `iocCount`   |   | number | Feeds the CTF/labs stats. |
+| `series`     |   | string | Group multi-part labs. |
+| `seriesOrder`|   | number | Position within the series. |
+| `attack`     |   | string[] | ATT&CK technique IDs covered; feeds `/attack-map/`. |
 | `draft`      |   | boolean | |
 
 **Recommended section structure:**

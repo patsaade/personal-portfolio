@@ -35,13 +35,27 @@ const cardClass = css({
   transition: 'border-color 200ms ease, transform 200ms ease',
   _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
 });
+
+// Each category is a collapsible <details>, matching the Tools / Certifications pages.
+const groupDetails = css({ borderTop: '1px solid token(colors.border)', py: '1.25rem' });
+const groupSummary = css({
+  cursor: 'pointer',
+  listStyle: 'none',
+  userSelect: 'none',
+  '&::-webkit-details-marker': { display: 'none' },
+  '&::marker': { display: 'none' },
+  _hover: { '& .totd-grp-title': { color: 'primary' } },
+});
+const groupHead = css({ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', m: 0, fontSize: '1.15rem', fontWeight: 700 });
+const chevCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 200ms ease', 'details[open] &': { transform: 'rotate(90deg)' } });
+const grpCount = css({ fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 600, color: 'textMuted', bg: 'bgSubtle', border: '1px solid token(colors.border)', borderRadius: 'full', px: '0.5rem', py: '0.05rem' });
 ---
 
 <BaseLayout
   title="Glossary"
   description="A cybersecurity & DFIR glossary — concepts, techniques, and artifacts, with why each one matters in an investigation."
 >
-  <PageHeader eyebrow="Reference" title="Cybersecurity glossary" />
+  <PageHeader breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Glossary' }]} eyebrow="Reference" title="Cybersecurity glossary" />
 
   {/* ── Today's featured term (client-updated to the visitor's local day) ── */}
   <section
@@ -124,22 +138,23 @@ const cardClass = css({
     <span id="totd-result-count">{total}</span> terms — every one a concept, technique, or artifact you’ll meet in a real investigation.
   </p>
 
-  {/* ── Full glossary ── */}
-  <div class={css({ display: 'flex', flexDirection: 'column', gap: '2.5rem' })}>
+  {/* ── Full glossary (collapsible by category) ── */}
+  <div class={css({ display: 'flex', flexDirection: 'column' })}>
     {
       CATEGORIES.map((cat) => {
         const terms = SECURITY_TERMS.filter((t) => t.category === cat);
         if (terms.length === 0) return null;
         return (
-          <div data-totd-group>
-            <h3 class={css({ display: 'flex', alignItems: 'baseline', gap: '0.6rem', mb: '1rem', flexWrap: 'wrap' })}>
-              <span class={css({ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.15rem', fontWeight: 700 })}>
-                <Icon name={CATEGORY_META[cat].icon as any} size={19} class={css({ color: 'primary' })} />
-                {cat}
-              </span>
-              <span class={css({ color: 'textMuted', fontSize: '0.8rem', fontWeight: 400, fontFamily: 'sans' })}>{terms.length}</span>
-            </h3>
-            <div class={css({ display: 'grid', gridTemplateColumns: { base: '1fr', sm: '1fr 1fr' }, gap: '0.75rem' })}>
+          <details open data-totd-group class={groupDetails}>
+            <summary class={groupSummary}>
+              <h3 class={groupHead}>
+                <Icon name="chevron-right" size={17} class={chevCls} />
+                <Icon name={CATEGORY_META[cat].icon as any} size={19} class={css({ color: 'primary', flexShrink: 0 })} />
+                <span class="totd-grp-title">{cat}</span>
+                <span class={grpCount}>{terms.length}</span>
+              </h3>
+            </summary>
+            <div class={css({ display: 'grid', gridTemplateColumns: { base: '1fr', sm: '1fr 1fr' }, gap: '0.75rem', mt: '1rem' })}>
               {terms.map((t) => (
                 <a
                   href={`/glossary/${t.slug}/`}
@@ -151,7 +166,7 @@ const cardClass = css({
                 </a>
               ))}
             </div>
-          </div>
+          </details>
         );
       })
     }
@@ -200,6 +215,8 @@ const cardClass = css({
         for (var g = 0; g < groups.length; g++) {
           var anyVisible = groups[g].querySelector('[data-totd-card]:not([style*="display: none"])');
           groups[g].style.display = anyVisible ? '' : 'none';
+          // While searching, expand collapsed categories so matches inside are visible.
+          if (q && anyVisible) groups[g].open = true;
         }
         if (empty) empty.hidden = shown !== 0;
         if (countEl) countEl.textContent = String(shown);
