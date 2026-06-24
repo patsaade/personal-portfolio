@@ -4,6 +4,8 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 80px;
+  /* Don't scroll past the page boundaries (no rubber-band / overscroll chaining). */
+  overscroll-behavior: none;
 }
 
 /* Hover/tap context-card triggers (see components/HoverCards.astro): a subtle
