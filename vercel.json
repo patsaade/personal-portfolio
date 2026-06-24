@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "astro",
-  "buildCommand": "panda codegen && astro build",
+  "buildCommand": "git fetch --unshallow 2>/dev/null || true; panda codegen && astro build",
   "headers": [
     {
       "source": "/(.*)",
