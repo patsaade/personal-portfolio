@@ -3,8 +3,10 @@
 // links, fixed behind all content. Tuned for mobile performance and motion:
 //   • Frame-rate throttled (~30fps mobile / ~45fps desktop) to save battery.
 //   • Fewer nodes + shorter links + capped DPR on small screens.
-//   • Re-seeds only on width/orientation change — it ignores the constant height
-//     churn from the mobile URL bar, which previously reflowed the field mid-scroll.
+//   • Re-seeds only on a real (physical-width) / orientation change — it ignores
+//     both the mobile URL-bar height churn AND page zoom (which changes CSS width
+//     but not the physical width), so neither reflows/reshuffles the field; zoom
+//     just remaps the existing field to the new size.
 //   • Gentle scroll parallax via seamless vertical tiling, so it drifts with the
 //     page instead of sitting stationary.
 //   • prefers-reduced-motion -> one static frame; pauses when the tab is hidden.
@@ -34,7 +36,7 @@ import { css } from 'styled-system/css';
     if (!ctx) return;
 
     var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    var w = 0, h = 0, fieldH = 0, dpr = 1, lastW = -1;
+    var w = 0, h = 0, fieldH = 0, dpr = 1, lastPhysW = -1;
     var nodes = [], links = [], raf = null, lastFrame = 0;
     var rgb = '59, 130, 246'; // fallback primary
     var LINK = 130, PARALLAX = 0.3, frameInterval = 22;
@@ -75,20 +77,32 @@ import { css } from 'styled-system/css';
     function size() {
       var cw = canvas.clientWidth || window.innerWidth;
       var ch = canvas.clientHeight || window.innerHeight;
-      dpr = Math.min(window.devicePixelRatio || 1, cw < 640 ? 1.5 : 2);
+      var rawDpr = window.devicePixelRatio || 1;
+      dpr = Math.min(rawDpr, cw < 640 ? 1.5 : 2);
       frameInterval = cw < 640 ? 33 : 22;
+      var prevW = w, prevFieldH = fieldH;
       w = cw; h = ch;
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      // Re-seed only on width/orientation change, not on the mobile URL bar's
-      // height twitches (which would otherwise reflow the field while scrolling).
-      if (w !== lastW || fieldH === 0) {
+
+      // Physical width = CSS width × real DPR. Page zoom shrinks the CSS width but
+      // grows devicePixelRatio proportionally, so the physical width is invariant
+      // under zoom — keying the re-seed off it means zooming no longer reshuffles or
+      // re-densifies the field. Only a genuine window/orientation resize re-seeds.
+      var physW = Math.round(cw * rawDpr);
+      if (fieldH === 0 || Math.abs(physW - lastPhysW) > 16) {
         fieldH = h;
         seed();
-        lastW = w;
+        lastPhysW = physW;
+      } else if (w !== prevW && prevW > 0 && nodes.length) {
+        // Zoom: remap the existing field to the new CSS dimensions so it stays
+        // continuous (no reshuffle, no density jump) instead of regenerating.
+        var sx = w / prevW, sy = prevFieldH > 0 ? h / prevFieldH : 1, i;
+        for (i = 0; i < nodes.length; i++) { nodes[i].x *= sx; nodes[i].y *= sy; }
+        fieldH = h;
       } else if (h > fieldH) {
-        fieldH = h; // viewport grew taller than the field; extend the wrap period
+        fieldH = h; // mobile URL-bar churn made it taller; extend the wrap period
       }
     }
 
