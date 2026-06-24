@@ -15,6 +15,7 @@ html {
   text-underline-offset: 3px;
   cursor: help;
 }
+/* On fine-pointer (mouse) devices the brand star-cursor takes over here — see CursorFX.astro. */
 .hovercard:hover,
 .hovercard:focus-visible {
   text-decoration-color: var(--colors-primary);

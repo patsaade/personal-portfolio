@@ -3,6 +3,7 @@
 import { css } from 'styled-system/css';
 import { SITE, SOCIALS, NAV_LINKS } from '../consts';
 import { VERSION, SHORT_COMMIT, COMMIT_URL } from '../utils/version';
+import PixelStar from './PixelStar.astro';
 import Icon from './Icon.astro';
 
 const year = new Date().getFullYear();
@@ -62,8 +63,9 @@ const moreLinks = [
     <div>
       <a
         href="/"
-        class={css({ fontFamily: 'redaction50', fontWeight: 700, fontSize: '1.2rem', color: 'text', letterSpacing: '-0.01em', _hover: { color: 'primary' } })}
+        class={css({ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontFamily: 'redaction50', fontWeight: 700, fontSize: '1.2rem', color: 'text', letterSpacing: '-0.01em', _hover: { color: 'primary' } })}
       >
+        <PixelStar size={16} class={css({ flexShrink: 0 })} />
         {SITE.brand}
       </a>
       <p class={css({ fontSize: '0.875rem', color: 'textMuted', mt: '0.6rem', lineHeight: 1.65, maxW: '320px' })}>

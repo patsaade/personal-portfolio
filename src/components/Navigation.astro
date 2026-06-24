@@ -5,6 +5,7 @@ import { NAV_LINKS, SITE } from '../consts';
 import ThemePicker from './ThemePicker.astro';
 import ModeToggle from './ModeToggle.astro';
 import SoundToggle from './SoundToggle.astro';
+import PixelStar from './PixelStar.astro';
 import Icon from './Icon.astro';
 
 const pathname = Astro.url.pathname;
@@ -37,6 +38,9 @@ const isActive = (href: string) =>
     <a
       href="/"
       class={css({
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.45rem',
         fontFamily: 'redaction50',
         fontWeight: 700,
         fontSize: '1.25rem',
@@ -44,6 +48,7 @@ const isActive = (href: string) =>
         whiteSpace: 'nowrap',
       })}
     >
+      <PixelStar size={17} twinkle={false} class={css({ flexShrink: 0 })} />
       <span class={css({ display: { base: 'inline', sm: 'none' } })}>{SITE.brandShort}</span>
       <span class={css({ display: { base: 'none', sm: 'inline' } })}>{SITE.brand}</span>
     </a>
@@ -100,9 +105,10 @@ const isActive = (href: string) =>
         class={css({
           display: { base: 'none', md: 'inline-flex' },
           alignItems: 'center',
-          justifyContent: 'center',
-          w: '34px',
+          gap: '0.45rem',
           h: '34px',
+          pl: '0.6rem',
+          pr: '0.4rem',
           borderRadius: 'md',
           border: '1px solid token(colors.border)',
           bg: 'bgSubtle',
@@ -112,7 +118,22 @@ const isActive = (href: string) =>
           _hover: { color: 'text', borderColor: 'primary', transform: 'translateY(-1px)' },
         })}
       >
-        <Icon name="search" size={16} />
+        <Icon name="search" size={15} />
+        <kbd
+          data-cmdk-hint
+          aria-hidden="true"
+          class={css({
+            fontFamily: 'mono',
+            fontSize: '0.68rem',
+            lineHeight: 1,
+            color: 'textMuted',
+            bg: 'bgCard',
+            border: '1px solid token(colors.border)',
+            borderRadius: 'sm',
+            px: '0.3rem',
+            py: '0.18rem',
+          })}
+        >⌘K</kbd>
       </button>
 
       <SoundToggle />
