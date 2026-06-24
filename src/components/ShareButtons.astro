@@ -35,10 +35,10 @@ const btn = css({
 
 <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' })}>
   <span class={css({ fontSize: '0.8rem', color: 'textMuted', fontFamily: 'sans' })}>Share:</span>
-  <a class={btn} href={li} target="_blank" rel="noopener"><Icon name="linkedin" size={15} />LinkedIn</a>
-  <a class={btn} href={mail}><Icon name="mail" size={15} />Email</a>
-  <a class={btn} href={sms}><Icon name="message-square" size={15} />Text</a>
-  <button class={btn} type="button" data-copy-url={url} id="copy-link-btn" aria-label="Copy link to clipboard"><Icon name="copy" size={15} /><span class="copy-link-label">Copy link</span></button>
+  <a class={btn} href={li} target="_blank" rel="noopener" data-sound="tick"><Icon name="linkedin" size={15} />LinkedIn</a>
+  <a class={btn} href={mail} data-sound="tick"><Icon name="mail" size={15} />Email</a>
+  <a class={btn} href={sms} data-sound="tick"><Icon name="message-square" size={15} />Text</a>
+  <button class={btn} type="button" data-copy-url={url} data-sound="copy" id="copy-link-btn" aria-label="Copy link to clipboard"><Icon name="copy" size={15} /><span class="copy-link-label">Copy link</span></button>
 </div>
 
 <script is:inline>
