@@ -257,7 +257,7 @@ const linkCls = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25re
       if (t) {
         e.preventDefault();
         if (activeTrigger === t && card) hide();
-        else show(t);
+        else { show(t); if (window.__sound) window.__sound.play('card'); }
         return;
       }
       // Also close while a card is still resolving (card null, trigger set) so a
@@ -268,7 +268,7 @@ const linkCls = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25re
       if (e.key === 'Escape') { hide(); }
       else if ((e.key === 'Enter' || e.key === ' ')) {
         var t = closestTrigger(document.activeElement);
-        if (t) { e.preventDefault(); if (activeTrigger === t) hide(); else show(t); }
+        if (t) { e.preventDefault(); if (activeTrigger === t) hide(); else { show(t); if (window.__sound) window.__sound.play('card'); } }
       }
     });
     window.addEventListener('scroll', function () { if (!hoverCapable) hide(); }, { passive: true });

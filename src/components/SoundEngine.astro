@@ -3,7 +3,14 @@
 // short oscillator "blips" generated on the fly. Sound is OFF by default and only
 // ever plays after the user enables it (a user gesture), so autoplay policies and
 // quiet-by-default expectations are both respected. Exposes window.__sound, used
-// by SoundToggle; a delegated listener blips on header + copy-button clicks.
+// by SoundToggle + HoverCards; a delegated listener voices the chrome the user
+// clicks (UI controls, copy buttons, internal navigation). Any element can opt
+// into a cue declaratively with data-sound="tick|copy|card|nav|on".
+//
+// Mobile hardening: the AudioContext is created lazily inside a gesture, and is
+// unlocked/resumed on the first touch and whenever the tab becomes visible again
+// (mobile browsers suspend backgrounded contexts — the classic "sound stops after
+// you switch apps" bug). Per the user's choice, there's no haptic/vibration.
 ---
 
 <script is:inline>
@@ -21,13 +28,19 @@
       try { ctx = new AC(); } catch (e) { ctx = null; }
       return ctx;
     }
+    // Create (if needed) and resume the context. Safe to call repeatedly; only
+    // does real work inside/after a user gesture, which is where it's invoked.
+    function unlock() {
+      var c = ensureCtx();
+      if (c && c.state === 'suspended' && c.resume) { try { c.resume(); } catch (e) {} }
+      return c;
+    }
 
     // One short, soft blip. Low gain + fast decay keep it a tick, not a beep.
     function blip(o) {
       if (!enabled) return;
-      var c = ensureCtx();
+      var c = unlock();
       if (!c) return;
-      if (c.state === 'suspended' && c.resume) c.resume();
       var t = c.currentTime;
       var dur = o.dur || 0.07;
       var osc = c.createOscillator();
@@ -44,10 +57,13 @@
       osc.stop(t + dur + 0.02);
     }
 
+    // Soft-blip palette: one distinguishable cue per interaction class.
     var SOUNDS = {
-      tick: { freq: 520, freq2: 700, type: 'triangle', dur: 0.05, vol: 0.045 },
-      on: { freq: 480, freq2: 900, type: 'sine', dur: 0.13, vol: 0.06 },
-      copy: { freq: 720, freq2: 1080, type: 'triangle', dur: 0.08, vol: 0.05 },
+      tick: { freq: 520, freq2: 700, type: 'triangle', dur: 0.05, vol: 0.045 }, // UI controls
+      copy: { freq: 720, freq2: 1080, type: 'triangle', dur: 0.08, vol: 0.05 }, // copy code
+      card: { freq: 660, freq2: 840, type: 'sine', dur: 0.045, vol: 0.035 }, // context card / term
+      nav: { freq: 600, freq2: 460, type: 'sine', dur: 0.08, vol: 0.045 }, // page navigation
+      on: { freq: 480, freq2: 900, type: 'sine', dur: 0.13, vol: 0.06 }, // enable confirmation
     };
 
     window.__sound = {
@@ -58,21 +74,55 @@
         try { localStorage.setItem(KEY, enabled ? 'on' : 'off'); } catch (e) {}
         document.dispatchEvent(new CustomEvent('soundchange'));
         // The toggle click is a user gesture, so this confirming chirp is allowed.
-        if (enabled) { ensureCtx(); blip(SOUNDS.on); }
+        if (enabled) { unlock(); blip(SOUNDS.on); }
       },
       toggle: function () { this.set(!enabled); },
     };
 
-    // Ambient blips on the chrome the user actually clicks. Capture phase so it
+    // First touch/pointer anywhere unlocks audio for the rest of the session
+    // (covers the reload-with-sound-already-on case on iOS/Android). Once is enough.
+    function primeOnce() {
+      if (enabled) unlock();
+      window.removeEventListener('pointerdown', primeOnce, true);
+      window.removeEventListener('touchstart', primeOnce, true);
+    }
+    window.addEventListener('pointerdown', primeOnce, true);
+    window.addEventListener('touchstart', primeOnce, true);
+    // Resume after the tab/app regains focus (mobile suspends the context).
+    document.addEventListener('visibilitychange', function () {
+      if (enabled && !document.hidden) unlock();
+    });
+
+    // Is this a same-tab internal navigation we should cue? (Not new-tab, hash,
+    // download, mailto/tel, or modifier-click — those don't "move between pages".)
+    function isInternalNav(a, e) {
+      if (!a || a.getAttribute('target') === '_blank' || a.hasAttribute('download')) return false;
+      if (e && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) return false;
+      var href = a.getAttribute('href') || '';
+      if (!href || href[0] === '#' || /^(mailto:|tel:|javascript:)/i.test(href)) return false;
+      return a.origin === window.location.origin;
+    }
+
+    // Ambient cues on the chrome the user actually clicks. Capture phase so it
     // still fires if a handler stops propagation. The sound toggle is excluded —
-    // set() already chirps when turning on, and off should be silent.
+    // set() already chirps when turning on, and turning off should be silent.
+    //
+    // Cue resolution order:
+    //   1. data-sound="<cue>" — declarative opt-in; the value names the cue, so a
+    //      new cued control needs no edit here. (data-sound-toggle is NOT matched.)
+    //   2. .copy-btn → copy   3. internal <a> → nav   4. other header button → tick
     document.addEventListener(
       'click',
       function (e) {
         if (!enabled) return;
-        var el = e.target && e.target.closest ? e.target.closest('header button, header a[href], .copy-btn') : null;
-        if (!el || el.closest('[data-sound-toggle]')) return;
-        window.__sound.play(el.classList.contains('copy-btn') ? 'copy' : 'tick');
+        var t = e.target;
+        if (!t || !t.closest) return;
+        var explicit = t.closest('[data-sound]');
+        if (explicit) { window.__sound.play(explicit.getAttribute('data-sound') || 'tick'); return; }
+        if (t.closest('.copy-btn')) { window.__sound.play('copy'); return; }
+        var link = t.closest('a[href]');
+        if (link && isInternalNav(link, e)) { window.__sound.play('nav'); return; }
+        if (t.closest('header button') && !t.closest('[data-sound-toggle]')) { window.__sound.play('tick'); return; }
       },
       true,
     );

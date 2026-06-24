@@ -166,6 +166,8 @@
   color: var(--colors-primary);
   border-color: var(--colors-primary);
 }
+/* The copied-state "pop" animation lives with the rest of the charm motion in
+   src/styles/motion.css (@keyframes copyPop). */
 /* Touch devices have no hover — keep the button visible. */
 @media (hover: none) {
   .prose pre .copy-btn {

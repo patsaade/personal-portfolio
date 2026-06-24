@@ -38,6 +38,10 @@ html {
   outline-offset: 2px;
 }
 
+/* Base accessibility rule: near-instant animation/transition globally, plus an
+   explicit stop for the ticker's two infinite loops (the 0.01ms rule alone keeps
+   them cycling). Charm animations carry their own reduced-motion off-switches in
+   motion.css. */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -48,26 +52,12 @@ html {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
-  /* Fully stop the ticker and its live-indicator pulse (the global 0.01ms rule
-     would otherwise keep both infinite animations cycling). */
   .totd-marquee-track {
     animation: none !important;
     transform: none !important;
   }
   .totd-pulse-dot {
     animation: none !important;
-  }
-  /* Charm animations: settle to the final/visible state, never loop or decode. */
-  .declassify,
-  .declassify-hero {
-    animation: none !important;
-  }
-  .pixel-star.twinkle .px {
-    animation: none !important;
-  }
-  .prose.reveal-ready > * {
-    opacity: 1 !important;
-    transform: none !important;
   }
 }
 
@@ -93,69 +83,5 @@ html {
   }
 }
 
-/* ── Charm animations (all disabled under prefers-reduced-motion above) ───── */
-
-/* "Declassify" reveal: a heading decodes from a heavily-eroded Redaction grade
-   down to its final grade, once on load. The grades share metrics, so swapping
-   font-family causes no reflow. `both` holds the final grade after it runs. */
-@keyframes declassify {
-  0% {
-    font-family: 'Redaction 100', Georgia, 'Times New Roman', serif;
-    opacity: 0.5;
-  }
-  45% {
-    font-family: 'Redaction 50', Georgia, 'Times New Roman', serif;
-  }
-  100% {
-    font-family: 'Redaction', Georgia, 'Times New Roman', serif;
-    opacity: 1;
-  }
-}
-/* Hero variant ends on the hero's designed grade (35), not fully clean. */
-@keyframes declassify-hero {
-  0% {
-    font-family: 'Redaction 100', Georgia, 'Times New Roman', serif;
-    opacity: 0.5;
-  }
-  45% {
-    font-family: 'Redaction 50', Georgia, 'Times New Roman', serif;
-  }
-  100% {
-    font-family: 'Redaction 35', Georgia, 'Times New Roman', serif;
-    opacity: 1;
-  }
-}
-.declassify {
-  animation: declassify 0.8s ease-out both;
-}
-.declassify-hero {
-  animation: declassify-hero 0.85s ease-out both;
-}
-
-/* Scroll-reveal for post content. The hidden start state is only armed
-   (.reveal-ready, added by JS when supported + motion allowed), so no-JS and
-   reduced-motion readers see everything immediately with no hidden content. */
-.prose.reveal-ready > * {
-  opacity: 0;
-  transform: translateY(12px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
-.prose.reveal-ready > .is-revealed {
-  opacity: 1;
-  transform: none;
-}
-
-/* Pixelated-star twinkle: pixels shimmer in a staggered wave
-   (per-pixel animation-delay set inline by PixelStar.astro). */
-@keyframes px-twinkle {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-.pixel-star.twinkle .px {
-  animation: px-twinkle 2.6s ease-in-out infinite;
-}
+/* Charm/decorative animations (the declassify heading decode, scroll-reveal,
+   pixel-star twinkle, copy-button pop) live in motion.css. */

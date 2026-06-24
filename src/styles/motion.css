@@ -1,0 +1,128 @@
+/* ============================================================================
+   motion.css — the site's "charm" motion system (decorative animation only).
+
+   Every flourish that animates for delight lives here in one place: the
+   @keyframes, the classes/attributes that drive them, and — required — the
+   prefers-reduced-motion off-switch for each. Imported once in BaseLayout,
+   after global.css.
+
+   What lives WHERE (so this stays the single home for charm motion):
+   - Charm animations (THIS file): the heading "declassify" decode (hero +
+     section/post titles), scroll-reveal, pixel-star twinkle, copy-button pop.
+   - Structural/base styles (global.css): focus rings, theme-preload, the
+     hover-card underline, and the functional Term-of-the-Day ticker marquee.
+   - Token-integrated keyframes (panda.config.ts): e.g. `fadeIn` for <main>.
+
+   Conventions (see CLAUDE.md → "Motion & sound"):
+   1. Every animation here MUST have a reduced-motion off-switch in the block
+      below — settle to the final, visible state; never loop or decode.
+   2. JS-armed effects (scroll-reveal) must no-op without JS and under reduced
+      motion, so the server-rendered content is always fully visible — the
+      hidden start state is only "armed" by script.
+   3. Keep it subtle. This is accent, not spectacle.
+   ============================================================================ */
+
+/* ── Reduced motion: settle every charm animation to its final state ───────── */
+@media (prefers-reduced-motion: reduce) {
+  .declassify,
+  .declassify-hero {
+    animation: none !important;
+  }
+  .pixel-star.twinkle .px {
+    animation: none !important;
+  }
+  .prose.reveal-ready > * {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ── 1. Declassify — the heading "decode" ─────────────────────────────────────
+   A heading decodes from a heavily-eroded Redaction grade (100, "super
+   pixelated") down to a cleaner one, once on load. The grades share metrics, so
+   swapping font-family causes no reflow; `both` holds the final grade. It lingers
+   on the eroded grades (the 50% step sits at 55%) and runs slow on purpose, so
+   the decode reads as dramatic. Two variants:
+   - `.declassify`      → settles fully clean (grade 0): section + post titles.
+   - `.declassify-hero` → settles on the hero's designed grade 35. */
+@keyframes declassify {
+  0% {
+    font-family: 'Redaction 100', Georgia, 'Times New Roman', serif;
+    opacity: 0.5;
+  }
+  55% {
+    font-family: 'Redaction 50', Georgia, 'Times New Roman', serif;
+  }
+  100% {
+    font-family: 'Redaction', Georgia, 'Times New Roman', serif;
+    opacity: 1;
+  }
+}
+.declassify {
+  animation: declassify 1.3s ease-out both;
+}
+@keyframes declassify-hero {
+  0% {
+    font-family: 'Redaction 100', Georgia, 'Times New Roman', serif;
+    opacity: 0.5;
+  }
+  55% {
+    font-family: 'Redaction 50', Georgia, 'Times New Roman', serif;
+  }
+  100% {
+    font-family: 'Redaction 35', Georgia, 'Times New Roman', serif;
+    opacity: 1;
+  }
+}
+.declassify-hero {
+  animation: declassify-hero 1.5s ease-out both;
+}
+
+/* ── 2. Scroll-reveal ─────────────────────────────────────────────────────────
+   Top-level prose blocks fade/rise as they enter view. The hidden start state is
+   only armed by JS (.reveal-ready, added in PostLayout when IntersectionObserver
+   is supported AND motion is allowed); .is-revealed is toggled per block as it
+   intersects. No-JS / reduced-motion readers never get the hidden state. */
+.prose.reveal-ready > * {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.prose.reveal-ready > .is-revealed {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── 3. Pixel-star twinkle ────────────────────────────────────────────────────
+   Pixels shimmer in a staggered wave; each pixel's animation-delay is set inline
+   by PixelStar.astro. Used on the 404 page and the labs empty state. */
+@keyframes px-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+.pixel-star.twinkle .px {
+  animation: px-twinkle 2.6s ease-in-out infinite;
+}
+
+/* ── 4. Copy-button pop ───────────────────────────────────────────────────────
+   A quick confirming pop when a code block is copied (pairs with the `copy`
+   sound cue). The button's resting appearance lives in markdown.css. */
+@keyframes copyPop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.prose pre .copy-btn[data-copied] {
+  animation: copyPop 220ms ease;
+}
