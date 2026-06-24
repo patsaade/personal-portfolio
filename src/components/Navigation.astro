@@ -92,6 +92,29 @@ const isActive = (href: string) =>
         }
       </ul>
 
+      <button
+        type="button"
+        data-search-trigger
+        aria-label="Search"
+        title="Search (⌘K)"
+        class={css({
+          display: { base: 'none', md: 'inline-flex' },
+          alignItems: 'center',
+          justifyContent: 'center',
+          w: '34px',
+          h: '34px',
+          borderRadius: 'md',
+          border: '1px solid token(colors.border)',
+          bg: 'bgSubtle',
+          color: 'textMuted',
+          cursor: 'pointer',
+          transition: 'all 150ms ease',
+          _hover: { color: 'text', borderColor: 'primary', transform: 'translateY(-1px)' },
+        })}
+      >
+        <Icon name="search" size={16} />
+      </button>
+
       <SoundToggle />
 
       <ThemePicker />
@@ -139,6 +162,28 @@ const isActive = (href: string) =>
       bg: 'bg',
     })}
   >
+    <li>
+      <button
+        type="button"
+        data-search-trigger
+        class={css({
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          w: '100%',
+          py: '0.6rem',
+          fontSize: '1rem',
+          color: 'textMuted',
+          bg: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          textAlign: 'left',
+          _hover: { color: 'primary' },
+        })}
+      >
+        <Icon name="search" size={16} /> Search
+      </button>
+    </li>
     {
       NAV_LINKS.map((link) => (
         <li>

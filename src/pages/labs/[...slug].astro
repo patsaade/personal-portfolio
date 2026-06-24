@@ -21,6 +21,18 @@ const { Content, headings } = await render(lab);
 const readTime = estimateReadTime(lab.body);
 
 const tags = [...new Set([lab.data.source, ...lab.data.tags])];
+
+// Series: sibling labs sharing this lab's `series`, ordered by `seriesOrder`.
+const allLabs = await getSortedLabs();
+const series = lab.data.series
+  ? {
+      name: lab.data.series,
+      parts: allLabs
+        .filter((p) => p.data.series === lab.data.series)
+        .sort((a, b) => (a.data.seriesOrder ?? 0) - (b.data.seriesOrder ?? 0))
+        .map((p, i) => ({ title: p.data.title, href: `/labs/${p.id}/`, n: i + 1, current: p.id === lab.id })),
+    }
+  : undefined;
 ---
 
 <PostLayout
@@ -34,6 +46,7 @@ const tags = [...new Set([lab.data.source, ...lab.data.tags])];
   tools={lab.data.tools}
   headings={headings}
   path={`/labs/${lab.id}/`}
+  series={series}
 >
   <Content />
 </PostLayout>

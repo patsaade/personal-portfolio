@@ -1,16 +1,19 @@
 ---
-// Section page header — eyebrow label, title, and optional description.
+// Section page header — optional breadcrumb trail, eyebrow label, title, and description.
 import { css } from 'styled-system/css';
+import Breadcrumbs from './Breadcrumbs.astro';
 
 interface Props {
   eyebrow?: string;
   title: string;
   description?: string;
+  breadcrumbs?: { label: string; href?: string }[];
 }
-const { eyebrow, title, description } = Astro.props;
+const { eyebrow, title, description, breadcrumbs } = Astro.props;
 ---
 
 <header class={css({ mb: '2.5rem' })}>
+  {breadcrumbs && breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} />}
   {
     eyebrow && (
       <p

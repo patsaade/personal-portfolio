@@ -28,7 +28,7 @@ const chip = css({
 ---
 
 <BaseLayout title="Tags" description="Browse posts by topic — memory forensics, host artifacts, EDR, tooling, and more.">
-  <PageHeader eyebrow="Browse" title="Topics" description="Every tag across the blog. Pick one to see related posts." />
+  <PageHeader breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Tags' }]} eyebrow="Browse" title="Topics" description="Every tag across the blog. Pick one to see related posts." />
 
   {
     tags.length > 0 ? (

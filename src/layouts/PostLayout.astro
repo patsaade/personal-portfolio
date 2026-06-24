@@ -8,6 +8,8 @@ import Badge from '../components/Badge.astro';
 import PostMeta from '../components/PostMeta.astro';
 import TableOfContents from '../components/TableOfContents.astro';
 import ShareButtons from '../components/ShareButtons.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Icon from '../components/Icon.astro';
 import { categoryIcon } from '../consts';
 import { tagSlug } from '../utils/posts';
 
@@ -24,6 +26,8 @@ interface Props {
   headings: MarkdownHeading[];
   path: string;
   linkTags?: boolean; // link each tag to its /tags page (blog posts only)
+  // Multi-part series this post belongs to (parts pre-sorted; one is `current`).
+  series?: { name: string; parts: { title: string; href: string; n: number; current: boolean }[] };
 }
 
 const {
@@ -38,7 +42,14 @@ const {
   headings,
   path,
   linkTags = false,
+  series,
 } = Astro.props;
+
+const seriesCurrent = series?.parts.find((p) => p.current);
+
+// Breadcrumb trail derived from the post's section (blog vs labs).
+const section = path.startsWith('/labs') ? { label: 'Labs', href: '/labs/' } : { label: 'Blog', href: '/blog/' };
+const crumbs = [{ label: 'Home', href: '/' }, section, { label: title }];
 ---
 
 <BaseLayout
@@ -67,6 +78,7 @@ const {
   </div>
 
   <article>
+    <Breadcrumbs items={crumbs} />
     <header class={css({ mb: '2rem' })}>
       <div class={css({ display: 'flex', gap: '0.5rem', mb: '1rem', flexWrap: 'wrap' })}>
         <Badge variant="primary" icon={categoryIcon(category)}>{category}</Badge>
@@ -99,6 +111,59 @@ const {
         )
       }
     </header>
+
+    {
+      series && (
+        <aside
+          aria-label="Series navigation"
+          class={css({
+            mb: '2rem',
+            p: '1rem 1.25rem',
+            bg: 'bgSubtle',
+            border: '1px solid token(colors.border)',
+            borderLeftWidth: '3px',
+            borderLeftColor: 'primary',
+            borderRadius: 'md',
+          })}
+        >
+          <p
+            class={css({
+              fontFamily: 'sans',
+              fontSize: '0.72rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              color: 'primary',
+              fontWeight: 700,
+              mb: '0.6rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+            })}
+          >
+            <Icon name="layers" size={14} /> Part {seriesCurrent?.n} of {series.parts.length} · {series.name}
+          </p>
+          <ol class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.3rem' })}>
+            {series.parts.map((p) =>
+              p.current ? (
+                <li class={css({ fontSize: '0.9rem' })}>
+                  <span aria-current="true" class={css({ fontWeight: 700, color: 'text', display: 'inline-flex', gap: '0.5rem' })}>
+                    <span class={css({ color: 'primary' })}>{p.n}.</span>
+                    {p.title}
+                  </span>
+                </li>
+              ) : (
+                <li class={css({ fontSize: '0.9rem' })}>
+                  <a href={p.href} class={css({ color: 'textMuted', display: 'inline-flex', gap: '0.5rem', transition: 'color 150ms ease', _hover: { color: 'primary' } })}>
+                    <span class={css({ color: 'primary' })}>{p.n}.</span>
+                    {p.title}
+                  </a>
+                </li>
+              ),
+            )}
+          </ol>
+        </aside>
+      )
+    }
 
     <div
       class={css({

@@ -152,7 +152,7 @@ const connectLink = css({
 ---
 
 <BaseLayout title="About" description="Patrick Saade — Senior Information Security Analyst at First American. SOC detection & response, incident response, and DFIR.">
-  <PageHeader eyebrow="About" title="Patrick Saade" description="Security analyst going deep on DFIR. I investigate what happened, when, and how — then prove it." />
+  <PageHeader breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'About' }]} eyebrow="About" title="Patrick Saade" description="Security analyst going deep on DFIR. I investigate what happened, when, and how — then prove it." />
 
   <p class={para}>
     I'm a Senior Information Security Analyst at

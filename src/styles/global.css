@@ -38,6 +38,49 @@ html {
   outline-offset: 2px;
 }
 
+/* Search palette result rows (built in JS by Search.astro; styled here). */
+.search-opt {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  color: var(--colors-text);
+  text-decoration: none;
+}
+.search-opt[data-active] {
+  background: var(--colors-bg-subtle);
+}
+.search-opt-kind {
+  flex-shrink: 0;
+  font-family: var(--fonts-mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--colors-primary);
+  border: 1px solid var(--colors-border);
+  border-radius: 4px;
+  padding: 0.05rem 0.32rem;
+  line-height: 1.6;
+}
+.search-opt-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.search-opt-title {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--colors-text);
+}
+.search-opt-desc {
+  font-size: 0.8rem;
+  color: var(--colors-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Base accessibility rule: near-instant animation/transition globally, plus an
    explicit stop for the ticker's two infinite loops (the 0.01ms rule alone keeps
    them cycling). Charm animations carry their own reduced-motion off-switches in

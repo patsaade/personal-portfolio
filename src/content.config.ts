@@ -22,6 +22,11 @@ const blog = defineCollection({
     difficulty: z.enum(['Beginner', 'Intermediate', 'Advanced', 'Hard']).optional(),
     tools: z.array(z.string()).default([]),
     heroImage: z.string().optional(),
+    // Multi-part series: posts sharing `series` are grouped; `seriesOrder` sorts them.
+    series: z.string().optional(),
+    seriesOrder: z.number().optional(),
+    // MITRE ATT&CK technique IDs this post covers (e.g. ['T1003','T1055.012']); feeds the coverage map.
+    attack: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
     featured: z.boolean().default(false),
   }),
@@ -42,6 +47,9 @@ const labs = defineCollection({
     tags: z.array(z.string()).default([]),
     tools: z.array(z.string()).default([]),
     iocCount: z.number().optional(),
+    series: z.string().optional(),
+    seriesOrder: z.number().optional(),
+    attack: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
   }),
 });

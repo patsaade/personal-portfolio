@@ -1,0 +1,65 @@
+---
+// Breadcrumb trail + BreadcrumbList structured data. Improves orientation and
+// lets search engines render the path in results (SEO). Pass an ordered list of
+// crumbs; the last one is treated as the current page (no link, aria-current).
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+import { SITE } from '../consts';
+
+interface Crumb {
+  label: string;
+  href?: string;
+}
+interface Props {
+  items: Crumb[];
+  class?: string;
+}
+const { items, class: className } = Astro.props;
+
+// JSON-LD uses absolute URLs; only linked crumbs get an `item`.
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: items.map((c, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: c.label,
+    ...(c.href ? { item: new URL(c.href, SITE.url).toString() } : {}),
+  })),
+});
+---
+
+<nav aria-label="Breadcrumb" class={`${css({ mb: '1.25rem' })} ${className ?? ''}`}>
+  <ol
+    class={css({
+      display: 'flex',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      gap: '0.3rem',
+      listStyle: 'none',
+      m: 0,
+      p: 0,
+      fontFamily: 'sans',
+      fontSize: '0.8rem',
+      color: 'textMuted',
+    })}
+  >
+    {
+      items.map((c, i) => (
+        <li class={css({ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', minW: 0 })}>
+          {i > 0 && <Icon name="chevron-right" size={12} class={css({ color: 'border', flexShrink: 0 })} />}
+          {c.href && i < items.length - 1 ? (
+            <a href={c.href} class={css({ color: 'textMuted', transition: 'color 150ms ease', _hover: { color: 'primary' } })}>
+              {c.label}
+            </a>
+          ) : (
+            <span aria-current="page" class={css({ color: 'text', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' })}>
+              {c.label}
+            </span>
+          )}
+        </li>
+      ))
+    }
+  </ol>
+  <script type="application/ld+json" is:inline set:html={jsonLd} />
+</nav>

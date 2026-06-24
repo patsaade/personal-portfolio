@@ -31,6 +31,17 @@ const idx = all.findIndex((p) => p.id === post.id);
 const newer = idx > 0 ? all[idx - 1] : null;
 const older = idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;
 
+// Series: sibling posts sharing this post's `series`, ordered by `seriesOrder`.
+const series = post.data.series
+  ? {
+      name: post.data.series,
+      parts: all
+        .filter((p) => p.data.series === post.data.series)
+        .sort((a, b) => (a.data.seriesOrder ?? 0) - (b.data.seriesOrder ?? 0))
+        .map((p, i) => ({ title: p.data.title, href: `/blog/${p.id}/`, n: i + 1, current: p.id === post.id })),
+    }
+  : undefined;
+
 const navLink = css({
   display: 'flex',
   flexDirection: 'column',
@@ -65,6 +76,7 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
   tools={post.data.tools}
   headings={headings}
   path={`/blog/${post.id}/`}
+  series={series}
   linkTags
 >
   <Content />

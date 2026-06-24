@@ -19,7 +19,7 @@ const updated = 'June 20, 2026';
   title="Privacy Policy"
   description="How patricksaade.com handles data: cookieless, privacy-friendly analytics and no personal tracking."
 >
-  <PageHeader eyebrow="Legal" title="Privacy policy" description={`Last updated: ${updated}`} />
+  <PageHeader breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Privacy' }]} eyebrow="Legal" title="Privacy policy" description={`Last updated: ${updated}`} />
 
   <p class={para}>
     This site (<strong class={css({ color: 'text' })}>patricksaade.com</strong>) is a personal
