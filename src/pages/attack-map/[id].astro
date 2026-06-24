@@ -1,7 +1,9 @@
 ---
-// MITRE ATT&CK technique detail — one prerendered page per technique, with the
-// site's own summary + significance and a prominent link to the canonical MITRE
-// page. Mirrors the glossary term page's design language for consistency.
+// MITRE ATT&CK technique detail — one prerendered page per technique, following
+// the glossary term page's format (definition, why it matters, in practice,
+// related, reference) while staying its own thing: an ATT&CK tactic eyebrow,
+// the technique ID + sub-technique lineage, the linked glossary concept, and a
+// reference out to the canonical MITRE page.
 export const prerender = true;
 import { css } from 'styled-system/css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
@@ -25,21 +27,7 @@ const parent = parentId ? ATTACK_TECHNIQUES.find((t) => t.id === parentId) : nul
 
 const sectionH2 = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', fontWeight: 700, mt: '2.5rem', mb: '0.75rem' });
 const para = css({ color: 'text', lineHeight: 1.8, fontSize: '1.02rem' });
-const extBtn = css({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '0.5rem',
-  mt: '1.5rem',
-  px: '1.1rem',
-  py: '0.65rem',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'md',
-  color: 'text',
-  fontWeight: 600,
-  fontSize: '0.95rem',
-  transition: 'border-color 200ms ease, color 200ms ease, transform 200ms ease',
-  _hover: { borderColor: 'primary', color: 'primary', transform: 'translateY(-1px)' },
-});
+const exampleP = css({ borderLeft: '3px solid token(colors.primary)', pl: '1rem', color: 'textMuted', fontStyle: 'italic' });
 const glossCard = css({
   display: 'flex',
   flexDirection: 'column',
@@ -51,6 +39,7 @@ const glossCard = css({
   transition: 'border-color 200ms ease, transform 200ms ease',
   _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
 });
+const refLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', color: 'text', transition: 'color 150ms ease', _hover: { color: 'primary' } });
 const navLink = css({
   display: 'flex',
   flexDirection: 'column',
@@ -88,19 +77,26 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
         </>
       )}
     </p>
-    {tech.summary && (
-      <p class={css({ fontSize: '1.2rem', color: 'textMuted', mt: '1rem', lineHeight: 1.6, maxW: '640px' })}>{tech.summary}</p>
-    )}
-    <a href={tech.url} target="_blank" rel="noopener" class={extBtn}>
-      View this technique on MITRE ATT&CK
-      <Icon name="external-link" size={15} />
-    </a>
   </header>
+
+  {tech.summary && (
+    <>
+      <h2 class={sectionH2}><Icon name="book-open" size={18} class={css({ color: 'primary' })} /> Definition</h2>
+      <p class={para}>{tech.summary}</p>
+    </>
+  )}
 
   {tech.significance && (
     <>
       <h2 class={sectionH2}><Icon name="shield" size={18} class={css({ color: 'primary' })} /> Why it matters</h2>
       <p class={para}>{tech.significance}</p>
+    </>
+  )}
+
+  {tech.example && (
+    <>
+      <h2 class={sectionH2}><Icon name="terminal" size={18} class={css({ color: 'primary' })} /> In practice</h2>
+      <p class={`${para} ${exampleP}`}>{tech.example}</p>
     </>
   )}
 
@@ -115,6 +111,20 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
       </a>
     </>
   )}
+
+  <h2 class={sectionH2}><Icon name="external-link" size={18} class={css({ color: 'primary' })} /> Reference</h2>
+  <ul class={css({ listStyle: 'none', m: 0, p: 0 })}>
+    <li>
+      <a href={tech.url} target="_blank" rel="noopener" class={refLink}>
+        <Icon name="external-link" size={14} class={css({ color: 'primary', flexShrink: 0 })} />
+        <span>MITRE ATT&CK — {tech.id}: {tech.name}</span>
+      </a>
+    </li>
+  </ul>
+  <p class={css({ fontSize: '0.78rem', color: 'textMuted', mt: '0.85rem', lineHeight: 1.6 })}>
+    ATT&CK® is a registered trademark of The MITRE Corporation; technique names and IDs come from the
+    public ATT&CK knowledge base.
+  </p>
 
   <nav
     aria-label="More techniques"

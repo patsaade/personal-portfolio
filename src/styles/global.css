@@ -39,6 +39,15 @@ html {
   outline-offset: 2px;
 }
 
+/* Clamp text to two lines (used for uniform glossary cards). */
+.totd-clamp2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* Search palette result rows (built in JS by Search.astro; styled here). */
 .search-opt {
   display: flex;
