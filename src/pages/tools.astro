@@ -1,125 +1,20 @@
 ---
 // Tools page — free / open-source DFIR toolkit, grouped by the platform a tool
 // runs on (Cross-platform, Windows, macOS & Linux, Web). A star marks the tools
-// in my day-to-day kit; the rest are a wider set worth knowing. Searchable.
+// in my day-to-day kit; each card carries a function tag + a cost tag and links to
+// its own detail page (/tools/[slug]/). Data lives in src/data/tools.ts. Searchable.
 // Static page — prerender to HTML served from the CDN (output: 'server' is on-demand by default).
 export const prerender = true;
 import { css } from 'styled-system/css';
+import { tag } from 'styled-system/recipes';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
 import Icon from '../components/Icon.astro';
 import CollapseAll from '../components/CollapseAll.astro';
-import { tag } from 'styled-system/recipes';
+import { TOOL_PLATFORMS, TOTAL_TOOLS, costTone } from '../data/tools';
 
-interface Tool {
-  name: string;
-  use: string;
-  fn: string; // function tag
-  url: string;
-  core?: boolean; // in my day-to-day kit
-}
-interface Platform {
-  id: string;
-  title: string;
-  icon: string;
-  blurb: string;
-  tools: Tool[];
-}
-
-const platforms: Platform[] = [
-  {
-    id: 'cross',
-    title: 'Cross-platform',
-    icon: 'layers',
-    blurb: 'Runs on Windows, macOS, and Linux.',
-    tools: [
-      { name: 'Volatility 3', use: 'Memory image analysis & plugin framework', fn: 'Memory', url: 'https://github.com/volatilityfoundation/volatility3', core: true },
-      { name: 'MemProcFS', use: 'Mount a memory image as a browsable file system', fn: 'Memory', url: 'https://github.com/ufrisk/MemProcFS', core: true },
-      { name: 'Autopsy', use: 'GUI disk forensics & keyword/artifact analysis', fn: 'Host', url: 'https://www.autopsy.com/', core: true },
-      { name: 'The Sleuth Kit', use: 'Command-line disk & file-system forensics', fn: 'Host', url: 'https://www.sleuthkit.org/' },
-      { name: 'Plaso (log2timeline)', use: 'Super-timeline generation across artifacts', fn: 'Timeline', url: 'https://github.com/log2timeline/plaso', core: true },
-      { name: 'Timesketch', use: 'Collaborative timeline review & annotation (self-hosted)', fn: 'Timeline', url: 'https://timesketch.org/', core: true },
-      { name: 'Velociraptor', use: 'Endpoint visibility & remote collection at scale', fn: 'Triage', url: 'https://docs.velociraptor.app/', core: true },
-      { name: 'Wireshark', use: 'Deep packet capture & protocol analysis', fn: 'Network', url: 'https://www.wireshark.org/' },
-      { name: 'Zeek', use: 'Network security monitoring & rich connection logs', fn: 'Network', url: 'https://zeek.org/' },
-      { name: 'Suricata', use: 'IDS/IPS & network traffic analysis', fn: 'Network', url: 'https://suricata.io/' },
-      { name: 'Arkime', use: 'Full-packet capture, indexing & search', fn: 'Network', url: 'https://arkime.com/' },
-      { name: 'YARA', use: 'Pattern-matching to identify & classify malware', fn: 'Malware', url: 'https://virustotal.github.io/yara/' },
-      { name: 'Sigma', use: 'Vendor-neutral detection rule format & converter', fn: 'Detection', url: 'https://github.com/SigmaHQ/sigma' },
-      { name: 'Hayabusa', use: 'Sigma-based Windows event log threat hunting', fn: 'Logs', url: 'https://github.com/Yamato-Security/hayabusa' },
-      { name: 'Chainsaw', use: 'Fast EVTX & MFT hunting with Sigma rules', fn: 'Logs', url: 'https://github.com/WithSecureLabs/chainsaw' },
-      { name: 'Ghidra', use: 'Software reverse-engineering suite', fn: 'Malware', url: 'https://ghidra-sre.org/' },
-      { name: 'Cutter', use: 'Reverse-engineering platform built on rizin', fn: 'Malware', url: 'https://cutter.re/' },
-      { name: 'capa', use: 'Identify capabilities in executables & shellcode', fn: 'Malware', url: 'https://github.com/mandiant/capa' },
-      { name: 'Detect It Easy', use: 'File type, packer & compiler identification', fn: 'Malware', url: 'https://github.com/horsicq/Detect-It-Easy' },
-      { name: 'Hindsight', use: 'Browser history & artifact parsing', fn: 'Host', url: 'https://github.com/obsidianforensics/hindsight' },
-    ],
-  },
-  {
-    id: 'windows',
-    title: 'Windows',
-    icon: 'monitor',
-    blurb: 'Run on a Windows analysis workstation.',
-    tools: [
-      { name: 'KAPE', use: 'Targeted artifact collection & module processing', fn: 'Triage', url: 'https://www.kroll.com/kape', core: true },
-      { name: 'Eric Zimmerman Tools', use: 'MFTECmd, Registry Explorer, PECmd, EvtxECmd & more', fn: 'Host', url: 'https://ericzimmerman.github.io/', core: true },
-      { name: 'WinDbg', use: 'Kernel & user-mode debugging of dumps', fn: 'Memory', url: 'https://learn.microsoft.com/windows-hardware/drivers/debugger/', core: true },
-      { name: 'Sysinternals Suite', use: 'Procmon, Process Explorer, Autoruns, TCPView', fn: 'Triage', url: 'https://learn.microsoft.com/sysinternals/' },
-      { name: 'Sysmon', use: 'Detailed system-activity logging for detection', fn: 'Logs', url: 'https://learn.microsoft.com/sysinternals/downloads/sysmon' },
-      { name: 'System Informer', use: 'Live process, handle & token inspection', fn: 'Triage', url: 'https://systeminformer.sourceforge.io/' },
-      { name: 'FTK Imager', use: 'Disk & memory imaging plus preview (free)', fn: 'Imaging', url: 'https://www.exterro.com/digital-forensics-software/ftk-imager' },
-      { name: 'WinPmem', use: 'Windows physical-memory acquisition', fn: 'Memory', url: 'https://github.com/Velocidex/WinPmem' },
-      { name: 'RegRipper', use: 'Registry hive parsing with a plugin ecosystem', fn: 'Registry', url: 'https://github.com/keydet89/RegRipper3.0' },
-      { name: 'PEStudio', use: 'Static PE triage & malware indicators', fn: 'Malware', url: 'https://www.winitor.com/' },
-      { name: 'x64dbg', use: 'Open-source Windows debugger', fn: 'Malware', url: 'https://x64dbg.com/' },
-      { name: 'NirSoft Tools', use: 'Focused artifact viewers (browser, USB, more)', fn: 'Host', url: 'https://www.nirsoft.net/' },
-      { name: 'Loki', use: 'IOC & YARA scanner for compromise checks', fn: 'Malware', url: 'https://github.com/Neo23x0/Loki' },
-    ],
-  },
-  {
-    id: 'macos-linux',
-    title: 'macOS & Linux',
-    icon: 'terminal',
-    blurb: 'Run on a macOS or Linux workstation.',
-    tools: [
-      { name: 'SANS SIFT Workstation', use: 'Pre-built DFIR analysis environment', fn: 'Platform', url: 'https://www.sans.org/tools/sift-workstation/', core: true },
-      { name: 'REMnux', use: 'Linux toolkit for malware analysis', fn: 'Malware', url: 'https://remnux.org/' },
-      { name: 'Tsurugi Linux', use: 'DFIR-focused Linux distribution', fn: 'Platform', url: 'https://tsurugi-linux.org/' },
-      { name: 'AVML', use: 'Acquire Linux memory to an image', fn: 'Memory', url: 'https://github.com/microsoft/avml' },
-      { name: 'LiME', use: 'Linux Memory Extractor (kernel module)', fn: 'Memory', url: 'https://github.com/504ensicsLabs/LiME' },
-      { name: 'UAC', use: 'Unix-like Artifacts Collector (Linux/macOS/ESXi)', fn: 'Triage', url: 'https://github.com/tclahr/uac' },
-      { name: 'mac_apt', use: 'macOS artifact parsing framework', fn: 'Host', url: 'https://github.com/ydkhatri/mac_apt' },
-      { name: 'AutoMacTC', use: 'Automated macOS triage collection', fn: 'Triage', url: 'https://github.com/CrowdStrike/automactc' },
-      { name: 'aftermath', use: 'macOS incident-response collection', fn: 'Triage', url: 'https://github.com/jamf/aftermath' },
-      { name: 'UnifiedLogReader', use: 'Parse macOS unified logs', fn: 'Logs', url: 'https://github.com/ydkhatri/UnifiedLogReader' },
-    ],
-  },
-  {
-    id: 'web',
-    title: 'Web',
-    icon: 'globe',
-    blurb: 'Run in the browser — free to use (some have paid tiers).',
-    tools: [
-      { name: 'VirusTotal', use: 'Multi-engine file/URL/hash reputation & intel', fn: 'Malware', url: 'https://www.virustotal.com/', core: true },
-      { name: 'CyberChef', use: 'Decode, deobfuscate & transform data', fn: 'Utility', url: 'https://gchq.github.io/CyberChef/', core: true },
-      { name: 'urlscan.io', use: 'Sandbox & inspect suspicious URLs', fn: 'OSINT', url: 'https://urlscan.io/' },
-      { name: 'ANY.RUN', use: 'Interactive online malware sandbox', fn: 'Malware', url: 'https://any.run/' },
-      { name: 'Hybrid Analysis', use: 'Free file & URL sandbox plus scanning', fn: 'Malware', url: 'https://www.hybrid-analysis.com/' },
-      { name: 'Joe Sandbox', use: 'Automated malware sandbox (Cloud Basic tier)', fn: 'Malware', url: 'https://www.joesandbox.com/' },
-      { name: 'MalwareBazaar', use: 'Search & download malware samples (abuse.ch)', fn: 'Intel', url: 'https://bazaar.abuse.ch/' },
-      { name: 'URLhaus', use: 'Malware URL feed & lookup (abuse.ch)', fn: 'Intel', url: 'https://urlhaus.abuse.ch/' },
-      { name: 'ThreatFox', use: 'IOC search & sharing (abuse.ch)', fn: 'Intel', url: 'https://threatfox.abuse.ch/' },
-      { name: 'AbuseIPDB', use: 'IP address reputation lookups', fn: 'OSINT', url: 'https://www.abuseipdb.com/' },
-      { name: 'Shodan', use: 'Search internet-exposed hosts & services', fn: 'OSINT', url: 'https://www.shodan.io/' },
-      { name: 'GreyNoise', use: 'Tell targeted activity from internet scan noise', fn: 'OSINT', url: 'https://viz.greynoise.io/' },
-      { name: 'crt.sh', use: 'Certificate transparency log search', fn: 'OSINT', url: 'https://crt.sh/' },
-      { name: 'MXToolbox', use: 'DNS, email & blocklist diagnostics', fn: 'OSINT', url: 'https://mxtoolbox.com/' },
-      { name: 'Unfurl', use: 'Break down & visualize complex URLs', fn: 'Utility', url: 'https://dfir.blog/unfurl/' },
-    ],
-  },
-];
-
-const totalTools = platforms.reduce((n, p) => n + p.tools.length, 0);
+const platforms = TOOL_PLATFORMS;
+const totalTools = TOTAL_TOOLS;
 
 // Each platform is a collapsible <details>. The summary holds the heading; the
 // blurb + tool grid live inside, so they fold away (and a search auto-expands them).
@@ -176,24 +71,26 @@ const toolCard = css({
   border: '1px solid token(colors.border)',
   borderRadius: 'md',
   transition: 'border-color 200ms ease, transform 200ms ease, box-shadow 200ms ease',
-  _hover: { borderColor: 'primary', transform: 'translateY(-2px)', boxShadow: 'card' },
+  _hover: { borderColor: 'primary', transform: 'translateY(-2px)', boxShadow: 'card', '& .tool-go': { transform: 'translateX(2px)', color: 'primary' } },
 });
 const toolHead = css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' });
 const toolName = css({ flex: 1, minW: 0, fontFamily: 'sans', fontWeight: 700, fontSize: '0.9rem', color: 'text', lineHeight: 1.3 });
 const starCls = css({ display: 'inline', verticalAlign: '-2px', mr: '0.25rem', color: 'accent', fill: 'token(colors.accent)' });
+const goCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 200ms ease, color 200ms ease' });
 const toolUse = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45 });
-const fnTag = `${tag({ tone: 'muted' })} ${css({ alignSelf: 'flex-start', mt: 'auto' })}`;
+// Function + cost tags sit in a row at the bottom of the card (shared `tag` recipe).
+const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto', pt: '0.15rem' });
 ---
 
 <BaseLayout
   title="Tools"
-  description="Free and open-source DFIR tools grouped by platform — Windows, macOS & Linux, cross-platform, and web — plus the online services worth knowing."
+  description="Free and open-source DFIR tools grouped by platform — Windows, macOS & Linux, cross-platform, and web — each with a function and cost tag and its own reference page."
 >
   <PageHeader
     breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Tools' }]}
     eyebrow="Tooling"
     title="The DFIR toolkit"
-    description="Free and open-source tools, grouped by where they run. A star (★) marks what's in my day-to-day kit; the rest are a wider set worth knowing."
+    description="Free and open-source tools, grouped by where they run. A star (★) marks what's in my day-to-day kit; each tool links to a short reference page. Tags mark each tool's function and cost."
   />
 
   {/* Search */}
@@ -247,11 +144,9 @@ const fnTag = `${tag({ tone: 'muted' })} ${css({ alignSelf: 'flex-start', mt: 'a
           <div class={toolsGrid}>
             {p.tools.map((t) => (
               <a
-                href={t.url}
-                target="_blank"
-                rel="noopener"
+                href={`/tools/${t.slug}/`}
                 class={toolCard}
-                data-tools-card={`${t.name} ${t.use} ${t.fn} ${p.title}`.toLowerCase()}
+                data-tools-card={`${t.name} ${t.use} ${t.fn} ${t.cost} ${p.title}`.toLowerCase()}
               >
                 <span class={toolHead}>
                   <span class={toolName}>
@@ -260,10 +155,13 @@ const fnTag = `${tag({ tone: 'muted' })} ${css({ alignSelf: 'flex-start', mt: 'a
                     )}
                     {t.name}
                   </span>
-                  <Icon name="external-link" size={14} class={css({ color: 'textMuted', flexShrink: 0 })} />
+                  <Icon name="arrow-right" size={14} class={`tool-go ${goCls}`} />
                 </span>
                 <span class={toolUse}>{t.use}</span>
-                <span class={fnTag}>{t.fn}</span>
+                <span class={tagRow}>
+                  <span class={tag({ tone: 'muted' })}>{t.fn}</span>
+                  <span class={tag({ tone: costTone(t.cost) })}>{t.cost}</span>
+                </span>
               </a>
             ))}
           </div>

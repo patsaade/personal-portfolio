@@ -16,6 +16,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "gen:brand": "node scripts/gen-brand.mjs",
+    "check:freshness": "node scripts/check-freshness.mjs",
     "prepare": "panda codegen"
   },
   "dependencies": {

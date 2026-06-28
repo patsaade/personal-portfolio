@@ -1,0 +1,122 @@
+---
+// Tool detail page — one prerendered page per tool, in the glossary / ATT&CK
+// detail format (what it is, why it matters, in practice, reference) while staying
+// its own thing: a platform · function eyebrow, the function + cost tags, an
+// "in my kit" note, and a reference out to the tool's official site.
+export const prerender = true;
+import { css } from 'styled-system/css';
+import { tag } from 'styled-system/recipes';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import Icon from '../../components/Icon.astro';
+import { TOOLS, costTone } from '../../data/tools';
+
+export async function getStaticPaths() {
+  return TOOLS.map((tool) => ({ params: { slug: tool.slug }, props: { tool } }));
+}
+
+const { tool } = Astro.props;
+
+const idx = TOOLS.findIndex((t) => t.slug === tool.slug);
+const prev = idx > 0 ? TOOLS[idx - 1] : null;
+const next = idx >= 0 && idx < TOOLS.length - 1 ? TOOLS[idx + 1] : null;
+
+const sectionH2 = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', fontWeight: 700, mt: '2.5rem', mb: '0.75rem' });
+const para = css({ color: 'text', lineHeight: 1.8, fontSize: '1.02rem' });
+const exampleP = css({ borderLeft: '3px solid token(colors.primary)', pl: '1rem', color: 'textMuted', fontStyle: 'italic' });
+const refLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', color: 'text', transition: 'color 150ms ease', _hover: { color: 'primary' } });
+const navLink = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.25rem',
+  p: '0.85rem 1.1rem',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  bg: 'bgCard',
+  transition: 'border-color 200ms ease, transform 200ms ease',
+  _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
+});
+const navMeta = css({ fontSize: '0.72rem', fontFamily: 'sans', color: 'textMuted' });
+const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
+---
+
+<BaseLayout title={`${tool.name} — DFIR tool`} description={tool.what ?? tool.use}>
+  <Breadcrumbs
+    items={[{ label: 'Home', href: '/' }, { label: 'Tools', href: '/tools/' }, { label: tool.name }]}
+  />
+
+  <header class={css({ mb: '1.5rem' })}>
+    <p class={css({ fontFamily: 'sans', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'primary', mb: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' })}>
+      <Icon name="wrench" size={15} />
+      {tool.platform} · {tool.fn}
+    </p>
+    <h1 class={css({ fontSize: { base: '2.1rem', md: '2.75rem' }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1, display: 'inline-flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' })}>
+      {tool.core && <Icon name="star" size={20} strokeWidth={0} class={css({ color: 'accent', fill: 'token(colors.accent)' })} label="In my kit" />}
+      {tool.name}
+    </h1>
+    <p class={css({ fontSize: '1.15rem', color: 'textMuted', mt: '0.6rem' })}>{tool.use}</p>
+    <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', mt: '1rem' })}>
+      <span class={tag({ tone: costTone(tool.cost) })}>{tool.cost}</span>
+      <span class={tag({ tone: 'muted' })}>{tool.fn}</span>
+      <span class={tag({ tone: 'muted' })}>{tool.platform}</span>
+      {tool.core && <span class={tag({ tone: 'accent' })}>In my kit</span>}
+    </div>
+  </header>
+
+  {tool.what && (
+    <>
+      <h2 class={sectionH2}><Icon name="book-open" size={18} class={css({ color: 'primary' })} /> What it is</h2>
+      <p class={para}>{tool.what}</p>
+    </>
+  )}
+
+  {tool.why && (
+    <>
+      <h2 class={sectionH2}><Icon name="shield" size={18} class={css({ color: 'primary' })} /> Why it matters</h2>
+      <p class={para}>{tool.why}</p>
+    </>
+  )}
+
+  {tool.example && (
+    <>
+      <h2 class={sectionH2}><Icon name="terminal" size={18} class={css({ color: 'primary' })} /> In practice</h2>
+      <p class={`${para} ${exampleP}`}>{tool.example}</p>
+    </>
+  )}
+
+  <h2 class={sectionH2}><Icon name="external-link" size={18} class={css({ color: 'primary' })} /> Reference</h2>
+  <ul class={css({ listStyle: 'none', m: 0, p: 0 })}>
+    <li>
+      <a href={tool.url} target="_blank" rel="noopener" class={refLink}>
+        <Icon name="external-link" size={14} class={css({ color: 'primary', flexShrink: 0 })} />
+        <span>{tool.name} — official site</span>
+      </a>
+    </li>
+  </ul>
+  <p class={css({ fontSize: '0.78rem', color: 'textMuted', mt: '0.85rem', lineHeight: 1.6 })}>
+    Names and trademarks belong to their respective projects and vendors; links go to each tool's
+    canonical site. Cost reflects the free/open-source tier — some tools offer paid upgrades.
+  </p>
+
+  <nav
+    aria-label="More tools"
+    class={css({ display: 'grid', gridTemplateColumns: { base: '1fr', sm: '1fr 1fr' }, gap: '1rem', mt: '3rem', pt: '1.5rem', borderTop: '1px solid token(colors.border)' })}
+  >
+    {prev ? (
+      <a href={`/tools/${prev.slug}/`} class={navLink}>
+        <span class={navMeta}>← Previous</span>
+        <span class={navTitle}>{prev.name}</span>
+      </a>
+    ) : (
+      <span />
+    )}
+    {next ? (
+      <a href={`/tools/${next.slug}/`} class={`${navLink} ${css({ textAlign: 'right', alignItems: 'flex-end' })}`}>
+        <span class={navMeta}>Next →</span>
+        <span class={navTitle}>{next.name}</span>
+      </a>
+    ) : (
+      <span />
+    )}
+  </nav>
+</BaseLayout>

@@ -6,6 +6,7 @@ import type { APIRoute } from 'astro';
 import { getSortedPosts, getSortedLabs } from '../utils/posts';
 import { SECURITY_TERMS } from '../data/securityTerms';
 import { ATTACK_TECHNIQUES } from '../data/references';
+import { TOOLS } from '../data/tools';
 
 export const prerender = true;
 
@@ -51,6 +52,13 @@ export const GET: APIRoute = async () => {
       kind: 'ATT&CK',
       desc: t.summary ?? '',
       keywords: `${t.tactics.join(' ')} mitre att&ck technique`.toLowerCase(),
+    })),
+    ...TOOLS.map((t) => ({
+      title: t.name,
+      url: `/tools/${t.slug}/`,
+      kind: 'Tool',
+      desc: t.use,
+      keywords: `${t.fn} ${t.cost} ${t.platform} dfir tool`.toLowerCase(),
     })),
     ...STATIC_PAGES,
   ];
