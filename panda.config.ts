@@ -89,6 +89,51 @@ export default defineConfig({
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
       },
+      recipes: {
+        // One uniform "micro-tag" chip shared by the card tags across Tools,
+        // Certifications, Glossary, and the ATT&CK map. `tone` carries the colour
+        // semantics; `mono` switches to the monospace face (for IDs like T1566).
+        // Per-page extras (absolute positioning, hover, layout) compose via css().
+        tag: {
+          className: 'tag',
+          description: 'Small uniform tag chip used on cards site-wide.',
+          base: {
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.3rem',
+            flexShrink: 0,
+            fontFamily: 'sans',
+            fontSize: '0.62rem',
+            fontWeight: 600,
+            lineHeight: 1.5,
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            px: '0.4rem',
+            py: '0.12rem',
+            borderRadius: 'sm',
+            whiteSpace: 'nowrap',
+          },
+          variants: {
+            tone: {
+              muted: { color: 'textMuted', bg: 'bgSubtle', border: '1px solid token(colors.border)' },
+              primary: {
+                color: 'primary',
+                bg: 'color-mix(in srgb, token(colors.primary) 12%, transparent)',
+                border: '1px solid color-mix(in srgb, token(colors.primary) 30%, transparent)',
+              },
+              accent: {
+                color: 'accent',
+                bg: 'color-mix(in srgb, token(colors.accent) 12%, transparent)',
+                border: '1px solid color-mix(in srgb, token(colors.accent) 35%, transparent)',
+              },
+            },
+            mono: {
+              true: { fontFamily: 'mono', textTransform: 'none', letterSpacing: '0' },
+            },
+          },
+          defaultVariants: { tone: 'muted' },
+        },
+      },
       semanticTokens: {
         colors: {
           // Light is the base value, dark overrides via `_dark`

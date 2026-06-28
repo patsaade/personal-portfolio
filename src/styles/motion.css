@@ -35,6 +35,11 @@
     opacity: 1 !important;
     transform: none !important;
   }
+  /* Belt-and-suspenders: JS already skips the theme wipe under reduced motion. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
 }
 
 /* ── 1. Declassify — the heading "decode" ─────────────────────────────────────
@@ -125,4 +130,20 @@
 }
 .prose pre .copy-btn[data-copied] {
   animation: copyPop 220ms ease;
+}
+
+/* ── 5. Theme wipe — circular reveal on light/dark + palette switches ──────────
+   User-initiated theme changes (BaseHead's applyAnimated) run through the View
+   Transitions API. The wipe itself is animated in JS (root.animate on the
+   ::view-transition-new(root) snapshot) so the circle radiates accurately from the
+   clicked control; JS already skips it under reduced motion or where
+   startViewTransition is absent. Here we only disable the UA cross-fade: the old
+   theme holds still underneath while JS reveals the new one over it. The
+   reduced-motion block above is the settle-to-final guard. */
+::view-transition-old(root) {
+  animation: none;
+}
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }

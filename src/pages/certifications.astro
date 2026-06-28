@@ -8,6 +8,8 @@ import { css } from 'styled-system/css';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
 import Icon from '../components/Icon.astro';
+import CollapseAll from '../components/CollapseAll.astro';
+import { tag } from 'styled-system/recipes';
 import { SOCIALS } from '../consts';
 import { CERT_ISSUERS, CERTIFICATIONS, EARNED_CERTS, PURSUING_CERTS } from '../data/certifications';
 
@@ -71,38 +73,8 @@ const earnedIcon = css({ color: 'accent', flexShrink: 0 });
 const pursuingIcon = css({ color: 'textMuted', flexShrink: 0 });
 const extIcon = css({ color: 'textMuted', flexShrink: 0 });
 const certFull = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45 });
-const focusTag = css({
-  alignSelf: 'flex-start',
-  mt: 'auto',
-  flexShrink: 0,
-  fontFamily: 'sans',
-  fontSize: '0.62rem',
-  fontWeight: 600,
-  letterSpacing: '0.04em',
-  textTransform: 'uppercase',
-  color: 'textMuted',
-  bg: 'bgSubtle',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'sm',
-  px: '0.4rem',
-  py: '0.12rem',
-});
-const pursuingTag = css({
-  alignSelf: 'flex-start',
-  mt: 'auto',
-  flexShrink: 0,
-  fontFamily: 'sans',
-  fontSize: '0.62rem',
-  fontWeight: 600,
-  letterSpacing: '0.04em',
-  textTransform: 'uppercase',
-  color: 'accent',
-  bg: 'color-mix(in srgb, token(colors.accent) 12%, transparent)',
-  border: '1px solid color-mix(in srgb, token(colors.accent) 35%, transparent)',
-  borderRadius: 'sm',
-  px: '0.4rem',
-  py: '0.12rem',
-});
+const focusTag = `${tag({ tone: 'muted' })} ${css({ alignSelf: 'flex-start', mt: 'auto' })}`;
+const pursuingTag = `${tag({ tone: 'accent' })} ${css({ alignSelf: 'flex-start', mt: 'auto' })}`;
 const metaLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: 'primary', fontWeight: 600, _hover: { textDecoration: 'underline' } });
 ---
 
@@ -117,12 +89,15 @@ const metaLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.35r
     description="Every credential I hold, plus the GIAC forensics track I'm working toward — grouped by issuer. Each earned badge links to Credly to verify."
   />
 
-  <p class={css({ color: 'textMuted', mb: '0.75rem', fontSize: '0.9rem' })}>
-    {EARNED_CERTS.length} earned · {PURSUING_CERTS.length} in pursuit ·{' '}
-    <a href={SOCIALS.credly} target="_blank" rel="noopener" class={metaLink}>
-      verify on Credly <Icon name="external-link" size={13} />
-    </a>
-  </p>
+  <div class={css({ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', mb: '0.75rem' })}>
+    <p class={css({ color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
+      {EARNED_CERTS.length} earned · {PURSUING_CERTS.length} in pursuit ·{' '}
+      <a href={SOCIALS.credly} target="_blank" rel="noopener" class={metaLink}>
+        verify on Credly <Icon name="external-link" size={13} />
+      </a>
+    </p>
+    <CollapseAll target="[data-cert-group]" />
+  </div>
 
   <div class={css({ display: 'flex', flexDirection: 'column' })}>
     {
@@ -130,7 +105,7 @@ const metaLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.35r
         const certs = CERTIFICATIONS.filter((c) => c.issuer === issuer.name);
         if (certs.length === 0) return null;
         return (
-          <details open class={groupDetails}>
+          <details data-cert-group open class={groupDetails}>
             <summary class={groupSummary}>
               <h2 class={groupHead}>
                 <Icon name="chevron-right" size={18} class={chevCls} />

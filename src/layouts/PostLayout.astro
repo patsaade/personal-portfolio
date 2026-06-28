@@ -68,6 +68,8 @@ const crumbs = [{ label: 'Home', href: '/' }, section, { label: title }];
       w: '100%',
       h: '3px',
       bg: 'primary',
+      borderRadius: '0 2px 2px 0',
+      boxShadow: '0 0 8px color-mix(in srgb, token(colors.primary) 55%, transparent)',
       transformOrigin: 'left',
       transform: 'scaleX(0)',
       willChange: 'transform',
@@ -255,6 +257,27 @@ const crumbs = [{ label: 'Home', href: '/' }, section, { label: title }];
           }).catch(function () {});
         });
         pre.appendChild(btn);
+      });
+      // Heading anchors: hover/focus an h2/h3 to reveal a # that copies a deep
+      // link to that section (shareable + SEO-friendly). Keyboard focusable; the
+      // `copy` sound cue fires via the data-sound delegate when sound is on.
+      var base = location.origin + location.pathname;
+      document.querySelectorAll('.prose h2[id], .prose h3[id]').forEach(function (h) {
+        var a = document.createElement('a');
+        a.className = 'heading-anchor';
+        a.href = '#' + h.id;
+        a.textContent = '#';
+        a.setAttribute('data-sound', 'copy');
+        a.setAttribute('aria-label', 'Copy link to “' + (h.textContent || '').trim() + '”');
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          history.replaceState(null, '', '#' + h.id);
+          if (navigator.clipboard) navigator.clipboard.writeText(base + '#' + h.id).catch(function () {});
+          a.setAttribute('data-copied', '');
+          copyStatus.textContent = 'Link to section copied';
+          setTimeout(function () { a.removeAttribute('data-copied'); copyStatus.textContent = ''; }, 1600);
+        });
+        h.appendChild(a);
       });
       // Scroll-reveal: fade/rise each top-level prose block as it enters view.
       // Only armed when IntersectionObserver is supported and motion is allowed,

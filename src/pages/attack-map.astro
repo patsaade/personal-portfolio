@@ -9,6 +9,8 @@ import { css } from 'styled-system/css';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
 import Icon from '../components/Icon.astro';
+import CollapseAll from '../components/CollapseAll.astro';
+import { tag } from 'styled-system/recipes';
 import { getSortedPosts, getSortedLabs } from '../utils/posts';
 import { termBySlug } from '../data/securityTerms';
 import { ATTACK_TECHNIQUES, ATTACK_TACTIC_ORDER } from '../data/references';
@@ -18,9 +20,12 @@ const [posts, labs] = await Promise.all([getSortedPosts(), getSortedLabs()]);
 const covered = new Set([...posts, ...labs].flatMap((p) => p.data.attack ?? []));
 
 // Group techniques by tactic; render tactics in kill-chain order, populated only.
+// A technique can sit under several tactics — list it under each, like the matrix.
 const byTactic: Record<string, typeof ATTACK_TECHNIQUES> = {};
-for (const t of ATTACK_TECHNIQUES) (byTactic[t.tactic] ??= []).push(t);
+for (const t of ATTACK_TECHNIQUES) for (const tac of t.tactics) (byTactic[tac] ??= []).push(t);
 const tactics = ATTACK_TACTIC_ORDER.filter((name) => byTactic[name]?.length);
+// Anchor each technique's id to its first render only (no duplicate DOM ids).
+const anchored = new Set<string>();
 
 const linkedCount = ATTACK_TECHNIQUES.filter((t) => t.glossarySlug).length;
 
@@ -53,7 +58,7 @@ const chip = css({
 });
 const chipTop = css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' });
 const chipId = css({ fontFamily: 'mono', fontSize: '0.72rem', fontWeight: 600, color: 'primary' });
-const coveredBadge = css({ fontFamily: 'sans', fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'accent', bg: 'color-mix(in srgb, token(colors.accent) 13%, transparent)', border: '1px solid color-mix(in srgb, token(colors.accent) 35%, transparent)', borderRadius: 'sm', px: '0.35rem', py: '0.05rem' });
+const coveredBadge = tag({ tone: 'accent' });
 const chipName = css({ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontWeight: 600, fontSize: '0.9rem', color: 'text', lineHeight: 1.3, _hover: { color: 'primary' } });
 const chipGloss = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.78rem', fontWeight: 600, color: 'textMuted', mt: 'auto', _hover: { color: 'primary' } });
 ---
@@ -90,20 +95,23 @@ const chipGloss = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25
     </p>
   </aside>
 
-  <p class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 1.25rem', color: 'textMuted', fontSize: '0.9rem', mb: '2rem' })}>
-    <span>{ATTACK_TECHNIQUES.length} techniques across {tactics.length} tactics</span>
-    <span>·</span>
-    <span>{linkedCount} linked to a glossary entry</span>
-    <span>·</span>
-    <a href="https://attack.mitre.org/" target="_blank" rel="noopener" class={css({ color: 'primary', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', _hover: { textDecoration: 'underline' } })}>
-      MITRE ATT&CK <Icon name="external-link" size={12} />
-    </a>
-  </p>
+  <div class={css({ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', mb: '2rem' })}>
+    <p class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 1.25rem', color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
+      <span>{ATTACK_TECHNIQUES.length} techniques across {tactics.length} tactics</span>
+      <span>·</span>
+      <span>{linkedCount} linked to a glossary entry</span>
+      <span>·</span>
+      <a href="https://attack.mitre.org/" target="_blank" rel="noopener" class={css({ color: 'primary', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', _hover: { textDecoration: 'underline' } })}>
+        MITRE ATT&CK <Icon name="external-link" size={12} />
+      </a>
+    </p>
+    <CollapseAll target="[data-tactic-group]" />
+  </div>
 
   <div class={css({ display: 'flex', flexDirection: 'column' })}>
     {
       tactics.map((tactic) => (
-        <details open class={groupDetails}>
+        <details data-tactic-group open class={groupDetails}>
           <summary class={groupSummary}>
             <h2 class={tacticHead}>
               <Icon name="chevron-right" size={17} class={chevCls} />
@@ -115,8 +123,10 @@ const chipGloss = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25
           <div class={grid}>
             {byTactic[tactic].map((t) => {
               const gloss = t.glossarySlug ? termBySlug(t.glossarySlug) : undefined;
+              const firstHere = !anchored.has(t.id);
+              if (firstHere) anchored.add(t.id);
               return (
-                <div id={t.id} class={chip} {...(covered.has(t.id) ? { 'data-covered': true } : {})}>
+                <div id={firstHere ? t.id : undefined} class={chip} {...(covered.has(t.id) ? { 'data-covered': true } : {})}>
                   <div class={chipTop}>
                     <span class={chipId}>{t.id}</span>
                     {covered.has(t.id) && <span class={coveredBadge}>covered</span>}

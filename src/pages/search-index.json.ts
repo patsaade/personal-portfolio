@@ -50,7 +50,7 @@ export const GET: APIRoute = async () => {
       url: `/attack-map/${t.id}/`,
       kind: 'ATT&CK',
       desc: t.summary ?? '',
-      keywords: `${t.tactic} mitre att&ck technique`.toLowerCase(),
+      keywords: `${t.tactics.join(' ')} mitre att&ck technique`.toLowerCase(),
     })),
     ...STATIC_PAGES,
   ];

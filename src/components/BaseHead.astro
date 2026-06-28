@@ -163,17 +163,63 @@ const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': grap
         document.dispatchEvent(new CustomEvent('themechange'));
       } catch (e) {}
     }
+    // User-initiated theme changes get a circular "wipe" reveal via the View
+    // Transitions API, radiating from the control the user clicked. The raw apply()
+    // (first paint + OS-theme change) never animates — only setMode/setPalette do —
+    // and it degrades to an instant swap where the API is missing or motion is
+    // reduced, so it's purely additive.
+    var wipeOrigin = null;
+    document.addEventListener('click', function (e) {
+      // Remember where the pointer was so the wipe can radiate from it. Keyboard
+      // activations report (0,0) — fall back to the target's center.
+      if (e.clientX || e.clientY) wipeOrigin = { x: e.clientX, y: e.clientY };
+      else if (e.target && e.target.getBoundingClientRect) {
+        var r = e.target.getBoundingClientRect();
+        wipeOrigin = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      } else wipeOrigin = null;
+    }, true);
+    function reducedMotion() {
+      try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
+    }
+    function applyAnimated() {
+      if (!document.startViewTransition || reducedMotion()) { apply(); return; }
+      var o = wipeOrigin || { x: window.innerWidth / 2, y: 0 };
+      // Freeze element transitions so the circular reveal is the only motion —
+      // theme-preload disables all transitions; restore once it settles.
+      root.classList.add('theme-preload');
+      var done = function () { root.classList.remove('theme-preload'); };
+      var vt;
+      try {
+        vt = document.startViewTransition(function () { apply(); });
+      } catch (e) { apply(); done(); return; }
+      // Drive the wipe in JS — animate the ::view-transition-new(root) snapshot —
+      // instead of a CSS keyframe reading custom props. The snapshot is
+      // viewport-aligned, so the click point (clientX/Y) maps 1:1 and the circle
+      // radiates from the actual control; custom-property inheritance into the
+      // view-transition pseudo tree is too inconsistent to trust for the origin.
+      vt.ready.then(function () {
+        var x = o.x, y = o.y;
+        var endRadius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+        try {
+          root.animate(
+            { clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + endRadius + 'px at ' + x + 'px ' + y + 'px)'] },
+            { duration: 500, easing: 'ease-out', pseudoElement: '::view-transition-new(root)' },
+          );
+        } catch (e) {}
+      }).catch(function () {});
+      vt.finished.then(done, done);
+    }
     function setMode(m) {
       if (m === 'system') del('mode');
       else set('mode', m);
-      apply();
+      applyAnimated();
     }
     function setPalette(id) {
       var mode = THEME_MODES[id];
       if (!mode) return;
       // Save as the preferred palette for that mode only — don't change the mode.
       set(paletteKey(mode), id);
-      apply();
+      applyAnimated();
     }
     // Re-resolve when the OS theme flips — only matters while mode is 'system'.
     mql.addEventListener('change', function () {

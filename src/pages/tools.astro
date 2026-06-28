@@ -8,6 +8,8 @@ import { css } from 'styled-system/css';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
 import Icon from '../components/Icon.astro';
+import CollapseAll from '../components/CollapseAll.astro';
+import { tag } from 'styled-system/recipes';
 
 interface Tool {
   name: string;
@@ -180,22 +182,7 @@ const toolHead = css({ display: 'flex', alignItems: 'center', justifyContent: 's
 const toolName = css({ flex: 1, minW: 0, fontFamily: 'sans', fontWeight: 700, fontSize: '0.9rem', color: 'text', lineHeight: 1.3 });
 const starCls = css({ display: 'inline', verticalAlign: '-2px', mr: '0.25rem', color: 'accent', fill: 'token(colors.accent)' });
 const toolUse = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45 });
-const fnTag = css({
-  alignSelf: 'flex-start',
-  mt: 'auto',
-  flexShrink: 0,
-  fontFamily: 'sans',
-  fontSize: '0.62rem',
-  fontWeight: 600,
-  letterSpacing: '0.04em',
-  textTransform: 'uppercase',
-  color: 'textMuted',
-  bg: 'bgSubtle',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'sm',
-  px: '0.4rem',
-  py: '0.12rem',
-});
+const fnTag = `${tag({ tone: 'muted' })} ${css({ alignSelf: 'flex-start', mt: 'auto' })}`;
 ---
 
 <BaseLayout
@@ -237,9 +224,12 @@ const fnTag = css({
       })}
     />
   </div>
-  <p class={css({ color: 'textMuted', mb: '0.75rem', fontSize: '0.9rem' })}>
-    <span id="tools-result-count">{totalTools}</span> free tools across {platforms.length} groups.
-  </p>
+  <div class={css({ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', mb: '0.75rem' })}>
+    <p class={css({ color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
+      <span id="tools-result-count">{totalTools}</span> free tools across {platforms.length} groups.
+    </p>
+    <CollapseAll target="[data-tools-group]" />
+  </div>
 
   <div class={css({ display: 'flex', flexDirection: 'column' })}>
     {

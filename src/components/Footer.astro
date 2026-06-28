@@ -47,7 +47,32 @@ const moreLinks = [
 ];
 ---
 
-<footer class={css({ borderTop: '1px solid token(colors.border)', mt: '5rem', bg: 'bgSubtle' })}>
+<footer
+  class={css({
+    position: 'relative',
+    borderTop: '1px solid token(colors.border)',
+    mt: '5rem',
+    // Translucent + frosted so the ambient node-field (and any content behind)
+    // shows through as a soft blurred ghost — the page dissolves into the footer
+    // instead of hitting a flat slab. Same dissolve recipe as the header (see
+    // Navigation.astro): 55% surface + blur(5px) (lower opacity and a lighter blur
+    // let the background nodes read through clearly — a heavy blur smears the thin
+    // node lines into nothing). The gradient seam fades the content above into the
+    // footer's top edge.
+    bg: 'color-mix(in srgb, token(colors.bgSubtle) 55%, transparent)',
+    backdropFilter: 'blur(5px)',
+    _before: {
+      content: '""',
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: '-2.5rem',
+      height: '2.5rem',
+      pointerEvents: 'none',
+      background: 'linear-gradient(to bottom, transparent, color-mix(in srgb, token(colors.bgSubtle) 55%, transparent))',
+    },
+  })}
+>
   <div
     class={css({
       maxW: '960px',
@@ -110,6 +135,22 @@ const moreLinks = [
       })}
     >
       <span>© {year} {SITE.author}. Built with Astro + Panda CSS.</span>
+
+      {/* Live status line — a forensic/terminal touch. The UTC clock ties to the
+          UTC-keyed Term of the Day, which rolls over at 00:00 UTC. */}
+      <span
+        class={css({ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontFamily: 'mono', fontSize: '0.72rem', color: 'textMuted' })}
+      >
+        <span
+          class={`totd-pulse-dot ${css({ w: '6px', h: '6px', borderRadius: 'full', bg: 'primary', flexShrink: 0 })}`}
+          style="animation: totd-pulse 2.4s ease-in-out infinite;"
+          aria-hidden="true"
+        ></span>
+        <span id="footer-utc">UTC&nbsp;--:--:--</span>
+        <span aria-hidden="true" class={css({ color: 'border' })}>·</span>
+        <span>static</span>
+      </span>
+
       <a
         href={COMMIT_URL}
         target="_blank"
@@ -131,4 +172,20 @@ const moreLinks = [
       </a>
     </div>
   </div>
+
+  <script is:inline>
+    (function () {
+      var el = document.getElementById('footer-utc');
+      if (!el) return;
+      function pad(n) { return n < 10 ? '0' + n : '' + n; }
+      function tick() {
+        if (document.hidden) return; // don't churn while backgrounded
+        var d = new Date();
+        el.textContent = 'UTC ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + ':' + pad(d.getUTCSeconds());
+      }
+      tick();
+      setInterval(tick, 1000);
+      document.addEventListener('visibilitychange', tick);
+    })();
+  </script>
 </footer>

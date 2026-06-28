@@ -175,6 +175,33 @@
   }
 }
 
+/* Heading anchor links (injected by PostLayout): hover/focus a heading to reveal
+   a # that copies a deep link to that section. Inline-after the text so it never
+   overflows the content gutter; faintly persistent on touch (no hover). */
+.prose .heading-anchor {
+  display: inline-block;
+  margin-left: 0.4em;
+  color: var(--colors-primary);
+  font-weight: 600;
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 150ms ease, color 150ms ease;
+}
+.prose h2:hover .heading-anchor,
+.prose h3:hover .heading-anchor,
+.prose .heading-anchor:focus-visible,
+.prose .heading-anchor[data-copied] {
+  opacity: 1;
+}
+.prose .heading-anchor[data-copied] {
+  color: var(--colors-primary-hover);
+}
+@media (hover: none) {
+  .prose .heading-anchor {
+    opacity: 0.4;
+  }
+}
+
 /* Light/dark dual-theme Shiki: swap variables driven by data-mode */
 [data-mode='dark'] .prose .astro-code,
 [data-mode='dark'] .prose .astro-code span {

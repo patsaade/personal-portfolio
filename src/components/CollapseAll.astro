@@ -1,0 +1,96 @@
+---
+// Collapse-all / Expand-all toggle for any page built from <details> groups
+// (Glossary, Tools, Certifications, ATT&CK map). One button that swaps between the
+// two actions based on the groups' current state. Pass `target` = the CSS selector
+// for this page's group <details> (e.g. '[data-totd-group]').
+//
+// No-JS: the button is hidden (the groups ship `open`, so content is reachable).
+// The script is idempotent, so multiple instances or re-runs are safe.
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+
+interface Props {
+  target: string;
+  class?: string;
+}
+const { target, class: cls } = Astro.props;
+
+const btn = css({
+  display: 'none', // revealed by the script (no-JS keeps groups open)
+  alignItems: 'center',
+  gap: '0.4rem',
+  ml: 'auto', // right-align within a flex row
+  px: '0.6rem',
+  py: '0.35rem',
+  fontFamily: 'sans',
+  fontSize: '0.8rem',
+  fontWeight: 600,
+  color: 'textMuted',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  cursor: 'pointer',
+  transition: 'color 150ms ease, border-color 150ms ease, transform 150ms ease',
+  _hover: { color: 'primary', borderColor: 'primary', transform: 'translateY(-1px)' },
+  '&[data-ready]': { display: 'inline-flex' },
+  // Swap the two chevron icons by the current all-open state.
+  '& .cfa-expand': { display: 'inline-flex' },
+  '& .cfa-collapse': { display: 'none' },
+  '&[data-all-open] .cfa-expand': { display: 'none' },
+  '&[data-all-open] .cfa-collapse': { display: 'inline-flex' },
+});
+---
+
+<button
+  type="button"
+  data-collapse-all
+  data-collapse-target={target}
+  data-sound="tick"
+  aria-pressed="false"
+  class={`${btn} ${cls ?? ''}`}
+>
+  <Icon name="chevrons-up-down" size={15} class="cfa-expand" />
+  <Icon name="chevrons-down-up" size={15} class="cfa-collapse" />
+  <span data-collapse-label>Expand all</span>
+</button>
+
+<script is:inline>
+  (function () {
+    function init() {
+      var buttons = document.querySelectorAll('[data-collapse-all]:not([data-ready])');
+      Array.prototype.forEach.call(buttons, function (btn) {
+        var sel = btn.getAttribute('data-collapse-target');
+        var items = sel ? Array.prototype.slice.call(document.querySelectorAll(sel)) : [];
+        if (!items.length) return; // nothing to control — leave the button hidden
+        var label = btn.querySelector('[data-collapse-label]');
+
+        function allOpen() {
+          return items.every(function (d) { return d.open; });
+        }
+        function refresh() {
+          var open = allOpen();
+          if (open) btn.setAttribute('data-all-open', '');
+          else btn.removeAttribute('data-all-open');
+          btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+          if (label) label.textContent = open ? 'Collapse all' : 'Expand all';
+        }
+
+        btn.addEventListener('click', function () {
+          // If everything is open, collapse; otherwise expand them all.
+          var next = !allOpen();
+          items.forEach(function (d) { d.open = next; });
+          refresh();
+        });
+        // Keep the label honest when groups are toggled individually (or by search).
+        items.forEach(function (d) { d.addEventListener('toggle', refresh); });
+
+        btn.setAttribute('data-ready', '');
+        refresh();
+      });
+    }
+    // The button renders ABOVE its <details> groups, so at parse time they don't
+    // exist yet — wait for DOM ready (or run now if the document is already parsed).
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>
