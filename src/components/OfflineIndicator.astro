@@ -1,0 +1,84 @@
+---
+// Offline indicator — a small status pill that tells the reader when they've lost
+// connection (and so are viewing the service worker's cached copy, see public/sw.js),
+// and confirms briefly when they're back online. Pure `online`/`offline` events; no
+// dependency. Off-screen by default, so no-JS visitors never see it.
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+
+const pill = css({
+  position: 'fixed',
+  left: '50%',
+  bottom: '1rem',
+  zIndex: 200,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.45rem',
+  px: '0.85rem',
+  py: '0.5rem',
+  fontFamily: 'sans',
+  fontSize: '0.82rem',
+  fontWeight: 600,
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'full',
+  boxShadow: 'cardHover',
+  pointerEvents: 'none',
+  // Slid off-screen + transparent until the script reveals it (so no-JS = hidden).
+  opacity: 0,
+  transform: 'translateX(-50%) translateY(160%)',
+  transition: 'transform 300ms ease, opacity 300ms ease',
+  '&[data-show]': { opacity: 1, transform: 'translateX(-50%) translateY(0)' },
+  // Reconnected state reads in the accent (green) palette.
+  '&[data-state=online]': { color: 'accent', borderColor: 'accent' },
+  '& .oi-on': { display: 'none' },
+  '&[data-state=online] .oi-off': { display: 'none' },
+  '&[data-state=online] .oi-on': { display: 'inline-flex' },
+});
+const ico = css({ display: 'inline-flex', flexShrink: 0 });
+---
+
+<div id="offline-indicator" role="status" aria-live="polite" class={pill}>
+  <span class={`oi-off ${ico}`}><Icon name="wifi-off" size={15} /></span>
+  <span class={`oi-on ${ico}`}><Icon name="wifi" size={15} /></span>
+  <span id="offline-text"></span>
+</div>
+
+<script is:inline>
+  (function () {
+    var el = document.getElementById('offline-indicator');
+    if (!el) return;
+    var textEl = document.getElementById('offline-text');
+    var hideTimer = null;
+    var wasOffline = false;
+
+    // Render from the live connectivity state. Driven by the online/offline events
+    // AND re-checked whenever the tab regains focus/visibility, so a missed event
+    // (some browsers — and DevTools throttling — don't reliably fire 'online')
+    // self-corrects instead of leaving the pill stuck.
+    function render() {
+      clearTimeout(hideTimer);
+      if (navigator.onLine === false) {
+        wasOffline = true;
+        el.setAttribute('data-state', 'offline');
+        if (textEl) textEl.textContent = 'Offline — showing a cached version';
+        el.setAttribute('data-show', '');
+      } else if (wasOffline) {
+        wasOffline = false;
+        el.setAttribute('data-state', 'online');
+        if (textEl) textEl.textContent = 'Back online';
+        el.setAttribute('data-show', '');
+        hideTimer = setTimeout(function () { el.removeAttribute('data-show'); }, 2500);
+      } else {
+        el.removeAttribute('data-show');
+      }
+    }
+
+    window.addEventListener('offline', render);
+    window.addEventListener('online', render);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) render(); });
+    window.addEventListener('focus', render);
+    render(); // initial — covers loading while already offline
+  })();
+</script>

@@ -17,7 +17,9 @@ const href = `/glossary/${today.slug}/`;
 // span ultra-wide viewports without a gap.
 const COPIES = 12;
 
-const itemClass = css({ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 });
+// flex centers the line box; the small translateY optically centers the Redaction
+// serif, whose glyphs otherwise sit a hair high in the tight bar.
+const itemClass = css({ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0, transform: 'translateY(1px)' });
 const termClass = css({ color: 'primary', fontWeight: 700, letterSpacing: '0.03em' });
 const dashClass = css({ color: 'textMuted', opacity: 0.7 });
 const shortClass = css({ color: 'text', fontWeight: 500 });

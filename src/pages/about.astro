@@ -45,14 +45,14 @@ const experience = [
   {
     company: 'Red Canary (a Zscaler company)',
     icon: 'bird',
-    meta: 'Full-time · United States · Remote',
+    meta: 'Full-time · Denver, CO · Remote',
     current: false,
     skills: ['Live response', 'Containment', 'EDR investigation', 'Host artifacts', 'Endpoint threats'],
     roles: [
       {
         title: 'Threat Response Engineer',
         period: 'Aug 2025 – Jun 2026',
-        note: 'Title retained after Red Canary was acquired by Zscaler.',
+        note: 'Title retained after Red Canary was acquired by Zscaler (HQ San Jose, CA).',
         summary:
           'Led live response and containment for confirmed endpoint threats across enterprise customers in a 24/7 managed detection and response operation.',
       },
@@ -102,12 +102,12 @@ const experience = [
 // Earlier IT / contract roles — the foundation before the security career.
 // Condensed (year-level, no per-role detail) so it adds context without competing
 // with the detailed roles above.
-const earlierExperience = [
+const earlierExperience: { title: string; org: string; type: string; period: string; location?: string }[] = [
   { title: 'Service Desk Technician', org: 'Hanesbrands Inc.', type: 'Contract', period: '2023' },
   { title: 'Service Desk Technician', org: 'Kaiser Permanente', type: 'Contract', period: '2022–2023' },
   { title: 'Service Desk Technician', org: 'DCI Hollow Metal', type: 'Contract', period: '2021–2022' },
-  { title: 'Help Desk Apprentice', org: 'City of Moreno Valley', type: 'Apprenticeship', period: '2021' },
-  { title: 'Student Aide, Makerspace', org: 'Moreno Valley College', type: 'Part-time', period: '2019–2021' },
+  { title: 'Help Desk Apprentice', org: 'City of Moreno Valley', type: 'Apprenticeship', period: '2021', location: 'Moreno Valley, CA' },
+  { title: 'Student Aide, Makerspace', org: 'Moreno Valley College', type: 'Part-time', period: '2019–2021', location: 'Moreno Valley, CA' },
 ];
 
 // Certifications are the single source of truth in src/data/certifications.ts
@@ -306,7 +306,7 @@ const connectLink = css({
         >
           <span>
             <span class={css({ fontWeight: 600 })}>{r.title}</span>
-            <span class={css({ color: 'textMuted' })}> · {r.org}</span>
+            <span class={css({ color: 'textMuted' })}> · {r.org}{r.location ? ` · ${r.location}` : ''}</span>
           </span>
           <span class={css({ fontFamily: 'sans', fontSize: '0.8rem', color: 'textMuted', whiteSpace: 'nowrap' })}>
             {r.type} · {r.period}
