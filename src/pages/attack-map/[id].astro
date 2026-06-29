@@ -11,12 +11,22 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import Icon from '../../components/Icon.astro';
 import { termBySlug } from '../../data/securityTerms';
 import { ATTACK_TECHNIQUES } from '../../data/references';
+import { getSortedPosts, getSortedLabs } from '../../utils/posts';
+import { tag } from 'styled-system/recipes';
 
 export async function getStaticPaths() {
-  return ATTACK_TECHNIQUES.map((tech) => ({ params: { id: tech.id }, props: { tech } }));
+  // Invert the posts' `attack` frontmatter so each technique knows which writeups cover it.
+  const [posts, labs] = await Promise.all([getSortedPosts(), getSortedLabs()]);
+  return ATTACK_TECHNIQUES.map((tech) => {
+    const writeups = [
+      ...posts.filter((p) => (p.data.attack ?? []).includes(tech.id)).map((p) => ({ title: p.data.title, href: `/blog/${p.id}/`, kind: 'Post' })),
+      ...labs.filter((l) => (l.data.attack ?? []).includes(tech.id)).map((l) => ({ title: l.data.title, href: `/labs/${l.id}/`, kind: 'Lab' })),
+    ];
+    return { params: { id: tech.id }, props: { tech, writeups } };
+  });
 }
 
-const { tech } = Astro.props;
+const { tech, writeups } = Astro.props;
 
 const idx = ATTACK_TECHNIQUES.findIndex((t) => t.id === tech.id);
 const prev = idx > 0 ? ATTACK_TECHNIQUES[idx - 1] : null;
@@ -79,11 +89,13 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
     </p>
   </header>
 
-  {tech.summary && (
-    <>
-      <h2 class={sectionH2}><Icon name="book-open" size={18} class={css({ color: 'primary' })} /> Definition</h2>
-      <p class={para}>{tech.summary}</p>
-    </>
+  <h2 class={sectionH2}><Icon name="book-open" size={18} class={css({ color: 'primary' })} /> Definition</h2>
+  <p class={para}>{tech.description || tech.summary}</p>
+  {tech.platforms && tech.platforms.length > 0 && (
+    <div class={css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4rem', mt: '1rem' })}>
+      <span class={css({ fontSize: '0.72rem', fontWeight: 700, color: 'textMuted', textTransform: 'uppercase', letterSpacing: '0.07em', mr: '0.2rem' })}>Platforms</span>
+      {tech.platforms.map((p) => <span class={tag({ tone: 'muted' })}>{p}</span>)}
+    </div>
   )}
 
   {tech.significance && (
@@ -100,6 +112,49 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
     </>
   )}
 
+  {tech.detection && tech.detection.length > 0 && (
+    <>
+      <h2 class={sectionH2}><Icon name="search" size={18} class={css({ color: 'primary' })} /> How it's detected</h2>
+      <p class={css({ color: 'textMuted', fontSize: '0.92rem', mb: '0.85rem', lineHeight: 1.7 })}>
+        Telemetry that surfaces this technique, from MITRE's detection strategies:
+      </p>
+      <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' })}>
+        {tech.detection.map((d) => <span class={tag({ tone: 'primary' })}>{d}</span>)}
+      </div>
+    </>
+  )}
+
+  {tech.examples && tech.examples.length > 0 && (
+    <>
+      <h2 class={sectionH2}><Icon name="crosshair" size={18} class={css({ color: 'primary' })} /> Seen in the wild</h2>
+      <ul class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.7rem' })}>
+        {tech.examples.map((ex) => (
+          <li class={css({ borderLeft: '3px solid token(colors.border)', pl: '1rem', color: 'text', lineHeight: 1.7, fontSize: '0.95rem' })}>{ex}</li>
+        ))}
+      </ul>
+      {tech.examplesTotal && tech.examplesTotal > tech.examples.length && (
+        <p class={css({ fontSize: '0.8rem', color: 'textMuted', mt: '0.85rem' })}>
+          A sample of {tech.examplesTotal} documented uses — the
+          <a href={tech.url} target="_blank" rel="noopener" class={css({ color: 'primary', mx: '0.25rem', _hover: { textDecoration: 'underline' } })}>MITRE page</a>
+          has the full list.
+        </p>
+      )}
+    </>
+  )}
+
+  {tech.mitigations && tech.mitigations.length > 0 && (
+    <>
+      <h2 class={sectionH2}><Icon name="wrench" size={18} class={css({ color: 'primary' })} /> Mitigations</h2>
+      <ul class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.6rem' })}>
+        {tech.mitigations.map((mit) => (
+          <li class={css({ color: 'textMuted', lineHeight: 1.6, fontSize: '0.95rem' })}>
+            <strong class={css({ color: 'text' })}>{mit.name}</strong>{mit.text ? ` — ${mit.text}` : ''}
+          </li>
+        ))}
+      </ul>
+    </>
+  )}
+
   {gloss && (
     <>
       <h2 class={sectionH2}><Icon name="book-open" size={18} class={css({ color: 'primary' })} /> In the glossary</h2>
@@ -109,6 +164,23 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
         </span>
         <span class={css({ fontSize: '0.9rem', color: 'textMuted', lineHeight: 1.5 })}>{gloss.short}</span>
       </a>
+    </>
+  )}
+
+  {writeups.length > 0 && (
+    <>
+      <h2 class={sectionH2}><Icon name="file-text" size={18} class={css({ color: 'primary' })} /> Covered in my writeups</h2>
+      <ul class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' })}>
+        {writeups.map((w) => (
+          <li>
+            <a href={w.href} class={`${refLink} ${css({ gap: '0.5rem' })}`}>
+              <Icon name="arrow-right" size={14} class={css({ color: 'primary', flexShrink: 0 })} />
+              <span>{w.title}</span>
+              <span class={css({ fontFamily: 'sans', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'textMuted' })}>{w.kind}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
     </>
   )}
 

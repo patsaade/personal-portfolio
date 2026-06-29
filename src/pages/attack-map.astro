@@ -1,9 +1,10 @@
 ---
-// MITRE ATT&CK coverage map — the techniques referenced across the glossary and
-// writeups, laid out by tactic in kill-chain order. Each links to its official
-// MITRE page and, where one exists, the matching glossary entry; posts that tag
-// an `attack` technique ID mark it "covered". Hidden from the header, linked from
-// the footer's "More". Static page — prerender to HTML served from the CDN.
+// MITRE ATT&CK coverage map — the FULL Enterprise matrix (generated from MITRE's
+// official STIX), laid out by tactic in kill-chain order. Each technique links to
+// its MITRE page, its own detail page, and (where one exists) the glossary entry;
+// posts/labs that tag an `attack` ID mark it "covered". Searchable, with a
+// covered-only filter, a coverage summary, and a legend. Linked from the footer's
+// "More". Static page — prerendered to HTML served from the CDN.
 export const prerender = true;
 import { css } from 'styled-system/css';
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -13,7 +14,7 @@ import CollapseAll from '../components/CollapseAll.astro';
 import { tag } from 'styled-system/recipes';
 import { getSortedPosts, getSortedLabs } from '../utils/posts';
 import { termBySlug } from '../data/securityTerms';
-import { ATTACK_TECHNIQUES, ATTACK_TACTIC_ORDER } from '../data/references';
+import { ATTACK_TECHNIQUES, ATTACK_TACTIC_ORDER, ATTACK_VERSION } from '../data/references';
 
 // Techniques explicitly covered by a post/lab (via its `attack` frontmatter).
 const [posts, labs] = await Promise.all([getSortedPosts(), getSortedLabs()]);
@@ -27,7 +28,9 @@ const tactics = ATTACK_TACTIC_ORDER.filter((name) => byTactic[name]?.length);
 // Anchor each technique's id to its first render only (no duplicate DOM ids).
 const anchored = new Set<string>();
 
+const total = ATTACK_TECHNIQUES.length;
 const linkedCount = ATTACK_TECHNIQUES.filter((t) => t.glossarySlug).length;
+const coveredCount = ATTACK_TECHNIQUES.filter((t) => covered.has(t.id)).length;
 
 // Each tactic is a collapsible <details>, matching the glossary / Tools / Certifications pages.
 const groupDetails = css({ borderTop: '1px solid token(colors.border)', py: '1.25rem' });
@@ -41,6 +44,8 @@ const groupSummary = css({
 });
 const chevCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 200ms ease', 'details[open] &': { transform: 'rotate(90deg)' } });
 const tacticHead = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', m: 0, fontSize: '1.05rem', fontWeight: 700 });
+const tacCount = css({ fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 400, color: 'textMuted' });
+const tacCoveredCount = css({ fontFamily: 'sans', fontSize: '0.72rem', fontWeight: 600, color: 'accent' });
 const grid = css({ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))', gap: '0.65rem', mt: '1rem' });
 const chip = css({
   display: 'flex',
@@ -61,17 +66,58 @@ const chipId = css({ fontFamily: 'mono', fontSize: '0.72rem', fontWeight: 600, c
 const coveredBadge = tag({ tone: 'accent' });
 const chipName = css({ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontWeight: 600, fontSize: '0.9rem', color: 'text', lineHeight: 1.3, _hover: { color: 'primary' } });
 const chipGloss = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.78rem', fontWeight: 600, color: 'textMuted', mt: 'auto', _hover: { color: 'primary' } });
+
+// Search + controls.
+const searchWrap = css({ position: 'relative', mb: '0.6rem' });
+const searchIcon = css({ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)', color: 'textMuted', pointerEvents: 'none', display: 'inline-flex' });
+const searchInput = css({
+  w: '100%',
+  pl: '2.6rem',
+  pr: '1rem',
+  py: '0.7rem',
+  fontSize: '0.95rem',
+  bg: 'bgCard',
+  color: 'text',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  outline: 'none',
+  transition: 'border-color 200ms ease',
+  _focusVisible: { borderColor: 'primary' },
+  _placeholder: { color: 'textMuted' },
+});
+const statLink = css({ color: 'primary', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', _hover: { textDecoration: 'underline' } });
+const coveredToggle = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.35rem',
+  px: '0.6rem',
+  py: '0.35rem',
+  fontFamily: 'sans',
+  fontSize: '0.8rem',
+  fontWeight: 600,
+  color: 'textMuted',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  cursor: 'pointer',
+  transition: 'color 150ms ease, border-color 150ms ease, background 150ms ease',
+  _hover: { color: 'accent', borderColor: 'accent' },
+  '&[aria-pressed=true]': { color: 'accent', borderColor: 'accent', bg: 'color-mix(in srgb, token(colors.accent) 12%, transparent)' },
+});
+const legendRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 1.25rem', mb: '1.75rem', fontSize: '0.78rem', color: 'textMuted' });
+const legendItem = css({ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' });
+const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'bgCard', border: '1px solid token(colors.border)', borderLeftWidth: '3px', borderLeftColor: 'accent', borderRadius: '2px', flexShrink: 0 });
 ---
 
 <BaseLayout
   title="ATT&CK coverage map"
-  description="The MITRE ATT&CK techniques referenced across this site's glossary and writeups, by tactic — each linked to its official MITRE page and the matching glossary entry."
+  description="The full MITRE ATT&CK Enterprise matrix, by tactic — each technique linked to its official MITRE page, a detail page, and the matching glossary entry, with the techniques covered in writeups marked."
 >
   <PageHeader
     breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'ATT&CK map' }]}
     eyebrow="Coverage"
     title="MITRE ATT&CK coverage map"
-    description="The adversary techniques I reference across the glossary and writeups, laid out by tactic. Each links to its official MITRE page; many link straight to the glossary entry that explains it."
+    description="The full Enterprise matrix, laid out by tactic. Each technique links to its official MITRE page and detail entry; many link straight to the glossary, and the ones I've written about are marked."
   />
 
   <aside
@@ -95,62 +141,147 @@ const chipGloss = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25
     </p>
   </aside>
 
-  <div class={css({ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', mb: '2rem' })}>
-    <p class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 1.25rem', color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
-      <span>{ATTACK_TECHNIQUES.length} techniques across {tactics.length} tactics</span>
-      <span>·</span>
-      <span>{linkedCount} linked to a glossary entry</span>
-      <span>·</span>
-      <a href="https://attack.mitre.org/" target="_blank" rel="noopener" class={css({ color: 'primary', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', _hover: { textDecoration: 'underline' } })}>
-        MITRE ATT&CK <Icon name="external-link" size={12} />
-      </a>
+  {/* Search */}
+  <div class={searchWrap}>
+    <span class={searchIcon}><Icon name="search" size={17} /></span>
+    <input
+      id="attack-search"
+      type="search"
+      autocomplete="off"
+      placeholder={`Search ${total} techniques by name or ID…`}
+      aria-label="Search ATT&CK techniques"
+      class={searchInput}
+    />
+  </div>
+
+  {/* Stats + controls */}
+  <div class={css({ display: 'flex', alignItems: 'center', gap: '0.6rem 1rem', flexWrap: 'wrap', mb: '0.85rem' })}>
+    <p role="status" aria-live="polite" class={css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.3rem 0.9rem', color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
+      <span><span id="attack-count">{total}</span> techniques</span>
+      <span aria-hidden="true">·</span>
+      <span class={css({ color: 'accent', fontWeight: 600 })}>{coveredCount} covered in writeups</span>
+      <span aria-hidden="true">·</span>
+      <span>{linkedCount} in the glossary</span>
+      <span aria-hidden="true">·</span>
+      <a href="https://attack.mitre.org/" target="_blank" rel="noopener" class={statLink}>ATT&CK v{ATTACK_VERSION} <Icon name="external-link" size={12} /></a>
     </p>
-    <CollapseAll target="[data-tactic-group]" />
+    <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', ml: 'auto' })}>
+      <button type="button" id="attack-covered-toggle" aria-pressed="false" data-sound="tick" class={coveredToggle}>
+        <Icon name="check" size={14} /> Covered only
+      </button>
+      <CollapseAll target="[data-tactic-group]" />
+    </div>
+  </div>
+
+  {/* Legend */}
+  <div class={legendRow}>
+    <span class={legendItem}><span class={legendSwatch} aria-hidden="true"></span> covered in a writeup</span>
+    <span class={legendItem}><Icon name="book-open" size={13} class={css({ color: 'textMuted' })} /> links to the glossary entry</span>
+    <span class={legendItem}><Icon name="arrow-right" size={13} class={css({ color: 'textMuted' })} /> opens the technique detail page</span>
   </div>
 
   <div class={css({ display: 'flex', flexDirection: 'column' })}>
     {
-      tactics.map((tactic) => (
-        <details data-tactic-group open class={groupDetails}>
-          <summary class={groupSummary}>
-            <h2 class={tacticHead}>
-              <Icon name="chevron-right" size={17} class={chevCls} />
-              <Icon name="crosshair" size={18} class={css({ color: 'primary', flexShrink: 0 })} />
-              <span class="tactic-title">{tactic}</span>
-              <span class={css({ fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 400, color: 'textMuted' })}>{byTactic[tactic].length}</span>
-            </h2>
-          </summary>
-          <div class={grid}>
-            {byTactic[tactic].map((t) => {
-              const gloss = t.glossarySlug ? termBySlug(t.glossarySlug) : undefined;
-              const firstHere = !anchored.has(t.id);
-              if (firstHere) anchored.add(t.id);
-              return (
-                <div id={firstHere ? t.id : undefined} class={chip} {...(covered.has(t.id) ? { 'data-covered': true } : {})}>
-                  <div class={chipTop}>
-                    <span class={chipId}>{t.id}</span>
-                    {covered.has(t.id) && <span class={coveredBadge}>covered</span>}
-                  </div>
-                  <a href={`/attack-map/${t.id}/`} class={chipName}>
-                    {t.name}
-                    <Icon name="arrow-right" size={12} class={css({ color: 'textMuted', flexShrink: 0 })} />
-                  </a>
-                  {gloss && (
-                    <a href={`/glossary/${gloss.slug}/`} class={chipGloss}>
-                      <Icon name="book-open" size={12} /> {gloss.term}
+      tactics.map((tactic) => {
+        const tacCovered = byTactic[tactic].filter((t) => covered.has(t.id)).length;
+        return (
+          <details data-tactic-group open class={groupDetails}>
+            <summary class={groupSummary}>
+              <h2 class={tacticHead}>
+                <Icon name="chevron-right" size={17} class={chevCls} />
+                <Icon name="crosshair" size={18} class={css({ color: 'primary', flexShrink: 0 })} />
+                <span class="tactic-title">{tactic}</span>
+                <span class={tacCount}>{byTactic[tactic].length}</span>
+                {tacCovered > 0 && <span class={tacCoveredCount}>{tacCovered} covered</span>}
+              </h2>
+            </summary>
+            <div class={grid}>
+              {byTactic[tactic].map((t) => {
+                const gloss = t.glossarySlug ? termBySlug(t.glossarySlug) : undefined;
+                const firstHere = !anchored.has(t.id);
+                if (firstHere) anchored.add(t.id);
+                const isCovered = covered.has(t.id);
+                return (
+                  <div
+                    id={firstHere ? t.id : undefined}
+                    class={chip}
+                    data-attack-id={t.id}
+                    data-attack-card={`${t.id} ${t.name} ${tactic} ${gloss ? gloss.term : ''}`.toLowerCase()}
+                    {...(isCovered ? { 'data-covered': true } : {})}
+                  >
+                    <div class={chipTop}>
+                      <span class={chipId}>{t.id}</span>
+                      {isCovered && <span class={coveredBadge}>covered</span>}
+                    </div>
+                    <a href={`/attack-map/${t.id}/`} class={chipName}>
+                      {t.name}
+                      <Icon name="arrow-right" size={12} class={css({ color: 'textMuted', flexShrink: 0 })} />
                     </a>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </details>
-      ))
+                    {gloss && (
+                      <a href={`/glossary/${gloss.slug}/`} class={chipGloss}>
+                        <Icon name="book-open" size={12} /> {gloss.term}
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </details>
+        );
+      })
     }
   </div>
 
+  <p id="attack-empty" hidden role="status" aria-live="polite" class={css({ color: 'textMuted', textAlign: 'center', py: '3rem' })}>
+    No techniques match.
+  </p>
+
   <p class={css({ fontSize: '0.78rem', color: 'textMuted', mt: '2.5rem', pt: '1.5rem', borderTop: '1px solid token(colors.border)', lineHeight: 1.6 })}>
     ATT&CK® and MITRE ATT&CK® are registered trademarks of The MITRE Corporation. Technique names and
-    IDs are drawn from the public ATT&CK knowledge base; this map links back to the canonical pages.
+    IDs are drawn from the public ATT&CK knowledge base (v{ATTACK_VERSION}); this map links back to the canonical pages.
   </p>
+
+  <script is:inline>
+    (function () {
+      var input = document.getElementById('attack-search');
+      var toggle = document.getElementById('attack-covered-toggle');
+      var countEl = document.getElementById('attack-count');
+      var empty = document.getElementById('attack-empty');
+      var groups = Array.prototype.slice.call(document.querySelectorAll('[data-tactic-group]'));
+      var chips = Array.prototype.slice.call(document.querySelectorAll('[data-attack-card]'));
+      var coveredOnly = false;
+
+      function apply() {
+        var q = input ? input.value.trim().toLowerCase() : '';
+        var seen = {};
+        var shown = 0;
+        for (var i = 0; i < chips.length; i++) {
+          var c = chips[i];
+          var okQ = !q || c.getAttribute('data-attack-card').indexOf(q) !== -1;
+          var okCov = !coveredOnly || c.hasAttribute('data-covered');
+          var vis = okQ && okCov;
+          c.style.display = vis ? '' : 'none';
+          if (vis) {
+            var id = c.getAttribute('data-attack-id');
+            if (!seen[id]) { seen[id] = 1; shown++; } // count techniques once across tactics
+          }
+        }
+        var filtering = !!q || coveredOnly;
+        for (var g = 0; g < groups.length; g++) {
+          var any = groups[g].querySelector('[data-attack-card]:not([style*="display: none"])');
+          groups[g].style.display = any ? '' : 'none';
+          groups[g].open = filtering ? !!any : true; // expand matches while filtering, restore otherwise
+        }
+        if (countEl) countEl.textContent = String(shown);
+        if (empty) empty.hidden = shown !== 0;
+      }
+
+      if (input) input.addEventListener('input', apply);
+      if (toggle) toggle.addEventListener('click', function () {
+        coveredOnly = !coveredOnly;
+        toggle.setAttribute('aria-pressed', coveredOnly ? 'true' : 'false');
+        apply();
+      });
+    })();
+  </script>
 </BaseLayout>

@@ -920,11 +920,23 @@ export interface AttackTechnique {
   url: string;
   /** Glossary term that documents this technique, if any. */
   glossarySlug?: string;
-  /** One-line "what it is" for the technique detail page. */
+  /** One-line "what it is" (cards, meta description). */
   summary?: string;
-  /** Why it matters / how it's detected (DFIR framing). */
+  /** Fuller MITRE description — the detail-page definition. */
+  description?: string;
+  /** Platforms the technique applies to (MITRE). */
+  platforms?: string[];
+  /** "Data component" telemetry that detects it (MITRE). */
+  detection?: string[];
+  /** Real-world procedure examples (MITRE), a capped sample. */
+  examples?: string[];
+  /** Total documented uses behind `examples`. */
+  examplesTotal?: number;
+  /** Mitigations with MITRE's technique-specific guidance. */
+  mitigations?: { name: string; text: string }[];
+  /** Curated: why it matters / how it's detected (DFIR framing). */
   significance?: string;
-  /** A concrete "in practice" example. */
+  /** Curated: a concrete "in practice" example. */
   example?: string;
 }
 
@@ -935,7 +947,7 @@ export interface AttackTechnique {
 // (summary / significance / example) for the techniques covered in depth.
 
 /** MITRE ATT&CK Enterprise tactics in kill-chain order (only populated render). */
-export { ATTACK_TACTIC_ORDER } from './attack-techniques.generated';
+export { ATTACK_TACTIC_ORDER, ATTACK_VERSION } from './attack-techniques.generated';
 
 /** Every Enterprise technique — MITRE data enriched with the curated overlay. */
 export const ATTACK_TECHNIQUES: AttackTechnique[] = ATTACK_GENERATED.map((t) => {
