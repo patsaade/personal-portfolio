@@ -61,6 +61,16 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
       <span class={tag({ tone: 'muted' })}>{tool.platform}</span>
       {tool.core && <span class={tag({ tone: 'accent' })}>In my kit</span>}
     </div>
+    {tool.tags.length > 0 && (
+      <div class={css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4rem', mt: '0.85rem' })}>
+        <Icon name="tag" size={13} class={css({ color: 'textMuted', flexShrink: 0 })} label="Tags" />
+        {tool.tags.map((t) => (
+          <a href={`/tools/?q=${encodeURIComponent(t)}`} class={`${tag({ tone: 'muted', mono: true })} ${css({ transition: 'color 150ms ease, border-color 150ms ease', _hover: { color: 'primary', borderColor: 'primary' } })}`}>
+            {t}
+          </a>
+        ))}
+      </div>
+    )}
   </header>
 
   {tool.what && (

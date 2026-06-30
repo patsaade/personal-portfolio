@@ -58,7 +58,7 @@ export const GET: APIRoute = async () => {
       url: `/tools/${t.slug}/`,
       kind: 'Tool',
       desc: t.use,
-      keywords: `${t.fn} ${t.cost} ${t.platform} dfir tool`.toLowerCase(),
+      keywords: `${t.fn} ${t.cost} ${t.platform} ${t.tags.join(' ')} dfir tool`.toLowerCase(),
     })),
     ...STATIC_PAGES,
   ];

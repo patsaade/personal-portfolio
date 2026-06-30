@@ -137,7 +137,7 @@ const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto
                 href={`/tools/${t.slug}/`}
                 class={toolCard}
                 data-fn={tagSlug(t.fn)}
-                data-tools-card={`${t.name} ${t.use} ${t.fn} ${t.cost} ${p.title}`.toLowerCase()}
+                data-tools-card={`${t.name} ${t.use} ${t.fn} ${t.cost} ${p.title} ${t.tags.join(' ')}`.toLowerCase()}
               >
                 <span class={toolHead}>
                   <span class={toolName}>
@@ -200,6 +200,13 @@ const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto
         query = e.detail.query;
         apply();
       });
+      // Hydrate the search from ?q= so the clickable tags on detail pages land filtered.
+      combobox.addEventListener('comboboxready', function () {
+        try {
+          var q = new URLSearchParams(location.search).get('q');
+          if (q && combobox.__combobox) combobox.__combobox.setQuery(q);
+        } catch (e) {}
+      }, { once: true });
     })();
   </script>
 </BaseLayout>
