@@ -136,7 +136,12 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
   title="Glossary"
   description="A cybersecurity & DFIR glossary — concepts, techniques, and artifacts, with why each one matters in an investigation."
 >
-  <PageHeader breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Glossary' }]} eyebrow="Reference" title="Cybersecurity glossary" />
+  <PageHeader
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Glossary' }]}
+    eyebrow="Reference"
+    title="Cybersecurity glossary"
+    description="A working reference for digital forensics & incident response — every concept, technique, and artifact with what it is, why it matters in an investigation, and how it links to the tools and MITRE ATT&CK techniques it relates to."
+  />
 
   {/* ── Today's featured term (client-updated to the visitor's local day) ── */}
   <section
