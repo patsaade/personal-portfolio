@@ -49,7 +49,7 @@
    on the eroded grades (the 50% step sits at 55%) and runs slow on purpose, so
    the decode reads as dramatic. Two variants:
    - `.declassify`      → settles fully clean (grade 0): section + post titles.
-   - `.declassify-hero` → settles on the hero's designed grade 35. */
+   - `.declassify-hero` → also settles fully clean, just slower (more dramatic). */
 @keyframes declassify {
   0% {
     font-family: 'Redaction 100', Georgia, 'Times New Roman', serif;
@@ -75,7 +75,7 @@
     font-family: 'Redaction 50', Georgia, 'Times New Roman', serif;
   }
   100% {
-    font-family: 'Redaction 35', Georgia, 'Times New Roman', serif;
+    font-family: 'Redaction', Georgia, 'Times New Roman', serif;
     opacity: 1;
   }
 }
