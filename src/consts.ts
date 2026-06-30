@@ -32,7 +32,7 @@ export const NAV_LINKS = [
 export const ANALYST_LINKS = [
   { href: '/tools/', label: 'Tools' },
   { href: '/glossary/', label: 'Glossary' },
-  { href: '/attack-map/', label: 'MITRE ATT&CK coverage map' },
+  { href: '/attack-map/', label: 'MITRE ATT&CK Coverage Map' },
   { href: '/d3fend/', label: 'MITRE D3FEND Map' },
 ] as const;
 
