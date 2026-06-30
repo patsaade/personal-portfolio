@@ -163,6 +163,7 @@ const { id, options, placeholder = 'Search…', label = 'Filter' } = Astro.props
   // `comboboxready` listener — then this dispatches it for URL hydration.
   function initCombobox(root) {
     if (root.__combobox) return; // idempotent
+    var MIN_CHARS = 2; // tag suggestions only appear once this many characters are typed
     var control = root.querySelector('[data-combobox-control]');
     var input = root.querySelector('[data-combobox-input]');
     var list = root.querySelector('[role="listbox"]');
@@ -198,7 +199,7 @@ const { id, options, placeholder = 'Search…', label = 'Filter' } = Astro.props
         x.setAttribute('aria-hidden', 'true');
         x.textContent = '×';
         b.appendChild(x);
-        b.addEventListener('mousedown', function (e) { e.preventDefault(); }); // keep input focus
+        b.addEventListener('pointerdown', function (e) { e.preventDefault(); }); // keep input focus
         b.addEventListener('click', function () { deselect(val); });
         control.insertBefore(b, input);
       });
