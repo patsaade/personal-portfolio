@@ -22,7 +22,8 @@ The decisions every change should serve:
   constraint). No redacted-case framing anywhere.
 - **Voice:** see *Voice & tone* below — conversational practitioner, first-person, original.
 - **Visual direction:** **richly technical** (see *Visual direction* below).
-- **Brand:** keep the "Patrick Saade" wordmark, "ps" favicon, and current palette system.
+- **Brand:** keep the "Patrick Saade" wordmark, the pixel-star mark (`PixelStar`, also the
+  favicon), and current palette system.
 - **Contact/CTA:** **LinkedIn only**. No contact form, no résumé PDF, no newsletter,
   no "available for work" banner.
 - **Discoverability:** invest in it — be findable by name, profession, experience, labs, and
@@ -98,10 +99,12 @@ and **Fira Mono** (Mozilla) for code. Both are self-hosted under `public/fonts/`
 - **`fontFamily: 'mono'`** is **Fira Mono**, reserved for **code-like text only**: code blocks,
   inline `code`, file paths, IOCs, commands, and the footer version hash. Don't put labels/dates in mono.
 - **Degraded grades** are tokens — `redaction20`, `redaction35`, `redaction50` — used only on
-  specific display areas: **ticker → 50, hero → 35, wordmark → 50** (applied statically, no
-  hover swap). Keep degradation to the *medium* range (≤ 50) and to large/display text; the
-  grades share metrics with grade 0. The heavier grades (70/100) are self-hosted but reserved
-  for big one-off display, never body or small text.
+  specific display areas: **ticker → 50, wordmark → 50** (applied statically). The **hero `<h1>`
+  decodes** from the heaviest grade through to clean (grade 0) via the `declassify` animation, so
+  it settles fully clean like every other title — don't pin the hero to a degraded resting grade.
+  Keep static degradation to the *medium* range (≤ 50) and to large/display text; the grades share
+  metrics with grade 0. The heavier grades (70/100) are self-hosted but reserved for the decode
+  animation and big one-off display, never body or small text.
 - Headings/eyebrows are **sentence case** ("DFIR deep dives", not "DFIR Deep Dives") except
   proper nouns and the site/brand wordmark "Patrick Saade".
 
@@ -167,13 +170,21 @@ distinct, intentional pattern; keep it to the key guarantees, not proper nouns.
 - **Links:** `color: 'primary'`, underline-on-hover (or persistent underline in prose).
   External links: `target="_blank" rel="noopener"` + an `external-link` icon when it aids clarity.
 - **Internal links must end with a trailing slash** — `/blog/`, `/tools/`, `` `/blog/${id}/` ``,
-  `` `/tags/${slug}/` ``. The site sets `trailingSlash: 'always'`, so an unslashed internal link
+  `` `/glossary/${slug}/` ``. The site sets `trailingSlash: 'always'`, so an unslashed internal link
   **404s in `astro dev`** and 308-redirects in production. File URLs keep their extension and no
   slash (`/rss.xml`). The site root is just `/`.
 - **Section heading:** an `<Icon>` (primary) + sentence-case title; see About/Tools.
 - **Hover cards:** companies, certs, and key tools auto-render context cards site-wide; tag a
   glossary term inline with `<Term slug="…">` (see AUTHORING + CLAUDE.md invariant 11). Triggers
   show a subtle dotted underline; keep them in prose, not headings.
+- **Shared list/detail-page parts — reuse, don't rebuild.** `PageHeader` (eyebrow + title +
+  description + breadcrumbs), `Breadcrumbs`, `CollapseAll` (expand/collapse a set of `<details>`),
+  `TagCombobox` (typeahead search with removable facet tokens — suggestions appear at 2+ chars;
+  drives Blog, Glossary, Tools, Certifications, and both MITRE maps), `FilterToggle` (the pill
+  filters — "Covered only", "In glossary", "Maps to ATT&CK"; `tone` `accent`|`primary`), and
+  `EntryNav` (prev/next on detail pages). The listing grids all use the shared `.card-grid` (above),
+  and the two MITRE maps (`/attack-map/`, `/d3fend/`) share this whole scaffolding — extend it,
+  don't fork it.
 - **Experience: detailed vs. condensed.** Headline/relevant roles get full timeline cards
   (company header, per-role title + dates + one-sentence summary + skill tags). Earlier,
   contract, or foundational roles go in **one condensed block** below — a single bordered

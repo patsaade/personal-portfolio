@@ -152,6 +152,21 @@ enforces the structure.
 
 ---
 
+## Automatic cross-links
+
+Tagging content wires up backlinks for free — nothing to maintain beyond the tag itself:
+
+- **`<Term slug="…">` in a post body** → that term's glossary page lists the post under
+  **"Mentioned in my writeups"** (and the inline word also gets a hover/tap card).
+- **`attack: ["T1003", …]` frontmatter** → each of those technique pages lists the post under
+  **"Covered in my writeups"**, and the technique is marked *covered* on the MITRE ATT&CK map.
+- **`tools: ["Volatility 3", …]` frontmatter** → each matching tool's page lists the post under
+  **"Featured in my writeups"** (matched by tool name).
+
+So tag accurately — the glossary, the ATT&CK/D3FEND maps, and the tool pages update themselves.
+
+---
+
 ## Drafts & preview
 
 - `draft: true` keeps a post out of **production** builds (`npm run build`) and RSS, but
