@@ -18,6 +18,7 @@ import { ATTACK_TECHNIQUES } from '../../data/references';
 import CollapseAll from '../../components/CollapseAll.astro';
 import TagCombobox from '../../components/TagCombobox.astro';
 import { tagSlug } from '../../utils/posts';
+import { assignTermSymbols } from '../../data/termSymbols';
 import { tag } from 'styled-system/recipes';
 
 const today = termForDate(new Date());
@@ -34,12 +35,16 @@ const catOptions = CATEGORIES.map((cat) => ({ cat, n: SECURITY_TERMS.filter((t) 
   .filter((c) => c.n > 0)
   .map((c) => ({ value: tagSlug(c.cat), label: c.cat, count: c.n }));
 
+// A unique decorative glyph per term (faint corner watermark on each card).
+const termSymbols = assignTermSymbols(SECURITY_TERMS.map((t) => t.slug));
+
 // Map each glossary slug to its ATT&CK technique (for the on-card chip).
 const techBySlug: Record<string, (typeof ATTACK_TECHNIQUES)[number]> = {};
 for (const tech of ATTACK_TECHNIQUES) if (tech.glossarySlug) techBySlug[tech.glossarySlug] = tech;
 
-// Compact, uniform term cards: a stretched term link + an optional ATT&CK chip on
-// the outside (top-right), mirroring how term pages link to ATT&CK.
+// Compact, uniform term cards: a stretched term link, a faint dictionary-style
+// initial filling the top-right corner, and an optional ATT&CK chip pinned
+// bottom-right (mirroring how term pages link to ATT&CK).
 const cardClass = css({
   position: 'relative',
   display: 'flex',
@@ -50,6 +55,7 @@ const cardClass = css({
   bg: 'bgCard',
   border: '1px solid token(colors.border)',
   borderRadius: 'md',
+  overflow: 'hidden', // clips the oversized initial to the corner
   transition: 'border-color 200ms ease, transform 200ms ease',
   _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
 });
@@ -60,11 +66,25 @@ const cardLink = css({
   minW: 0,
   _after: { content: '""', position: 'absolute', inset: '0', borderRadius: 'md' },
 });
-const cardTerm = css({ fontFamily: 'sans', fontWeight: 700, fontSize: '0.86rem', color: 'text', lineHeight: 1.3 });
+// A unique monochrome symbol per term (see data/termSymbols.ts) as a faint corner
+// watermark — fills the space and gives each card its own marker. Decorative, so
+// aria-hidden. A symbol-friendly font stack maximises glyph coverage across systems.
+const monogram = css({
+  position: 'absolute',
+  top: '0.1rem',
+  right: '0.5rem',
+  fontFamily: "'Segoe UI Symbol', 'Apple Symbols', 'Noto Sans Symbols2', system-ui, sans-serif",
+  fontSize: '1.55rem',
+  lineHeight: 1,
+  color: 'color-mix(in srgb, token(colors.primary) 24%, transparent)',
+  userSelect: 'none',
+  pointerEvents: 'none',
+});
+const cardTerm = css({ fontFamily: 'sans', fontWeight: 700, fontSize: '0.86rem', color: 'text', lineHeight: 1.3, pr: '1.6rem' });
 const cardShort = css({ fontSize: '0.79rem', color: 'textMuted', lineHeight: 1.4 });
 const attackTag = `${tag({ tone: 'primary', mono: true })} ${css({
   position: 'absolute',
-  top: '0.45rem',
+  bottom: '0.45rem',
   right: '0.5rem',
   zIndex: 1,
   transition: 'background 150ms ease',
@@ -182,8 +202,9 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
                     data-cat={tagSlug(t.category)}
                     data-totd-card={`${t.term} ${t.short} ${(t.aka ?? []).join(' ')} ${t.category} ${tech ? tech.id : ''}`.toLowerCase()}
                   >
-                    <a href={`/glossary/${t.slug}/`} class={cardLink}>
-                      <span class={`${cardTerm} ${tech ? css({ pr: '3.2rem' }) : ''}`}>{t.term}</span>
+                    <span class={monogram} aria-hidden="true">{termSymbols[t.slug]}</span>
+                    <a href={`/glossary/${t.slug}/`} class={`${cardLink} ${tech ? css({ pb: '1.15rem' }) : ''}`}>
+                      <span class={cardTerm}>{t.term}</span>
                       <span class={`${cardShort} totd-clamp2`}>{t.short}</span>
                     </a>
                     {tech && (

@@ -8,6 +8,7 @@ import {
   termIndexForDay,
   termForDate,
 } from '../src/data/securityTerms';
+import { assignTermSymbols, TERM_GLYPHS } from '../src/data/termSymbols';
 
 const slugs = new Set(SECURITY_TERMS.map((t) => t.slug));
 
@@ -54,6 +55,26 @@ describe('security term bank', () => {
         expect(r, `${t.slug} self-link`).not.toBe(t.slug);
       }
     }
+  });
+});
+
+describe('term symbols', () => {
+  it('has a glyph pool larger than the term bank', () => {
+    expect(TERM_GLYPHS.length).toBeGreaterThan(SECURITY_TERMS.length);
+  });
+
+  it('assigns a unique, non-empty glyph to every term', () => {
+    const all = [...slugs];
+    const map = assignTermSymbols(all);
+    const glyphs = all.map((s) => map[s]);
+    expect(glyphs.every((g) => typeof g === 'string' && g.length > 0)).toBe(true);
+    expect(new Set(glyphs).size).toBe(all.length); // no two terms share a symbol
+  });
+
+  it('is deterministic regardless of input order', () => {
+    const a = assignTermSymbols([...slugs]);
+    const b = assignTermSymbols([...slugs].reverse());
+    expect(b).toEqual(a);
   });
 });
 
