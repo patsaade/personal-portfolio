@@ -237,29 +237,7 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
     No terms match your search.
   </p>
 
-  <script is:inline>
-    (function () {
-      // Featured card → today's term for the visitor's local day (via cached bank.json).
-      fetch('/glossary/bank.json')
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (bank) {
-          if (!Array.isArray(bank) || !bank.length) return;
-          var d = new Date();
-          var serial = Math.floor(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 86400000);
-          var e = bank[((serial % bank.length) + bank.length) % bank.length]; // [slug, term, short, cat]
-          var set = function (id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
-          set('totd-feat-term', e[1]);
-          set('totd-feat-short', e[2]);
-          set('totd-feat-cat', e[3]);
-          var dateEl = document.getElementById('totd-feat-date');
-          if (dateEl) { try { dateEl.textContent = d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }); } catch (err) {} }
-          var link = document.getElementById('totd-feat-link');
-          if (link) link.setAttribute('href', '/glossary/' + e[0] + '/');
-        })
-        .catch(function () {});
-      // The search + category facet + toggles are driven by <ListFilter> (below).
-    })();
-  </script>
+  {/* Featured term + the search/facet/toggles are all server-rendered; filtering is driven by <ListFilter>. */}
 
   <ListFilter
     config={{

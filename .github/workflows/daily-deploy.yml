@@ -1,0 +1,37 @@
+# Daily redeploy so the server-rendered "Term of the Day" rolls over.
+#
+# The term is chosen at BUILD time by termForDate() (keyed to the UTC calendar day)
+# and baked into the static HTML — consistent for every visitor, no client JS. Because
+# the site is fully prerendered to the CDN, the only way the baked term advances is a
+# rebuild, so this triggers one a few minutes after the UTC day rolls over.
+#
+# One-time setup (until then this job no-ops, it never fails):
+#   1. Vercel → Project → Settings → Git → Deploy Hooks → create a hook on `main`.
+#   2. GitHub → repo Settings → Secrets and variables → Actions → add secret
+#      VERCEL_DEPLOY_HOOK = the hook URL.
+name: Daily term-of-the-day refresh
+
+on:
+  schedule:
+    - cron: '10 0 * * *' # 00:10 UTC daily — just after the term rolls over at 00:00 UTC
+  workflow_dispatch: {} # allow a manual run from the Actions tab
+
+# Never run more than one redeploy at a time.
+concurrency:
+  group: daily-deploy
+  cancel-in-progress: false
+
+jobs:
+  redeploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel deploy hook
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "VERCEL_DEPLOY_HOOK secret is not set — skipping."
+            echo "The Term of the Day will only advance on the next manual deploy until it's configured."
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK" >/dev/null && echo "Triggered a Vercel redeploy for the new UTC day."

@@ -1,10 +1,10 @@
 ---
 // Site-wide "Term of the Day" ticker — a scrolling monospace banner pinned to the
-// top of every page. The build renders the build-day term (a valid no-JS /
-// crawler fallback); the inline script recomputes the term for the current UTC
-// day and swaps it in, so it changes daily without a rebuild — identically for
-// everyone worldwide (rolls at 00:00 UTC). The marquee
-// track holds the content twice and animates to -50% for a seamless loop (see
+// top of every page. The term is chosen SERVER-SIDE at build by termForDate()
+// (keyed to the UTC calendar day), so it's baked into the HTML — identical for
+// every visitor, no client JS, no flash. A daily redeploy (00:10 UTC, see
+// .github/workflows/daily-deploy.yml) re-renders it for the new UTC day. The marquee
+// track holds the content many times and animates to -50% for a seamless loop (see
 // global.css → @keyframes totd-marquee).
 import { css } from 'styled-system/css';
 import Icon from './Icon.astro';
@@ -36,7 +36,6 @@ const sepClass = css({ color: 'primary', opacity: 0.4, px: '1.1rem', fontSize: '
   lineHeight: 1,
 })}>
   <a
-    id="totd-ticker-link"
     href={href}
     aria-label={`Cybersecurity term of the day: ${today.term}. ${today.short} Read the full entry.`}
     class={css({
@@ -104,9 +103,9 @@ const sepClass = css({ color: 'primary', opacity: 0.4, px: '1.1rem', fontSize: '
         {
           Array.from({ length: COPIES }).map(() => (
             <span class={itemClass}>
-              <strong class={`js-totd-term ${termClass}`}>{today.term}</strong>
+              <strong class={termClass}>{today.term}</strong>
               <span class={dashClass}>—</span>
-              <span class={`js-totd-short ${shortClass}`}>{today.short}</span>
+              <span class={shortClass}>{today.short}</span>
               <span class={sepClass}>◆</span>
             </span>
           ))
@@ -127,32 +126,4 @@ const sepClass = css({ color: 'primary', opacity: 0.4, px: '1.1rem', fontSize: '
       <Icon name="chevron-right" size={14} strokeWidth={2.5} />
     </span>
   </a>
-
-  <script is:inline>
-    (function () {
-      var link = document.getElementById('totd-ticker-link');
-      if (!link) return;
-      // Fetch the compact bank (cached) and recompute the term for the current
-      // UTC day. The build-day term is already shown as a no-JS fallback.
-      fetch('/glossary/bank.json')
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (bank) {
-          if (!Array.isArray(bank) || !bank.length) return;
-          // Same math as termForDate(): UTC Y/M/D → day serial → index. Keyed to UTC
-          // so the term is identical for every visitor worldwide (rolls at 00:00 UTC).
-          var d = new Date();
-          var serial = Math.floor(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 86400000);
-          var e = bank[((serial % bank.length) + bank.length) % bank.length]; // [slug, term, short, cat]
-          var href = '/glossary/' + e[0] + '/';
-          if (link.getAttribute('href') === href) return; // build day == visitor day
-          link.setAttribute('href', href);
-          link.setAttribute('aria-label', 'Cybersecurity term of the day: ' + e[1] + '. ' + e[2] + ' Read the full entry.');
-          var terms = link.querySelectorAll('.js-totd-term');
-          var shorts = link.querySelectorAll('.js-totd-short');
-          for (var i = 0; i < terms.length; i++) terms[i].textContent = e[1];
-          for (var j = 0; j < shorts.length; j++) shorts[j].textContent = e[2];
-        })
-        .catch(function () {});
-    })();
-  </script>
 </aside>
