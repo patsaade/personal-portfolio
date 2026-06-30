@@ -59,12 +59,7 @@ const grpCount = css({
   py: '0.1rem',
 });
 const grpBlurb = css({ color: 'textMuted', fontSize: '0.85rem', mt: '0.5rem', mb: 0 });
-const certGrid = css({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 230px), 1fr))',
-  gap: '0.65rem',
-  mt: '1rem',
-});
+const certGrid = css({ mt: '1rem' }); // columns/gap come from the shared .card-grid class
 const certCard = css({
   display: 'flex',
   flexDirection: 'column',
@@ -134,7 +129,7 @@ const metaLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.35r
               </h2>
             </summary>
             <p class={grpBlurb}>{issuer.blurb}</p>
-            <div class={certGrid}>
+            <div class={`card-grid ${certGrid}`}>
               {certs.map((c) => (
                 <a
                   href={c.url}

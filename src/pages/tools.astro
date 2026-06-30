@@ -65,12 +65,7 @@ const grpCount = css({
 });
 const grpBlurb = css({ color: 'textMuted', fontSize: '0.85rem', mt: '0.5rem', mb: 0 });
 // Fluid grid: as many ~230px columns as fit (1 on mobile, up to ~3 at 960px).
-const toolsGrid = css({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 230px), 1fr))',
-  gap: '0.65rem',
-  mt: '1rem',
-});
+const toolsGrid = css({ mt: '1rem' }); // columns/gap come from the shared .card-grid class
 const toolCard = css({
   display: 'flex',
   flexDirection: 'column',
@@ -131,7 +126,7 @@ const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto
             </h2>
           </summary>
           <p class={grpBlurb}>{p.blurb}</p>
-          <div class={toolsGrid}>
+          <div class={`card-grid ${toolsGrid}`}>
             {p.tools.map((t) => (
               <a
                 href={`/tools/${t.slug}/`}

@@ -63,6 +63,15 @@ html {
   overflow: hidden;
 }
 
+/* Unified card grid — one column size across the Glossary, Tools, Certifications,
+   and MITRE ATT&CK Map pages so cards feel consistent site-wide (single source of
+   truth). Pages add their own top margin via css(); this owns the columns + gap. */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 232px), 1fr));
+  gap: 0.65rem;
+}
+
 /* Search palette result rows (built in JS by Search.astro; styled here). */
 .search-opt {
   display: flex;

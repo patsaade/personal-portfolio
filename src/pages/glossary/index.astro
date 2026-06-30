@@ -50,7 +50,7 @@ const cardClass = css({
   display: 'flex',
   flexDirection: 'column',
   gap: '0.2rem',
-  p: '0.6rem 0.7rem',
+  p: '0.7rem 0.85rem',
   minH: '4rem',
   bg: 'bgCard',
   border: '1px solid token(colors.border)',
@@ -95,6 +95,27 @@ const attackTag = `${tag({ tone: 'primary', mono: true })} ${css({
   transition: 'background 150ms ease',
   _hover: { bg: 'color-mix(in srgb, token(colors.primary) 24%, transparent)' },
 })}`;
+
+// "ATT&CK only" filter toggle (next to Collapse all) — same shape as the
+// MITRE ATT&CK Map page's filter toggles.
+const filterToggle = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.35rem',
+  px: '0.6rem',
+  py: '0.35rem',
+  fontFamily: 'sans',
+  fontSize: '0.8rem',
+  fontWeight: 600,
+  color: 'textMuted',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  cursor: 'pointer',
+  transition: 'color 150ms ease, border-color 150ms ease, background 150ms ease',
+  _hover: { color: 'primary', borderColor: 'primary' },
+  '&[aria-pressed=true]': { color: 'primary', borderColor: 'primary', bg: 'color-mix(in srgb, token(colors.primary) 12%, transparent)' },
+});
 
 // Each category is a collapsible <details>, matching the Tools / Certifications pages.
 const groupDetails = css({ borderTop: '1px solid token(colors.border)', py: '1.25rem' });
@@ -179,7 +200,12 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
     <p role="status" aria-live="polite" class={css({ color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
       <span id="totd-result-count">{total}</span> terms — every one a concept, technique, or artifact you’ll meet in a real investigation.
     </p>
-    <CollapseAll target="[data-totd-group]" />
+    <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', ml: { sm: 'auto' } })}>
+      <button type="button" id="totd-attack-toggle" aria-pressed="false" data-sound="tick" class={filterToggle}>
+        <Icon name="crosshair" size={14} /> ATT&CK only
+      </button>
+      <CollapseAll target="[data-totd-group]" />
+    </div>
   </div>
 
   {/* ── Full glossary (collapsible by category) ── */}
@@ -198,7 +224,7 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
                 <span class={grpCount}>{terms.length}</span>
               </h3>
             </summary>
-            <div class={css({ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 215px), 1fr))', gap: '0.6rem', mt: '1rem' })}>
+            <div class={`card-grid ${css({ mt: '1rem' })}`}>
               {terms.map((t) => {
                 const tech = techBySlug[t.slug];
                 return (
@@ -206,6 +232,7 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
                     class={cardClass}
                     data-cat={tagSlug(t.category)}
                     data-totd-card={`${t.term} ${t.short} ${(t.aka ?? []).join(' ')} ${t.category} ${tech ? tech.id : ''}`.toLowerCase()}
+                    {...(tech ? { 'data-has-attack': true } : {})}
                   >
                     <a href={`/glossary/${t.slug}/`} class={cardLink}>
                       <span class={cardHead}>
@@ -264,8 +291,10 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
       var groups = Array.prototype.slice.call(document.querySelectorAll('[data-totd-group]'));
       var empty = document.getElementById('totd-empty');
       var countEl = document.getElementById('totd-result-count');
+      var attackToggle = document.getElementById('totd-attack-toggle');
       var query = '';
       var cats = [];
+      var attackOnly = false;
       function apply() {
         var q = query.toLowerCase();
         var shown = 0;
@@ -273,11 +302,12 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
           var c = cards[i];
           var matchText = !q || c.getAttribute('data-totd-card').indexOf(q) !== -1;
           var matchCat = cats.length === 0 || cats.indexOf(c.getAttribute('data-cat')) !== -1; // OR within categories
-          var show = matchText && matchCat;
+          var matchAttack = !attackOnly || c.hasAttribute('data-has-attack');
+          var show = matchText && matchCat && matchAttack;
           c.style.display = show ? '' : 'none';
           if (show) shown++;
         }
-        var filtering = !!q || cats.length > 0;
+        var filtering = !!q || cats.length > 0 || attackOnly;
         for (var g = 0; g < groups.length; g++) {
           var anyVisible = groups[g].querySelector('[data-totd-card]:not([style*="display: none"])');
           groups[g].style.display = anyVisible ? '' : 'none';
@@ -289,6 +319,11 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
       combobox.addEventListener('comboboxchange', function (e) {
         cats = e.detail.selected;
         query = e.detail.query;
+        apply();
+      });
+      if (attackToggle) attackToggle.addEventListener('click', function () {
+        attackOnly = !attackOnly;
+        attackToggle.setAttribute('aria-pressed', attackOnly ? 'true' : 'false');
         apply();
       });
     })();

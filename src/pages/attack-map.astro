@@ -55,7 +55,7 @@ const chevCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 
 const tacticHead = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', m: 0, fontSize: '1.05rem', fontWeight: 700 });
 const tacCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600, color: 'textMuted', bg: 'bgSubtle', border: '1px solid token(colors.border)', borderRadius: 'full', px: '0.5rem', py: '0.1rem' });
 const tacCoveredCount = css({ fontFamily: 'sans', fontSize: '0.72rem', fontWeight: 600, color: 'accent' });
-const grid = css({ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))', gap: '0.65rem', mt: '1rem' });
+const grid = css({ mt: '1rem' }); // columns/gap come from the shared .card-grid class
 const chip = css({
   display: 'flex',
   flexDirection: 'column',
@@ -95,6 +95,25 @@ const coveredToggle = css({
   transition: 'color 150ms ease, border-color 150ms ease, background 150ms ease',
   _hover: { color: 'accent', borderColor: 'accent' },
   '&[aria-pressed=true]': { color: 'accent', borderColor: 'accent', bg: 'color-mix(in srgb, token(colors.accent) 12%, transparent)' },
+});
+// "In glossary" filter — same shape as the covered toggle, primary-toned (glossary links use primary).
+const glossToggle = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.35rem',
+  px: '0.6rem',
+  py: '0.35rem',
+  fontFamily: 'sans',
+  fontSize: '0.8rem',
+  fontWeight: 600,
+  color: 'textMuted',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  cursor: 'pointer',
+  transition: 'color 150ms ease, border-color 150ms ease, background 150ms ease',
+  _hover: { color: 'primary', borderColor: 'primary' },
+  '&[aria-pressed=true]': { color: 'primary', borderColor: 'primary', bg: 'color-mix(in srgb, token(colors.primary) 12%, transparent)' },
 });
 const legendRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 1.25rem', mb: '1.75rem', fontSize: '0.78rem', color: 'textMuted' });
 const legendItem = css({ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' });
@@ -158,6 +177,9 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
       <button type="button" id="attack-covered-toggle" aria-pressed="false" data-sound="tick" class={coveredToggle}>
         <Icon name="check" size={14} /> Covered only
       </button>
+      <button type="button" id="attack-gloss-toggle" aria-pressed="false" data-sound="tick" class={glossToggle}>
+        <Icon name="book-open" size={14} /> In glossary
+      </button>
       <CollapseAll target="[data-tactic-group]" />
     </div>
   </div>
@@ -184,7 +206,7 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
                 {tacCovered > 0 && <span class={tacCoveredCount}>{tacCovered} covered</span>}
               </h2>
             </summary>
-            <div class={grid}>
+            <div class={`card-grid ${grid}`}>
               {byTactic[tactic].map((t) => {
                 const gloss = t.glossarySlug ? termBySlug(t.glossarySlug) : undefined;
                 const firstHere = !anchored.has(t.id);
@@ -198,6 +220,7 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
                     data-platforms={`|${(t.platforms ?? []).map(tagSlug).join('|')}|`}
                     data-attack-card={`${t.id} ${t.name} ${tactic} ${gloss ? gloss.term : ''}`.toLowerCase()}
                     {...(isCovered ? { 'data-covered': true } : {})}
+                    {...(gloss ? { 'data-has-gloss': true } : {})}
                   >
                     <div class={chipTop}>
                       <span class={chipId}>{t.id}</span>
@@ -235,11 +258,13 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
     (function () {
       var combobox = document.getElementById('attack-cb');
       var toggle = document.getElementById('attack-covered-toggle');
+      var glossToggle = document.getElementById('attack-gloss-toggle');
       var countEl = document.getElementById('attack-count');
       var empty = document.getElementById('attack-empty');
       var groups = Array.prototype.slice.call(document.querySelectorAll('[data-tactic-group]'));
       var chips = Array.prototype.slice.call(document.querySelectorAll('[data-attack-card]'));
       var coveredOnly = false;
+      var glossOnly = false;
       var query = '';
       var plats = [];
 
@@ -251,16 +276,17 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
           var c = chips[i];
           var okQ = !q || c.getAttribute('data-attack-card').indexOf(q) !== -1;
           var okCov = !coveredOnly || c.hasAttribute('data-covered');
+          var okGloss = !glossOnly || c.hasAttribute('data-has-gloss');
           var dp = c.getAttribute('data-platforms') || '';
           var okPlat = plats.length === 0 || plats.some(function (p) { return dp.indexOf('|' + p + '|') !== -1; }); // OR
-          var vis = okQ && okCov && okPlat;
+          var vis = okQ && okCov && okGloss && okPlat;
           c.style.display = vis ? '' : 'none';
           if (vis) {
             var id = c.getAttribute('data-attack-id');
             if (!seen[id]) { seen[id] = 1; shown++; } // count techniques once across tactics
           }
         }
-        var filtering = !!q || coveredOnly || plats.length > 0;
+        var filtering = !!q || coveredOnly || glossOnly || plats.length > 0;
         for (var g = 0; g < groups.length; g++) {
           var any = groups[g].querySelector('[data-attack-card]:not([style*="display: none"])');
           groups[g].style.display = any ? '' : 'none';
@@ -278,6 +304,11 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
       if (toggle) toggle.addEventListener('click', function () {
         coveredOnly = !coveredOnly;
         toggle.setAttribute('aria-pressed', coveredOnly ? 'true' : 'false');
+        apply();
+      });
+      if (glossToggle) glossToggle.addEventListener('click', function () {
+        glossOnly = !glossOnly;
+        glossToggle.setAttribute('aria-pressed', glossOnly ? 'true' : 'false');
         apply();
       });
     })();
