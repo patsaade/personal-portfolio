@@ -24,15 +24,20 @@ export const REPO = 'https://github.com/patsaade/personal-portfolio';
 export const NAV_LINKS = [
   { href: '/blog/', label: 'Blog' },
   { href: '/labs/', label: 'Labs' },
-  { href: '/tools/', label: 'Tools' },
   { href: '/about/', label: 'About' },
 ] as const;
 
-// Secondary links — surfaced in the nav "More" dropdown and the footer "More" column.
-export const MORE_LINKS = [
+// Analyst toolkit — the working / reference resources, grouped under the nav
+// "Analyst" dropdown and a footer column.
+export const ANALYST_LINKS = [
+  { href: '/tools/', label: 'Tools' },
   { href: '/glossary/', label: 'Glossary' },
-  { href: '/attack-map/', label: 'MITRE ATT&CK Map' },
-  { href: '/d3fend/', label: 'MITRE D3FEND' },
+  { href: '/attack-map/', label: 'MITRE ATT&CK coverage map' },
+  { href: '/d3fend/', label: 'MITRE D3FEND Map' },
+] as const;
+
+// Secondary / meta links — surfaced in the nav "More" dropdown and footer column.
+export const MORE_LINKS = [
   { href: '/certifications/', label: 'Certifications' },
   { href: '/privacy/', label: 'Privacy' },
   { href: '/colophon/', label: 'Colophon' },

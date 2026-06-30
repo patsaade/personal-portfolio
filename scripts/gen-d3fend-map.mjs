@@ -80,6 +80,14 @@ if (mapPath) {
   }
 }
 
+// Pull the authoritative "How it works" section out of a technique's kb-article
+// (markdown) for use as the on-page example. Empty when the article has no such section.
+const howItWorks = (kb) => {
+  if (!kb) return '';
+  const m = kb.match(/##+\s*How it works\b([\s\S]*?)(?=\n##+\s|$)/i);
+  return m ? m[1].replace(/\s*\n\s*/g, ' ').replace(/\s{2,}/g, ' ').trim() : '';
+};
+
 const nameById = {};
 for (const t of tactics) nameById[t.id] = t.name;
 
@@ -95,6 +103,7 @@ const techniques = techNodes
       tactic: tacticId ? nameById[tacticId] : 'Other',
       parentId: parentId ?? null,
       definition: (lit(n['d3f:definition'])[0] || '').trim(),
+      howItWorks: howItWorks(lit(n['d3f:kb-article'])[0]),
       url: `https://d3fend.mitre.org/technique/${n['@id']}/`,
       counters: [...(counters[local] || [])].sort(),
     };
@@ -117,6 +126,7 @@ export interface D3fendTechnique {
   tactic: string; // one of D3FEND_TACTIC_ORDER
   parentId: string | null; // parent technique's D3-id (lineage), or null for a base technique
   definition: string;
+  howItWorks: string; // MITRE's "How it works" example (from the kb-article), or ''
   url: string; // canonical D3FEND page
   counters: string[]; // ATT&CK technique IDs this defensive technique counters
 }

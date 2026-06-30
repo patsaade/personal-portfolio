@@ -37,6 +37,11 @@ html {
   transform: rotate(180deg);
 }
 
+/* Mobile nav collapsible sections (Analyst / More): rotate the chevron when open. */
+details.nav-mobile-section[open] .mobile-section-chev {
+  transform: rotate(180deg);
+}
+
 /* Prevent the theme flash (FOUC): <html> ships with .theme-preload so the
    pre-paint theme script can set the correct theme without animating the
    html/body color transitions. BaseHead removes the class after first paint. */

@@ -19,7 +19,6 @@ import CollapseAll from '../../components/CollapseAll.astro';
 import TagCombobox from '../../components/TagCombobox.astro';
 import FilterToggle from '../../components/FilterToggle.astro';
 import { tagSlug } from '../../utils/posts';
-import { assignTermSymbols } from '../../data/termSymbols';
 import { tag } from 'styled-system/recipes';
 
 const today = termForDate(new Date());
@@ -35,9 +34,6 @@ const total = SECURITY_TERMS.length;
 const catOptions = CATEGORIES.map((cat) => ({ cat, n: SECURITY_TERMS.filter((t) => t.category === cat).length }))
   .filter((c) => c.n > 0)
   .map((c) => ({ value: tagSlug(c.cat), label: c.cat, count: c.n }));
-
-// A unique decorative glyph per term (faint corner watermark on each card).
-const termSymbols = assignTermSymbols(SECURITY_TERMS.map((t) => t.slug));
 
 // Map each glossary slug to its ATT&CK technique (for the on-card chip).
 const techBySlug: Record<string, (typeof ATTACK_TECHNIQUES)[number]> = {};
@@ -76,19 +72,8 @@ const cardHead = css({ display: 'flex', alignItems: 'flex-start', justifyContent
 const cardTerm = css({ fontFamily: 'sans', fontWeight: 700, fontSize: '0.86rem', color: 'text', lineHeight: 1.3, minW: 0 });
 const goArrow = css({ color: 'textMuted', flexShrink: 0, mt: '0.1rem', transition: 'transform 200ms ease, color 200ms ease' });
 const cardShort = css({ fontSize: '0.79rem', color: 'textMuted', lineHeight: 1.4 });
-// Footer pinned to the bottom: the term's unique symbol (left) + ATT&CK chip (right).
-const cardFooter = css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', mt: 'auto', pt: '0.2rem' });
-// A unique monochrome symbol per term (see data/termSymbols.ts), bottom-left.
-// Decorative, so aria-hidden; symbol-friendly font stack for glyph coverage.
-const monogram = css({
-  fontFamily: "'Segoe UI Symbol', 'Apple Symbols', 'Noto Sans Symbols2', system-ui, sans-serif",
-  fontSize: '1.3rem',
-  lineHeight: 1,
-  color: 'color-mix(in srgb, token(colors.primary) 50%, transparent)',
-  userSelect: 'none',
-  pointerEvents: 'none',
-  flexShrink: 0,
-});
+// Footer pinned to the bottom: the ATT&CK chip (when the term maps to a technique).
+const cardFooter = css({ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', mt: 'auto', pt: '0.2rem' });
 const attackTag = `${tag({ tone: 'primary', mono: true })} ${css({
   position: 'relative',
   zIndex: 1,
@@ -224,14 +209,13 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
                       </span>
                       <span class={`${cardShort} totd-clamp2`}>{t.short}</span>
                     </a>
-                    <div class={cardFooter}>
-                      <span class={monogram} aria-hidden="true">{termSymbols[t.slug]}</span>
-                      {tech && (
+                    {tech && (
+                      <div class={cardFooter}>
                         <a href={`/attack-map/${tech.id}/`} class={attackTag} title={`MITRE ATT&CK ${tech.id} — ${tech.name}`}>
                           {tech.id}
                         </a>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}

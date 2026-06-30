@@ -148,6 +148,12 @@ distinct, intentional pattern; keep it to the key guarantees, not proper nouns.
 - **Card:** `bg: 'bgCard'`, `border: '1px solid token(colors.border)'`, `borderRadius: 'lg'`,
   optional `boxShadow: 'card'`. Hover: `transform: 'translateY(-2px/-3px)'` +
   `borderColor: 'primary'` (+ `boxShadow: 'cardHover'`), `transition` ~200ms.
+- **One card size across listing pages.** The Glossary, Tools, Certifications, MITRE
+  ATT&CK coverage map, and MITRE D3FEND Map grids all use the single shared
+  `.card-grid` class (in `global.css`: `repeat(auto-fill, minmax(min(100%, 232px), 1fr))`,
+  `gap: 0.65rem`) with `0.7rem 0.85rem` card padding — so cards are a consistent size
+  site-wide, not congested and not oversized. Don't fork per-page column widths; change
+  `.card-grid` once if the size needs tuning. Pages add only their own `mt` via `css()`.
 - **Icon tile** (stat/section/timeline markers): rounded square (`borderRadius: 'md'`,
   ~2.25rem), `bg` = primary tint (`color-mix … 13%`), `color: 'primary'`, icon ~18px.
 - **Badges** ([Badge.astro](../src/components/Badge.astro)): variants `default` (muted),

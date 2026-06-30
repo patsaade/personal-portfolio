@@ -72,13 +72,13 @@ const anchored = new Set<string>();
 ---
 
 <BaseLayout
-  title="MITRE D3FEND"
+  title="MITRE D3FEND Map"
   description="The full MITRE D3FEND matrix of defensive techniques, by tactic — each linked to its official D3FEND page, a detail page, and the ATT&CK techniques it counters."
 >
   <PageHeader
-    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'MITRE D3FEND' }]}
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'MITRE D3FEND Map' }]}
     eyebrow="Countermeasures"
-    title="MITRE D3FEND map"
+    title="MITRE D3FEND Map"
     description="The defensive counterpart to ATT&CK — defensive techniques grouped by tactic. Each links to its official D3FEND page and detail entry, and many map to the ATT&CK techniques they counter."
   />
 
@@ -93,6 +93,29 @@ const anchored = new Set<string>();
       defender can move from "what the attacker did" to "what stops it."
     </p>
   </aside>
+
+  {/* Cross-link to the offensive counterpart */}
+  <a
+    href="/attack-map/"
+    class={css({
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.6rem',
+      mb: '1.5rem',
+      p: '0.7rem 1rem',
+      borderRadius: 'md',
+      border: '1px solid token(colors.border)',
+      bg: 'bgCard',
+      fontSize: '0.9rem',
+      color: 'text',
+      transition: 'border-color 200ms ease, color 200ms ease',
+      _hover: { borderColor: 'primary', color: 'primary', '& .x-arrow': { transform: 'translateX(3px)' } },
+    })}
+  >
+    <Icon name="crosshair" size={16} class={css({ color: 'primary', flexShrink: 0 })} />
+    <span>See the offensive techniques — <strong class={css({ fontWeight: 700 })}>MITRE ATT&CK coverage map</strong></span>
+    <Icon name="arrow-right" size={15} class={`x-arrow ${css({ ml: 'auto', color: 'primary', flexShrink: 0, transition: 'transform 200ms ease' })}`} />
+  </a>
 
   {/* Search + tactic filter */}
   <div class={css({ mb: '0.6rem' })}>

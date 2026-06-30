@@ -1,7 +1,7 @@
 ---
 // Sticky top nav — brand, links, theme picker, mode toggle, mobile menu.
 import { css } from 'styled-system/css';
-import { NAV_LINKS, MORE_LINKS, SITE } from '../consts';
+import { NAV_LINKS, ANALYST_LINKS, MORE_LINKS, SITE } from '../consts';
 import ThemePicker from './ThemePicker.astro';
 import ModeToggle from './ModeToggle.astro';
 import SoundToggle from './SoundToggle.astro';
@@ -11,7 +11,12 @@ import Icon from './Icon.astro';
 const pathname = Astro.url.pathname;
 const isActive = (href: string) =>
   href === '/' ? pathname === '/' : pathname.startsWith(href);
-const moreActive = MORE_LINKS.some((l) => isActive(l.href));
+// Two grouped menus — desktop dropdowns, mobile collapsible <details>.
+const dropdowns = [
+  { id: 'analyst', label: 'Analyst', links: ANALYST_LINKS },
+  { id: 'more', label: 'More', links: MORE_LINKS },
+] as const;
+const isAnyActive = (links: readonly { href: string }[]) => links.some((l) => isActive(l.href));
 
 // Desktop nav "More" dropdown (mirrors the footer's More column). Opens on
 // hover/focus via CSS (the `.nav-more` ancestor) and on click/tap via JS.
@@ -72,6 +77,24 @@ const mobileLink = css({
   fontSize: '1rem',
   color: 'textMuted',
   '&[aria-current=page]': { color: 'primary', fontWeight: 600 },
+});
+// Mobile collapsible-section header (Analyst / More).
+const mobileSummary = css({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  py: '0.55rem',
+  cursor: 'pointer',
+  listStyle: 'none',
+  fontFamily: 'sans',
+  fontSize: '0.7rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: 'textMuted',
+  '&::-webkit-details-marker': { display: 'none' },
+  '&::marker': { display: 'none' },
+  '& .mobile-section-chev': { transition: 'transform 200ms ease' },
 });
 ---
 
@@ -171,29 +194,31 @@ const mobileLink = css({
             </li>
           ))
         }
-        <li class={`nav-more ${moreWrap}`}>
-          <button
-            type="button"
-            id="nav-more-btn"
-            aria-haspopup="true"
-            aria-expanded="false"
-            aria-label="More links"
-            data-sound="tick"
-            class={`nav-more-btn ${moreBtn} ${moreActive ? moreBtnActive : ''}`}
-          >
-            More
-            <Icon name="chevron-down" size={13} strokeWidth={2.5} class="nav-more-chev" />
-          </button>
-          <div id="nav-more-menu" class={`nav-more-menu ${moreMenuOuter}`}>
-            <div class={moreMenuInner} role="menu" aria-label="More">
-              {MORE_LINKS.map((link) => (
-                <a href={link.href} role="menuitem" aria-current={isActive(link.href) ? 'page' : undefined} class={moreLink}>
-                  {link.label}
-                </a>
-              ))}
+        {dropdowns.map((d) => (
+          <li class={`nav-more ${moreWrap}`}>
+            <button
+              type="button"
+              id={`nav-${d.id}-btn`}
+              aria-haspopup="true"
+              aria-expanded="false"
+              aria-label={`${d.label} links`}
+              data-sound="tick"
+              class={`nav-more-btn ${moreBtn} ${isAnyActive(d.links) ? moreBtnActive : ''}`}
+            >
+              {d.label}
+              <Icon name="chevron-down" size={13} strokeWidth={2.5} class="nav-more-chev" />
+            </button>
+            <div id={`nav-${d.id}-menu`} class={`nav-more-menu ${moreMenuOuter}`}>
+              <div class={moreMenuInner} role="menu" aria-label={d.label}>
+                {d.links.map((link) => (
+                  <a href={link.href} role="menuitem" aria-current={isActive(link.href) ? 'page' : undefined} class={moreLink}>
+                    {link.label}
+                  </a>
+                ))}
+              </div>
             </div>
-          </div>
-        </li>
+          </li>
+        ))}
       </ul>
 
       <button
@@ -313,15 +338,22 @@ const mobileLink = css({
         </li>
       ))
     }
-    <li class={css({ pt: '0.5rem', mt: '0.3rem', borderTop: '1px solid token(colors.border)' })}>
-      <span class={css({ fontFamily: 'sans', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'textMuted' })}>More</span>
-    </li>
     {
-      MORE_LINKS.map((link) => (
-        <li>
-          <a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class={mobileLink}>
-            {link.label}
-          </a>
+      dropdowns.map((d) => (
+        <li class={css({ borderTop: '1px solid token(colors.border)' })}>
+          <details class="nav-mobile-section">
+            <summary class={mobileSummary}>
+              {d.label}
+              <Icon name="chevron-down" size={15} class="mobile-section-chev" />
+            </summary>
+            <div class={css({ display: 'flex', flexDirection: 'column', pl: '0.5rem', pb: '0.3rem' })}>
+              {d.links.map((link) => (
+                <a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class={mobileLink}>
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          </details>
         </li>
       ))
     }
@@ -359,25 +391,36 @@ const mobileLink = css({
       else close();
     });
 
-    // Desktop "More" dropdown: hover/focus open via CSS; click toggles for touch.
-    var moreBtn = document.getElementById('nav-more-btn');
-    var moreMenu = document.getElementById('nav-more-menu');
-    if (moreBtn && moreMenu) {
-      function moreClose() {
-        moreMenu.removeAttribute('data-open');
-        moreBtn.setAttribute('aria-expanded', 'false');
-        document.removeEventListener('click', moreDoc, true);
-        document.removeEventListener('keydown', moreKey);
+    // Desktop dropdowns (Analyst / More): hover/focus open via CSS; click toggles
+    // for touch. One handler per .nav-more group; opening one closes the others.
+    var groups = Array.prototype.slice.call(document.querySelectorAll('.nav-more'));
+    groups.forEach(function (group) {
+      var btn = group.querySelector('.nav-more-btn');
+      var menu = group.querySelector('.nav-more-menu');
+      if (!btn || !menu) return;
+      function closeGroup() {
+        menu.removeAttribute('data-open');
+        btn.setAttribute('aria-expanded', 'false');
+        document.removeEventListener('click', onDoc, true);
+        document.removeEventListener('keydown', onEsc);
       }
-      function moreDoc(e) { if (!moreMenu.contains(e.target) && !moreBtn.contains(e.target)) moreClose(); }
-      function moreKey(e) { if (e.key === 'Escape') { moreClose(); moreBtn.focus(); } }
-      moreBtn.addEventListener('click', function () {
-        if (moreMenu.hasAttribute('data-open')) { moreClose(); return; }
-        moreMenu.setAttribute('data-open', '');
-        moreBtn.setAttribute('aria-expanded', 'true');
-        document.addEventListener('click', moreDoc, true);
-        document.addEventListener('keydown', moreKey);
+      function onDoc(e) { if (!menu.contains(e.target) && !btn.contains(e.target)) closeGroup(); }
+      function onEsc(e) { if (e.key === 'Escape') { closeGroup(); btn.focus(); } }
+      btn.addEventListener('click', function () {
+        var wasOpen = menu.hasAttribute('data-open');
+        // Close any other open dropdown first.
+        groups.forEach(function (g) {
+          var m = g.querySelector('.nav-more-menu');
+          var b = g.querySelector('.nav-more-btn');
+          if (m) m.removeAttribute('data-open');
+          if (b) b.setAttribute('aria-expanded', 'false');
+        });
+        if (wasOpen) return;
+        menu.setAttribute('data-open', '');
+        btn.setAttribute('aria-expanded', 'true');
+        document.addEventListener('click', onDoc, true);
+        document.addEventListener('keydown', onEsc);
       });
-    }
+    });
   })();
 </script>
