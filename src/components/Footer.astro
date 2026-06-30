@@ -1,7 +1,7 @@
 ---
 // Site footer — brand + social, two link columns, and a version/commit line.
 import { css } from 'styled-system/css';
-import { SITE, SOCIALS, NAV_LINKS } from '../consts';
+import { SITE, SOCIALS, NAV_LINKS, MORE_LINKS } from '../consts';
 import { VERSION, SHORT_COMMIT, COMMIT_URL } from '../utils/version';
 import PixelStar from './PixelStar.astro';
 import Icon from './Icon.astro';
@@ -37,14 +37,7 @@ const socialBtn = css({
   _hover: { color: 'primary', borderColor: 'primary', transform: 'translateY(-2px)' },
 });
 
-const moreLinks = [
-  { href: '/glossary/', label: 'Glossary' },
-  { href: '/attack-map/', label: 'ATT&CK map' },
-  { href: '/certifications/', label: 'Certifications' },
-  { href: '/tags/', label: 'Tags' },
-  { href: '/privacy/', label: 'Privacy' },
-  { href: '/colophon/', label: 'Colophon' },
-];
+const moreLinks = MORE_LINKS;
 ---
 
 <footer

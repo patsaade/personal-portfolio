@@ -103,13 +103,16 @@ export default defineConfig({
             gap: '0.3rem',
             flexShrink: 0,
             fontFamily: 'sans',
-            fontSize: '0.62rem',
+            // One size, chosen to fit typical chip content (single words, IDs, short
+            // phrases) comfortably — no cramped text, no overflow. Content auto-sizes
+            // the chip (nowrap), so longer labels just widen the pill.
+            fontSize: '0.68rem',
             fontWeight: 600,
             lineHeight: 1.5,
             letterSpacing: '0.04em',
             textTransform: 'uppercase',
-            px: '0.4rem',
-            py: '0.12rem',
+            px: '0.46rem',
+            py: '0.14rem',
             borderRadius: 'sm',
             whiteSpace: 'nowrap',
           },

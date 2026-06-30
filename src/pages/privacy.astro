@@ -12,7 +12,7 @@ const h2 = css({ fontSize: '1.3rem', fontWeight: 700, mt: '2.25rem', mb: '0.75re
 const list = css({ color: 'textMuted', lineHeight: 1.9, pl: '1.25rem', mb: '1rem' });
 const link = css({ color: 'primary', textDecoration: 'underline', _hover: { color: 'primaryHover' } });
 
-const updated = 'June 20, 2026';
+const updated = 'June 29, 2026';
 ---
 
 <BaseLayout
@@ -45,13 +45,20 @@ const updated = 'June 20, 2026';
 
   <h2 class={h2}>Cookies & local storage</h2>
   <p class={para}>
-    This site sets <strong class={css({ color: 'text' })}>no cookies</strong>. Your theme
-    preference (light/dark mode and chosen color palette) is saved in your browser's
-    <code class={css({ fontFamily: 'mono', fontSize: '0.9em' })}>localStorage</code>. That
-    value stays on your device, is never transmitted to a server, and you can clear it any
-    time via your browser settings. Other interactive features — including the daily
-    <strong class={css({ color: 'text' })}>Term of the Day</strong> ticker and glossary
-    search — run entirely in your browser and store nothing.
+    This site sets <strong class={css({ color: 'text' })}>no cookies</strong>. A couple of small
+    preferences are saved in your browser's
+    <code class={css({ fontFamily: 'mono', fontSize: '0.9em' })}>localStorage</code>: your theme
+    (light/dark mode and chosen color palette per mode) and whether you've turned on the optional
+    interface sounds. Those values stay on your device, are never transmitted to a server, and you
+    can clear them any time via your browser settings.
+  </p>
+  <p class={para}>
+    The site also registers a <strong class={css({ color: 'text' })}>service worker</strong> that
+    keeps a local cache of pages and assets (in your browser's Cache Storage) so it loads quickly and
+    works offline. That's simply your own copy of this public site — nothing about you is collected
+    or sent anywhere. Other interactive features — the daily
+    <strong class={css({ color: 'text' })}>Term of the Day</strong> ticker, the ⌘K site search, and
+    the custom cursor — run entirely in your browser and store nothing.
   </p>
 
   <h2 class={h2}>Hosting & server logs</h2>

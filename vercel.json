@@ -2,6 +2,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "astro",
   "buildCommand": "git fetch --unshallow 2>/dev/null || true; panda codegen && astro build",
+  "redirects": [
+    { "source": "/tags", "destination": "/blog/", "permanent": true },
+    { "source": "/tags/", "destination": "/blog/", "permanent": true },
+    { "source": "/tags/:tag", "destination": "/blog/?tag=:tag", "permanent": true },
+    { "source": "/tags/:tag/", "destination": "/blog/?tag=:tag", "permanent": true }
+  ],
   "headers": [
     {
       "source": "/(.*)",

@@ -11,10 +11,19 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
 import Icon from '../components/Icon.astro';
 import CollapseAll from '../components/CollapseAll.astro';
+import TagCombobox from '../components/TagCombobox.astro';
+import { tagSlug } from '../utils/posts';
 import { TOOL_PLATFORMS, TOTAL_TOOLS, costTone } from '../data/tools';
 
 const platforms = TOOL_PLATFORMS;
 const totalTools = TOTAL_TOOLS;
+
+// Function facet for the search combobox (each tool carries one function tag).
+const fnCounts: Record<string, number> = {};
+for (const p of platforms) for (const t of p.tools) fnCounts[t.fn] = (fnCounts[t.fn] ?? 0) + 1;
+const fnOptions = Object.keys(fnCounts)
+  .sort()
+  .map((fn) => ({ value: tagSlug(fn), label: fn, count: fnCounts[fn] }));
 
 // Each platform is a collapsible <details>. The summary holds the heading; the
 // blurb + tool grid live inside, so they fold away (and a search auto-expands them).
@@ -45,14 +54,14 @@ const chevCls = css({
 });
 const grpCount = css({
   fontFamily: 'sans',
-  fontSize: '0.78rem',
+  fontSize: '0.68rem',
   fontWeight: 600,
   color: 'textMuted',
   bg: 'bgSubtle',
   border: '1px solid token(colors.border)',
   borderRadius: 'full',
   px: '0.5rem',
-  py: '0.05rem',
+  py: '0.1rem',
 });
 const grpBlurb = css({ color: 'textMuted', fontSize: '0.85rem', mt: '0.5rem', mb: 0 });
 // Fluid grid: as many ~230px columns as fit (1 on mobile, up to ~3 at 960px).
@@ -93,32 +102,13 @@ const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto
     description="Free and open-source tools, grouped by where they run. A star (★) marks what's in my day-to-day kit; each tool links to a short reference page. Tags mark each tool's function and cost."
   />
 
-  {/* Search */}
-  <div class={css({ position: 'relative', mb: '0.6rem' })}>
-    <span class={css({ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)', color: 'textMuted', pointerEvents: 'none', display: 'inline-flex' })}>
-      <Icon name="search" size={17} />
-    </span>
-    <input
-      id="tools-search"
-      type="search"
-      autocomplete="off"
-      placeholder={`Search ${totalTools} tools…`}
-      aria-label="Search the toolkit"
-      class={css({
-        w: '100%',
-        pl: '2.6rem',
-        pr: '1rem',
-        py: '0.7rem',
-        fontSize: '0.95rem',
-        bg: 'bgCard',
-        color: 'text',
-        border: '1px solid token(colors.border)',
-        borderRadius: 'md',
-        outline: 'none',
-        transition: 'border-color 200ms ease',
-        _focusVisible: { borderColor: 'primary' },
-        _placeholder: { color: 'textMuted' },
-      })}
+  {/* Search + function filter (typeahead combobox) */}
+  <div class={css({ mb: '0.6rem' })}>
+    <TagCombobox
+      id="tools-cb"
+      options={fnOptions}
+      placeholder={`Search ${totalTools} tools, or type a function…`}
+      label="Search tools or filter by function"
     />
   </div>
   <div class={css({ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', mb: '0.75rem' })}>
@@ -146,6 +136,7 @@ const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto
               <a
                 href={`/tools/${t.slug}/`}
                 class={toolCard}
+                data-fn={tagSlug(t.fn)}
                 data-tools-card={`${t.name} ${t.use} ${t.fn} ${t.cost} ${p.title}`.toLowerCase()}
               >
                 <span class={toolHead}>
@@ -176,30 +167,39 @@ const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto
 
   <script is:inline>
     (function () {
-      var input = document.getElementById('tools-search');
-      if (!input) return;
+      var combobox = document.getElementById('tools-cb');
+      if (!combobox) return;
       var cards = Array.prototype.slice.call(document.querySelectorAll('[data-tools-card]'));
       var groups = Array.prototype.slice.call(document.querySelectorAll('[data-tools-group]'));
       var empty = document.getElementById('tools-empty');
       var countEl = document.getElementById('tools-result-count');
+      var query = '';
+      var fns = [];
       function apply() {
-        var q = input.value.trim().toLowerCase();
+        var q = query.toLowerCase();
         var shown = 0;
         for (var i = 0; i < cards.length; i++) {
-          var match = !q || cards[i].getAttribute('data-tools-card').indexOf(q) !== -1;
-          cards[i].style.display = match ? '' : 'none';
-          if (match) shown++;
+          var c = cards[i];
+          var matchText = !q || c.getAttribute('data-tools-card').indexOf(q) !== -1;
+          var matchFn = fns.length === 0 || fns.indexOf(c.getAttribute('data-fn')) !== -1; // OR within functions
+          var show = matchText && matchFn;
+          c.style.display = show ? '' : 'none';
+          if (show) shown++;
         }
+        var filtering = !!q || fns.length > 0;
         for (var g = 0; g < groups.length; g++) {
           var anyVisible = groups[g].querySelector('[data-tools-card]:not([style*="display: none"])');
           groups[g].style.display = anyVisible ? '' : 'none';
-          // While searching, expand groups that have a match; restore all when cleared.
-          groups[g].open = q ? !!anyVisible : true;
+          groups[g].open = filtering ? !!anyVisible : true; // expand matches while filtering, restore otherwise
         }
         if (empty) empty.hidden = shown !== 0;
         if (countEl) countEl.textContent = String(shown);
       }
-      input.addEventListener('input', apply);
+      combobox.addEventListener('comboboxchange', function (e) {
+        fns = e.detail.selected;
+        query = e.detail.query;
+        apply();
+      });
     })();
   </script>
 </BaseLayout>

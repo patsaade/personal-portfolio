@@ -197,7 +197,7 @@ const crumbs = [{ label: 'Home', href: '/' }, section, { label: title }];
           <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', mt: '1.25rem' })}>
             {tags.map((t) =>
               linkTags ? (
-                <a href={`/tags/${tagSlug(t)}/`} class={css({ _hover: { opacity: 0.85 } })}>
+                <a href={`/blog/?tag=${tagSlug(t)}`} class={css({ _hover: { opacity: 0.85 } })}>
                   <Badge>#{t}</Badge>
                 </a>
               ) : (

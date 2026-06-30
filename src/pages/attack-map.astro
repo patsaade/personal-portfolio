@@ -11,8 +11,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
 import Icon from '../components/Icon.astro';
 import CollapseAll from '../components/CollapseAll.astro';
+import TagCombobox from '../components/TagCombobox.astro';
 import { tag } from 'styled-system/recipes';
-import { getSortedPosts, getSortedLabs } from '../utils/posts';
+import { getSortedPosts, getSortedLabs, tagSlug } from '../utils/posts';
 import { termBySlug } from '../data/securityTerms';
 import { ATTACK_TECHNIQUES, ATTACK_TACTIC_ORDER, ATTACK_VERSION } from '../data/references';
 
@@ -32,6 +33,14 @@ const total = ATTACK_TECHNIQUES.length;
 const linkedCount = ATTACK_TECHNIQUES.filter((t) => t.glossarySlug).length;
 const coveredCount = ATTACK_TECHNIQUES.filter((t) => covered.has(t.id)).length;
 
+// Platform facet for the search combobox — cross-cuts the tactic grouping, so you
+// can narrow to e.g. Windows or Linux techniques. A technique runs on several.
+const platCounts: Record<string, number> = {};
+for (const t of ATTACK_TECHNIQUES) for (const p of t.platforms ?? []) platCounts[p] = (platCounts[p] ?? 0) + 1;
+const platformOptions = Object.entries(platCounts)
+  .sort((a, b) => b[1] - a[1])
+  .map(([p, n]) => ({ value: tagSlug(p), label: p, count: n }));
+
 // Each tactic is a collapsible <details>, matching the glossary / Tools / Certifications pages.
 const groupDetails = css({ borderTop: '1px solid token(colors.border)', py: '1.25rem' });
 const groupSummary = css({
@@ -44,7 +53,7 @@ const groupSummary = css({
 });
 const chevCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 200ms ease', 'details[open] &': { transform: 'rotate(90deg)' } });
 const tacticHead = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', m: 0, fontSize: '1.05rem', fontWeight: 700 });
-const tacCount = css({ fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 400, color: 'textMuted' });
+const tacCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600, color: 'textMuted', bg: 'bgSubtle', border: '1px solid token(colors.border)', borderRadius: 'full', px: '0.5rem', py: '0.1rem' });
 const tacCoveredCount = css({ fontFamily: 'sans', fontSize: '0.72rem', fontWeight: 600, color: 'accent' });
 const grid = css({ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))', gap: '0.65rem', mt: '1rem' });
 const chip = css({
@@ -68,23 +77,6 @@ const chipName = css({ display: 'inline-flex', alignItems: 'center', gap: '0.3re
 const chipGloss = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.78rem', fontWeight: 600, color: 'textMuted', mt: 'auto', _hover: { color: 'primary' } });
 
 // Search + controls.
-const searchWrap = css({ position: 'relative', mb: '0.6rem' });
-const searchIcon = css({ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)', color: 'textMuted', pointerEvents: 'none', display: 'inline-flex' });
-const searchInput = css({
-  w: '100%',
-  pl: '2.6rem',
-  pr: '1rem',
-  py: '0.7rem',
-  fontSize: '0.95rem',
-  bg: 'bgCard',
-  color: 'text',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'md',
-  outline: 'none',
-  transition: 'border-color 200ms ease',
-  _focusVisible: { borderColor: 'primary' },
-  _placeholder: { color: 'textMuted' },
-});
 const statLink = css({ color: 'primary', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', _hover: { textDecoration: 'underline' } });
 const coveredToggle = css({
   display: 'inline-flex',
@@ -141,16 +133,13 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
     </p>
   </aside>
 
-  {/* Search */}
-  <div class={searchWrap}>
-    <span class={searchIcon}><Icon name="search" size={17} /></span>
-    <input
-      id="attack-search"
-      type="search"
-      autocomplete="off"
-      placeholder={`Search ${total} techniques by name or ID…`}
-      aria-label="Search ATT&CK techniques"
-      class={searchInput}
+  {/* Search + platform filter (typeahead combobox) */}
+  <div class={css({ mb: '0.6rem' })}>
+    <TagCombobox
+      id="attack-cb"
+      options={platformOptions}
+      placeholder={`Search ${total} techniques by name or ID, or type a platform…`}
+      label="Search ATT&CK techniques or filter by platform"
     />
   </div>
 
@@ -206,6 +195,7 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
                     id={firstHere ? t.id : undefined}
                     class={chip}
                     data-attack-id={t.id}
+                    data-platforms={`|${(t.platforms ?? []).map(tagSlug).join('|')}|`}
                     data-attack-card={`${t.id} ${t.name} ${tactic} ${gloss ? gloss.term : ''}`.toLowerCase()}
                     {...(isCovered ? { 'data-covered': true } : {})}
                   >
@@ -243,30 +233,34 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
 
   <script is:inline>
     (function () {
-      var input = document.getElementById('attack-search');
+      var combobox = document.getElementById('attack-cb');
       var toggle = document.getElementById('attack-covered-toggle');
       var countEl = document.getElementById('attack-count');
       var empty = document.getElementById('attack-empty');
       var groups = Array.prototype.slice.call(document.querySelectorAll('[data-tactic-group]'));
       var chips = Array.prototype.slice.call(document.querySelectorAll('[data-attack-card]'));
       var coveredOnly = false;
+      var query = '';
+      var plats = [];
 
       function apply() {
-        var q = input ? input.value.trim().toLowerCase() : '';
+        var q = query.toLowerCase();
         var seen = {};
         var shown = 0;
         for (var i = 0; i < chips.length; i++) {
           var c = chips[i];
           var okQ = !q || c.getAttribute('data-attack-card').indexOf(q) !== -1;
           var okCov = !coveredOnly || c.hasAttribute('data-covered');
-          var vis = okQ && okCov;
+          var dp = c.getAttribute('data-platforms') || '';
+          var okPlat = plats.length === 0 || plats.some(function (p) { return dp.indexOf('|' + p + '|') !== -1; }); // OR
+          var vis = okQ && okCov && okPlat;
           c.style.display = vis ? '' : 'none';
           if (vis) {
             var id = c.getAttribute('data-attack-id');
             if (!seen[id]) { seen[id] = 1; shown++; } // count techniques once across tactics
           }
         }
-        var filtering = !!q || coveredOnly;
+        var filtering = !!q || coveredOnly || plats.length > 0;
         for (var g = 0; g < groups.length; g++) {
           var any = groups[g].querySelector('[data-attack-card]:not([style*="display: none"])');
           groups[g].style.display = any ? '' : 'none';
@@ -276,7 +270,11 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
         if (empty) empty.hidden = shown !== 0;
       }
 
-      if (input) input.addEventListener('input', apply);
+      if (combobox) combobox.addEventListener('comboboxchange', function (e) {
+        plats = e.detail.selected;
+        query = e.detail.query;
+        apply();
+      });
       if (toggle) toggle.addEventListener('click', function () {
         coveredOnly = !coveredOnly;
         toggle.setAttribute('aria-pressed', coveredOnly ? 'true' : 'false');

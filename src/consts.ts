@@ -28,6 +28,15 @@ export const NAV_LINKS = [
   { href: '/about/', label: 'About' },
 ] as const;
 
+// Secondary links — surfaced in the nav "More" dropdown and the footer "More" column.
+export const MORE_LINKS = [
+  { href: '/glossary/', label: 'Glossary' },
+  { href: '/attack-map/', label: 'ATT&CK map' },
+  { href: '/certifications/', label: 'Certifications' },
+  { href: '/privacy/', label: 'Privacy' },
+  { href: '/colophon/', label: 'Colophon' },
+] as const;
+
 // Icon name (see Icon.astro) for each content pillar / category.
 export const CATEGORY_ICONS: Record<string, string> = {
   'Memory Forensics': 'cpu',

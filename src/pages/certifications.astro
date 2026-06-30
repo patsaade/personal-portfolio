@@ -9,9 +9,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
 import Icon from '../components/Icon.astro';
 import CollapseAll from '../components/CollapseAll.astro';
+import TagCombobox from '../components/TagCombobox.astro';
+import { tagSlug } from '../utils/posts';
 import { tag } from 'styled-system/recipes';
 import { SOCIALS } from '../consts';
 import { CERT_ISSUERS, CERTIFICATIONS, EARNED_CERTS, PURSUING_CERTS } from '../data/certifications';
+
+// Focus-area facet for the search combobox (each credential carries one focus tag).
+const focusCounts: Record<string, number> = {};
+for (const c of CERTIFICATIONS) focusCounts[c.focus] = (focusCounts[c.focus] ?? 0) + 1;
+const focusOptions = Object.keys(focusCounts)
+  .sort()
+  .map((f) => ({ value: tagSlug(f), label: f, count: focusCounts[f] }));
 
 // Each issuer is a collapsible <details>; the credential grid lives inside.
 const groupDetails = css({ borderTop: '1px solid token(colors.border)', py: '1.25rem' });
@@ -40,14 +49,14 @@ const chevCls = css({
 });
 const grpCount = css({
   fontFamily: 'sans',
-  fontSize: '0.78rem',
+  fontSize: '0.68rem',
   fontWeight: 600,
   color: 'textMuted',
   bg: 'bgSubtle',
   border: '1px solid token(colors.border)',
   borderRadius: 'full',
   px: '0.5rem',
-  py: '0.05rem',
+  py: '0.1rem',
 });
 const grpBlurb = css({ color: 'textMuted', fontSize: '0.85rem', mt: '0.5rem', mb: 0 });
 const certGrid = css({
@@ -89,6 +98,16 @@ const metaLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.35r
     description="Every credential I hold, plus the GIAC forensics track I'm working toward — grouped by issuer. Each earned badge links to Credly to verify."
   />
 
+  {/* Search + focus filter (typeahead combobox) */}
+  <div class={css({ mb: '0.75rem' })}>
+    <TagCombobox
+      id="cert-cb"
+      options={focusOptions}
+      placeholder={`Search ${CERTIFICATIONS.length} certifications, or type a focus area…`}
+      label="Search certifications or filter by focus area"
+    />
+  </div>
+
   <div class={css({ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', mb: '0.75rem' })}>
     <p class={css({ color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
       {EARNED_CERTS.length} earned · {PURSUING_CERTS.length} in pursuit ·{' '}
@@ -117,7 +136,14 @@ const metaLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.35r
             <p class={grpBlurb}>{issuer.blurb}</p>
             <div class={certGrid}>
               {certs.map((c) => (
-                <a href={c.url} target="_blank" rel="noopener" class={certCard}>
+                <a
+                  href={c.url}
+                  target="_blank"
+                  rel="noopener"
+                  class={certCard}
+                  data-focus={tagSlug(c.focus)}
+                  data-cert-card={`${c.name} ${c.full} ${c.focus} ${c.issuer}`.toLowerCase()}
+                >
                   <span class={certHead}>
                     <span class={certName}>
                       <Icon
@@ -140,4 +166,44 @@ const metaLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.35r
       })
     }
   </div>
+
+  <p id="cert-empty" hidden class={css({ color: 'textMuted', textAlign: 'center', py: '3rem' })}>
+    No certifications match.
+  </p>
+
+  <script is:inline>
+    (function () {
+      var combobox = document.getElementById('cert-cb');
+      if (!combobox) return;
+      var cards = Array.prototype.slice.call(document.querySelectorAll('[data-cert-card]'));
+      var groups = Array.prototype.slice.call(document.querySelectorAll('[data-cert-group]'));
+      var empty = document.getElementById('cert-empty');
+      var query = '';
+      var focuses = [];
+      function apply() {
+        var q = query.toLowerCase();
+        var shown = 0;
+        for (var i = 0; i < cards.length; i++) {
+          var c = cards[i];
+          var matchText = !q || c.getAttribute('data-cert-card').indexOf(q) !== -1;
+          var matchFocus = focuses.length === 0 || focuses.indexOf(c.getAttribute('data-focus')) !== -1; // OR
+          var show = matchText && matchFocus;
+          c.style.display = show ? '' : 'none';
+          if (show) shown++;
+        }
+        var filtering = !!q || focuses.length > 0;
+        for (var g = 0; g < groups.length; g++) {
+          var anyVisible = groups[g].querySelector('[data-cert-card]:not([style*="display: none"])');
+          groups[g].style.display = anyVisible ? '' : 'none';
+          groups[g].open = filtering ? !!anyVisible : true;
+        }
+        if (empty) empty.hidden = shown !== 0;
+      }
+      combobox.addEventListener('comboboxchange', function (e) {
+        focuses = e.detail.selected;
+        query = e.detail.query;
+        apply();
+      });
+    })();
+  </script>
 </BaseLayout>

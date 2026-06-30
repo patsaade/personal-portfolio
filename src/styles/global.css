@@ -24,6 +24,19 @@ html {
   text-underline-offset: 2px;
 }
 
+/* Nav "More" dropdown (Navigation.astro): open on hover/focus (desktop) or when JS
+   sets data-open (touch tap); rotate the chevron while open. Plain CSS here because
+   these are cross-element ancestor selectors Panda's css() types reject. */
+.nav-more:hover .nav-more-menu,
+.nav-more:focus-within .nav-more-menu,
+.nav-more-menu[data-open] {
+  display: block;
+}
+.nav-more:hover .nav-more-chev,
+.nav-more-btn[aria-expanded='true'] .nav-more-chev {
+  transform: rotate(180deg);
+}
+
 /* Prevent the theme flash (FOUC): <html> ships with .theme-preload so the
    pre-paint theme script can set the correct theme without animating the
    html/body color transitions. BaseHead removes the class after first paint. */

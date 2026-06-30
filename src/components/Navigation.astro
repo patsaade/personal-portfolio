@@ -1,7 +1,7 @@
 ---
 // Sticky top nav — brand, links, theme picker, mode toggle, mobile menu.
 import { css } from 'styled-system/css';
-import { NAV_LINKS, SITE } from '../consts';
+import { NAV_LINKS, MORE_LINKS, SITE } from '../consts';
 import ThemePicker from './ThemePicker.astro';
 import ModeToggle from './ModeToggle.astro';
 import SoundToggle from './SoundToggle.astro';
@@ -11,6 +11,68 @@ import Icon from './Icon.astro';
 const pathname = Astro.url.pathname;
 const isActive = (href: string) =>
   href === '/' ? pathname === '/' : pathname.startsWith(href);
+const moreActive = MORE_LINKS.some((l) => isActive(l.href));
+
+// Desktop nav "More" dropdown (mirrors the footer's More column). Opens on
+// hover/focus via CSS (the `.nav-more` ancestor) and on click/tap via JS.
+const moreWrap = css({ position: 'relative', display: 'flex', alignItems: 'center' });
+const moreBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.2rem',
+  fontFamily: 'inherit',
+  fontSize: '0.95rem',
+  fontWeight: 500,
+  color: 'textMuted',
+  bg: 'transparent',
+  border: 'none',
+  p: 0,
+  cursor: 'pointer',
+  borderBottom: '2px solid transparent',
+  pb: '2px',
+  transition: 'color 200ms ease',
+  _hover: { color: 'text' },
+  '& .nav-more-chev': { transition: 'transform 200ms ease' },
+});
+const moreBtnActive = css({ color: 'primary', borderBottomColor: 'primary' });
+const moreMenuOuter = css({
+  position: 'absolute',
+  top: '100%',
+  right: 0,
+  pt: '0.6rem', // transparent hover-bridge so the menu stays open between button and panel
+  display: 'none',
+  zIndex: 60,
+});
+const moreMenuInner = css({
+  minW: '190px',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'lg',
+  boxShadow: 'cardHover',
+  p: '0.4rem',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.05rem',
+});
+const moreLink = css({
+  display: 'block',
+  px: '0.65rem',
+  py: '0.45rem',
+  fontSize: '0.9rem',
+  color: 'textMuted',
+  borderRadius: 'md',
+  whiteSpace: 'nowrap',
+  transition: 'color 150ms ease, background 150ms ease',
+  _hover: { color: 'primary', bg: 'bgSubtle' },
+  '&[aria-current=page]': { color: 'primary', fontWeight: 600 },
+});
+const mobileLink = css({
+  display: 'block',
+  py: '0.6rem',
+  fontSize: '1rem',
+  color: 'textMuted',
+  '&[aria-current=page]': { color: 'primary', fontWeight: 600 },
+});
 ---
 
 <header
@@ -109,6 +171,29 @@ const isActive = (href: string) =>
             </li>
           ))
         }
+        <li class={`nav-more ${moreWrap}`}>
+          <button
+            type="button"
+            id="nav-more-btn"
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-label="More links"
+            data-sound="tick"
+            class={`nav-more-btn ${moreBtn} ${moreActive ? moreBtnActive : ''}`}
+          >
+            More
+            <Icon name="chevron-down" size={13} strokeWidth={2.5} class="nav-more-chev" />
+          </button>
+          <div id="nav-more-menu" class={`nav-more-menu ${moreMenuOuter}`}>
+            <div class={moreMenuInner} role="menu" aria-label="More">
+              {MORE_LINKS.map((link) => (
+                <a href={link.href} role="menuitem" aria-current={isActive(link.href) ? 'page' : undefined} class={moreLink}>
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          </div>
+        </li>
       </ul>
 
       <button
@@ -222,17 +307,19 @@ const isActive = (href: string) =>
     {
       NAV_LINKS.map((link) => (
         <li>
-          <a
-            href={link.href}
-            aria-current={isActive(link.href) ? 'page' : undefined}
-            class={css({
-              display: 'block',
-              py: '0.6rem',
-              fontSize: '1rem',
-              color: 'textMuted',
-              '&[aria-current=page]': { color: 'primary', fontWeight: 600 },
-            })}
-          >
+          <a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class={mobileLink}>
+            {link.label}
+          </a>
+        </li>
+      ))
+    }
+    <li class={css({ pt: '0.5rem', mt: '0.3rem', borderTop: '1px solid token(colors.border)' })}>
+      <span class={css({ fontFamily: 'sans', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'textMuted' })}>More</span>
+    </li>
+    {
+      MORE_LINKS.map((link) => (
+        <li>
+          <a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class={mobileLink}>
             {link.label}
           </a>
         </li>
@@ -271,5 +358,26 @@ const isActive = (href: string) =>
       if (menu.hasAttribute('hidden')) open();
       else close();
     });
+
+    // Desktop "More" dropdown: hover/focus open via CSS; click toggles for touch.
+    var moreBtn = document.getElementById('nav-more-btn');
+    var moreMenu = document.getElementById('nav-more-menu');
+    if (moreBtn && moreMenu) {
+      function moreClose() {
+        moreMenu.removeAttribute('data-open');
+        moreBtn.setAttribute('aria-expanded', 'false');
+        document.removeEventListener('click', moreDoc, true);
+        document.removeEventListener('keydown', moreKey);
+      }
+      function moreDoc(e) { if (!moreMenu.contains(e.target) && !moreBtn.contains(e.target)) moreClose(); }
+      function moreKey(e) { if (e.key === 'Escape') { moreClose(); moreBtn.focus(); } }
+      moreBtn.addEventListener('click', function () {
+        if (moreMenu.hasAttribute('data-open')) { moreClose(); return; }
+        moreMenu.setAttribute('data-open', '');
+        moreBtn.setAttribute('aria-expanded', 'true');
+        document.addEventListener('click', moreDoc, true);
+        document.addEventListener('keydown', moreKey);
+      });
+    }
   })();
 </script>

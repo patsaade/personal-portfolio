@@ -1,20 +1,28 @@
 ---
-// Blog listing — searchable, category-filterable grid of posts (client-side filtering).
-// Static page — prerender to HTML served from the CDN (output: 'server' is on-demand by default).
+// Blog listing — a faceted, client-side search. The TagCombobox is a typeahead
+// multi-select: type to find a tag (e.g. "car" → "career"), click/Enter to add it
+// as a removable token. Its text also free-text-filters posts. Tags filter with
+// AND (a post must carry every selected tag). Category chips are a second facet.
+// State syncs to the URL (?q / ?tag / ?cat) so any view is shareable — this folds
+// in the old /tags/ pages. Static page — prerendered to the CDN.
 export const prerender = true;
 import { css } from 'styled-system/css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import BlogCard from '../../components/BlogCard.astro';
+import TagCombobox from '../../components/TagCombobox.astro';
 import Icon from '../../components/Icon.astro';
-import { getSortedPosts, estimateReadTime } from '../../utils/posts';
+import { getSortedPosts, getTags, tagSlug, estimateReadTime } from '../../utils/posts';
 import { categoryIcon } from '../../consts';
 
 const posts = await getSortedPosts();
-// Show a filter chip for every category actually present in the posts.
 const categories = [...new Set(posts.map((p) => p.data.category))];
+const tagOptions = (await getTags()).map((t) => ({ value: t.slug, label: t.tag, count: t.count }));
 
-const chip = css({
+const helper = css({ fontSize: '0.78rem', color: 'textMuted', m: 0 });
+const filterRow = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' });
+const rowLabel = css({ fontFamily: 'sans', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted', mr: '0.1rem' });
+const catChip = css({
   display: 'inline-flex',
   alignItems: 'center',
   gap: '0.35rem',
@@ -31,9 +39,11 @@ const chip = css({
   _hover: { borderColor: 'primary', color: 'text' },
   '&[data-active]': { bg: 'primary', color: 'onPrimary', borderColor: 'primary' },
 });
+const clearBtn = css({ ml: { sm: 'auto' }, fontFamily: 'sans', fontSize: '0.8rem', fontWeight: 600, color: 'textMuted', bg: 'transparent', border: 'none', cursor: 'pointer', _hover: { color: 'primary' } });
+const countLine = css({ fontSize: '0.85rem', color: 'textMuted', mb: '1.25rem' });
 ---
 
-<BaseLayout title="Blog" description="DFIR deep dives: memory forensics, host artifacts, EDR analysis, timeline reconstruction.">
+<BaseLayout title="Blog" description="DFIR deep dives: memory forensics, host artifacts, EDR analysis, timeline reconstruction. Search by keyword, category, or tag.">
   <PageHeader
     breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Blog' }]}
     eyebrow="Blog"
@@ -41,143 +51,140 @@ const chip = css({
     description="Memory forensics, host & EDR artifact analysis, timeline reconstruction, and the tooling that ties it together."
   />
 
-  <div class={css({ mb: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' })}>
-    <div class={css({ position: 'relative' })}>
-      <Icon
-        name="search"
-        size={17}
-        class={css({
-          position: 'absolute',
-          left: '0.85rem',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          color: 'textMuted',
-          pointerEvents: 'none',
-        })}
-      />
-      <input
-        type="search"
-        id="post-search"
-        placeholder="Search posts, tools, tags…"
-        aria-label="Search posts"
-        class={css({
-          w: '100%',
-          pl: '2.6rem',
-          pr: '1rem',
-          py: '0.7rem',
-          fontSize: '0.95rem',
-          bg: 'bgCard',
-          border: '1px solid token(colors.border)',
-          borderRadius: 'md',
-          color: 'text',
-          fontFamily: 'sans',
-          _focus: { outline: 'none', borderColor: 'primary' },
-        })}
-      />
+  {posts.length > 0 && (
+    <div class={css({ mb: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' })}>
+      <TagCombobox id="blog-tags" options={tagOptions} placeholder="Search posts, or type a tag like “car”…" label="Filter posts by tag" />
+      <p class={helper}>Type to search, or pick tags — posts match <strong class={css({ color: 'text' })}>every</strong> tag you add.</p>
+      <div class={filterRow}>
+        <span class={rowLabel}>Category</span>
+        <button class={catChip} data-filter="all" data-active type="button">All</button>
+        {categories.map((c) => (
+          <button class={catChip} data-filter={c} type="button">
+            <Icon name={categoryIcon(c) as any} size={13} />{c}
+          </button>
+        ))}
+        <button id="blog-clear" type="button" hidden class={clearBtn}>Clear filters</button>
+      </div>
     </div>
-    <div class={css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' })}>
-      <button class={chip} data-filter="all" data-active type="button">All</button>
-      {categories.map((c) => (
-        <button class={chip} data-filter={c} type="button">
-          <Icon name={categoryIcon(c) as any} size={13} />{c}
-        </button>
-      ))}
-      <a
-        href="/tags/"
-        class={css({
-          ml: { sm: 'auto' },
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.3rem',
-          fontSize: '0.82rem',
-          fontFamily: 'sans',
-          color: 'textMuted',
-          _hover: { color: 'primary' },
-        })}
-      >
-        <Icon name="tag" size={13} /> Browse by tag
-      </a>
-    </div>
-  </div>
+  )}
 
   {
     posts.length > 0 ? (
-      <div
-        id="post-grid"
-        class={css({
-          display: 'grid',
-          gridTemplateColumns: { base: '1fr', md: 'repeat(2, 1fr)' },
-          gap: '1.25rem',
-        })}
-      >
-        {posts.map((p) => (
-          <div
-            class="post-item"
-            data-category={p.data.category}
-            data-search={`${p.data.title} ${p.data.excerpt} ${p.data.tags.join(' ')} ${p.data.tools.join(' ')} ${p.data.category}`.toLowerCase()}
-          >
-            <BlogCard
-              href={`/blog/${p.id}/`}
-              title={p.data.title}
-              excerpt={p.data.excerpt}
-              category={p.data.category}
-              date={p.data.date}
-              readTime={estimateReadTime(p.body, p.data.readTime)}
-              difficulty={p.data.difficulty}
-              tags={p.data.tags}
-              featured={p.data.featured}
-            />
-          </div>
-        ))}
-      </div>
+      <>
+        <p class={countLine}>
+          <span id="post-count">{posts.length}</span> <span id="post-count-word">{posts.length === 1 ? 'post' : 'posts'}</span>
+        </p>
+        <div
+          id="post-grid"
+          class={css({ display: 'grid', gridTemplateColumns: { base: '1fr', md: 'repeat(2, 1fr)' }, gap: '1.25rem' })}
+        >
+          {posts.map((p) => (
+            <div
+              class="post-item"
+              data-category={p.data.category}
+              data-tags={`|${p.data.tags.map(tagSlug).join('|')}|`}
+              data-search={`${p.data.title} ${p.data.excerpt} ${p.data.tags.join(' ')} ${p.data.tools.join(' ')} ${p.data.category}`.toLowerCase()}
+            >
+              <BlogCard
+                href={`/blog/${p.id}/`}
+                title={p.data.title}
+                excerpt={p.data.excerpt}
+                category={p.data.category}
+                date={p.data.date}
+                readTime={estimateReadTime(p.body, p.data.readTime)}
+                difficulty={p.data.difficulty}
+                tags={p.data.tags}
+                featured={p.data.featured}
+              />
+            </div>
+          ))}
+        </div>
+      </>
     ) : (
       <p class={css({ color: 'textMuted' })}>No posts yet — check back soon.</p>
     )
   }
 
-  <p
-    id="no-results"
-    hidden
-    class={css({ color: 'textMuted', textAlign: 'center', py: '2rem' })}
-  >
+  <p id="no-results" hidden class={css({ color: 'textMuted', textAlign: 'center', py: '2rem' })}>
     No posts match your filters.
   </p>
 </BaseLayout>
 
 <script is:inline>
   (function () {
-    var search = document.getElementById('post-search');
-    var chips = Array.from(document.querySelectorAll('[data-filter]'));
-    var items = Array.from(document.querySelectorAll('.post-item'));
+    var combobox = document.getElementById('blog-tags');
+    var catChips = Array.prototype.slice.call(document.querySelectorAll('[data-filter]'));
+    var items = Array.prototype.slice.call(document.querySelectorAll('.post-item'));
+    var countEl = document.getElementById('post-count');
+    var wordEl = document.getElementById('post-count-word');
     var noResults = document.getElementById('no-results');
-    var activeCategory = 'all';
+    var clearBtn = document.getElementById('blog-clear');
 
+    var activeCategory = 'all';
+    var selectedTags = [];
+    var query = '';
+
+    function syncURL() {
+      var params = new URLSearchParams();
+      if (query) params.set('q', query);
+      if (selectedTags.length) params.set('tag', selectedTags.join(','));
+      if (activeCategory !== 'all') params.set('cat', activeCategory);
+      var qs = params.toString();
+      try { history.replaceState(null, '', qs ? '?' + qs : location.pathname); } catch (e) {}
+    }
     function apply() {
-      var q = (search && search.value ? search.value : '').trim().toLowerCase();
+      var q = query.toLowerCase();
       var visible = 0;
       items.forEach(function (item) {
         var matchCat = activeCategory === 'all' || item.getAttribute('data-category') === activeCategory;
-        var matchSearch = !q || (item.getAttribute('data-search') || '').indexOf(q) !== -1;
-        var show = matchCat && matchSearch;
+        var matchText = !q || (item.getAttribute('data-search') || '').indexOf(q) !== -1;
+        var tags = item.getAttribute('data-tags') || '';
+        var matchTags = selectedTags.every(function (s) { return tags.indexOf('|' + s + '|') !== -1; }); // AND
+        var show = matchCat && matchText && matchTags;
         item.style.display = show ? '' : 'none';
         if (show) visible++;
       });
-      if (noResults) {
-        if (visible === 0) noResults.removeAttribute('hidden');
-        else noResults.setAttribute('hidden', '');
-      }
+      if (countEl) countEl.textContent = String(visible);
+      if (wordEl) wordEl.textContent = visible === 1 ? 'post' : 'posts';
+      if (noResults) noResults.hidden = visible !== 0;
+      catChips.forEach(function (c) {
+        if (c.getAttribute('data-filter') === activeCategory) c.setAttribute('data-active', '');
+        else c.removeAttribute('data-active');
+      });
+      if (clearBtn) clearBtn.hidden = !(query || selectedTags.length || activeCategory !== 'all');
+      syncURL();
     }
 
-    chips.forEach(function (chip) {
-      chip.addEventListener('click', function () {
-        chips.forEach(function (c) {
-          c.removeAttribute('data-active');
-        });
-        chip.setAttribute('data-active', '');
-        activeCategory = chip.getAttribute('data-filter');
+    if (combobox) {
+      combobox.addEventListener('comboboxchange', function (e) {
+        selectedTags = e.detail.selected;
+        query = e.detail.query;
         apply();
       });
+      // Hydrate from the URL once the combobox is initialised (handles old /tags/:tag redirects).
+      combobox.addEventListener('comboboxready', function () {
+        try {
+          var p = new URLSearchParams(location.search);
+          if (p.get('cat')) activeCategory = p.get('cat');
+          var api = combobox.__combobox;
+          if (api) {
+            if (p.get('q')) api.setQuery(p.get('q'));
+            if (p.get('tag')) api.setSelected(p.get('tag').split(','));
+          }
+        } catch (e) {}
+        apply();
+      }, { once: true });
+    }
+
+    catChips.forEach(function (c) {
+      c.addEventListener('click', function () { activeCategory = c.getAttribute('data-filter'); apply(); });
     });
-    if (search) search.addEventListener('input', apply);
+    if (clearBtn) clearBtn.addEventListener('click', function () {
+      activeCategory = 'all';
+      if (combobox && combobox.__combobox) { combobox.__combobox.setQuery(''); combobox.__combobox.setSelected([]); }
+      apply();
+    });
+
+    apply(); // initial render (all posts)
   })();
 </script>

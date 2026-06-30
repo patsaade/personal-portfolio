@@ -8,11 +8,22 @@ import PageHeader from '../../components/PageHeader.astro';
 import Badge from '../../components/Badge.astro';
 import Icon from '../../components/Icon.astro';
 import PixelStar from '../../components/PixelStar.astro';
+import TagCombobox from '../../components/TagCombobox.astro';
 import { getFormattedDate } from '../../utils/date';
-import { getSortedLabs } from '../../utils/posts';
+import { getSortedLabs, tagSlug } from '../../utils/posts';
 
 const labs = await getSortedLabs();
 const sources = [...new Set(labs.map((l) => l.data.source))];
+
+// Tag facet for the search combobox (a lab can carry several tags → AND filter).
+const labTagCounts: Record<string, { label: string; n: number }> = {};
+for (const l of labs) for (const t of l.data.tags) {
+  const s = tagSlug(t);
+  (labTagCounts[s] ??= { label: t, n: 0 }).n++;
+}
+const labTagOptions = Object.entries(labTagCounts)
+  .map(([value, v]) => ({ value, label: v.label, count: v.n }))
+  .sort((a, b) => b.count - a.count);
 
 const chip = css({
   fontFamily: 'sans',
@@ -39,12 +50,18 @@ const chip = css({
   />
 
   {
-    sources.length > 0 && (
-      <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', mb: '2rem' })}>
-        <button class={chip} data-filter="all" data-active type="button">All sources</button>
-        {sources.map((s) => (
-          <button class={chip} data-filter={s} type="button">{s}</button>
-        ))}
+    labs.length > 0 && (
+      <div class={css({ display: 'flex', flexDirection: 'column', gap: '0.9rem', mb: '2rem' })}>
+        <TagCombobox id="lab-cb" options={labTagOptions} placeholder={`Search ${labs.length} writeups, or type a tag…`} label="Search labs or filter by tag" />
+        <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' })}>
+          <button class={chip} data-filter="all" data-active type="button">All sources</button>
+          {sources.map((s) => (
+            <button class={chip} data-filter={s} type="button">{s}</button>
+          ))}
+        </div>
+        <p class={css({ color: 'textMuted', fontSize: '0.85rem', m: 0 })}>
+          <span id="lab-count">{labs.length}</span> <span id="lab-count-word">{labs.length === 1 ? 'writeup' : 'writeups'}</span>
+        </p>
       </div>
     )
   }
@@ -75,6 +92,8 @@ const chip = css({
               _hover: { transform: 'translateY(-3px)', borderColor: 'primary', boxShadow: 'cardHover' },
             })}`}
             data-source={lab.data.source}
+            data-tags={`|${lab.data.tags.map(tagSlug).join('|')}|`}
+            data-search={`${lab.data.title} ${lab.data.excerpt} ${lab.data.tags.join(' ')} ${lab.data.tools.join(' ')} ${lab.data.source}`.toLowerCase()}
           >
             <div class={css({ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' })}>
               <Badge variant="primary">{lab.data.source}</Badge>
@@ -149,19 +168,45 @@ const chip = css({
   }
 </BaseLayout>
 
+<p id="lab-empty" hidden class={css({ color: 'textMuted', textAlign: 'center', py: '2rem' })}>
+  No writeups match your filters.
+</p>
+
 <script is:inline>
   (function () {
-    var chips = Array.from(document.querySelectorAll('[data-filter]'));
-    var items = Array.from(document.querySelectorAll('.lab-item'));
-    chips.forEach(function (chip) {
-      chip.addEventListener('click', function () {
-        chips.forEach(function (c) { c.removeAttribute('data-active'); });
-        chip.setAttribute('data-active', '');
-        var f = chip.getAttribute('data-filter');
-        items.forEach(function (item) {
-          item.style.display = f === 'all' || item.getAttribute('data-source') === f ? '' : 'none';
-        });
+    var combobox = document.getElementById('lab-cb');
+    var chips = Array.prototype.slice.call(document.querySelectorAll('[data-filter]'));
+    var items = Array.prototype.slice.call(document.querySelectorAll('.lab-item'));
+    var countEl = document.getElementById('lab-count');
+    var wordEl = document.getElementById('lab-count-word');
+    var empty = document.getElementById('lab-empty');
+    var source = 'all';
+    var query = '';
+    var tags = [];
+    function apply() {
+      var q = query.toLowerCase();
+      var shown = 0;
+      items.forEach(function (item) {
+        var matchSource = source === 'all' || item.getAttribute('data-source') === source;
+        var matchText = !q || (item.getAttribute('data-search') || '').indexOf(q) !== -1;
+        var dt = item.getAttribute('data-tags') || '';
+        var matchTags = tags.every(function (s) { return dt.indexOf('|' + s + '|') !== -1; }); // AND
+        var show = matchSource && matchText && matchTags;
+        item.style.display = show ? '' : 'none';
+        if (show) shown++;
       });
+      if (countEl) countEl.textContent = String(shown);
+      if (wordEl) wordEl.textContent = shown === 1 ? 'writeup' : 'writeups';
+      if (empty) empty.hidden = shown !== 0;
+      chips.forEach(function (c) {
+        if (c.getAttribute('data-filter') === source) c.setAttribute('data-active', '');
+        else c.removeAttribute('data-active');
+      });
+    }
+    if (combobox) combobox.addEventListener('comboboxchange', function (e) { tags = e.detail.selected; query = e.detail.query; apply(); });
+    chips.forEach(function (c) {
+      c.addEventListener('click', function () { source = c.getAttribute('data-filter'); apply(); });
     });
+    apply();
   })();
 </script>

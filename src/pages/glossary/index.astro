@@ -16,6 +16,8 @@ import {
 } from '../../data/securityTerms';
 import { ATTACK_TECHNIQUES } from '../../data/references';
 import CollapseAll from '../../components/CollapseAll.astro';
+import TagCombobox from '../../components/TagCombobox.astro';
+import { tagSlug } from '../../utils/posts';
 import { tag } from 'styled-system/recipes';
 
 const today = termForDate(new Date());
@@ -26,6 +28,11 @@ const todayDate = new Date().toLocaleDateString('en-US', {
   timeZone: 'UTC',
 });
 const total = SECURITY_TERMS.length;
+
+// Category facet for the search combobox (only categories that have terms).
+const catOptions = CATEGORIES.map((cat) => ({ cat, n: SECURITY_TERMS.filter((t) => t.category === cat).length }))
+  .filter((c) => c.n > 0)
+  .map((c) => ({ value: tagSlug(c.cat), label: c.cat, count: c.n }));
 
 // Map each glossary slug to its ATT&CK technique (for the on-card chip).
 const techBySlug: Record<string, (typeof ATTACK_TECHNIQUES)[number]> = {};
@@ -76,7 +83,7 @@ const groupSummary = css({
 });
 const groupHead = css({ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', m: 0, fontSize: '1.15rem', fontWeight: 700 });
 const chevCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 200ms ease', 'details[open] &': { transform: 'rotate(90deg)' } });
-const grpCount = css({ fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 600, color: 'textMuted', bg: 'bgSubtle', border: '1px solid token(colors.border)', borderRadius: 'full', px: '0.5rem', py: '0.05rem' });
+const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600, color: 'textMuted', bg: 'bgSubtle', border: '1px solid token(colors.border)', borderRadius: 'full', px: '0.5rem', py: '0.1rem' });
 ---
 
 <BaseLayout
@@ -134,32 +141,13 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 600,
     </a>
   </section>
 
-  {/* ── Search ── */}
-  <div class={css({ position: 'relative', mb: '0.6rem' })}>
-    <span class={css({ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)', color: 'textMuted', pointerEvents: 'none', display: 'inline-flex' })}>
-      <Icon name="search" size={17} />
-    </span>
-    <input
-      id="totd-search"
-      type="search"
-      autocomplete="off"
-      placeholder={`Search ${total} terms…`}
-      aria-label="Search the glossary"
-      class={css({
-        w: '100%',
-        pl: '2.6rem',
-        pr: '1rem',
-        py: '0.7rem',
-        fontSize: '0.95rem',
-        bg: 'bgCard',
-        color: 'text',
-        border: '1px solid token(colors.border)',
-        borderRadius: 'md',
-        outline: 'none',
-        transition: 'border-color 200ms ease',
-        _focusVisible: { borderColor: 'primary' },
-        _placeholder: { color: 'textMuted' },
-      })}
+  {/* ── Search + category filter (typeahead combobox) ── */}
+  <div class={css({ mb: '0.6rem' })}>
+    <TagCombobox
+      id="glossary-cb"
+      options={catOptions}
+      placeholder={`Search ${total} terms, or type a category…`}
+      label="Search the glossary or filter by category"
     />
   </div>
   <div class={css({ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', mb: '2rem' })}>
@@ -191,10 +179,11 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 600,
                 return (
                   <div
                     class={cardClass}
+                    data-cat={tagSlug(t.category)}
                     data-totd-card={`${t.term} ${t.short} ${(t.aka ?? []).join(' ')} ${t.category} ${tech ? tech.id : ''}`.toLowerCase()}
                   >
                     <a href={`/glossary/${t.slug}/`} class={cardLink}>
-                      <span class={`${cardTerm} ${tech ? css({ pr: '2.6rem' }) : ''}`}>{t.term}</span>
+                      <span class={`${cardTerm} ${tech ? css({ pr: '3.2rem' }) : ''}`}>{t.term}</span>
                       <span class={`${cardShort} totd-clamp2`}>{t.short}</span>
                     </a>
                     {tech && (
@@ -237,31 +226,40 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 600,
         })
         .catch(function () {});
 
-      // Client-side glossary search.
-      var input = document.getElementById('totd-search');
-      if (!input) return;
+      // Client-side glossary search + category facet (typeahead combobox).
+      var combobox = document.getElementById('glossary-cb');
+      if (!combobox) return;
       var cards = Array.prototype.slice.call(document.querySelectorAll('[data-totd-card]'));
       var groups = Array.prototype.slice.call(document.querySelectorAll('[data-totd-group]'));
       var empty = document.getElementById('totd-empty');
       var countEl = document.getElementById('totd-result-count');
+      var query = '';
+      var cats = [];
       function apply() {
-        var q = input.value.trim().toLowerCase();
+        var q = query.toLowerCase();
         var shown = 0;
         for (var i = 0; i < cards.length; i++) {
-          var match = !q || cards[i].getAttribute('data-totd-card').indexOf(q) !== -1;
-          cards[i].style.display = match ? '' : 'none';
-          if (match) shown++;
+          var c = cards[i];
+          var matchText = !q || c.getAttribute('data-totd-card').indexOf(q) !== -1;
+          var matchCat = cats.length === 0 || cats.indexOf(c.getAttribute('data-cat')) !== -1; // OR within categories
+          var show = matchText && matchCat;
+          c.style.display = show ? '' : 'none';
+          if (show) shown++;
         }
+        var filtering = !!q || cats.length > 0;
         for (var g = 0; g < groups.length; g++) {
           var anyVisible = groups[g].querySelector('[data-totd-card]:not([style*="display: none"])');
           groups[g].style.display = anyVisible ? '' : 'none';
-          // While searching, expand collapsed categories so matches inside are visible.
-          if (q && anyVisible) groups[g].open = true;
+          if (filtering && anyVisible) groups[g].open = true; // surface matches inside collapsed categories
         }
         if (empty) empty.hidden = shown !== 0;
         if (countEl) countEl.textContent = String(shown);
       }
-      input.addEventListener('input', apply);
+      combobox.addEventListener('comboboxchange', function (e) {
+        cats = e.detail.selected;
+        query = e.detail.query;
+        apply();
+      });
     })();
   </script>
 </BaseLayout>
