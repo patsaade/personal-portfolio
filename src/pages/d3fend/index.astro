@@ -13,6 +13,7 @@ import Icon from '../../components/Icon.astro';
 import CollapseAll from '../../components/CollapseAll.astro';
 import TagCombobox from '../../components/TagCombobox.astro';
 import FilterToggle from '../../components/FilterToggle.astro';
+import ListFilter from '../../components/ListFilter.astro';
 import { tag } from 'styled-system/recipes';
 import { tagSlug } from '../../utils/posts';
 import { D3FEND_TECHNIQUES, D3FEND_TACTIC_ORDER, D3FEND_VERSION, d3fendById } from '../../data/d3fend';
@@ -210,54 +211,17 @@ const anchored = new Set<string>();
     from the public D3FEND knowledge base (v{D3FEND_VERSION}); this map links back to the canonical pages.
   </p>
 
-  <script is:inline>
-    (function () {
-      var combobox = document.getElementById('d3fend-cb');
-      var toggle = document.getElementById('d3fend-mapped-toggle');
-      var countEl = document.getElementById('d3fend-count');
-      var empty = document.getElementById('d3fend-empty');
-      var groups = Array.prototype.slice.call(document.querySelectorAll('[data-tactic-group]'));
-      var chips = Array.prototype.slice.call(document.querySelectorAll('[data-d3fend-card]'));
-      var mappedOnly = false;
-      var query = '';
-      var tacs = [];
-
-      function apply() {
-        var q = query.toLowerCase();
-        var seen = {};
-        var shown = 0;
-        for (var i = 0; i < chips.length; i++) {
-          var c = chips[i];
-          var okQ = !q || c.getAttribute('data-d3fend-card').indexOf(q) !== -1;
-          var okTac = tacs.length === 0 || tacs.indexOf(c.getAttribute('data-tactic')) !== -1; // OR
-          var okMapped = !mappedOnly || c.hasAttribute('data-mapped');
-          var vis = okQ && okTac && okMapped;
-          c.style.display = vis ? '' : 'none';
-          if (vis) {
-            var id = c.getAttribute('data-d3fend-id');
-            if (!seen[id]) { seen[id] = 1; shown++; }
-          }
-        }
-        var filtering = !!q || tacs.length > 0 || mappedOnly;
-        for (var g = 0; g < groups.length; g++) {
-          var any = groups[g].querySelector('[data-d3fend-card]:not([style*="display: none"])');
-          groups[g].style.display = any ? '' : 'none';
-          groups[g].open = filtering ? !!any : true;
-        }
-        if (countEl) countEl.textContent = String(shown);
-        if (empty) empty.hidden = shown !== 0;
-      }
-
-      if (combobox) combobox.addEventListener('comboboxchange', function (e) {
-        tacs = e.detail.selected;
-        query = e.detail.query;
-        apply();
-      });
-      if (toggle) toggle.addEventListener('click', function () {
-        mappedOnly = !mappedOnly;
-        toggle.setAttribute('aria-pressed', mappedOnly ? 'true' : 'false');
-        apply();
-      });
-    })();
-  </script>
+  <ListFilter
+    config={{
+      comboboxId: 'd3fend-cb',
+      cardSelector: '[data-d3fend-card]',
+      searchAttr: 'data-d3fend-card',
+      groupSelector: '[data-tactic-group]',
+      countId: 'd3fend-count',
+      emptyId: 'd3fend-empty',
+      dedupeAttr: 'data-d3fend-id',
+      facetAttr: 'data-tactic',
+      toggles: [{ id: 'd3fend-mapped-toggle', attr: 'data-mapped' }],
+    }}
+  />
 </BaseLayout>

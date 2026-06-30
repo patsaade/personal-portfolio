@@ -18,7 +18,8 @@ import { ATTACK_TECHNIQUES } from '../../data/references';
 import CollapseAll from '../../components/CollapseAll.astro';
 import TagCombobox from '../../components/TagCombobox.astro';
 import FilterToggle from '../../components/FilterToggle.astro';
-import { tagSlug } from '../../utils/posts';
+import ListFilter from '../../components/ListFilter.astro';
+import { tagSlug, getSortedPosts, getSortedLabs, termSlugsInBody } from '../../utils/posts';
 import { tag } from 'styled-system/recipes';
 
 const today = termForDate(new Date());
@@ -29,6 +30,10 @@ const todayDate = new Date().toLocaleDateString('en-US', {
   timeZone: 'UTC',
 });
 const total = SECURITY_TERMS.length;
+
+// Terms referenced by a writeup via an inline <Term slug="…"> (for the "In a writeup" filter).
+const [gPosts, gLabs] = await Promise.all([getSortedPosts(), getSortedLabs()]);
+const mentionedTerms = new Set([...gPosts, ...gLabs].flatMap((p) => termSlugsInBody(p.body)));
 
 // Category facet for the search combobox (only categories that have terms).
 const catOptions = CATEGORIES.map((cat) => ({ cat, n: SECURITY_TERMS.filter((t) => t.category === cat).length }))
@@ -172,6 +177,7 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
     </p>
     <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', ml: { sm: 'auto' } })}>
       <FilterToggle id="totd-attack-toggle" icon="crosshair" label="ATT&CK only" tone="primary" />
+      <FilterToggle id="totd-writeup-toggle" icon="file-text" label="In a writeup" tone="accent" />
       <CollapseAll target="[data-totd-group]" />
     </div>
   </div>
@@ -201,6 +207,7 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
                     data-cat={tagSlug(t.category)}
                     data-totd-card={`${t.term} ${t.short} ${(t.aka ?? []).join(' ')} ${t.category} ${tech ? tech.id : ''}`.toLowerCase()}
                     {...(tech ? { 'data-has-attack': true } : {})}
+                    {...(mentionedTerms.has(t.slug) ? { 'data-in-writeup': true } : {})}
                   >
                     <a href={`/glossary/${t.slug}/`} class={cardLink}>
                       <span class={cardHead}>
@@ -250,49 +257,24 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
           if (link) link.setAttribute('href', '/glossary/' + e[0] + '/');
         })
         .catch(function () {});
-
-      // Client-side glossary search + category facet (typeahead combobox).
-      var combobox = document.getElementById('glossary-cb');
-      if (!combobox) return;
-      var cards = Array.prototype.slice.call(document.querySelectorAll('[data-totd-card]'));
-      var groups = Array.prototype.slice.call(document.querySelectorAll('[data-totd-group]'));
-      var empty = document.getElementById('totd-empty');
-      var countEl = document.getElementById('totd-result-count');
-      var attackToggle = document.getElementById('totd-attack-toggle');
-      var query = '';
-      var cats = [];
-      var attackOnly = false;
-      function apply() {
-        var q = query.toLowerCase();
-        var shown = 0;
-        for (var i = 0; i < cards.length; i++) {
-          var c = cards[i];
-          var matchText = !q || c.getAttribute('data-totd-card').indexOf(q) !== -1;
-          var matchCat = cats.length === 0 || cats.indexOf(c.getAttribute('data-cat')) !== -1; // OR within categories
-          var matchAttack = !attackOnly || c.hasAttribute('data-has-attack');
-          var show = matchText && matchCat && matchAttack;
-          c.style.display = show ? '' : 'none';
-          if (show) shown++;
-        }
-        var filtering = !!q || cats.length > 0 || attackOnly;
-        for (var g = 0; g < groups.length; g++) {
-          var anyVisible = groups[g].querySelector('[data-totd-card]:not([style*="display: none"])');
-          groups[g].style.display = anyVisible ? '' : 'none';
-          if (filtering && anyVisible) groups[g].open = true; // surface matches inside collapsed categories
-        }
-        if (empty) empty.hidden = shown !== 0;
-        if (countEl) countEl.textContent = String(shown);
-      }
-      combobox.addEventListener('comboboxchange', function (e) {
-        cats = e.detail.selected;
-        query = e.detail.query;
-        apply();
-      });
-      if (attackToggle) attackToggle.addEventListener('click', function () {
-        attackOnly = !attackOnly;
-        attackToggle.setAttribute('aria-pressed', attackOnly ? 'true' : 'false');
-        apply();
-      });
+      // The search + category facet + toggles are driven by <ListFilter> (below).
     })();
   </script>
+
+  <ListFilter
+    config={{
+      comboboxId: 'glossary-cb',
+      cardSelector: '[data-totd-card]',
+      searchAttr: 'data-totd-card',
+      groupSelector: '[data-totd-group]',
+      countId: 'totd-result-count',
+      emptyId: 'totd-empty',
+      facetAttr: 'data-cat',
+      restoreOpenWhenIdle: false,
+      toggles: [
+        { id: 'totd-attack-toggle', attr: 'data-has-attack' },
+        { id: 'totd-writeup-toggle', attr: 'data-in-writeup' },
+      ],
+    }}
+  />
 </BaseLayout>

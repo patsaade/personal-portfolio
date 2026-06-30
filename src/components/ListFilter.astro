@@ -1,0 +1,126 @@
+---
+// Shared, config-driven filter controller for the reference list pages — Glossary,
+// Tools, Certifications, the MITRE ATT&CK Coverage Map, and the MITRE D3FEND Map.
+// One place owns the whole search + facet + toggle + collapsible-group behaviour;
+// each page just declares its selectors / attrs / toggles via `config`, so the
+// feature is identical everywhere instead of re-implemented per page. Pairs with
+// `TagCombobox` (search + facet tokens) and `FilterToggle` (the pill toggles).
+export interface ListFilterToggle {
+  /** Button id (rendered by FilterToggle). */
+  id: string;
+  /** A card is kept (while pressed) only if it carries this attribute. */
+  attr: string;
+}
+export interface ListFilterConfig {
+  /** TagCombobox id — its `comboboxchange` drives free-text + facet filtering. */
+  comboboxId?: string;
+  /** Card selector; its attribute (same name) holds the lowercased search text. */
+  cardSelector: string;
+  searchAttr: string;
+  /** Collapsible <details> group selector. */
+  groupSelector: string;
+  /** Element whose text shows the visible count. */
+  countId?: string;
+  /** Empty-state element (hidden whenever there are results). */
+  emptyId?: string;
+  /** Count unique values of this attr once (cards repeat across groups, e.g. by tactic). */
+  dedupeAttr?: string;
+  /** Attribute the combobox facet tokens filter on. */
+  facetAttr?: string;
+  /** facetAttr holds a `|a|b|` pipe list (OR-any) rather than a single value. */
+  facetMulti?: boolean;
+  /** Pill toggles (id → required attribute). */
+  toggles?: ListFilterToggle[];
+  /** Groups reopen when no filter is active (default true; false = only open on match). */
+  restoreOpenWhenIdle?: boolean;
+  /** Hydrate the search from this URL query param on load (e.g. 'q' for the tool tag links). */
+  hydrateQueryParam?: string;
+}
+const { config } = Astro.props as { config: ListFilterConfig };
+---
+
+<div data-list-filter={JSON.stringify(config)} hidden></div>
+
+<script>
+  // @ts-nocheck — bundled vanilla DOM; config comes from each [data-list-filter] host.
+  function initListFilter(host) {
+    var cfg = JSON.parse(host.getAttribute('data-list-filter') || '{}');
+    var combobox = cfg.comboboxId ? document.getElementById(cfg.comboboxId) : null;
+    var cards = Array.prototype.slice.call(document.querySelectorAll(cfg.cardSelector));
+    var groups = Array.prototype.slice.call(document.querySelectorAll(cfg.groupSelector));
+    var countEl = cfg.countId ? document.getElementById(cfg.countId) : null;
+    var emptyEl = cfg.emptyId ? document.getElementById(cfg.emptyId) : null;
+    var restore = cfg.restoreOpenWhenIdle !== false;
+    var toggles = (cfg.toggles || []).map(function (t) {
+      return { el: document.getElementById(t.id), attr: t.attr, on: false };
+    });
+    var query = '';
+    var facets = [];
+
+    function facetOk(card) {
+      if (!cfg.facetAttr || !facets.length) return true;
+      var dv = card.getAttribute(cfg.facetAttr) || '';
+      if (cfg.facetMulti) return facets.some(function (f) { return dv.indexOf('|' + f + '|') !== -1; });
+      return facets.indexOf(dv) !== -1;
+    }
+    function anyToggleOn() {
+      for (var i = 0; i < toggles.length; i++) if (toggles[i].on) return true;
+      return false;
+    }
+    function apply() {
+      var q = query.toLowerCase();
+      var seen = {};
+      var shown = 0;
+      for (var i = 0; i < cards.length; i++) {
+        var c = cards[i];
+        var ok = (!q || (c.getAttribute(cfg.searchAttr) || '').indexOf(q) !== -1) && facetOk(c);
+        for (var j = 0; ok && j < toggles.length; j++) if (toggles[j].on && !c.hasAttribute(toggles[j].attr)) ok = false;
+        c.style.display = ok ? '' : 'none';
+        if (ok) {
+          if (cfg.dedupeAttr) { var id = c.getAttribute(cfg.dedupeAttr); if (!seen[id]) { seen[id] = 1; shown++; } }
+          else shown++;
+        }
+      }
+      var filtering = !!q || facets.length > 0 || anyToggleOn();
+      for (var g = 0; g < groups.length; g++) {
+        var any = groups[g].querySelector(cfg.cardSelector + ':not([style*="display: none"])');
+        groups[g].style.display = any ? '' : 'none';
+        if (restore) groups[g].open = filtering ? !!any : true;
+        else if (filtering && any) groups[g].open = true;
+      }
+      if (countEl) countEl.textContent = String(shown);
+      if (emptyEl) emptyEl.hidden = shown !== 0;
+    }
+
+    if (combobox) combobox.addEventListener('comboboxchange', function (e) {
+      facets = e.detail.selected;
+      query = e.detail.query;
+      apply();
+    });
+    toggles.forEach(function (t) {
+      if (!t.el) return;
+      t.el.addEventListener('click', function () {
+        t.on = !t.on;
+        t.el.setAttribute('aria-pressed', t.on ? 'true' : 'false');
+        apply();
+      });
+    });
+
+    // Optional: hydrate the query from a URL param (robust to combobox init order —
+    // filter immediately, and sync the input's display text once the combobox is ready).
+    if (cfg.hydrateQueryParam) {
+      try {
+        var qv = new URLSearchParams(location.search).get(cfg.hydrateQueryParam);
+        if (qv) {
+          query = qv;
+          var setDisplay = function () { if (combobox && combobox.__combobox) combobox.__combobox.setQuery(qv); };
+          if (combobox && combobox.__combobox) setDisplay();
+          else if (combobox) combobox.addEventListener('comboboxready', setDisplay, { once: true });
+        }
+      } catch (e) {}
+    }
+
+    apply();
+  }
+  Array.prototype.slice.call(document.querySelectorAll('[data-list-filter]')).forEach(initListFilter);
+</script>

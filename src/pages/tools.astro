@@ -12,7 +12,9 @@ import PageHeader from '../components/PageHeader.astro';
 import Icon from '../components/Icon.astro';
 import CollapseAll from '../components/CollapseAll.astro';
 import TagCombobox from '../components/TagCombobox.astro';
-import { tagSlug } from '../utils/posts';
+import FilterToggle from '../components/FilterToggle.astro';
+import ListFilter from '../components/ListFilter.astro';
+import { tagSlug, getSortedPosts, getSortedLabs } from '../utils/posts';
 import { TOOL_PLATFORMS, TOTAL_TOOLS, costTone } from '../data/tools';
 
 const platforms = TOOL_PLATFORMS;
@@ -24,6 +26,10 @@ for (const p of platforms) for (const t of p.tools) fnCounts[t.fn] = (fnCounts[t
 const fnOptions = Object.keys(fnCounts)
   .sort()
   .map((fn) => ({ value: tagSlug(fn), label: fn, count: fnCounts[fn] }));
+
+// Tools featured in a writeup (matched by name in post/lab `tools` frontmatter).
+const [tPosts, tLabs] = await Promise.all([getSortedPosts(), getSortedLabs()]);
+const featuredTools = new Set([...tPosts, ...tLabs].flatMap((p) => (p.data.tools ?? []).map((n) => n.toLowerCase())));
 
 // Each platform is a collapsible <details>. The summary holds the heading; the
 // blurb + tool grid live inside, so they fold away (and a search auto-expands them).
@@ -110,7 +116,11 @@ const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto
     <p class={css({ color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
       <span id="tools-result-count">{totalTools}</span> free tools across {platforms.length} groups.
     </p>
-    <CollapseAll target="[data-tools-group]" />
+    <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', ml: { sm: 'auto' } })}>
+      <FilterToggle id="tools-writeup-toggle" icon="file-text" label="In a writeup" tone="primary" />
+      <FilterToggle id="tools-core-toggle" icon="star" label="In my kit" tone="accent" />
+      <CollapseAll target="[data-tools-group]" />
+    </div>
   </div>
 
   <div class={css({ display: 'flex', flexDirection: 'column' })}>
@@ -133,6 +143,8 @@ const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto
                 class={toolCard}
                 data-fn={tagSlug(t.fn)}
                 data-tools-card={`${t.name} ${t.use} ${t.fn} ${t.cost} ${p.title} ${t.tags.join(' ')}`.toLowerCase()}
+                {...(featuredTools.has(t.name.toLowerCase()) ? { 'data-in-writeup': true } : {})}
+                {...(t.core ? { 'data-core': true } : {})}
               >
                 <span class={toolHead}>
                   <span class={toolName}>
@@ -160,48 +172,20 @@ const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto
     No tools match your search.
   </p>
 
-  <script is:inline>
-    (function () {
-      var combobox = document.getElementById('tools-cb');
-      if (!combobox) return;
-      var cards = Array.prototype.slice.call(document.querySelectorAll('[data-tools-card]'));
-      var groups = Array.prototype.slice.call(document.querySelectorAll('[data-tools-group]'));
-      var empty = document.getElementById('tools-empty');
-      var countEl = document.getElementById('tools-result-count');
-      var query = '';
-      var fns = [];
-      function apply() {
-        var q = query.toLowerCase();
-        var shown = 0;
-        for (var i = 0; i < cards.length; i++) {
-          var c = cards[i];
-          var matchText = !q || c.getAttribute('data-tools-card').indexOf(q) !== -1;
-          var matchFn = fns.length === 0 || fns.indexOf(c.getAttribute('data-fn')) !== -1; // OR within functions
-          var show = matchText && matchFn;
-          c.style.display = show ? '' : 'none';
-          if (show) shown++;
-        }
-        var filtering = !!q || fns.length > 0;
-        for (var g = 0; g < groups.length; g++) {
-          var anyVisible = groups[g].querySelector('[data-tools-card]:not([style*="display: none"])');
-          groups[g].style.display = anyVisible ? '' : 'none';
-          groups[g].open = filtering ? !!anyVisible : true; // expand matches while filtering, restore otherwise
-        }
-        if (empty) empty.hidden = shown !== 0;
-        if (countEl) countEl.textContent = String(shown);
-      }
-      combobox.addEventListener('comboboxchange', function (e) {
-        fns = e.detail.selected;
-        query = e.detail.query;
-        apply();
-      });
-      // Hydrate the search from ?q= so the clickable tags on detail pages land filtered.
-      combobox.addEventListener('comboboxready', function () {
-        try {
-          var q = new URLSearchParams(location.search).get('q');
-          if (q && combobox.__combobox) combobox.__combobox.setQuery(q);
-        } catch (e) {}
-      }, { once: true });
-    })();
-  </script>
+  <ListFilter
+    config={{
+      comboboxId: 'tools-cb',
+      cardSelector: '[data-tools-card]',
+      searchAttr: 'data-tools-card',
+      groupSelector: '[data-tools-group]',
+      countId: 'tools-result-count',
+      emptyId: 'tools-empty',
+      facetAttr: 'data-fn',
+      hydrateQueryParam: 'q',
+      toggles: [
+        { id: 'tools-writeup-toggle', attr: 'data-in-writeup' },
+        { id: 'tools-core-toggle', attr: 'data-core' },
+      ],
+    }}
+  />
 </BaseLayout>

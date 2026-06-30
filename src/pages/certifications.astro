@@ -10,6 +10,8 @@ import PageHeader from '../components/PageHeader.astro';
 import Icon from '../components/Icon.astro';
 import CollapseAll from '../components/CollapseAll.astro';
 import TagCombobox from '../components/TagCombobox.astro';
+import FilterToggle from '../components/FilterToggle.astro';
+import ListFilter from '../components/ListFilter.astro';
 import { tagSlug } from '../utils/posts';
 import { tag } from 'styled-system/recipes';
 import { SOCIALS } from '../consts';
@@ -110,7 +112,10 @@ const metaLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.35r
         verify on Credly <Icon name="external-link" size={13} />
       </a>
     </p>
-    <CollapseAll target="[data-cert-group]" />
+    <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', ml: { sm: 'auto' } })}>
+      <FilterToggle id="cert-earned-toggle" icon="award" label="Earned only" tone="accent" />
+      <CollapseAll target="[data-cert-group]" />
+    </div>
   </div>
 
   <div class={css({ display: 'flex', flexDirection: 'column' })}>
@@ -138,6 +143,7 @@ const metaLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.35r
                   class={certCard}
                   data-focus={tagSlug(c.focus)}
                   data-cert-card={`${c.name} ${c.full} ${c.focus} ${c.issuer}`.toLowerCase()}
+                  {...(c.earned ? { 'data-earned': true } : {})}
                 >
                   <span class={certHead}>
                     <span class={certName}>
@@ -166,39 +172,15 @@ const metaLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.35r
     No certifications match.
   </p>
 
-  <script is:inline>
-    (function () {
-      var combobox = document.getElementById('cert-cb');
-      if (!combobox) return;
-      var cards = Array.prototype.slice.call(document.querySelectorAll('[data-cert-card]'));
-      var groups = Array.prototype.slice.call(document.querySelectorAll('[data-cert-group]'));
-      var empty = document.getElementById('cert-empty');
-      var query = '';
-      var focuses = [];
-      function apply() {
-        var q = query.toLowerCase();
-        var shown = 0;
-        for (var i = 0; i < cards.length; i++) {
-          var c = cards[i];
-          var matchText = !q || c.getAttribute('data-cert-card').indexOf(q) !== -1;
-          var matchFocus = focuses.length === 0 || focuses.indexOf(c.getAttribute('data-focus')) !== -1; // OR
-          var show = matchText && matchFocus;
-          c.style.display = show ? '' : 'none';
-          if (show) shown++;
-        }
-        var filtering = !!q || focuses.length > 0;
-        for (var g = 0; g < groups.length; g++) {
-          var anyVisible = groups[g].querySelector('[data-cert-card]:not([style*="display: none"])');
-          groups[g].style.display = anyVisible ? '' : 'none';
-          groups[g].open = filtering ? !!anyVisible : true;
-        }
-        if (empty) empty.hidden = shown !== 0;
-      }
-      combobox.addEventListener('comboboxchange', function (e) {
-        focuses = e.detail.selected;
-        query = e.detail.query;
-        apply();
-      });
-    })();
-  </script>
+  <ListFilter
+    config={{
+      comboboxId: 'cert-cb',
+      cardSelector: '[data-cert-card]',
+      searchAttr: 'data-cert-card',
+      groupSelector: '[data-cert-group]',
+      emptyId: 'cert-empty',
+      facetAttr: 'data-focus',
+      toggles: [{ id: 'cert-earned-toggle', attr: 'data-earned' }],
+    }}
+  />
 </BaseLayout>

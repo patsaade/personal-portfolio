@@ -13,14 +13,18 @@ import Icon from '../components/Icon.astro';
 import CollapseAll from '../components/CollapseAll.astro';
 import TagCombobox from '../components/TagCombobox.astro';
 import FilterToggle from '../components/FilterToggle.astro';
+import ListFilter from '../components/ListFilter.astro';
 import { tag } from 'styled-system/recipes';
 import { getSortedPosts, getSortedLabs, tagSlug } from '../utils/posts';
 import { termBySlug } from '../data/securityTerms';
 import { ATTACK_TECHNIQUES, ATTACK_TACTIC_ORDER, ATTACK_VERSION } from '../data/references';
+import { D3FEND_TECHNIQUES } from '../data/d3fend';
 
 // Techniques explicitly covered by a post/lab (via its `attack` frontmatter).
 const [posts, labs] = await Promise.all([getSortedPosts(), getSortedLabs()]);
 const covered = new Set([...posts, ...labs].flatMap((p) => p.data.attack ?? []));
+// Techniques that have at least one D3FEND countermeasure (the defensive cross-link).
+const defended = new Set(D3FEND_TECHNIQUES.flatMap((d) => d.counters));
 
 // Group techniques by tactic; render tactics in kill-chain order, populated only.
 // A technique can sit under several tactics — list it under each, like the matrix.
@@ -163,6 +167,7 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
     <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', ml: 'auto' })}>
       <FilterToggle id="attack-covered-toggle" icon="check" label="Covered only" tone="accent" />
       <FilterToggle id="attack-gloss-toggle" icon="book-open" label="In glossary" tone="primary" />
+      <FilterToggle id="attack-defense-toggle" icon="shield" label="Has defense" tone="primary" />
       <CollapseAll target="[data-tactic-group]" />
     </div>
   </div>
@@ -204,6 +209,7 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
                     data-attack-card={`${t.id} ${t.name} ${tactic} ${gloss ? gloss.term : ''}`.toLowerCase()}
                     {...(isCovered ? { 'data-covered': true } : {})}
                     {...(gloss ? { 'data-has-gloss': true } : {})}
+                    {...(defended.has(t.id) ? { 'data-has-defense': true } : {})}
                   >
                     <div class={chipTop}>
                       <span class={chipId}>{t.id}</span>
@@ -237,63 +243,22 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
     IDs are drawn from the public ATT&CK knowledge base (v{ATTACK_VERSION}); this map links back to the canonical pages.
   </p>
 
-  <script is:inline>
-    (function () {
-      var combobox = document.getElementById('attack-cb');
-      var toggle = document.getElementById('attack-covered-toggle');
-      var glossToggle = document.getElementById('attack-gloss-toggle');
-      var countEl = document.getElementById('attack-count');
-      var empty = document.getElementById('attack-empty');
-      var groups = Array.prototype.slice.call(document.querySelectorAll('[data-tactic-group]'));
-      var chips = Array.prototype.slice.call(document.querySelectorAll('[data-attack-card]'));
-      var coveredOnly = false;
-      var glossOnly = false;
-      var query = '';
-      var plats = [];
-
-      function apply() {
-        var q = query.toLowerCase();
-        var seen = {};
-        var shown = 0;
-        for (var i = 0; i < chips.length; i++) {
-          var c = chips[i];
-          var okQ = !q || c.getAttribute('data-attack-card').indexOf(q) !== -1;
-          var okCov = !coveredOnly || c.hasAttribute('data-covered');
-          var okGloss = !glossOnly || c.hasAttribute('data-has-gloss');
-          var dp = c.getAttribute('data-platforms') || '';
-          var okPlat = plats.length === 0 || plats.some(function (p) { return dp.indexOf('|' + p + '|') !== -1; }); // OR
-          var vis = okQ && okCov && okGloss && okPlat;
-          c.style.display = vis ? '' : 'none';
-          if (vis) {
-            var id = c.getAttribute('data-attack-id');
-            if (!seen[id]) { seen[id] = 1; shown++; } // count techniques once across tactics
-          }
-        }
-        var filtering = !!q || coveredOnly || glossOnly || plats.length > 0;
-        for (var g = 0; g < groups.length; g++) {
-          var any = groups[g].querySelector('[data-attack-card]:not([style*="display: none"])');
-          groups[g].style.display = any ? '' : 'none';
-          groups[g].open = filtering ? !!any : true; // expand matches while filtering, restore otherwise
-        }
-        if (countEl) countEl.textContent = String(shown);
-        if (empty) empty.hidden = shown !== 0;
-      }
-
-      if (combobox) combobox.addEventListener('comboboxchange', function (e) {
-        plats = e.detail.selected;
-        query = e.detail.query;
-        apply();
-      });
-      if (toggle) toggle.addEventListener('click', function () {
-        coveredOnly = !coveredOnly;
-        toggle.setAttribute('aria-pressed', coveredOnly ? 'true' : 'false');
-        apply();
-      });
-      if (glossToggle) glossToggle.addEventListener('click', function () {
-        glossOnly = !glossOnly;
-        glossToggle.setAttribute('aria-pressed', glossOnly ? 'true' : 'false');
-        apply();
-      });
-    })();
-  </script>
+  <ListFilter
+    config={{
+      comboboxId: 'attack-cb',
+      cardSelector: '[data-attack-card]',
+      searchAttr: 'data-attack-card',
+      groupSelector: '[data-tactic-group]',
+      countId: 'attack-count',
+      emptyId: 'attack-empty',
+      dedupeAttr: 'data-attack-id',
+      facetAttr: 'data-platforms',
+      facetMulti: true,
+      toggles: [
+        { id: 'attack-covered-toggle', attr: 'data-covered' },
+        { id: 'attack-gloss-toggle', attr: 'data-has-gloss' },
+        { id: 'attack-defense-toggle', attr: 'data-has-defense' },
+      ],
+    }}
+  />
 </BaseLayout>
