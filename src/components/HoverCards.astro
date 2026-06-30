@@ -5,7 +5,7 @@
 //   /glossary/bank.json on demand.
 // - Companies, certifications, and distinctive tools (src/data/hovercards.ts)
 //   are auto-detected: their first mention in <main> prose is wrapped in a
-//   trigger. (Links, code, and headings are skipped.)
+//   trigger. (Links, code, headings, and navigation/breadcrumbs are skipped.)
 // Desktop = hover/focus; touch = tap to toggle, tap-away / Esc / scroll to close.
 import { css } from 'styled-system/css';
 import { HOVER_ENTITIES } from '../data/hovercards';
@@ -117,7 +117,9 @@ const linkCls = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25re
         acceptNode: function (node) {
           if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
           var p = node.parentElement;
-          if (!p || p.closest('a, code, pre, kbd, button, h1, h2, h3, h4, h5, h6, .hovercard, [data-no-hovercard]'))
+          // Skip links, code, buttons, headings, and NAVIGATION (breadcrumbs /
+          // pagination) — nav titles shouldn't become hover-card triggers.
+          if (!p || p.closest('a, code, pre, kbd, button, nav, h1, h2, h3, h4, h5, h6, .hovercard, [data-no-hovercard]'))
             return NodeFilter.FILTER_REJECT;
           return NodeFilter.FILTER_ACCEPT;
         },
