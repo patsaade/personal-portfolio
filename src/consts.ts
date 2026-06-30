@@ -31,7 +31,7 @@ export const NAV_LINKS = [
 // Secondary links — surfaced in the nav "More" dropdown and the footer "More" column.
 export const MORE_LINKS = [
   { href: '/glossary/', label: 'Glossary' },
-  { href: '/attack-map/', label: 'ATT&CK map' },
+  { href: '/attack-map/', label: 'MITRE ATT&CK Map' },
   { href: '/certifications/', label: 'Certifications' },
   { href: '/privacy/', label: 'Privacy' },
   { href: '/colophon/', label: 'Colophon' },

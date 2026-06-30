@@ -15,12 +15,22 @@ import {
   termBySlug,
 } from '../../data/securityTerms';
 import { CATEGORY_SOURCES, TERM_REFERENCES, ATTACK_TECHNIQUES } from '../../data/references';
+import { getSortedPosts, getSortedLabs, termSlugsInBody } from '../../utils/posts';
 
 export async function getStaticPaths() {
-  return SECURITY_TERMS.map((term) => ({ params: { slug: term.slug }, props: { term } }));
+  // Reverse-index the inline <Term slug="…"> mentions in post/lab bodies so each
+  // term knows which writeups reference it.
+  const [posts, labs] = await Promise.all([getSortedPosts(), getSortedLabs()]);
+  return SECURITY_TERMS.map((term) => {
+    const writeups = [
+      ...posts.filter((p) => termSlugsInBody(p.body).includes(term.slug)).map((p) => ({ title: p.data.title, href: `/blog/${p.id}/`, kind: 'Post' })),
+      ...labs.filter((l) => termSlugsInBody(l.body).includes(term.slug)).map((l) => ({ title: l.data.title, href: `/labs/${l.id}/`, kind: 'Lab' })),
+    ];
+    return { params: { slug: term.slug }, props: { term, writeups } };
+  });
 }
 
-const { term } = Astro.props;
+const { term, writeups } = Astro.props;
 
 const idx = SECURITY_TERMS.findIndex((t) => t.slug === term.slug);
 const prev = idx > 0 ? SECURITY_TERMS[idx - 1] : null;
@@ -179,6 +189,25 @@ const attackChip = css({
             </a>
           ))}
         </div>
+      </>
+    )
+  }
+
+  {
+    writeups.length > 0 && (
+      <>
+        <h2 class={sectionH2}><Icon name="file-text" size={18} class={css({ color: 'primary' })} /> Mentioned in my writeups</h2>
+        <ul class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' })}>
+          {writeups.map((w) => (
+            <li>
+              <a href={w.href} class={`${refLink} ${css({ gap: '0.5rem' })}`}>
+                <Icon name="arrow-right" size={14} class={css({ color: 'primary', flexShrink: 0 })} />
+                <span>{w.title}</span>
+                <span class={css({ fontFamily: 'sans', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'textMuted' })}>{w.kind}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
       </>
     )
   }

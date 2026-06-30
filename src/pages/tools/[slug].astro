@@ -10,16 +10,28 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import Icon from '../../components/Icon.astro';
 import { TOOLS, costTone } from '../../data/tools';
+import { getSortedPosts, getSortedLabs } from '../../utils/posts';
 
 export async function getStaticPaths() {
-  return TOOLS.map((tool) => ({ params: { slug: tool.slug }, props: { tool } }));
+  // Reverse-link writeups whose `tools` frontmatter lists this tool (by name).
+  const [posts, labs] = await Promise.all([getSortedPosts(), getSortedLabs()]);
+  return TOOLS.map((tool) => {
+    const name = tool.name.toLowerCase();
+    const writeups = [
+      ...posts.filter((p) => (p.data.tools ?? []).some((n) => n.toLowerCase() === name)).map((p) => ({ title: p.data.title, href: `/blog/${p.id}/`, kind: 'Post' })),
+      ...labs.filter((l) => (l.data.tools ?? []).some((n) => n.toLowerCase() === name)).map((l) => ({ title: l.data.title, href: `/labs/${l.id}/`, kind: 'Lab' })),
+    ];
+    return { params: { slug: tool.slug }, props: { tool, writeups } };
+  });
 }
 
-const { tool } = Astro.props;
+const { tool, writeups } = Astro.props;
 
 const idx = TOOLS.findIndex((t) => t.slug === tool.slug);
 const prev = idx > 0 ? TOOLS[idx - 1] : null;
 const next = idx >= 0 && idx < TOOLS.length - 1 ? TOOLS[idx + 1] : null;
+// Other tools sharing this tool's function tag (exact, from the data).
+const similar = TOOLS.filter((t) => t.fn === tool.fn && t.slug !== tool.slug);
 
 const sectionH2 = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', fontWeight: 700, mt: '2.5rem', mb: '0.75rem' });
 const para = css({ color: 'text', lineHeight: 1.8, fontSize: '1.02rem' });
@@ -91,6 +103,57 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
     <>
       <h2 class={sectionH2}><Icon name="terminal" size={18} class={css({ color: 'primary' })} /> In practice</h2>
       <p class={`${para} ${exampleP}`}>{tool.example}</p>
+    </>
+  )}
+
+  {writeups.length > 0 && (
+    <>
+      <h2 class={sectionH2}><Icon name="file-text" size={18} class={css({ color: 'primary' })} /> Featured in my writeups</h2>
+      <ul class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' })}>
+        {writeups.map((w) => (
+          <li>
+            <a href={w.href} class={`${refLink} ${css({ gap: '0.5rem' })}`}>
+              <Icon name="arrow-right" size={14} class={css({ color: 'primary', flexShrink: 0 })} />
+              <span>{w.title}</span>
+              <span class={css({ fontFamily: 'sans', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'textMuted' })}>{w.kind}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </>
+  )}
+
+  {similar.length > 0 && (
+    <>
+      <h2 class={sectionH2}><Icon name="layers" size={18} class={css({ color: 'primary' })} /> Similar tools</h2>
+      <p class={css({ color: 'textMuted', fontSize: '0.92rem', mb: '0.85rem', lineHeight: 1.7 })}>
+        Other {tool.fn} tools in the toolkit:
+      </p>
+      <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' })}>
+        {similar.map((s) => (
+          <a
+            href={`/tools/${s.slug}/`}
+            class={css({
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              px: '0.8rem',
+              py: '0.45rem',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              bg: 'bgCard',
+              border: '1px solid token(colors.border)',
+              borderRadius: 'md',
+              transition: 'border-color 200ms ease, color 200ms ease',
+              _hover: { borderColor: 'primary', color: 'primary' },
+            })}
+          >
+            {s.core && <Icon name="star" size={12} strokeWidth={0} class={css({ color: 'accent', fill: 'token(colors.accent)' })} label="In my kit" />}
+            {s.name}
+            <Icon name="arrow-right" size={13} />
+          </a>
+        ))}
+      </div>
     </>
   )}
 

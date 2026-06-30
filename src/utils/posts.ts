@@ -46,6 +46,16 @@ export async function getTags(): Promise<TagCount[]> {
   return collectTags(await getSortedPosts());
 }
 
+/** Glossary term slugs referenced inline in a post body via <Term slug="…">. */
+export function termSlugsInBody(body: string | undefined): string[] {
+  if (!body) return [];
+  const out = new Set<string>();
+  const re = /<Term\s+slug=["']([^"']+)["']/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(body))) out.add(m[1]);
+  return [...out];
+}
+
 /** Estimate reading time from rendered body length (~200 wpm). */
 export function estimateReadTime(body: string | undefined, fallback?: number): number {
   if (fallback) return fallback;
