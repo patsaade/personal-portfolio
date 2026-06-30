@@ -6,6 +6,7 @@ import type { APIRoute } from 'astro';
 import { getSortedPosts, getSortedLabs } from '../utils/posts';
 import { SECURITY_TERMS } from '../data/securityTerms';
 import { ATTACK_TECHNIQUES } from '../data/references';
+import { D3FEND_TECHNIQUES } from '../data/d3fend';
 import { TOOLS } from '../data/tools';
 
 export const prerender = true;
@@ -17,6 +18,7 @@ const STATIC_PAGES = [
   { title: 'Certifications', url: '/certifications/', kind: 'Page', desc: 'Security certifications — CISSP, CompTIA, the GIAC forensics track.', keywords: 'certifications cissp giac gcfa comptia credly' },
   { title: 'Glossary', url: '/glossary/', kind: 'Page', desc: 'A cybersecurity & DFIR glossary.', keywords: 'glossary terms definitions reference' },
   { title: 'ATT&CK coverage map', url: '/attack-map/', kind: 'Page', desc: 'MITRE ATT&CK techniques covered across the site.', keywords: 'mitre attack techniques tactics coverage matrix' },
+  { title: 'MITRE D3FEND map', url: '/d3fend/', kind: 'Page', desc: 'MITRE D3FEND defensive techniques, mapped to ATT&CK.', keywords: 'mitre d3fend defensive techniques tactics countermeasures harden detect isolate' },
   { title: 'Blog', url: '/blog/', kind: 'Page', desc: 'DFIR deep dives.', keywords: 'blog posts writeups articles' },
   { title: 'Labs', url: '/labs/', kind: 'Page', desc: 'Lab & CTF writeups.', keywords: 'labs ctf writeups cyberdefenders 13cubed' },
 ];
@@ -52,6 +54,13 @@ export const GET: APIRoute = async () => {
       kind: 'ATT&CK',
       desc: t.summary ?? '',
       keywords: `${t.tactics.join(' ')} mitre att&ck technique`.toLowerCase(),
+    })),
+    ...D3FEND_TECHNIQUES.map((t) => ({
+      title: `${t.id} ${t.name}`,
+      url: `/d3fend/${t.id}/`,
+      kind: 'D3FEND',
+      desc: t.definition,
+      keywords: `${t.tactic} mitre d3fend defensive countermeasure technique`.toLowerCase(),
     })),
     ...TOOLS.map((t) => ({
       title: t.name,

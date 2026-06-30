@@ -1,0 +1,157 @@
+---
+// MITRE D3FEND technique detail — one prerendered page per technique, in the same
+// format as the ATT&CK technique pages (definition, lineage, cross-links, reference).
+// The headline cross-link is "Counters" — the ATT&CK techniques this defensive
+// technique defends against, linked straight to our MITRE ATT&CK Map.
+export const prerender = true;
+import { css } from 'styled-system/css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import Icon from '../../components/Icon.astro';
+import EntryNav from '../../components/EntryNav.astro';
+import { D3FEND_TECHNIQUES, D3FEND_VERSION, d3fendById } from '../../data/d3fend';
+import { ATTACK_TECHNIQUES } from '../../data/references';
+
+export async function getStaticPaths() {
+  return D3FEND_TECHNIQUES.map((tech) => ({ params: { id: tech.id }, props: { tech } }));
+}
+
+const { tech } = Astro.props;
+
+const idx = D3FEND_TECHNIQUES.findIndex((t) => t.id === tech.id);
+const prev = idx > 0 ? D3FEND_TECHNIQUES[idx - 1] : null;
+const next = idx >= 0 && idx < D3FEND_TECHNIQUES.length - 1 ? D3FEND_TECHNIQUES[idx + 1] : null;
+const parent = tech.parentId ? d3fendById(tech.parentId) : null;
+const children = D3FEND_TECHNIQUES.filter((t) => t.parentId === tech.id);
+const siblings = tech.parentId ? D3FEND_TECHNIQUES.filter((t) => t.parentId === tech.parentId && t.id !== tech.id) : [];
+
+// Resolve each countered ATT&CK id to our on-site detail page where it exists.
+const attackById: Record<string, (typeof ATTACK_TECHNIQUES)[number]> = {};
+for (const a of ATTACK_TECHNIQUES) attackById[a.id] = a;
+const counters = tech.counters.map((id) => {
+  const a = attackById[id];
+  if (a) return { id, name: a.name, href: `/attack-map/${id}/`, onSite: true };
+  const [base, sub] = id.split('.');
+  return { id, name: id, href: `https://attack.mitre.org/techniques/${base}/${sub ? sub + '/' : ''}`, onSite: false };
+});
+
+const sectionH2 = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', fontWeight: 700, mt: '2.5rem', mb: '0.75rem' });
+const para = css({ color: 'text', lineHeight: 1.8, fontSize: '1.02rem' });
+const refLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', color: 'text', transition: 'color 150ms ease', _hover: { color: 'primary' } });
+const lineageLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', color: 'text', transition: 'color 150ms ease', _hover: { color: 'primary' } });
+const monoId = css({ fontFamily: 'mono', fontWeight: 700, color: 'primary' });
+---
+
+<BaseLayout title={`${tech.id} ${tech.name} — MITRE D3FEND`} description={tech.definition || tech.name}>
+  <Breadcrumbs
+    items={[{ label: 'Home', href: '/' }, { label: 'MITRE D3FEND', href: '/d3fend/' }, { label: tech.id }]}
+  />
+
+  <header class={css({ mb: '1.5rem' })}>
+    <p class={css({ fontFamily: 'sans', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'primary', mb: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' })}>
+      <Icon name="shield" size={15} />
+      {tech.tactic} · MITRE D3FEND
+    </p>
+    <h1 class={css({ fontSize: { base: '2.1rem', md: '2.75rem' }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 })}>
+      {tech.name}
+    </h1>
+    <p class={css({ fontFamily: 'mono', fontSize: '0.85rem', color: 'textMuted', mt: '0.6rem' })}>
+      {tech.id}
+      {parent && (
+        <>
+          {' · sub-technique of '}
+          <a href={`/d3fend/${parent.id}/`} class={css({ color: 'primary', _hover: { textDecoration: 'underline' } })}>{parent.id} {parent.name}</a>
+        </>
+      )}
+    </p>
+  </header>
+
+  {tech.definition && (
+    <>
+      <h2 class={sectionH2}><Icon name="book-open" size={18} class={css({ color: 'primary' })} /> Definition</h2>
+      <p class={para}>{tech.definition}</p>
+    </>
+  )}
+
+  {counters.length > 0 && (
+    <>
+      <h2 class={sectionH2}><Icon name="crosshair" size={18} class={css({ color: 'primary' })} /> Counters these ATT&CK techniques</h2>
+      <p class={css({ color: 'textMuted', fontSize: '0.92rem', mb: '0.85rem', lineHeight: 1.7 })}>
+        Offensive techniques this countermeasure defends against, per D3FEND's mappings:
+      </p>
+      <ul class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' })}>
+        {counters.map((c) => (
+          <li>
+            <a href={c.href} class={`${refLink} ${css({ gap: '0.5rem' })}`} {...(c.onSite ? {} : { target: '_blank', rel: 'noopener' })}>
+              <Icon name="arrow-right" size={14} class={css({ color: 'primary', flexShrink: 0 })} />
+              <span class={monoId}>{c.id}</span>
+              <span>{c.name}</span>
+              {!c.onSite && <Icon name="external-link" size={12} class={css({ color: 'textMuted', flexShrink: 0 })} />}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </>
+  )}
+
+  {children.length > 0 && (
+    <>
+      <h2 class={sectionH2}><Icon name="layers" size={18} class={css({ color: 'primary' })} /> Sub-techniques</h2>
+      <p class={css({ color: 'textMuted', fontSize: '0.92rem', mb: '0.85rem', lineHeight: 1.7 })}>
+        Specific ways {tech.name} is implemented:
+      </p>
+      <ul class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' })}>
+        {children.map((s) => (
+          <li>
+            <a href={`/d3fend/${s.id}/`} class={lineageLink}>
+              <Icon name="arrow-right" size={14} class={css({ color: 'primary', flexShrink: 0 })} />
+              <span class={monoId}>{s.id}</span>
+              <span>{s.name}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </>
+  )}
+
+  {siblings.length > 0 && (
+    <>
+      <h2 class={sectionH2}><Icon name="layers" size={18} class={css({ color: 'primary' })} /> Sibling sub-techniques</h2>
+      <p class={css({ color: 'textMuted', fontSize: '0.92rem', mb: '0.85rem', lineHeight: 1.7 })}>
+        Other sub-techniques of{' '}
+        {parent ? <a href={`/d3fend/${parent.id}/`} class={css({ color: 'primary', _hover: { textDecoration: 'underline' } })}>{parent.id} {parent.name}</a> : tech.parentId}:
+      </p>
+      <ul class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' })}>
+        {siblings.map((s) => (
+          <li>
+            <a href={`/d3fend/${s.id}/`} class={lineageLink}>
+              <Icon name="arrow-right" size={14} class={css({ color: 'primary', flexShrink: 0 })} />
+              <span class={monoId}>{s.id}</span>
+              <span>{s.name}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </>
+  )}
+
+  <h2 class={sectionH2}><Icon name="external-link" size={18} class={css({ color: 'primary' })} /> Reference</h2>
+  <ul class={css({ listStyle: 'none', m: 0, p: 0 })}>
+    <li>
+      <a href={tech.url} target="_blank" rel="noopener" class={refLink}>
+        <Icon name="external-link" size={14} class={css({ color: 'primary', flexShrink: 0 })} />
+        <span>MITRE D3FEND — {tech.id}: {tech.name}</span>
+      </a>
+    </li>
+  </ul>
+  <p class={css({ fontSize: '0.78rem', color: 'textMuted', mt: '0.85rem', lineHeight: 1.6 })}>
+    D3FEND™ is a trademark of The MITRE Corporation; technique names, IDs, and ATT&CK mappings come from
+    the public D3FEND knowledge base (v{D3FEND_VERSION}).
+  </p>
+
+  <EntryNav
+    ariaLabel="More techniques"
+    prev={prev ? { href: `/d3fend/${prev.id}/`, label: `${prev.id} ${prev.name}` } : null}
+    next={next ? { href: `/d3fend/${next.id}/`, label: `${next.id} ${next.name}` } : null}
+  />
+</BaseLayout>

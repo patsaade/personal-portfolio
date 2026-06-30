@@ -1,0 +1,46 @@
+---
+// A small pressable filter toggle (e.g. "Covered only", "In glossary", "Maps to
+// ATT&CK"). Shared by the Glossary, MITRE ATT&CK Map, and MITRE D3FEND pages so the
+// filter chips look and behave identically. The host page wires the click handler
+// to its own filtering logic by `id`; this only owns the markup + styling.
+import Icon from './Icon.astro';
+import { css } from 'styled-system/css';
+
+interface Props {
+  id: string;
+  icon: string;
+  label: string;
+  /** Active colour — `accent` (e.g. coverage) or `primary` (e.g. cross-references). */
+  tone?: 'accent' | 'primary';
+}
+const { id, icon, label, tone = 'primary' } = Astro.props;
+
+const base = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.35rem',
+  px: '0.6rem',
+  py: '0.35rem',
+  fontFamily: 'sans',
+  fontSize: '0.8rem',
+  fontWeight: 600,
+  color: 'textMuted',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  cursor: 'pointer',
+  transition: 'color 150ms ease, border-color 150ms ease, background 150ms ease',
+});
+const accentCls = css({
+  _hover: { color: 'accent', borderColor: 'accent' },
+  '&[aria-pressed=true]': { color: 'accent', borderColor: 'accent', bg: 'color-mix(in srgb, token(colors.accent) 12%, transparent)' },
+});
+const primaryCls = css({
+  _hover: { color: 'primary', borderColor: 'primary' },
+  '&[aria-pressed=true]': { color: 'primary', borderColor: 'primary', bg: 'color-mix(in srgb, token(colors.primary) 12%, transparent)' },
+});
+---
+
+<button type="button" id={id} aria-pressed="false" data-sound="tick" class={`${base} ${tone === 'accent' ? accentCls : primaryCls}`}>
+  <Icon name={icon as any} size={14} /> {label}
+</button>

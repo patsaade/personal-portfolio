@@ -32,6 +32,7 @@ export const NAV_LINKS = [
 export const MORE_LINKS = [
   { href: '/glossary/', label: 'Glossary' },
   { href: '/attack-map/', label: 'MITRE ATT&CK Map' },
+  { href: '/d3fend/', label: 'MITRE D3FEND' },
   { href: '/certifications/', label: 'Certifications' },
   { href: '/privacy/', label: 'Privacy' },
   { href: '/colophon/', label: 'Colophon' },

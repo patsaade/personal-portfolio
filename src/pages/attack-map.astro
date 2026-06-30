@@ -12,6 +12,7 @@ import PageHeader from '../components/PageHeader.astro';
 import Icon from '../components/Icon.astro';
 import CollapseAll from '../components/CollapseAll.astro';
 import TagCombobox from '../components/TagCombobox.astro';
+import FilterToggle from '../components/FilterToggle.astro';
 import { tag } from 'styled-system/recipes';
 import { getSortedPosts, getSortedLabs, tagSlug } from '../utils/posts';
 import { termBySlug } from '../data/securityTerms';
@@ -78,43 +79,6 @@ const chipGloss = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25
 
 // Search + controls.
 const statLink = css({ color: 'primary', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', _hover: { textDecoration: 'underline' } });
-const coveredToggle = css({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '0.35rem',
-  px: '0.6rem',
-  py: '0.35rem',
-  fontFamily: 'sans',
-  fontSize: '0.8rem',
-  fontWeight: 600,
-  color: 'textMuted',
-  bg: 'bgSubtle',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'md',
-  cursor: 'pointer',
-  transition: 'color 150ms ease, border-color 150ms ease, background 150ms ease',
-  _hover: { color: 'accent', borderColor: 'accent' },
-  '&[aria-pressed=true]': { color: 'accent', borderColor: 'accent', bg: 'color-mix(in srgb, token(colors.accent) 12%, transparent)' },
-});
-// "In glossary" filter — same shape as the covered toggle, primary-toned (glossary links use primary).
-const glossToggle = css({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '0.35rem',
-  px: '0.6rem',
-  py: '0.35rem',
-  fontFamily: 'sans',
-  fontSize: '0.8rem',
-  fontWeight: 600,
-  color: 'textMuted',
-  bg: 'bgSubtle',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'md',
-  cursor: 'pointer',
-  transition: 'color 150ms ease, border-color 150ms ease, background 150ms ease',
-  _hover: { color: 'primary', borderColor: 'primary' },
-  '&[aria-pressed=true]': { color: 'primary', borderColor: 'primary', bg: 'color-mix(in srgb, token(colors.primary) 12%, transparent)' },
-});
 const legendRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 1.25rem', mb: '1.75rem', fontSize: '0.78rem', color: 'textMuted' });
 const legendItem = css({ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' });
 const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'bgCard', border: '1px solid token(colors.border)', borderLeftWidth: '3px', borderLeftColor: 'accent', borderRadius: '2px', flexShrink: 0 });
@@ -174,12 +138,8 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
       <a href="https://attack.mitre.org/" target="_blank" rel="noopener" class={statLink}>ATT&CK v{ATTACK_VERSION} <Icon name="external-link" size={12} /></a>
     </p>
     <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', ml: 'auto' })}>
-      <button type="button" id="attack-covered-toggle" aria-pressed="false" data-sound="tick" class={coveredToggle}>
-        <Icon name="check" size={14} /> Covered only
-      </button>
-      <button type="button" id="attack-gloss-toggle" aria-pressed="false" data-sound="tick" class={glossToggle}>
-        <Icon name="book-open" size={14} /> In glossary
-      </button>
+      <FilterToggle id="attack-covered-toggle" icon="check" label="Covered only" tone="accent" />
+      <FilterToggle id="attack-gloss-toggle" icon="book-open" label="In glossary" tone="primary" />
       <CollapseAll target="[data-tactic-group]" />
     </div>
   </div>

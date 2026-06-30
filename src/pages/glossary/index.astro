@@ -17,6 +17,7 @@ import {
 import { ATTACK_TECHNIQUES } from '../../data/references';
 import CollapseAll from '../../components/CollapseAll.astro';
 import TagCombobox from '../../components/TagCombobox.astro';
+import FilterToggle from '../../components/FilterToggle.astro';
 import { tagSlug } from '../../utils/posts';
 import { assignTermSymbols } from '../../data/termSymbols';
 import { tag } from 'styled-system/recipes';
@@ -95,27 +96,6 @@ const attackTag = `${tag({ tone: 'primary', mono: true })} ${css({
   transition: 'background 150ms ease',
   _hover: { bg: 'color-mix(in srgb, token(colors.primary) 24%, transparent)' },
 })}`;
-
-// "ATT&CK only" filter toggle (next to Collapse all) — same shape as the
-// MITRE ATT&CK Map page's filter toggles.
-const filterToggle = css({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '0.35rem',
-  px: '0.6rem',
-  py: '0.35rem',
-  fontFamily: 'sans',
-  fontSize: '0.8rem',
-  fontWeight: 600,
-  color: 'textMuted',
-  bg: 'bgSubtle',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'md',
-  cursor: 'pointer',
-  transition: 'color 150ms ease, border-color 150ms ease, background 150ms ease',
-  _hover: { color: 'primary', borderColor: 'primary' },
-  '&[aria-pressed=true]': { color: 'primary', borderColor: 'primary', bg: 'color-mix(in srgb, token(colors.primary) 12%, transparent)' },
-});
 
 // Each category is a collapsible <details>, matching the Tools / Certifications pages.
 const groupDetails = css({ borderTop: '1px solid token(colors.border)', py: '1.25rem' });
@@ -206,9 +186,7 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
       <span id="totd-result-count">{total}</span> terms — every one a concept, technique, or artifact you’ll meet in a real investigation.
     </p>
     <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', ml: { sm: 'auto' } })}>
-      <button type="button" id="totd-attack-toggle" aria-pressed="false" data-sound="tick" class={filterToggle}>
-        <Icon name="crosshair" size={14} /> ATT&CK only
-      </button>
+      <FilterToggle id="totd-attack-toggle" icon="crosshair" label="ATT&CK only" tone="primary" />
       <CollapseAll target="[data-totd-group]" />
     </div>
   </div>

@@ -9,8 +9,10 @@ import { css } from 'styled-system/css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import Icon from '../../components/Icon.astro';
+import EntryNav from '../../components/EntryNav.astro';
 import { termBySlug } from '../../data/securityTerms';
 import { ATTACK_TECHNIQUES } from '../../data/references';
+import { d3fendCountering } from '../../data/d3fend';
 import { getSortedPosts, getSortedLabs } from '../../utils/posts';
 import { tag } from 'styled-system/recipes';
 
@@ -37,6 +39,8 @@ const parent = parentId ? ATTACK_TECHNIQUES.find((t) => t.id === parentId) : nul
 // Lineage (exact, from the IDs): a parent's sub-techniques, or a sub's siblings.
 const subTechniques = ATTACK_TECHNIQUES.filter((t) => t.id.startsWith(`${tech.id}.`));
 const siblings = parentId ? ATTACK_TECHNIQUES.filter((t) => t.id.startsWith(`${parentId}.`) && t.id !== tech.id) : [];
+// D3FEND defensive techniques that counter this technique (reverse cross-link).
+const defenses = d3fendCountering(tech.id);
 
 const sectionH2 = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', fontWeight: 700, mt: '2.5rem', mb: '0.75rem' });
 const para = css({ color: 'text', lineHeight: 1.8, fontSize: '1.02rem' });
@@ -53,19 +57,6 @@ const glossCard = css({
   _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
 });
 const refLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', color: 'text', transition: 'color 150ms ease', _hover: { color: 'primary' } });
-const navLink = css({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.25rem',
-  p: '0.85rem 1.1rem',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'md',
-  bg: 'bgCard',
-  transition: 'border-color 200ms ease, transform 200ms ease',
-  _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
-});
-const navMeta = css({ fontSize: '0.72rem', fontFamily: 'sans', color: 'textMuted' });
-const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
 ---
 
 <BaseLayout title={`${tech.id} ${tech.name} — MITRE ATT&CK`} description={tech.summary}>
@@ -211,6 +202,27 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
     </>
   )}
 
+  {defenses.length > 0 && (
+    <>
+      <h2 class={sectionH2}><Icon name="shield" size={18} class={css({ color: 'primary' })} /> D3FEND countermeasures</h2>
+      <p class={css({ color: 'textMuted', fontSize: '0.92rem', mb: '0.85rem', lineHeight: 1.7 })}>
+        Defensive techniques that counter this, from the MITRE D3FEND map:
+      </p>
+      <ul class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' })}>
+        {defenses.map((d) => (
+          <li>
+            <a href={`/d3fend/${d.id}/`} class={`${refLink} ${css({ gap: '0.5rem' })}`}>
+              <Icon name="arrow-right" size={14} class={css({ color: 'primary', flexShrink: 0 })} />
+              <span class={css({ fontFamily: 'mono', fontWeight: 700, color: 'primary' })}>{d.id}</span>
+              <span>{d.name}</span>
+              <span class={css({ fontFamily: 'sans', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'textMuted' })}>{d.tactic}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </>
+  )}
+
   {writeups.length > 0 && (
     <>
       <h2 class={sectionH2}><Icon name="file-text" size={18} class={css({ color: 'primary' })} /> Covered in my writeups</h2>
@@ -242,25 +254,9 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
     public ATT&CK knowledge base.
   </p>
 
-  <nav
-    aria-label="More techniques"
-    class={css({ display: 'grid', gridTemplateColumns: { base: '1fr', sm: '1fr 1fr' }, gap: '1rem', mt: '3rem', pt: '1.5rem', borderTop: '1px solid token(colors.border)' })}
-  >
-    {prev ? (
-      <a href={`/attack-map/${prev.id}/`} class={navLink}>
-        <span class={navMeta}>← Previous</span>
-        <span class={navTitle}>{prev.id} {prev.name}</span>
-      </a>
-    ) : (
-      <span />
-    )}
-    {next ? (
-      <a href={`/attack-map/${next.id}/`} class={`${navLink} ${css({ textAlign: 'right', alignItems: 'flex-end' })}`}>
-        <span class={navMeta}>Next →</span>
-        <span class={navTitle}>{next.id} {next.name}</span>
-      </a>
-    ) : (
-      <span />
-    )}
-  </nav>
+  <EntryNav
+    ariaLabel="More techniques"
+    prev={prev ? { href: `/attack-map/${prev.id}/`, label: `${prev.id} ${prev.name}` } : null}
+    next={next ? { href: `/attack-map/${next.id}/`, label: `${next.id} ${next.name}` } : null}
+  />
 </BaseLayout>
