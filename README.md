@@ -56,11 +56,13 @@ CI type-checks, tests, and builds every push).
 npm install     # also runs `panda codegen`
 npm run dev      # → http://localhost:4321
 npm run build    # panda codegen + astro build
+npm run check    # astro check (types/diagnostics)
 npm test         # Vitest unit suite
 ```
 
 Technical details: [docs/AUTHORING.md](docs/AUTHORING.md) (writing posts) ·
-[docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) (design & direction). Design & front-end built with AI assistance
+[docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) (design, direction, and the OG-card/brand-asset
+pipeline). Design & front-end built with AI assistance
 ([Claude Code](https://claude.com/claude-code)), then reviewed & refined — see
 [/colophon/](https://patricksaade.com/colophon/).
 

@@ -3,14 +3,34 @@
 // Static page — prerender to HTML served from the CDN (output: 'server' is on-demand by default).
 export const prerender = true;
 import { css } from 'styled-system/css';
+import { tag } from 'styled-system/recipes';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
 
 const para = css({ color: 'textMuted', lineHeight: 1.8, mb: '1rem' });
 const h2 = css({ fontSize: '1.3rem', fontWeight: 700, mt: '2.25rem', mb: '0.75rem' });
-const list = css({ color: 'textMuted', lineHeight: 1.9, pl: '1.25rem', mb: '1rem' });
 const link = css({ color: 'primary', textDecoration: 'underline', _hover: { color: 'primaryHover' } });
 const term = css({ color: 'text', fontWeight: 600 });
+
+// The stack, as a small bordered record — same row-list idiom as the condensed
+// experience block on /about/, so it reads as "materials used" rather than a
+// bulleted feature dump.
+const stackCard = css({ listStyle: 'none', m: 0, p: '0.25rem 1.25rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'lg' });
+const stackRowBase = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem', py: '0.85rem' });
+const stackRowDivider = css({ borderTop: '1px solid token(colors.border)' });
+const stackHead = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.2rem 1rem' });
+const stackName = css({ color: 'text', fontWeight: 600 });
+const stackNote = css({ color: 'textMuted', fontSize: '0.9rem', lineHeight: 1.7 });
+
+const STACK = [
+  { name: 'Astro', url: 'https://astro.build', role: 'Framework', note: 'Every page is prerendered to static HTML.' },
+  { name: 'Panda CSS', url: 'https://panda-css.com', role: 'Styling', note: 'Zero-runtime, generated at build time.' },
+  { name: 'MDX', url: 'https://mdxjs.com', role: 'Content', note: 'How the posts and labs get written.' },
+  { name: 'Shiki', url: 'https://shiki.style', role: 'Code', note: 'Syntax highlighting, themed for light and dark.' },
+  { name: 'Floating UI', url: 'https://floating-ui.com', role: 'Interactions', note: 'Powers the hover cards on terms, tools, and companies.' },
+  { name: 'Satori', url: 'https://github.com/vercel/satori', role: 'Social cards', note: 'Renders the Open Graph images at build time.' },
+  { name: 'Vercel', url: 'https://vercel.com', role: 'Hosting', note: 'The CDN, plus cookieless Web Analytics and Speed Insights.' },
+];
 ---
 
 <BaseLayout
@@ -26,38 +46,65 @@ const term = css({ color: 'text', fontWeight: 600 });
     policy</a>). It's semantic, keyboard-friendly, and it respects reduced motion.
   </p>
 
-  <h2 class={h2}>Built with</h2>
-  <ul class={list}>
-    <li><a class={link} href="https://astro.build" target="_blank" rel="noopener">Astro</a> — the framework; every page is prerendered to static HTML.</li>
-    <li><a class={link} href="https://panda-css.com" target="_blank" rel="noopener">Panda CSS</a> — zero-runtime styling, generated at build time.</li>
-    <li><a class={link} href="https://mdxjs.com" target="_blank" rel="noopener">MDX</a> — how I write the posts.</li>
-    <li><a class={link} href="https://shiki.style" target="_blank" rel="noopener">Shiki</a> — syntax highlighting, themed light and dark.</li>
-    <li><a class={link} href="https://floating-ui.com" target="_blank" rel="noopener">Floating UI</a> — the hover cards on terms, tools, and companies.</li>
-    <li><a class={link} href="https://github.com/vercel/satori" target="_blank" rel="noopener">Satori</a> — the social / Open Graph card images, rendered at build time.</li>
-    <li><a class={link} href="https://vercel.com" target="_blank" rel="noopener">Vercel</a> — hosting, the global CDN, and cookieless Web Analytics &amp; Speed Insights.</li>
-    <li>Type — <a class={link} href="https://www.redaction.us" target="_blank" rel="noopener">Redaction</a>, by Jeremy Mickel (<a class={link} href="https://www.mckltype.com" target="_blank" rel="noopener">MCKL</a>), drawn for Titus Kaphar &amp; Reginald Dwayne Betts' <em>The Redaction</em>. It comes in graded levels of degradation — I run the eroded grades on the wordmark, hero, and ticker. Used under the <a class={link} href="/fonts/redaction/OFL.txt">SIL Open Font License</a>.</li>
-    <li>Code is set in <a class={link} href="https://github.com/mozilla/Fira" target="_blank" rel="noopener">Fira Mono</a> (Mozilla), under the <a class={link} href="/fonts/fira-mono/OFL.txt">SIL Open Font License</a>. The icons are <a class={link} href="https://lucide.dev" target="_blank" rel="noopener">lucide</a>-style SVGs I draw inline so they follow the theme.</li>
-  </ul>
-
-  <h2 class={h2}>A few details</h2>
+  <h2 class={h2}>What's actually here</h2>
   <p class={para}>
-    Ten color themes — five dark, five light — that you pick independently per mode, with a circular
-    wipe when you switch. An ambient node-field background tuned to the active palette, and a retro
-    custom cursor on the desktop. Press <span class={term}>⌘K</span> to search the whole site, and
-    turn on optional <span class={term}>interface sounds</span> from the nav. It's an installable PWA,
-    so pages stay readable offline — with a small indicator when you drop your connection.
+    There's more to this site than the posts. A searchable <span class={term}>Glossary</span>
+    covers 500+ security concepts, with a new <span class={term}>Term of the Day</span> picked
+    daily, alongside a free, open-source tools directory. Then there's a full MITRE ATT&amp;CK
+    Coverage Map — the entire Enterprise matrix, generated straight from MITRE's own data, with a
+    detail page for every technique — cross-linked to its defensive counterpart, a MITRE D3FEND
+    map of countermeasures, so each technique shows what actually stops it.
   </p>
   <p class={para}>
-    The reference side runs deep and cross-linked: a searchable <span class={term}>Glossary</span> of
-    500+ security concepts (with a fresh <span class={term}>Term of the Day</span> each morning), a
-    free &amp; open-source <span class={term}>tools</span> directory, and a full
-    <a class={link} href="https://attack.mitre.org/" target="_blank" rel="noopener">MITRE ATT&amp;CK</a>
-    Coverage Map — the entire Enterprise matrix, generated from MITRE's official ATT&amp;CK data, with a
-    detail page for every technique — paired with its defensive counterpart, a
-    <a class={link} href="https://d3fend.mitre.org/" target="_blank" rel="noopener">MITRE D3FEND</a>
-    map of countermeasures, two-way linked so each technique shows what defends against it.
     ATT&amp;CK® and D3FEND™ are trademarks of The MITRE Corporation.
   </p>
+
+  <h2 class={h2}>A little craft</h2>
+  <p class={para}>
+    Small touches I like: ten palettes split evenly between dark and light, each held
+    independently so switching modes never forgets your color pick; a field of drifting,
+    connected nodes behind everything; and a hand-drawn cursor for anyone browsing with a mouse.
+    Search lives on <span class={term}>⌘K</span>, sound is opt-in from the nav, and the whole
+    thing installs like an app and stays readable offline.
+  </p>
+
+  <h2 class={h2}>Built with</h2>
+  <ul class={stackCard}>
+    {
+      STACK.map((s, i) => (
+        <li class={`${stackRowBase} ${i === 0 ? '' : stackRowDivider}`}>
+          <span class={stackHead}>
+            <a class={`${link} ${stackName}`} href={s.url} target="_blank" rel="noopener">{s.name}</a>
+            <span class={tag({ tone: 'muted' })}>{s.role}</span>
+          </span>
+          <span class={stackNote}>{s.note}</span>
+        </li>
+      ))
+    }
+    <li class={`${stackRowBase} ${stackRowDivider}`}>
+      <span class={stackHead}>
+        <a class={`${link} ${stackName}`} href="https://www.redaction.us" target="_blank" rel="noopener">Redaction</a>
+        <span class={tag({ tone: 'muted' })}>Display type</span>
+      </span>
+      <span class={stackNote}>
+        By Jeremy Mickel (<a class={link} href="https://www.mckltype.com" target="_blank" rel="noopener">MCKL</a>),
+        drawn for Titus Kaphar &amp; Reginald Dwayne Betts' <em>The Redaction</em>. It comes in graded
+        levels of erosion — I run the eroded grades on the wordmark, hero, and ticker. Used under
+        the <a class={link} href="/fonts/redaction/OFL.txt">SIL Open Font License</a>.
+      </span>
+    </li>
+    <li class={`${stackRowBase} ${stackRowDivider}`}>
+      <span class={stackHead}>
+        <a class={`${link} ${stackName}`} href="https://github.com/mozilla/Fira" target="_blank" rel="noopener">Fira Mono</a>
+        <span class={tag({ tone: 'muted' })}>Code type</span>
+      </span>
+      <span class={stackNote}>
+        Mozilla's monospace, used under the <a class={link} href="/fonts/fira-mono/OFL.txt">SIL Open
+        Font License</a>. The icons are <a class={link} href="https://lucide.dev" target="_blank" rel="noopener">lucide</a>-style
+        SVGs I draw by hand, so they follow the active palette.
+      </span>
+    </li>
+  </ul>
 
   <h2 class={h2}>The build</h2>
   <p class={para}>

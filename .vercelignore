@@ -39,8 +39,43 @@ scripts/
 .env
 .env.*
 .env.local
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+secrets*.json
+
+# Forensic artifacts & archives — mirrors .gitignore. These are never committed, but
+# .vercelignore is evaluated independently: its mere presence makes the Vercel CLI
+# ignore .gitignore entirely for a local `vercel deploy` (a raw filesystem upload,
+# unlike the git-integrated push deploys this project normally uses). Without these
+# patterns here too, a stray lab evidence file or key sitting in the working tree
+# would ship to Vercel on any local CLI deploy. Never used by the build either way.
+*.raw
+*.mem
+*.vmem
+*.vmsn
+*.vmdk
+*.dmp
+*.lime
+*.bin
+*.e01
+*.ex01
+*.aff4
+*.pcap
+*.pcapng
+*.zip
+*.7z
+*.tar.gz
+*.tgz
+*.rar
 
 # OS / logs
 .DS_Store
 ._*
 *.log
+
+# TypeScript incremental cache / test coverage output (see .gitignore)
+*.tsbuildinfo
+coverage/

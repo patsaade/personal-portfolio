@@ -181,15 +181,40 @@ distinct, intentional pattern; keep it to the key guarantees, not proper nouns.
   description + breadcrumbs), `Breadcrumbs`, `CollapseAll` (expand/collapse a set of `<details>`),
   `TagCombobox` (typeahead search with removable facet tokens — suggestions appear at 2+ chars;
   drives Blog, Glossary, Tools, Certifications, and both MITRE maps), `FilterToggle` (the pill
-  filters — "Covered only", "In glossary", "Maps to ATT&CK"; `tone` `accent`|`primary`), and
-  `EntryNav` (prev/next on detail pages). The listing grids all use the shared `.card-grid` (above),
-  and the two MITRE maps (`/attack-map/`, `/d3fend/`) share this whole scaffolding — extend it,
-  don't fork it.
+  filters — "Covered only", "In glossary", "Maps to ATT&CK"; `tone` `accent`|`primary`), `EntryNav`
+  (prev/next on detail pages), and `ListFilter` — the config-driven controller that actually wires
+  search + facet + toggles + collapsible groups together (each page just declares its selectors and
+  toggle list; see the component's own doc comment for the config shape). The listing grids all use
+  the shared `.card-grid` (above), and every list page (Blog, Glossary, Tools, Certifications, both
+  MITRE maps) shares this whole scaffolding — extend it, don't fork it. Adding a new toggle to a page
+  is normally just: a `data-*` attribute on the card + one `{ id, attr }` entry in that page's
+  `ListFilter` config + a matching `<FilterToggle>` button — the controller needs no changes.
 - **Experience: detailed vs. condensed.** Headline/relevant roles get full timeline cards
   (company header, per-role title + dates + one-sentence summary + skill tags). Earlier,
   contract, or foundational roles go in **one condensed block** below — a single bordered
   card listing one line each (`title · org` left, `type · year` right, mono/muted), no
   per-role detail. Keeps the trajectory visible without diluting the headline roles.
+
+## Assets & social cards
+
+One Satori-based renderer (`src/og/card.mjs` + `src/og/star.mjs`, self-hosted fonts under
+`src/og/fonts/`) draws both the favicon/app-icon family and every page's social-share card —
+so the pixel-star mark and the OG cards can never drift into two different looks.
+
+- **Per-page OG images.** `src/og/routes.ts` is the single source of truth for which pages get
+  a card and what it says (title + eyebrow, mirroring each page's `PageHeader`). It's a plain
+  list of static entries plus every non-draft post/lab/tag, and it's imported by both
+  `src/pages/og/[...slug].png.ts` (the endpoint that renders each PNG at build) and `BaseHead`
+  (so `<meta og:image>` always points at a slug the endpoint actually generated — it can never
+  404). **When you add a new static page, add it to `STATIC_ENTRIES` in `og/routes.ts`** or it
+  falls back to the home card. `ogSlugForPath()` is the one place that maps a live URL to its
+  OG slug — glossary term pages and the legacy `/word-of-the-day/`/`/term-of-the-day/` redirects
+  intentionally all resolve to the shared `glossary` card rather than one image each.
+- **Static brand assets.** `scripts/gen-brand.mjs` (`npm run gen:brand`) calls the same renderer
+  to (re)generate `favicon.svg`, the favicon/apple-touch/PWA icon PNGs, and the static fallback
+  `/og.png`, writing them straight into `public/`. Re-run it after changing the mark or the
+  default-dark palette in `card.mjs` — it isn't part of the build, so nothing regenerates these
+  automatically.
 
 ## Layout & motion
 
