@@ -1,0 +1,74 @@
+---
+// Back-to-top button — fixed bottom-right, hidden until the visitor scrolls past
+// a threshold, then animates in (fade + rise). Clicking smooth-scrolls to the top;
+// as scroll position drops back under the threshold it animates back out — so it
+// "disappears when used" without any special-case logic, the same scroll listener
+// that shows it also hides it. No-JS visitors never see it (armed by script only,
+// same pattern as OfflineIndicator/Search — a hidden start state with no visible
+// no-JS regression, since this is a pure convenience control).
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+
+const btnCls = css({
+  position: 'fixed',
+  right: '1.25rem',
+  bottom: '1.25rem',
+  zIndex: 40,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '44px',
+  h: '44px',
+  borderRadius: 'full',
+  bg: 'primary',
+  color: 'onPrimary',
+  border: 'none',
+  boxShadow: 'cardHover',
+  cursor: 'pointer',
+  opacity: 0,
+  transform: 'translateY(0.6rem)',
+  pointerEvents: 'none',
+  transition: 'opacity 220ms ease, transform 220ms ease, background 200ms ease',
+  '&[data-visible]': {
+    opacity: 1,
+    transform: 'translateY(0)',
+    pointerEvents: 'auto',
+  },
+  _hover: { bg: 'primaryHover' },
+});
+---
+
+<button
+  type="button"
+  id="back-to-top"
+  class={btnCls}
+  aria-label="Back to top"
+  data-sound="tick"
+>
+  <Icon name="arrow-up" size={20} strokeWidth={2.5} />
+</button>
+
+<script is:inline>
+  (function () {
+    var btn = document.getElementById('back-to-top');
+    if (!btn) return;
+    var THRESHOLD = 480; // px scrolled before the button appears
+    var visible = false;
+    function sync() {
+      var should = window.scrollY > THRESHOLD;
+      if (should === visible) return;
+      visible = should;
+      if (visible) btn.setAttribute('data-visible', '');
+      else btn.removeAttribute('data-visible');
+    }
+    function reducedMotion() {
+      try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
+    }
+    window.addEventListener('scroll', sync, { passive: true });
+    sync(); // in case the page loads already scrolled (e.g. a #hash link)
+    btn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: reducedMotion() ? 'auto' : 'smooth' });
+      btn.blur();
+    });
+  })();
+</script>
