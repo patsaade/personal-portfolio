@@ -4,42 +4,25 @@
 // as a removable token. Its text also free-text-filters posts. Tags filter with
 // AND (a post must carry every selected tag). Category chips are a second facet.
 // State syncs to the URL (?q / ?tag / ?cat) so any view is shareable — this folds
-// in the old /tags/ pages. Static page — prerendered to the CDN.
+// in the old /tags/ pages. All driven by the shared <ListFilter> controller (same
+// one Glossary/Tools/Certifications/both MITRE maps use) via facetMode:'and' +
+// chipGroup + urlSync, so this page carries no bespoke filter script of its own.
+// Static page — prerendered to the CDN.
 export const prerender = true;
 import { css } from 'styled-system/css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import BlogCard from '../../components/BlogCard.astro';
-import TagCombobox from '../../components/TagCombobox.astro';
-import Icon from '../../components/Icon.astro';
+import FilterBar from '../../components/FilterBar.astro';
+import ListFilter from '../../components/ListFilter.astro';
 import { getSortedPosts, getTags, tagSlug, estimateReadTime } from '../../utils/posts';
 import { categoryIcon } from '../../consts';
 
 const posts = await getSortedPosts();
 const categories = [...new Set(posts.map((p) => p.data.category))];
 const tagOptions = (await getTags()).map((t) => ({ value: t.slug, label: t.tag, count: t.count }));
+const categoryChips = categories.map((c) => ({ value: c, label: c, icon: categoryIcon(c) }));
 
-const helper = css({ fontSize: '0.78rem', color: 'textMuted', m: 0 });
-const filterRow = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' });
-const rowLabel = css({ fontFamily: 'sans', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted', mr: '0.1rem' });
-const catChip = css({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '0.35rem',
-  fontFamily: 'sans',
-  fontSize: '0.82rem',
-  px: '0.8rem',
-  py: '0.4rem',
-  borderRadius: 'md',
-  border: '1px solid token(colors.border)',
-  bg: 'transparent',
-  color: 'textMuted',
-  cursor: 'pointer',
-  transition: 'all 150ms ease',
-  _hover: { borderColor: 'primary', color: 'text' },
-  '&[data-active]': { bg: 'primary', color: 'onPrimary', borderColor: 'primary' },
-});
-const clearBtn = css({ ml: { sm: 'auto' }, fontFamily: 'sans', fontSize: '0.8rem', fontWeight: 600, color: 'textMuted', bg: 'transparent', border: 'none', cursor: 'pointer', _hover: { color: 'primary' } });
 const countLine = css({ fontSize: '0.85rem', color: 'textMuted', mb: '1.25rem' });
 ---
 
@@ -52,26 +35,23 @@ const countLine = css({ fontSize: '0.85rem', color: 'textMuted', mb: '1.25rem' }
   />
 
   {posts.length > 0 && (
-    <div class={css({ mb: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' })}>
-      <TagCombobox id="blog-tags" options={tagOptions} placeholder="Search posts, or type a tag like “car”…" label="Filter posts by tag" />
-      <p class={helper}>Type to search, or pick tags — posts match <strong class={css({ color: 'text' })}>every</strong> tag you add.</p>
-      <div class={filterRow}>
-        <span class={rowLabel}>Category</span>
-        <button class={catChip} data-filter="all" data-active type="button">All</button>
-        {categories.map((c) => (
-          <button class={catChip} data-filter={c} type="button">
-            <Icon name={categoryIcon(c) as any} size={13} />{c}
-          </button>
-        ))}
-        <button id="blog-clear" type="button" hidden class={clearBtn}>Clear filters</button>
-      </div>
-    </div>
+    <FilterBar
+      comboboxId="blog-tags"
+      comboboxOptions={tagOptions}
+      comboboxPlaceholder="Search posts, or type a tag like “car”…"
+      comboboxLabel="Filter posts by tag"
+      helperNoun="posts"
+      chipRowLabel="Category"
+      chipAllLabel="All"
+      chips={categoryChips}
+      clearButtonId="blog-clear"
+    />
   )}
 
   {
     posts.length > 0 ? (
       <>
-        <p class={countLine}>
+        <p role="status" aria-live="polite" class={countLine}>
           <span id="post-count">{posts.length}</span> <span id="post-count-word">{posts.length === 1 ? 'post' : 'posts'}</span>
         </p>
         <div
@@ -105,86 +85,25 @@ const countLine = css({ fontSize: '0.85rem', color: 'textMuted', mb: '1.25rem' }
     )
   }
 
-  <p id="no-results" hidden class={css({ color: 'textMuted', textAlign: 'center', py: '2rem' })}>
+  <p id="no-results" hidden role="status" aria-live="polite" class={css({ color: 'textMuted', textAlign: 'center', py: '2rem' })}>
     No posts match your filters.
   </p>
+
+  <ListFilter
+    config={{
+      comboboxId: 'blog-tags',
+      cardSelector: '.post-item',
+      searchAttr: 'data-search',
+      countId: 'post-count',
+      countWordId: 'post-count-word',
+      countWordSingular: 'post',
+      countWordPlural: 'posts',
+      emptyId: 'no-results',
+      facetAttr: 'data-tags',
+      facetMode: 'and',
+      chipGroup: { selector: '[data-filter]', attr: 'data-category' },
+      clearButtonId: 'blog-clear',
+      urlSync: { queryParam: 'q', facetParam: 'tag', chipParam: 'cat' },
+    }}
+  />
 </BaseLayout>
-
-<script is:inline>
-  (function () {
-    var combobox = document.getElementById('blog-tags');
-    var catChips = Array.prototype.slice.call(document.querySelectorAll('[data-filter]'));
-    var items = Array.prototype.slice.call(document.querySelectorAll('.post-item'));
-    var countEl = document.getElementById('post-count');
-    var wordEl = document.getElementById('post-count-word');
-    var noResults = document.getElementById('no-results');
-    var clearBtn = document.getElementById('blog-clear');
-
-    var activeCategory = 'all';
-    var selectedTags = [];
-    var query = '';
-
-    function syncURL() {
-      var params = new URLSearchParams();
-      if (query) params.set('q', query);
-      if (selectedTags.length) params.set('tag', selectedTags.join(','));
-      if (activeCategory !== 'all') params.set('cat', activeCategory);
-      var qs = params.toString();
-      try { history.replaceState(null, '', qs ? '?' + qs : location.pathname); } catch (e) {}
-    }
-    function apply() {
-      var q = query.toLowerCase();
-      var visible = 0;
-      items.forEach(function (item) {
-        var matchCat = activeCategory === 'all' || item.getAttribute('data-category') === activeCategory;
-        var matchText = !q || (item.getAttribute('data-search') || '').indexOf(q) !== -1;
-        var tags = item.getAttribute('data-tags') || '';
-        var matchTags = selectedTags.every(function (s) { return tags.indexOf('|' + s + '|') !== -1; }); // AND
-        var show = matchCat && matchText && matchTags;
-        item.style.display = show ? '' : 'none';
-        if (show) visible++;
-      });
-      if (countEl) countEl.textContent = String(visible);
-      if (wordEl) wordEl.textContent = visible === 1 ? 'post' : 'posts';
-      if (noResults) noResults.hidden = visible !== 0;
-      catChips.forEach(function (c) {
-        if (c.getAttribute('data-filter') === activeCategory) c.setAttribute('data-active', '');
-        else c.removeAttribute('data-active');
-      });
-      if (clearBtn) clearBtn.hidden = !(query || selectedTags.length || activeCategory !== 'all');
-      syncURL();
-    }
-
-    if (combobox) {
-      combobox.addEventListener('comboboxchange', function (e) {
-        selectedTags = e.detail.selected;
-        query = e.detail.query;
-        apply();
-      });
-      // Hydrate from the URL once the combobox is initialised (handles old /tags/:tag redirects).
-      combobox.addEventListener('comboboxready', function () {
-        try {
-          var p = new URLSearchParams(location.search);
-          if (p.get('cat')) activeCategory = p.get('cat');
-          var api = combobox.__combobox;
-          if (api) {
-            if (p.get('q')) api.setQuery(p.get('q'));
-            if (p.get('tag')) api.setSelected(p.get('tag').split(','));
-          }
-        } catch (e) {}
-        apply();
-      }, { once: true });
-    }
-
-    catChips.forEach(function (c) {
-      c.addEventListener('click', function () { activeCategory = c.getAttribute('data-filter'); apply(); });
-    });
-    if (clearBtn) clearBtn.addEventListener('click', function () {
-      activeCategory = 'all';
-      if (combobox && combobox.__combobox) { combobox.__combobox.setQuery(''); combobox.__combobox.setSelected([]); }
-      apply();
-    });
-
-    apply(); // initial render (all posts)
-  })();
-</script>

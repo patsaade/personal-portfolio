@@ -1,15 +1,32 @@
 ---
-// Shared, config-driven filter controller for the reference list pages — Glossary,
-// Tools, Certifications, the MITRE ATT&CK Coverage Map, and the MITRE D3FEND Map.
-// One place owns the whole search + facet + toggle + collapsible-group behaviour;
-// each page just declares its selectors / attrs / toggles via `config`, so the
-// feature is identical everywhere instead of re-implemented per page. Pairs with
-// `TagCombobox` (search + facet tokens) and `FilterToggle` (the pill toggles).
+// Shared, config-driven filter controller for every searchable list page — Blog,
+// Labs, Glossary, Tools, Certifications, the MITRE ATT&CK Coverage Map, and the
+// MITRE D3FEND Map. One place owns the whole search + facet + chip + toggle +
+// collapsible-group + URL-sync behaviour; each page just declares its selectors /
+// attrs / toggles via `config`, so the feature is identical everywhere instead of
+// re-implemented per page. Pairs with `TagCombobox` (search + facet tokens) and
+// `FilterToggle` (the pill toggles).
 export interface ListFilterToggle {
   /** Button id (rendered by FilterToggle). */
   id: string;
   /** A card is kept (while pressed) only if it carries this attribute. */
   attr: string;
+}
+export interface ListFilterChipGroup {
+  /** Selector for the exclusive single-select chip buttons (each carries data-filter="value"). */
+  selector: string;
+  /** Card attribute compared against the active chip's data-filter value. */
+  attr: string;
+  /** data-filter value meaning "no filter" (default 'all'). */
+  allValue?: string;
+}
+export interface ListFilterUrlSync {
+  /** URL param for the free-text query (default 'q'). */
+  queryParam?: string;
+  /** URL param for the combobox facet tokens, comma-joined (default 'tag'). */
+  facetParam?: string;
+  /** URL param for the chip-group selection, when chipGroup is set (default 'chip'). */
+  chipParam?: string;
 }
 export interface ListFilterConfig {
   /** TagCombobox id — its `comboboxchange` drives free-text + facet filtering. */
@@ -17,26 +34,48 @@ export interface ListFilterConfig {
   /** Card selector; its attribute (same name) holds the lowercased search text. */
   cardSelector: string;
   searchAttr: string;
-  /** Collapsible <details> group selector. */
-  groupSelector: string;
+  /** Collapsible <details> group selector. Omit for flat grids with no groups (e.g. Blog, Labs). */
+  groupSelector?: string;
   /** Element whose text shows the visible count. */
   countId?: string;
+  /** Element whose text shows the singular/plural noun next to the count (e.g. "post"/"posts"). */
+  countWordId?: string;
+  countWordSingular?: string;
+  countWordPlural?: string;
   /** Empty-state element (hidden whenever there are results). */
   emptyId?: string;
   /** Count unique values of this attr once (cards repeat across groups, e.g. by tactic). */
   dedupeAttr?: string;
   /** Attribute the combobox facet tokens filter on. */
   facetAttr?: string;
-  /** facetAttr holds a `|a|b|` pipe list (OR-any) rather than a single value. */
+  /** facetAttr holds a `|a|b|` pipe list rather than a single value. */
   facetMulti?: boolean;
+  /** 'or' (default) keeps a card matching ANY selected facet token; 'and' requires EVERY
+   *  token to be present (e.g. Blog/Labs tags — a post must carry every tag you add). */
+  facetMode?: 'or' | 'and';
+  /** Optional second, independent single-select facet dimension driven by plain buttons
+   *  (not the combobox) — e.g. Blog's category chips, Labs' source chips. */
+  chipGroup?: ListFilterChipGroup;
   /** Pill toggles (id → required attribute). */
   toggles?: ListFilterToggle[];
+  /** "Clear filters" button id — resets query/facets/chip and hides itself when idle.
+   *  Does NOT reset `toggles`; no page combines the two today, but if one does, an
+   *  active toggle keeps `filtering` true, so Clear won't fully idle until it's
+   *  unpressed too. */
+  clearButtonId?: string;
   /** Groups reopen when no filter is active (default true; false = only open on match). */
   restoreOpenWhenIdle?: boolean;
-  /** Hydrate the search from this URL query param on load (e.g. 'q' for the tool tag links). */
+  /** Hydrate the search from this URL query param on load, read-only (e.g. 'q' for the tool
+   *  tag links). Superseded by `urlSync` when both are set. */
   hydrateQueryParam?: string;
+  /** Two-way URL sync: writes state via history.replaceState on every filter change (so any
+   *  view is shareable/bookmarkable) and reads it back on load. */
+  urlSync?: ListFilterUrlSync;
 }
-const { config } = Astro.props as { config: ListFilterConfig };
+interface Props {
+  config: ListFilterConfig;
+}
+const { config } = Astro.props;
 ---
 
 <div data-list-filter={JSON.stringify(config)} hidden></div>
@@ -47,25 +86,45 @@ const { config } = Astro.props as { config: ListFilterConfig };
     var cfg = JSON.parse(host.getAttribute('data-list-filter') || '{}');
     var combobox = cfg.comboboxId ? document.getElementById(cfg.comboboxId) : null;
     var cards = Array.prototype.slice.call(document.querySelectorAll(cfg.cardSelector));
-    var groups = Array.prototype.slice.call(document.querySelectorAll(cfg.groupSelector));
+    var groups = cfg.groupSelector ? Array.prototype.slice.call(document.querySelectorAll(cfg.groupSelector)) : [];
     var countEl = cfg.countId ? document.getElementById(cfg.countId) : null;
+    var countWordEl = cfg.countWordId ? document.getElementById(cfg.countWordId) : null;
     var emptyEl = cfg.emptyId ? document.getElementById(cfg.emptyId) : null;
+    var clearBtn = cfg.clearButtonId ? document.getElementById(cfg.clearButtonId) : null;
     var restore = cfg.restoreOpenWhenIdle !== false;
     var toggles = (cfg.toggles || []).map(function (t) {
       return { el: document.getElementById(t.id), attr: t.attr, on: false };
     });
+    var chipCfg = cfg.chipGroup || null;
+    var chipAll = (chipCfg && chipCfg.allValue) || 'all';
+    var chips = chipCfg ? Array.prototype.slice.call(document.querySelectorAll(chipCfg.selector)) : [];
+    var chipValue = chipAll;
     var query = '';
     var facets = [];
 
     function facetOk(card) {
       if (!cfg.facetAttr || !facets.length) return true;
       var dv = card.getAttribute(cfg.facetAttr) || '';
+      if (cfg.facetMode === 'and') return facets.every(function (f) { return dv.indexOf('|' + f + '|') !== -1; });
       if (cfg.facetMulti) return facets.some(function (f) { return dv.indexOf('|' + f + '|') !== -1; });
       return facets.indexOf(dv) !== -1;
+    }
+    function chipOk(card) {
+      if (!chipCfg || chipValue === chipAll) return true;
+      return card.getAttribute(chipCfg.attr) === chipValue;
     }
     function anyToggleOn() {
       for (var i = 0; i < toggles.length; i++) if (toggles[i].on) return true;
       return false;
+    }
+    function syncURL() {
+      if (!cfg.urlSync) return;
+      var params = new URLSearchParams();
+      if (query) params.set(cfg.urlSync.queryParam || 'q', query);
+      if (facets.length) params.set(cfg.urlSync.facetParam || 'tag', facets.join(','));
+      if (chipCfg && chipValue !== chipAll) params.set(cfg.urlSync.chipParam || 'chip', chipValue);
+      var qs = params.toString();
+      try { history.replaceState(null, '', qs ? '?' + qs : location.pathname); } catch (e) {}
     }
     function apply() {
       var q = query.toLowerCase();
@@ -73,7 +132,7 @@ const { config } = Astro.props as { config: ListFilterConfig };
       var shown = 0;
       for (var i = 0; i < cards.length; i++) {
         var c = cards[i];
-        var ok = (!q || (c.getAttribute(cfg.searchAttr) || '').indexOf(q) !== -1) && facetOk(c);
+        var ok = (!q || (c.getAttribute(cfg.searchAttr) || '').indexOf(q) !== -1) && facetOk(c) && chipOk(c);
         for (var j = 0; ok && j < toggles.length; j++) if (toggles[j].on && !c.hasAttribute(toggles[j].attr)) ok = false;
         c.style.display = ok ? '' : 'none';
         if (ok) {
@@ -81,7 +140,7 @@ const { config } = Astro.props as { config: ListFilterConfig };
           else shown++;
         }
       }
-      var filtering = !!q || facets.length > 0 || anyToggleOn();
+      var filtering = !!q || facets.length > 0 || anyToggleOn() || (chipCfg && chipValue !== chipAll);
       for (var g = 0; g < groups.length; g++) {
         var any = groups[g].querySelector(cfg.cardSelector + ':not([style*="display: none"])');
         groups[g].style.display = any ? '' : 'none';
@@ -89,7 +148,15 @@ const { config } = Astro.props as { config: ListFilterConfig };
         else if (filtering && any) groups[g].open = true;
       }
       if (countEl) countEl.textContent = String(shown);
+      if (countWordEl) countWordEl.textContent = shown === 1 ? (cfg.countWordSingular || '') : (cfg.countWordPlural || '');
       if (emptyEl) emptyEl.hidden = shown !== 0;
+      chips.forEach(function (c) {
+        var active = c.getAttribute('data-filter') === chipValue;
+        if (active) c.setAttribute('data-active', ''); else c.removeAttribute('data-active');
+        c.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      if (clearBtn) clearBtn.hidden = !filtering;
+      syncURL();
     }
 
     if (combobox) combobox.addEventListener('comboboxchange', function (e) {
@@ -105,15 +172,40 @@ const { config } = Astro.props as { config: ListFilterConfig };
         apply();
       });
     });
+    chips.forEach(function (c) {
+      c.addEventListener('click', function () { chipValue = c.getAttribute('data-filter'); apply(); });
+    });
+    if (clearBtn) clearBtn.addEventListener('click', function () {
+      chipValue = chipAll;
+      if (combobox && combobox.__combobox) { combobox.__combobox.setQuery(''); combobox.__combobox.setSelected([]); }
+      apply();
+    });
 
-    // Optional: hydrate the query from a URL param (robust to combobox init order —
-    // filter immediately, and sync the input's display text once the combobox is ready).
-    if (cfg.hydrateQueryParam) {
+    // Hydrate from a URL param on load (robust to combobox init order — filter immediately,
+    // and sync the input's display text once the combobox is ready). `urlSync` (two-way) takes
+    // priority; `hydrateQueryParam` is the older read-only single-param form (e.g. tool tag links).
+    var qParam = (cfg.urlSync && cfg.urlSync.queryParam) || cfg.hydrateQueryParam;
+    var fParam = cfg.urlSync && cfg.urlSync.facetParam;
+    var cParam = cfg.urlSync && cfg.urlSync.chipParam;
+    if (qParam || fParam || cParam) {
       try {
-        var qv = new URLSearchParams(location.search).get(cfg.hydrateQueryParam);
-        if (qv) {
-          query = qv;
-          var setDisplay = function () { if (combobox && combobox.__combobox) combobox.__combobox.setQuery(qv); };
+        var p = new URLSearchParams(location.search);
+        // Only accept a chip value that matches a real, rendered chip (mirrors how
+        // TagCombobox.setSelected whitelists against its own known options) — an
+        // unrecognized/stale ?chip= must not silently zero out every card with no
+        // chip shown as active.
+        if (cParam && chipCfg && p.get(cParam)) {
+          var cv = p.get(cParam);
+          if (chips.some(function (c) { return c.getAttribute('data-filter') === cv; })) chipValue = cv;
+        }
+        var qv = qParam && p.get(qParam);
+        var fv = fParam && p.get(fParam);
+        if (qv || fv) {
+          var setDisplay = function () {
+            if (!combobox || !combobox.__combobox) return;
+            if (qv) combobox.__combobox.setQuery(qv);
+            if (fv) combobox.__combobox.setSelected(fv.split(','));
+          };
           if (combobox && combobox.__combobox) setDisplay();
           else if (combobox) combobox.addEventListener('comboboxready', setDisplay, { once: true });
         }

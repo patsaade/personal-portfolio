@@ -14,7 +14,7 @@ import CollapseAll from '../../components/CollapseAll.astro';
 import TagCombobox from '../../components/TagCombobox.astro';
 import FilterToggle from '../../components/FilterToggle.astro';
 import ListFilter from '../../components/ListFilter.astro';
-import { tag } from 'styled-system/recipes';
+import { tag, card } from 'styled-system/recipes';
 import { tagSlug } from '../../utils/posts';
 import { D3FEND_TECHNIQUES, D3FEND_TACTIC_ORDER, D3FEND_VERSION, d3fendById } from '../../data/d3fend';
 
@@ -43,20 +43,11 @@ const chevCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 
 const tacticHead = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', m: 0, fontSize: '1.05rem', fontWeight: 700 });
 const tacCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600, color: 'textMuted', bg: 'bgSubtle', border: '1px solid token(colors.border)', borderRadius: 'full', px: '0.5rem', py: '0.1rem' });
 const tacMappedCount = css({ fontFamily: 'sans', fontSize: '0.72rem', fontWeight: 600, color: 'accent' });
-const chip = css({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.35rem',
-  p: '0.7rem 0.85rem',
-  bg: 'bgCard',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'md',
-  transition: 'border-color 200ms ease, transform 200ms ease',
-  scrollMarginTop: '90px',
-  _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
+const chip = `${card()} ${css({
+  scrollMarginTop: '90px', // clear the sticky header when linked to via #<id>
   '&[data-mapped]': { borderLeftWidth: '3px', borderLeftColor: 'accent' },
   '&:target': { borderColor: 'primary', boxShadow: 'cardHover' },
-});
+})}`;
 const chipTop = css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' });
 const chipId = css({ fontFamily: 'mono', fontSize: '0.72rem', fontWeight: 600, color: 'primary' });
 const mappedBadge = tag({ tone: 'accent' });

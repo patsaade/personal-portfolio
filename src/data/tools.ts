@@ -7,6 +7,8 @@
 // `core` marks the tools in the day-to-day kit. Content is factual (public tools);
 // add a tool by appending to its platform.
 
+import type { IconName } from '../components/Icon.astro';
+
 export type ToolCost = 'Open source' | 'Free' | 'Freemium';
 
 export interface Tool {
@@ -21,12 +23,17 @@ export interface Tool {
   what?: string; // "What it is" — definition
   why?: string; // "Why it matters" — DFIR significance
   example?: string; // "In practice" — concrete example
+  // Glossary slugs this tool directly implements (e.g. WinPmem -> memory-acquisition).
+  // Curated conservatively: only genuinely obvious, factual matches — see the
+  // "In the glossary" section on the tool's detail page and the reverse "Tools"
+  // section on the matching glossary term page.
+  glossarySlugs?: string[];
 }
 
 export interface ToolPlatform {
   id: string;
   title: string;
-  icon: string;
+  icon: IconName;
   blurb: string;
   tools: Tool[];
 }
@@ -45,6 +52,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'An open-source memory-forensics framework that parses a RAM image into processes, network connections, loaded modules, and kernel structures through a plugin system.',
         why: 'Memory holds evidence that never touches disk — injected code, decrypted payloads, live network state — so a memory framework is central to modern incident response.',
         example: 'Running the malfind plugin surfaces a process with injected, executable memory that has no backing file on disk.',
+        glossarySlugs: ['malfind'],
       },
       {
         name: 'MemProcFS', slug: 'memprocfs', use: 'Mount a memory image as a browsable file system', fn: 'Memory', cost: 'Open source', core: true,
@@ -61,6 +69,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A graphical digital-forensics platform built on The Sleuth Kit for working disk images — keyword search, file carving, timelines, and artifact extraction.',
         why: 'It gives examiners a single GUI to take a disk image from end to end, with ingest modules that automate common artifact parsing.',
         example: 'Loading a disk image, the web-artifacts module reconstructs the user’s browser history and downloads for review.',
+        glossarySlugs: ['file-carving'],
       },
       {
         name: 'The Sleuth Kit', slug: 'the-sleuth-kit', use: 'Command-line disk & file-system forensics', fn: 'Host', cost: 'Open source',
@@ -69,6 +78,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A command-line collection of tools for disk and file-system forensics — listing files, recovering deleted entries, and walking file-system metadata.',
         why: 'It’s the scriptable engine beneath many GUI tools, ideal for repeatable, automatable disk analysis.',
         example: 'fls and icat together recover and export a deleted file straight from the raw image.',
+        glossarySlugs: ['deleted-file-recovery'],
       },
       {
         name: 'Plaso (log2timeline)', slug: 'plaso', use: 'Super-timeline generation across artifacts', fn: 'Timeline', cost: 'Open source', core: true,
@@ -77,6 +87,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'An engine that extracts timestamps from across an acquired system — logs, registry, browser data, file systems — into one normalized super-timeline.',
         why: 'A unified timeline collapses dozens of artifact sources into a single chronology, the backbone of most intrusion reconstructions.',
         example: 'log2timeline builds a storage file that pinpoints the minute a malicious binary first executed.',
+        glossarySlugs: ['super-timeline'],
       },
       {
         name: 'Timesketch', slug: 'timesketch', use: 'Collaborative timeline review & annotation (self-hosted)', fn: 'Timeline', cost: 'Open source', core: true,
@@ -101,6 +112,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'The de-facto network protocol analyzer for capturing and dissecting traffic packet by packet across hundreds of protocols.',
         why: 'Packet-level ground truth confirms what actually crossed the wire — C2 beacons, exfil, lateral movement — when logs are ambiguous.',
         example: 'Following a TCP stream exposes the plaintext commands a backdoor exchanged with its server.',
+        glossarySlugs: ['packet-capture'],
       },
       {
         name: 'Zeek', slug: 'zeek', use: 'Network security monitoring & rich connection logs', fn: 'Network', cost: 'Open source',
@@ -109,6 +121,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A network security monitor that turns traffic into rich, structured connection and protocol logs rather than raw packets.',
         why: 'Zeek logs give compact, queryable visibility into network behavior over long periods, ideal for hunting and scoping.',
         example: 'The conn.log reveals a host beaconing to one external IP at a fixed interval all week.',
+        glossarySlugs: ['flow-logs'],
       },
       {
         name: 'Suricata', slug: 'suricata', use: 'IDS/IPS & network traffic analysis', fn: 'Network', cost: 'Open source',
@@ -117,6 +130,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A high-performance IDS/IPS and monitoring engine that matches traffic against signatures and emits alerts plus protocol metadata.',
         why: 'Signature detection flags known-bad traffic in real time and produces evidence for retrospective analysis.',
         example: 'A ruleset hit fires the moment a host downloads a payload matching a known malware signature.',
+        glossarySlugs: ['intrusion-detection-system'],
       },
       {
         name: 'Arkime', slug: 'arkime', use: 'Full-packet capture, indexing & search', fn: 'Network', cost: 'Open source',
@@ -133,6 +147,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A pattern-matching engine and rule language for identifying and classifying files by textual or binary signatures.',
         why: 'YARA rules encode malware-family traits, turning analyst knowledge into reusable, shareable detections.',
         example: 'Scanning a directory, a rule flags every sample carrying a known loader’s byte pattern.',
+        glossarySlugs: ['yara'],
       },
       {
         name: 'Sigma', slug: 'sigma', use: 'Vendor-neutral detection rule format & converter', fn: 'Detection', cost: 'Open source',
@@ -149,6 +164,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A fast Windows event-log threat-hunting tool that applies a Sigma-based ruleset to EVTX files and produces a timeline of findings.',
         why: 'It rapidly distills noisy Windows logs into a ranked list of suspicious events for triage.',
         example: 'Pointed at a host’s EVTX, it surfaces the failed-then-successful logon pattern of a password spray.',
+        glossarySlugs: ['windows-event-log'],
       },
       {
         name: 'Chainsaw', slug: 'chainsaw', use: 'Fast EVTX & MFT hunting with Sigma rules', fn: 'Logs', cost: 'Open source',
@@ -157,6 +173,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A fast first-response tool for hunting through Windows Event Logs and the MFT using Sigma rules and built-in detections.',
         why: 'It gives rapid, searchable triage of the artifacts that matter first when you land on a Windows host.',
         example: 'A single run flags the service-creation events tied to lateral movement across the logs.',
+        glossarySlugs: ['windows-event-log'],
       },
       {
         name: 'Ghidra', slug: 'ghidra', use: 'Software reverse-engineering suite', fn: 'Malware', cost: 'Open source',
@@ -165,6 +182,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A full software reverse-engineering suite (from the NSA) with a disassembler and decompiler for many architectures.',
         why: 'Free decompilation puts deep static malware analysis within reach without a commercial license.',
         example: 'The decompiler reveals the domain-generation algorithm hidden inside a stripped binary.',
+        glossarySlugs: ['disassembly'],
       },
       {
         name: 'Cutter', slug: 'cutter', use: 'Reverse-engineering platform built on rizin', fn: 'Malware', cost: 'Open source',
@@ -189,6 +207,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A file type, packer, and compiler identification tool (DIE) for quick static triage of unknown binaries.',
         why: 'Knowing how a sample was packed or compiled shapes the rest of the analysis plan.',
         example: 'DIE flags a binary as UPX-packed, so you unpack it before further static review.',
+        glossarySlugs: ['packing'],
       },
       {
         name: 'Hindsight', slug: 'hindsight', use: 'Browser history & artifact parsing', fn: 'Host', cost: 'Open source',
@@ -197,6 +216,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A tool that parses Chromium-based browser history and artifacts into a reviewable timeline.',
         why: 'Browser activity often documents the human side of an intrusion — phishing clicks, downloads, webmail.',
         example: 'Hindsight reconstructs the download of a malicious installer from the user’s history.',
+        glossarySlugs: ['browser-artifacts'],
       },
     ],
   },
@@ -221,6 +241,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A suite of free Windows forensic parsers — MFTECmd, Registry Explorer, PECmd, EvtxECmd, and more — each focused on one artifact.',
         why: 'These are the reference parsers for core Windows artifacts, trusted for accurate, examiner-grade output.',
         example: 'PECmd parses prefetch to show exactly when and how often a program ran.',
+        glossarySlugs: ['master-file-table', 'registry-hives', 'prefetch', 'windows-event-log'],
       },
       {
         name: 'WinDbg', slug: 'windbg', use: 'Kernel & user-mode debugging of dumps', fn: 'Memory', cost: 'Free', core: true,
@@ -229,6 +250,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'Microsoft’s debugger for user-mode and kernel-mode analysis of live systems and crash/memory dumps.',
         why: 'It’s the authoritative tool for deep Windows internals and dump analysis, shipped by the OS vendor itself.',
         example: 'Loading a kernel dump, the !process command lists the processes alive at the moment of capture.',
+        glossarySlugs: ['debugging', 'crash-dump'],
       },
       {
         name: 'Sysinternals Suite', slug: 'sysinternals', use: 'Procmon, Process Explorer, Autoruns, TCPView', fn: 'Triage', cost: 'Free',
@@ -245,6 +267,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A Windows system service (Sysinternals) that logs detailed process, network, and file activity to the event log.',
         why: 'Sysmon turns a host into a rich telemetry source, the foundation for many detections and investigations.',
         example: 'Process-creation events with full command lines reveal a living-off-the-land attack chain.',
+        glossarySlugs: ['sysmon'],
       },
       {
         name: 'System Informer', slug: 'system-informer', use: 'Live process, handle & token inspection', fn: 'Triage', cost: 'Open source',
@@ -261,6 +284,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A free disk and memory imaging and preview tool that creates forensic images and inspects their contents.',
         why: 'Sound, verifiable acquisition is the first step of any examination; FTK Imager is a long-standing free option.',
         example: 'It captures a verified E01 image of a suspect drive with a matching hash.',
+        glossarySlugs: ['bit-for-bit-imaging', 'image-formats-raw-ewf'],
       },
       {
         name: 'WinPmem', slug: 'winpmem', use: 'Windows physical-memory acquisition', fn: 'Memory', cost: 'Open source',
@@ -269,6 +293,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'An open-source Windows physical-memory acquisition driver and tool from the Velocidex project.',
         why: 'Reliable RAM capture preserves volatile evidence before a host is powered down.',
         example: 'WinPmem writes a full physical-memory image for later Volatility analysis.',
+        glossarySlugs: ['memory-acquisition'],
       },
       {
         name: 'RegRipper', slug: 'regripper', use: 'Registry hive parsing with a plugin ecosystem', fn: 'Registry', cost: 'Open source',
@@ -277,6 +302,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A registry hive parser with a plugin ecosystem that extracts and interprets keys of forensic interest.',
         why: 'The registry records configuration, execution, and persistence; RegRipper automates pulling the useful parts.',
         example: 'A plugin dumps the Run keys, exposing a program set to launch at every logon.',
+        glossarySlugs: ['registry-hives'],
       },
       {
         name: 'PEStudio', slug: 'pestudio', use: 'Static PE triage & malware indicators', fn: 'Malware', cost: 'Free',
@@ -285,6 +311,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A static PE triage tool that surfaces indicators — imports, strings, signatures — without running the file.',
         why: 'Fast static indicators help decide whether a sample warrants deeper, riskier dynamic analysis.',
         example: 'PEStudio flags suspicious imports and a blacklisted section name in a dropped binary.',
+        glossarySlugs: ['portable-executable-format'],
       },
       {
         name: 'x64dbg', slug: 'x64dbg', use: 'Open-source Windows debugger', fn: 'Malware', cost: 'Open source',
@@ -293,6 +320,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'An open-source x64/x86 debugger for Windows used for dynamic malware analysis and reverse engineering.',
         why: 'Stepping through a live sample reveals behavior that static analysis alone can miss.',
         example: 'A breakpoint on an API call catches the moment malware decrypts its configuration.',
+        glossarySlugs: ['debugging'],
       },
       {
         name: 'NirSoft Tools', slug: 'nirsoft', use: 'Focused artifact viewers (browser, USB, more)', fn: 'Host', cost: 'Free',
@@ -349,6 +377,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A small open-source tool from Microsoft to acquire physical memory from Linux systems into an image.',
         why: 'Linux RAM capture is awkward; AVML makes it a single portable command across kernels.',
         example: 'AVML writes a memory image from a compromised Linux server for offline analysis.',
+        glossarySlugs: ['memory-acquisition'],
       },
       {
         name: 'LiME', slug: 'lime', use: 'Linux Memory Extractor (kernel module)', fn: 'Memory', cost: 'Open source',
@@ -357,6 +386,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A Loadable Kernel Module that extracts volatile memory from Linux (and Android) systems.',
         why: 'It’s a long-standing method for full Linux memory capture when loading a kernel module is acceptable.',
         example: 'Loading LiME dumps RAM to a file before the incident host is rebooted.',
+        glossarySlugs: ['memory-acquisition'],
       },
       {
         name: 'UAC', slug: 'uac', use: 'Unix-like Artifacts Collector (Linux/macOS/ESXi)', fn: 'Triage', cost: 'Open source',
@@ -389,6 +419,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A tool to parse Apple’s binary Unified Logging (.tracev3) into readable records.',
         why: 'macOS unified logs hold rich activity but are opaque; this tool makes them analyzable.',
         example: 'Parsing the logs reveals process launches around the time of a suspected compromise.',
+        glossarySlugs: ['unified-logging'],
       },
     ],
   },
@@ -501,6 +532,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A searchable interface to Certificate Transparency logs for discovering issued TLS certificates.',
         why: 'Certificate history exposes subdomains and infrastructure relevant to scoping and OSINT.',
         example: 'Searching a domain reveals forgotten subdomains from its certificate history.',
+        glossarySlugs: ['certificate-transparency'],
       },
       {
         name: 'MXToolbox', slug: 'mxtoolbox', use: 'DNS, email & blocklist diagnostics', fn: 'OSINT', cost: 'Freemium',
@@ -526,13 +558,12 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
 export interface ToolEntry extends Tool {
   platform: string;
   platformId: string;
-  platformIcon: string;
+  platformIcon: IconName;
 }
 export const TOOLS: ToolEntry[] = TOOL_PLATFORMS.flatMap((p) =>
   p.tools.map((t) => ({ ...t, platform: p.title, platformId: p.id, platformIcon: p.icon })),
 );
 export const TOTAL_TOOLS = TOOLS.length;
-export const toolBySlug = (slug: string): ToolEntry | undefined => TOOLS.find((t) => t.slug === slug);
 
 /** Tag tone per cost, for the shared `tag` recipe (open source = accent, freemium = primary). */
 export const costTone = (cost: ToolCost): 'muted' | 'primary' | 'accent' =>

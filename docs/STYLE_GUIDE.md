@@ -184,11 +184,21 @@ distinct, intentional pattern; keep it to the key guarantees, not proper nouns.
   filters — "Covered only", "In glossary", "Maps to ATT&CK"; `tone` `accent`|`primary`), `EntryNav`
   (prev/next on detail pages), and `ListFilter` — the config-driven controller that actually wires
   search + facet + toggles + collapsible groups together (each page just declares its selectors and
-  toggle list; see the component's own doc comment for the config shape). The listing grids all use
-  the shared `.card-grid` (above), and every list page (Blog, Glossary, Tools, Certifications, both
-  MITRE maps) shares this whole scaffolding — extend it, don't fork it. Adding a new toggle to a page
-  is normally just: a `data-*` attribute on the card + one `{ id, attr }` entry in that page's
-  `ListFilter` config + a matching `<FilterToggle>` button — the controller needs no changes.
+  toggle list; see the component's own doc comment for the config shape). `TagCombobox` drives all
+  six list pages (Blog, Labs, Glossary, Tools, Certifications, both MITRE maps). `ListFilter` drives
+  Glossary, Tools, Certifications, and both MITRE maps — extend it, don't fork it there. Blog and
+  Labs do **not** use `ListFilter`: both need two-way URL sync (`?q`/`?tag`/`?cat` or `?source`,
+  written via `history.replaceState` on every filter change and read back on load) and AND-tag
+  matching (a card must carry *every* selected tag), and `ListFilter` provides neither — its
+  `hydrateQueryParam` only reads one param once, and its facet matching is OR-any. So Blog and Labs
+  share the same bespoke inline-script pattern instead (category/source chips + combobox, mirrored
+  between the two files) — keep them in lockstep if you touch one. Adding a new toggle to a
+  `ListFilter` page is normally just: a `data-*` attribute on the card + one `{ id, attr }` entry in
+  that page's `ListFilter` config + a matching `<FilterToggle>` button — the controller needs no
+  changes. The compact-card `.card-grid` (above) is narrower in scope: only Glossary, Tools,
+  Certifications, and both MITRE maps use it — Blog and Labs render their own wider content cards
+  (`BlogCard`, `lab-item`; excerpt + tags + meta need more room than a 232px tile), which is
+  deliberate, not a gap to close.
 - **Experience: detailed vs. condensed.** Headline/relevant roles get full timeline cards
   (company header, per-role title + dates + one-sentence summary + skill tags). Earlier,
   contract, or foundational roles go in **one condensed block** below — a single bordered

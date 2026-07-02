@@ -1,0 +1,93 @@
+---
+// Shared filter-bar UI for Blog and Labs — a TagCombobox, "match every tag" helper
+// text, and an exclusive chip row (category on Blog, source on Labs) with a "Clear
+// filters" button. Wires into <ListFilter>'s chipGroup/clearButtonId config; this
+// component only owns markup + styling (same split as TagCombobox/FilterToggle) so
+// the two pages don't each redeclare byte-identical css() consts. A <slot/> lets the
+// host page nest page-specific content (e.g. Blog's result count sits outside this
+// bar, Labs' sits inside it) without forcing identical page layout.
+import { css } from 'styled-system/css';
+import TagCombobox from './TagCombobox.astro';
+import Icon from './Icon.astro';
+import type { IconName } from './Icon.astro';
+
+interface ComboboxOption {
+  value: string;
+  label: string;
+  count?: number;
+}
+interface Chip {
+  value: string;
+  label: string;
+  icon?: IconName;
+}
+interface Props {
+  comboboxId: string;
+  comboboxOptions: ComboboxOption[];
+  comboboxPlaceholder: string;
+  comboboxLabel: string;
+  /** Plural noun for the helper sentence, e.g. "posts" / "writeups". */
+  helperNoun: string;
+  chipRowLabel: string;
+  chipAllLabel: string;
+  chips: Chip[];
+  clearButtonId: string;
+  wrapperMarginBottom?: string;
+}
+const {
+  comboboxId,
+  comboboxOptions,
+  comboboxPlaceholder,
+  comboboxLabel,
+  helperNoun,
+  chipRowLabel,
+  chipAllLabel,
+  chips,
+  clearButtonId,
+  wrapperMarginBottom = '1.5rem',
+} = Astro.props;
+
+const wrapper = css({ display: 'flex', flexDirection: 'column', gap: '0.9rem', mb: wrapperMarginBottom });
+const helper = css({ fontSize: '0.78rem', color: 'textMuted', m: 0 });
+const filterRow = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' });
+const rowLabel = css({ fontFamily: 'sans', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted', mr: '0.1rem' });
+const chipCls = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.35rem',
+  fontFamily: 'sans',
+  fontSize: '0.82rem',
+  px: '0.8rem',
+  py: '0.4rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  bg: 'transparent',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'text' },
+  '&[data-active]': { bg: 'primary', color: 'onPrimary', borderColor: 'primary' },
+});
+const clearBtnCls = css({ ml: { sm: 'auto' }, fontFamily: 'sans', fontSize: '0.8rem', fontWeight: 600, color: 'textMuted', bg: 'transparent', border: 'none', cursor: 'pointer', _hover: { color: 'primary' } });
+---
+
+<div class={wrapper}>
+  <TagCombobox id={comboboxId} options={comboboxOptions} placeholder={comboboxPlaceholder} label={comboboxLabel} />
+  <p class={helper}>
+    Type to search, or pick tags — {helperNoun} match <strong class={css({ color: 'text' })}>every</strong> tag you add.
+  </p>
+  <div class={filterRow}>
+    <span class={rowLabel}>{chipRowLabel}</span>
+    <button class={chipCls} data-filter="all" data-active aria-pressed="true" type="button">{chipAllLabel}</button>
+    {
+      chips.map((c) => (
+        <button class={chipCls} data-filter={c.value} aria-pressed="false" type="button">
+          {c.icon && <Icon name={c.icon} size={13} />}
+          {c.label}
+        </button>
+      ))
+    }
+    <button id={clearButtonId} type="button" hidden class={clearBtnCls}>Clear filters</button>
+  </div>
+  <slot />
+</div>

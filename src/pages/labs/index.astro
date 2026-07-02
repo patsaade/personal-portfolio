@@ -1,5 +1,10 @@
 ---
 // Labs listing — gallery of lab/CTF writeups, filterable by source platform.
+// Tags filter with AND (a writeup must carry every selected tag), mirroring Blog's
+// TagCombobox. State syncs to the URL (?q / ?tag / ?source) so any view is shareable,
+// same pattern as Blog — both driven by the shared <ListFilter> controller (same one
+// Glossary/Tools/Certifications/both MITRE maps use) via facetMode:'and' + chipGroup +
+// urlSync, so neither page carries a bespoke filter script.
 // Static page — prerender to HTML served from the CDN (output: 'server' is on-demand by default).
 export const prerender = true;
 import { css } from 'styled-system/css';
@@ -8,12 +13,14 @@ import PageHeader from '../../components/PageHeader.astro';
 import Badge from '../../components/Badge.astro';
 import Icon from '../../components/Icon.astro';
 import PixelStar from '../../components/PixelStar.astro';
-import TagCombobox from '../../components/TagCombobox.astro';
+import FilterBar from '../../components/FilterBar.astro';
+import ListFilter from '../../components/ListFilter.astro';
 import { getFormattedDate } from '../../utils/date';
 import { getSortedLabs, tagSlug } from '../../utils/posts';
 
 const labs = await getSortedLabs();
 const sources = [...new Set(labs.map((l) => l.data.source))];
+const sourceChips = sources.map((s) => ({ value: s, label: s }));
 
 // Tag facet for the search combobox (a lab can carry several tags → AND filter).
 const labTagCounts: Record<string, { label: string; n: number }> = {};
@@ -24,21 +31,6 @@ for (const l of labs) for (const t of l.data.tags) {
 const labTagOptions = Object.entries(labTagCounts)
   .map(([value, v]) => ({ value, label: v.label, count: v.n }))
   .sort((a, b) => b.count - a.count);
-
-const chip = css({
-  fontFamily: 'sans',
-  fontSize: '0.82rem',
-  px: '0.8rem',
-  py: '0.4rem',
-  borderRadius: 'md',
-  border: '1px solid token(colors.border)',
-  bg: 'transparent',
-  color: 'textMuted',
-  cursor: 'pointer',
-  transition: 'all 150ms ease',
-  _hover: { borderColor: 'primary', color: 'text' },
-  '&[data-active]': { bg: 'primary', color: 'onPrimary', borderColor: 'primary' },
-});
 ---
 
 <BaseLayout title="Labs" description="Completed DFIR lab & CTF writeups — CyberDefenders, 13Cubed, Magnet, BTLO, and home-lab projects.">
@@ -51,18 +43,22 @@ const chip = css({
 
   {
     labs.length > 0 && (
-      <div class={css({ display: 'flex', flexDirection: 'column', gap: '0.9rem', mb: '2rem' })}>
-        <TagCombobox id="lab-cb" options={labTagOptions} placeholder={`Search ${labs.length} writeups, or type a tag…`} label="Search labs or filter by tag" />
-        <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' })}>
-          <button class={chip} data-filter="all" data-active type="button">All sources</button>
-          {sources.map((s) => (
-            <button class={chip} data-filter={s} type="button">{s}</button>
-          ))}
-        </div>
-        <p class={css({ color: 'textMuted', fontSize: '0.85rem', m: 0 })}>
+      <FilterBar
+        comboboxId="lab-cb"
+        comboboxOptions={labTagOptions}
+        comboboxPlaceholder={`Search ${labs.length} writeups, or type a tag…`}
+        comboboxLabel="Search labs or filter by tag"
+        helperNoun="writeups"
+        chipRowLabel="Source"
+        chipAllLabel="All sources"
+        chips={sourceChips}
+        clearButtonId="lab-clear"
+        wrapperMarginBottom="2rem"
+      >
+        <p role="status" aria-live="polite" class={css({ color: 'textMuted', fontSize: '0.85rem', m: 0 })}>
           <span id="lab-count">{labs.length}</span> <span id="lab-count-word">{labs.length === 1 ? 'writeup' : 'writeups'}</span>
         </p>
-      </div>
+      </FilterBar>
     )
   }
 
@@ -166,47 +162,26 @@ const chip = css({
       </div>
     )
   }
+
+  <p id="lab-empty" hidden role="status" aria-live="polite" class={css({ color: 'textMuted', textAlign: 'center', py: '2rem' })}>
+    No writeups match your filters.
+  </p>
+
+  <ListFilter
+    config={{
+      comboboxId: 'lab-cb',
+      cardSelector: '.lab-item',
+      searchAttr: 'data-search',
+      countId: 'lab-count',
+      countWordId: 'lab-count-word',
+      countWordSingular: 'writeup',
+      countWordPlural: 'writeups',
+      emptyId: 'lab-empty',
+      facetAttr: 'data-tags',
+      facetMode: 'and',
+      chipGroup: { selector: '[data-filter]', attr: 'data-source' },
+      clearButtonId: 'lab-clear',
+      urlSync: { queryParam: 'q', facetParam: 'tag', chipParam: 'source' },
+    }}
+  />
 </BaseLayout>
-
-<p id="lab-empty" hidden class={css({ color: 'textMuted', textAlign: 'center', py: '2rem' })}>
-  No writeups match your filters.
-</p>
-
-<script is:inline>
-  (function () {
-    var combobox = document.getElementById('lab-cb');
-    var chips = Array.prototype.slice.call(document.querySelectorAll('[data-filter]'));
-    var items = Array.prototype.slice.call(document.querySelectorAll('.lab-item'));
-    var countEl = document.getElementById('lab-count');
-    var wordEl = document.getElementById('lab-count-word');
-    var empty = document.getElementById('lab-empty');
-    var source = 'all';
-    var query = '';
-    var tags = [];
-    function apply() {
-      var q = query.toLowerCase();
-      var shown = 0;
-      items.forEach(function (item) {
-        var matchSource = source === 'all' || item.getAttribute('data-source') === source;
-        var matchText = !q || (item.getAttribute('data-search') || '').indexOf(q) !== -1;
-        var dt = item.getAttribute('data-tags') || '';
-        var matchTags = tags.every(function (s) { return dt.indexOf('|' + s + '|') !== -1; }); // AND
-        var show = matchSource && matchText && matchTags;
-        item.style.display = show ? '' : 'none';
-        if (show) shown++;
-      });
-      if (countEl) countEl.textContent = String(shown);
-      if (wordEl) wordEl.textContent = shown === 1 ? 'writeup' : 'writeups';
-      if (empty) empty.hidden = shown !== 0;
-      chips.forEach(function (c) {
-        if (c.getAttribute('data-filter') === source) c.setAttribute('data-active', '');
-        else c.removeAttribute('data-active');
-      });
-    }
-    if (combobox) combobox.addEventListener('comboboxchange', function (e) { tags = e.detail.selected; query = e.detail.query; apply(); });
-    chips.forEach(function (c) {
-      c.addEventListener('click', function () { source = c.getAttribute('data-filter'); apply(); });
-    });
-    apply();
-  })();
-</script>
