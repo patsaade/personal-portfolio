@@ -12,7 +12,7 @@ const h2 = css({ fontSize: '1.3rem', fontWeight: 700, mt: '2.25rem', mb: '0.75re
 const list = css({ color: 'textMuted', lineHeight: 1.9, pl: '1.25rem', mb: '1rem' });
 const link = css({ color: 'primary', textDecoration: 'underline', _hover: { color: 'primaryHover' } });
 
-const updated = 'June 29, 2026';
+const updated = 'July 1, 2026';
 ---
 
 <BaseLayout
@@ -56,9 +56,11 @@ const updated = 'June 29, 2026';
     The site also registers a <strong class={css({ color: 'text' })}>service worker</strong> that
     keeps a local cache of pages and assets (in your browser's Cache Storage) so it loads quickly and
     works offline. That's simply your own copy of this public site — nothing about you is collected
-    or sent anywhere. Other interactive features — the daily
-    <strong class={css({ color: 'text' })}>Term of the Day</strong> ticker, the ⌘K site search, and
-    the custom cursor — run entirely in your browser and store nothing.
+    or sent anywhere. A few other interactive touches — the ⌘K search palette and the tap/hover
+    reference cards on terms and tools — fetch a small, public data file from this same site and
+    filter it entirely in your browser; nothing is sent anywhere, and nothing is stored. The daily
+    <strong class={css({ color: 'text' })}>Term of the Day</strong> is chosen when the site is built,
+    not computed about you, so there's nothing to fetch or store for it at all.
   </p>
 
   <h2 class={h2}>Hosting & server logs</h2>
