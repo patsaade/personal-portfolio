@@ -46,6 +46,11 @@ const catSources = (CATEGORY_SOURCES[term.category] ?? []).filter((s) => !termRe
 
 // MITRE ATT&CK technique(s) this term maps to — links to the on-site coverage map.
 const techniques = ATTACK_TECHNIQUES.filter((t) => t.glossarySlug === term.slug);
+// Detection sources + real-world procedure examples, pulled straight from the
+// generated MITRE data for any mapped technique(s) — no new authoring, and the
+// content stays in sync whenever the ATT&CK dataset is regenerated.
+const detectionSources = Array.from(new Set(techniques.flatMap((t) => t.detection ?? [])));
+const realWorldExamples = Array.from(new Set(techniques.flatMap((t) => t.examples ?? [])));
 // Tools that directly implement this concept (curated, factual subset — see tools.ts).
 const matchingTools = TOOLS.filter((t) => (t.glossarySlugs ?? []).includes(term.slug));
 
@@ -79,6 +84,19 @@ const refLink = css({
   color: 'text',
   transition: 'color 150ms ease',
   _hover: { color: 'primary' },
+});
+const locationBlock = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  p: '0.6rem 0.9rem',
+  fontFamily: 'mono',
+  fontSize: '0.88rem',
+  color: 'text',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  wordBreak: 'break-all',
 });
 const attackChip = css({
   display: 'inline-flex',
@@ -144,6 +162,15 @@ const attackChip = css({
   <h2 class={sectionH2}><Icon name="book-open" size={18} class={css({ color: 'primary' })} /> Definition</h2>
   <p class={para}>{term.definition}</p>
 
+  {
+    term.location && (
+      <>
+        <h2 class={sectionH2}><Icon name="map-pin" size={18} class={css({ color: 'primary' })} /> Where to find it</h2>
+        <p class={locationBlock}>{term.location}</p>
+      </>
+    )
+  }
+
   <h2 class={sectionH2}><Icon name="shield" size={18} class={css({ color: 'primary' })} /> Why it matters</h2>
   <p class={para}>{term.significance}</p>
 
@@ -151,6 +178,41 @@ const attackChip = css({
   <p class={`${para} ${css({ borderLeft: '3px solid token(colors.primary)', pl: '1rem', color: 'textMuted', fontStyle: 'italic' })}`}>
     {term.example}
   </p>
+
+  {
+    detectionSources.length > 0 && (
+      <>
+        <h2 class={sectionH2}><Icon name="activity" size={18} class={css({ color: 'primary' })} /> Detection ideas</h2>
+        <p class={css({ color: 'textMuted', fontSize: '0.9rem', mb: '0.75rem', lineHeight: 1.6 })}>
+          Data sources MITRE ATT&CK lists for detecting the mapped technique{techniques.length > 1 ? 's' : ''}:
+        </p>
+        <ul class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem' })}>
+          {detectionSources.map((d) => (
+            <li class={css({ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.92rem', color: 'text', lineHeight: 1.6 })}>
+              <Icon name="check" size={14} class={css({ color: 'primary', flexShrink: 0, mt: '0.25rem' })} />
+              <span>{d}</span>
+            </li>
+          ))}
+        </ul>
+      </>
+    )
+  }
+
+  {
+    realWorldExamples.length > 0 && (
+      <>
+        <h2 class={sectionH2}><Icon name="target" size={18} class={css({ color: 'primary' })} /> Real-world examples</h2>
+        <p class={css({ color: 'textMuted', fontSize: '0.9rem', mb: '0.75rem', lineHeight: 1.6 })}>
+          Documented procedures from MITRE ATT&CK's knowledge base:
+        </p>
+        <ul class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.55rem' })}>
+          {realWorldExamples.map((ex) => (
+            <li class={`${para} ${css({ fontSize: '0.92rem', pl: '1rem', borderLeft: '2px solid token(colors.border)' })}`}>{ex}</li>
+          ))}
+        </ul>
+      </>
+    )
+  }
 
   {
     related.length > 0 && (

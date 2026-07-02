@@ -62,6 +62,9 @@ export interface SecurityTerm {
   aka?: string[];
   /** One-liner for the ticker and glossary cards. Keep it short. */
   short: string;
+  /** Where the artifact actually lives (file path / registry key) — only set for
+   * terms that name a concrete, locatable artifact, not abstract concepts/techniques. */
+  location?: string;
   /** What it is (plain English). */
   definition: string;
   /** Why it matters in DFIR / incident response. */

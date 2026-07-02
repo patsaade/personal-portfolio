@@ -27,7 +27,7 @@ const STATIC_ENTRIES: OgEntry[] = [
 
 const STATIC_SLUGS = new Set(STATIC_ENTRIES.map((e) => e.slug));
 
-/** Every social card to generate: static pages + each post, lab, and tag. */
+/** Every social card to generate: static pages + each post and lab. */
 export async function getOgEntries(): Promise<OgEntry[]> {
   const entries: OgEntry[] = [...STATIC_ENTRIES];
 

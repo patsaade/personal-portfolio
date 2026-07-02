@@ -185,20 +185,26 @@ distinct, intentional pattern; keep it to the key guarantees, not proper nouns.
   (prev/next on detail pages), and `ListFilter` — the config-driven controller that actually wires
   search + facet + toggles + collapsible groups together (each page just declares its selectors and
   toggle list; see the component's own doc comment for the config shape). `TagCombobox` drives all
-  six list pages (Blog, Labs, Glossary, Tools, Certifications, both MITRE maps). `ListFilter` drives
-  Glossary, Tools, Certifications, and both MITRE maps — extend it, don't fork it there. Blog and
-  Labs do **not** use `ListFilter`: both need two-way URL sync (`?q`/`?tag`/`?cat` or `?source`,
-  written via `history.replaceState` on every filter change and read back on load) and AND-tag
-  matching (a card must carry *every* selected tag), and `ListFilter` provides neither — its
-  `hydrateQueryParam` only reads one param once, and its facet matching is OR-any. So Blog and Labs
-  share the same bespoke inline-script pattern instead (category/source chips + combobox, mirrored
-  between the two files) — keep them in lockstep if you touch one. Adding a new toggle to a
-  `ListFilter` page is normally just: a `data-*` attribute on the card + one `{ id, attr }` entry in
-  that page's `ListFilter` config + a matching `<FilterToggle>` button — the controller needs no
-  changes. The compact-card `.card-grid` (above) is narrower in scope: only Glossary, Tools,
-  Certifications, and both MITRE maps use it — Blog and Labs render their own wider content cards
-  (`BlogCard`, `lab-item`; excerpt + tags + meta need more room than a 232px tile), which is
-  deliberate, not a gap to close.
+  six list pages (Blog, Labs, Glossary, Tools, Certifications, both MITRE maps), and `ListFilter` now
+  drives all six too — extend it, don't fork it. Blog and Labs needed two capabilities `ListFilter`
+  didn't originally have (two-way URL sync via `history.replaceState`, read back on load; and
+  AND-tag matching, where a card must carry *every* selected tag, vs. the OR-any matching the other
+  four pages use for their single-select facets) — rather than keep them on a bespoke script,
+  `ListFilter` gained `urlSync` and `facetMode: 'and'` (plus a `chipGroup` option for a second,
+  independent single-select facet — Blog's category chips, Labs' source chips) so they could join
+  the shared controller too. The listing grids all use the shared `.card-grid` (above) *except* Blog
+  and Labs, which render their own wider content cards (`BlogCard`, `lab-item`; excerpt + tags + meta
+  need more room than a 232px tile) — deliberate, not a gap to close. Adding a new toggle to a page is
+  normally just: a `data-*` attribute on the card + one `{ id, attr }` entry in that page's
+  `ListFilter` config + a matching `<FilterToggle>` button — the controller needs no changes.
+  Two more shared, opt-in pieces sit above the grid on these list pages: `GroupOverview` (a
+  browsable tile strip — icon + blurb + count per group, links to `#<id>` — for pages whose
+  groups are an unordered taxonomy; used on Glossary's categories and Tools' platforms) and
+  `TacticStepper` (an ordered, horizontally-scrolling pill sequence sized by item count; for
+  pages whose groups are a kill-chain/lifecycle with a real order — used on both MITRE maps).
+  Pick by data shape, not by page: unordered groups get `GroupOverview`, ordered ones get
+  `TacticStepper`. Either way, the target `<details>` group needs a matching `id` and
+  `scrollMarginTop` so the anchor jump clears the sticky header.
 - **Experience: detailed vs. condensed.** Headline/relevant roles get full timeline cards
   (company header, per-role title + dates + one-sentence summary + skill tags). Earlier,
   contract, or foundational roles go in **one condensed block** below — a single bordered
