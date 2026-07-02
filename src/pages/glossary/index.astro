@@ -57,7 +57,6 @@ const cardClass = css({
   bg: 'bgCard',
   border: '1px solid token(colors.border)',
   borderRadius: 'md',
-  overflow: 'hidden',
   transition: 'border-color 200ms ease, transform 200ms ease',
   _hover: {
     borderColor: 'primary',
@@ -175,7 +174,7 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
     <p role="status" aria-live="polite" class={css({ color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
       <span id="totd-result-count">{total}</span> terms — every one a concept, technique, or artifact you’ll meet in a real investigation.
     </p>
-    <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', ml: { sm: 'auto' } })}>
+    <div class={css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', ml: { sm: 'auto' } })}>
       <FilterToggle id="totd-attack-toggle" icon="crosshair" label="ATT&CK only" tone="primary" />
       <FilterToggle id="totd-writeup-toggle" icon="file-text" label="In a writeup" tone="accent" />
       <CollapseAll target="[data-totd-group]" />

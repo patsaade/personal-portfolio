@@ -116,7 +116,7 @@ const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto
     <p class={css({ color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
       <span id="tools-result-count">{totalTools}</span> free tools across {platforms.length} groups.
     </p>
-    <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', ml: { sm: 'auto' } })}>
+    <div class={css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', ml: { sm: 'auto' } })}>
       <FilterToggle id="tools-writeup-toggle" icon="file-text" label="In a writeup" tone="primary" />
       <FilterToggle id="tools-core-toggle" icon="star" label="In my kit" tone="accent" />
       <CollapseAll target="[data-tools-group]" />

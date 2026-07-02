@@ -112,7 +112,7 @@ const metaLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.35r
         verify on Credly <Icon name="external-link" size={13} />
       </a>
     </p>
-    <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', ml: { sm: 'auto' } })}>
+    <div class={css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', ml: { sm: 'auto' } })}>
       <FilterToggle id="cert-earned-toggle" icon="award" label="Earned only" tone="accent" />
       <CollapseAll target="[data-cert-group]" />
     </div>
