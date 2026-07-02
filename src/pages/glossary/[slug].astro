@@ -105,6 +105,19 @@ const refLink = css({
   transition: 'color 150ms ease',
   _hover: { color: 'primary' },
 });
+const locationBlock = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  p: '0.6rem 0.9rem',
+  fontFamily: 'mono',
+  fontSize: '0.88rem',
+  color: 'text',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  wordBreak: 'break-all',
+});
 const attackChip = css({
   display: 'inline-flex',
   alignItems: 'center',
@@ -168,6 +181,15 @@ const attackChip = css({
 
   <h2 class={sectionH2}><Icon name="book-open" size={18} class={css({ color: 'primary' })} /> Definition</h2>
   <p class={para}>{term.definition}</p>
+
+  {
+    term.location && (
+      <>
+        <h2 class={sectionH2}><Icon name="map-pin" size={18} class={css({ color: 'primary' })} /> Where to find it</h2>
+        <p class={locationBlock}>{term.location}</p>
+      </>
+    )
+  }
 
   <h2 class={sectionH2}><Icon name="shield" size={18} class={css({ color: 'primary' })} /> Why it matters</h2>
   <p class={para}>{term.significance}</p>

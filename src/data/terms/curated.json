@@ -36,6 +36,7 @@
       "MFT"
     ],
     "short": "The NTFS index of every file — a forensic goldmine of timestamps.",
+    "location": "$MFT, in the root directory of an NTFS volume",
     "definition": "The Master File Table is the core metadata structure of the NTFS file system. It holds a record for every file and directory, including names, sizes, parent references, and multiple sets of timestamps.",
     "significance": "The $MFT can reveal files that were created, renamed, or deleted, and the gap between its $STANDARD_INFORMATION and $FILE_NAME timestamps exposes timestomping. It is often the first artifact a host examiner parses.",
     "example": "Reconstructing the order in which an attacker dropped and deleted tools by parsing $MFT records and their timestamps.",
@@ -50,6 +51,7 @@
     "slug": "prefetch",
     "category": "Host & Disk Forensics",
     "short": "A Windows artifact proving a program ran — and when.",
+    "location": "C:\\Windows\\Prefetch\\*.pf",
     "definition": "Prefetch files are created by Windows to speed up application launches. Each one records the executable name, a run count, and the last several execution times.",
     "significance": "Prefetch is one of the cleanest proofs of execution on Windows — it can show that a now-deleted tool ran, how many times, and when, helping build an attacker timeline.",
     "example": "A prefetch entry for a malicious binary that no longer exists on disk, confirming it executed three times last Tuesday.",
@@ -64,6 +66,7 @@
     "slug": "shellbags",
     "category": "Host & Disk Forensics",
     "short": "Registry traces of which folders a user browsed in Explorer.",
+    "location": "NTUSER.DAT: Software\\Microsoft\\Windows\\Shell\\{BagMRU,Bags}; UsrClass.dat: Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\{BagMRU,Bags}",
     "definition": "Shellbags are registry keys that store the view settings of folders a user has opened in Windows Explorer. They persist even after the folder — or an external/removable volume — is gone.",
     "significance": "They prove a user navigated to a specific path, including network shares and USB drives that no longer exist, which is powerful evidence of knowledge and access.",
     "example": "Shellbag entries showing a user browsed an encrypted USB volume that was never imaged.",
@@ -113,6 +116,7 @@
       "Event Logs"
     ],
     "short": "Windows’ record of logons, process starts, and system activity.",
+    "location": "C:\\Windows\\System32\\winevt\\Logs\\*.evtx",
     "definition": "Windows Event Logs (.evtx) record security, system, and application events such as logons, privilege use, service installs, and process creation.",
     "significance": "They are central to intrusion timelines — tracking lateral movement via logon types, new-service persistence, and (with auditing on) command-line process creation. Attackers often clear them, which is itself a logged event.",
     "example": "Event ID 4624 logon events mapping an attacker’s hop from a beachhead host to a domain controller.",

@@ -73,6 +73,17 @@ const navLink = css({
 });
 const navMeta = css({ fontSize: '0.72rem', fontFamily: 'sans', color: 'textMuted' });
 const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
+const codeBlock = css({
+  p: '0.6rem 0.9rem',
+  fontFamily: 'mono',
+  fontSize: '0.85rem',
+  color: 'text',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  overflowX: 'auto',
+  whiteSpace: 'pre',
+});
 ---
 
 <BaseLayout title={`${tool.name} — DFIR tool`} description={tool.what ?? tool.use}>
@@ -112,6 +123,20 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
     <>
       <h2 class={sectionH2}><Icon name="book-open" size={18} class={css({ color: 'primary' })} /> What it is</h2>
       <p class={para}>{tool.what}</p>
+    </>
+  )}
+
+  {tool.install && (
+    <>
+      <h2 class={sectionH2}><Icon name="download" size={18} class={css({ color: 'primary' })} /> Install</h2>
+      <p class={css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem' })}>{tool.install}</p>
+    </>
+  )}
+
+  {tool.syntax && (
+    <>
+      <h2 class={sectionH2}><Icon name="terminal" size={18} class={css({ color: 'primary' })} /> Usage</h2>
+      <p class={codeBlock}>{tool.syntax}</p>
     </>
   )}
 
@@ -208,14 +233,22 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
     </>
   )}
 
-  <h2 class={sectionH2}><Icon name="external-link" size={18} class={css({ color: 'primary' })} /> Reference</h2>
-  <ul class={css({ listStyle: 'none', m: 0, p: 0 })}>
+  <h2 class={sectionH2}><Icon name="external-link" size={18} class={css({ color: 'primary' })} /> References &amp; sources</h2>
+  <ul class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.55rem' })}>
     <li>
       <a href={tool.url} target="_blank" rel="noopener" class={refLink}>
         <Icon name="external-link" size={14} class={css({ color: 'primary', flexShrink: 0 })} />
         <span>{tool.name} — official site</span>
       </a>
     </li>
+    {tool.references?.map((r) => (
+      <li>
+        <a href={r.url} target="_blank" rel="noopener" class={refLink}>
+          <Icon name="external-link" size={14} class={css({ color: 'textMuted', flexShrink: 0 })} />
+          <span>{r.name}</span>
+        </a>
+      </li>
+    ))}
   </ul>
   <p class={css({ fontSize: '0.78rem', color: 'textMuted', mt: '0.85rem', lineHeight: 1.6 })}>
     Names and trademarks belong to their respective projects and vendors; links go to each tool's

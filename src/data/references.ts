@@ -30,7 +30,11 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     {
       "name": "The Volatility Foundation — Open Source Memory Forensics",
       "url": "https://volatilityfoundation.org/"
-    }
+    },
+    {
+      "name": "SANS — Memory Forensics Cheat Sheet",
+      "url": "https://www.sans.org/posters/memory-forensics-cheat-sheet"
+    },
   ],
   "Host & Disk Forensics": [
     {
@@ -44,7 +48,11 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     {
       "name": "SANS Windows Forensic Analysis Poster (FOR500)",
       "url": "https://www.sans.org/posters/windows-forensic-analysis/"
-    }
+    },
+    {
+      "name": "NIST CFTT — Forensic File Carving Specifications",
+      "url": "https://www.nist.gov/itl/ssd/software-quality-group/computer-forensics-tool-testing-program-cftt/cftt-technical-0"
+    },
   ],
   "Malware Analysis & RE": [
     {
@@ -58,7 +66,11 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     {
       "name": "CISA Malware Analysis",
       "url": "https://www.cisa.gov/resources-tools/services/malware-analysis"
-    }
+    },
+    {
+      "name": "NIST SP 800-83 Rev. 1 — Guide to Malware Incident Prevention and Handling",
+      "url": "https://csrc.nist.gov/pubs/sp/800/83/r1/final"
+    },
   ],
   "Network Forensics & C2": [
     {
@@ -82,7 +94,11 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     {
       "name": "CISA — Identifying and Mitigating Living Off the Land Techniques",
       "url": "https://www.cisa.gov/resources-tools/resources/identifying-and-mitigating-living-land-techniques"
-    }
+    },
+    {
+      "name": "MITRE ATT&CK — Privilege Escalation (TA0004)",
+      "url": "https://attack.mitre.org/tactics/TA0004/"
+    },
   ],
   "Credential & Identity Attacks": [
     {
@@ -92,7 +108,11 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     {
       "name": "OWASP Cheat Sheet Series",
       "url": "https://cheatsheetseries.owasp.org/"
-    }
+    },
+    {
+      "name": "NIST SP 800-63-4 — Digital Identity Guidelines",
+      "url": "https://csrc.nist.gov/pubs/sp/800/63/4/final"
+    },
   ],
   "Cloud & Container Security": [
     {
@@ -106,7 +126,11 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     {
       "name": "NIST SP 800-145: The NIST Definition of Cloud Computing",
       "url": "https://csrc.nist.gov/pubs/sp/800/145/final"
-    }
+    },
+    {
+      "name": "CIS Kubernetes Benchmarks",
+      "url": "https://www.cisecurity.org/benchmark/kubernetes"
+    },
   ],
   "Cryptography & Data Protection": [
     {
@@ -120,7 +144,11 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     {
       "name": "NIST CSRC Glossary",
       "url": "https://csrc.nist.gov/glossary"
-    }
+    },
+    {
+      "name": "NIST FIPS 140-3 — Security Requirements for Cryptographic Modules",
+      "url": "https://csrc.nist.gov/pubs/fips/140-3/final"
+    },
   ],
   "Detection, Hunting & IR": [
     {
@@ -134,7 +162,11 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     {
       "name": "CISA Threat Hunting",
       "url": "https://www.cisa.gov/threat-hunting"
-    }
+    },
+    {
+      "name": "NIST SP 800-61 Rev. 3 — Incident Response Recommendations and Considerations",
+      "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final"
+    },
   ],
   "Threat Intelligence & Frameworks": [
     {
@@ -144,7 +176,11 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     {
       "name": "SANS Institute",
       "url": "https://www.sans.org/tools/the-pyramid-of-pain"
-    }
+    },
+    {
+      "name": "MITRE CAPEC — Common Attack Pattern Enumeration and Classification",
+      "url": "https://capec.mitre.org/"
+    },
   ],
   "Vulnerabilities & Exploitation": [
     {
@@ -158,7 +194,11 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     {
       "name": "NIST CSRC Glossary",
       "url": "https://csrc.nist.gov/glossary"
-    }
+    },
+    {
+      "name": "MITRE — CVE Program",
+      "url": "https://www.cve.org/"
+    },
   ],
   "Web, Email & Application Security": [
     {
@@ -172,7 +212,11 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     {
       "name": "RFC Editor",
       "url": "https://www.rfc-editor.org/"
-    }
+    },
+    {
+      "name": "OWASP Top 10 — Top 10 Web Application Security Risks",
+      "url": "https://owasp.org/www-project-top-ten/"
+    },
   ],
   "Logging & Telemetry": [
     {
@@ -186,7 +230,11 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     {
       "name": "RFC Editor (IETF logging & telemetry standards)",
       "url": "https://www.rfc-editor.org/"
-    }
+    },
+    {
+      "name": "RFC 5424 — The Syslog Protocol",
+      "url": "https://www.rfc-editor.org/rfc/rfc5424"
+    },
   ],
   "Linux, macOS & Mobile Forensics": [
     {
@@ -200,7 +248,11 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     {
       "name": "MITRE ATT&CK — Mobile Matrix",
       "url": "https://attack.mitre.org/matrices/mobile/"
-    }
+    },
+    {
+      "name": "Linux man-pages Project — Official Manual Pages",
+      "url": "https://man7.org/linux/man-pages/"
+    },
   ]
 };
 
