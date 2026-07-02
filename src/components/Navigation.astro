@@ -341,7 +341,7 @@ const mobileSummary = css({
     {
       dropdowns.map((d) => (
         <li class={css({ borderTop: '1px solid token(colors.border)' })}>
-          <details class="nav-mobile-section">
+          <details class="nav-mobile-section" name="nav-mobile-accordion">
             <summary class={mobileSummary}>
               {d.label}
               <Icon name="chevron-down" size={15} class="mobile-section-chev" />

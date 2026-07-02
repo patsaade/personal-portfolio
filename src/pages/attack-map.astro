@@ -180,7 +180,7 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
       <span aria-hidden="true">·</span>
       <a href="https://attack.mitre.org/" target="_blank" rel="noopener" class={statLink}>ATT&CK v{ATTACK_VERSION} <Icon name="external-link" size={12} /></a>
     </p>
-    <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', ml: 'auto' })}>
+    <div class={css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', ml: { sm: 'auto' } })}>
       <FilterToggle id="attack-covered-toggle" icon="check" label="Covered only" tone="accent" />
       <FilterToggle id="attack-gloss-toggle" icon="book-open" label="In glossary" tone="primary" />
       <FilterToggle id="attack-defense-toggle" icon="shield" label="Has defense" tone="primary" />

@@ -147,7 +147,7 @@ const anchored = new Set<string>();
       <span aria-hidden="true">·</span>
       <a href="https://d3fend.mitre.org/" target="_blank" rel="noopener" class={statLink}>D3FEND v{D3FEND_VERSION} <Icon name="external-link" size={12} /></a>
     </p>
-    <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', ml: { sm: 'auto' } })}>
+    <div class={css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', ml: { sm: 'auto' } })}>
       <FilterToggle id="d3fend-mapped-toggle" icon="crosshair" label="Maps to ATT&CK" tone="accent" />
       <CollapseAll target="[data-tactic-group]" />
     </div>
