@@ -1,0 +1,85 @@
+---
+// Browsable orientation strip for pages whose groups are an UNORDERED taxonomy —
+// Glossary's categories, Tools' platforms. Each tile surfaces the icon + blurb the
+// page's data already carries (CATEGORY_META, ToolPlatform) but previously only
+// showed inside a collapsed group header. Tiles link to `#<id>`, which must match
+// the `id` on that group's <details> element (native fragment navigation expands a
+// collapsed <details> automatically, so no extra JS is needed here).
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+
+export interface GroupOverviewItem {
+  /** Anchor target (no leading '#') — must match the group's <details id>. */
+  id: string;
+  icon: string;
+  title: string;
+  blurb: string;
+  count: number;
+}
+interface Props {
+  items: GroupOverviewItem[];
+  heading?: string;
+}
+const { items, heading = 'Browse by category' } = Astro.props;
+
+const wrap = css({ mb: '2rem' });
+const label = css({
+  display: 'block',
+  fontFamily: 'sans',
+  fontSize: '0.75rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: 'textMuted',
+  mb: '0.7rem',
+});
+const grid = css({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 200px), 1fr))',
+  gap: '0.6rem',
+});
+const tile = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.3rem',
+  p: '0.75rem 0.85rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  transition: 'border-color 200ms ease, transform 200ms ease',
+  _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
+});
+const tileTop = css({ display: 'flex', alignItems: 'center', gap: '0.45rem' });
+const tileTitle = css({ flex: 1, minW: 0, fontFamily: 'sans', fontWeight: 700, fontSize: '0.85rem', color: 'text', lineHeight: 1.3 });
+const tileCount = css({
+  fontFamily: 'sans',
+  fontSize: '0.66rem',
+  fontWeight: 600,
+  color: 'textMuted',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'full',
+  px: '0.45rem',
+  py: '0.05rem',
+  flexShrink: 0,
+});
+const tileBlurb = css({ fontSize: '0.76rem', color: 'textMuted', lineHeight: 1.4 });
+---
+
+<nav aria-label={heading} class={wrap}>
+  <span class={label}>{heading}</span>
+  <div class={grid}>
+    {
+      items.map((item) => (
+        <a href={`#${item.id}`} class={tile}>
+          <span class={tileTop}>
+            <Icon name={item.icon as any} size={16} class={css({ color: 'primary', flexShrink: 0 })} />
+            <span class={tileTitle}>{item.title}</span>
+            <span class={tileCount}>{item.count}</span>
+          </span>
+          <span class={tileBlurb}>{item.blurb}</span>
+        </a>
+      ))
+    }
+  </div>
+</nav>

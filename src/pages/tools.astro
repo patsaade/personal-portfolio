@@ -14,11 +14,22 @@ import CollapseAll from '../components/CollapseAll.astro';
 import TagCombobox from '../components/TagCombobox.astro';
 import FilterToggle from '../components/FilterToggle.astro';
 import ListFilter from '../components/ListFilter.astro';
+import GroupOverview from '../components/GroupOverview.astro';
 import { tagSlug, getSortedPosts, getSortedLabs } from '../utils/posts';
 import { TOOL_PLATFORMS, TOTAL_TOOLS, costTone } from '../data/tools';
 
 const platforms = TOOL_PLATFORMS;
 const totalTools = TOTAL_TOOLS;
+
+// "Browse by platform" overview tiles, mirroring the glossary's category strip.
+const platformTiles = platforms.map((p) => ({
+  id: `plat-${p.id}`,
+  icon: p.icon,
+  title: p.title,
+  blurb: p.blurb,
+  count: p.tools.length,
+}));
+const coreTools = platforms.flatMap((p) => p.tools).filter((t) => t.core);
 
 // Function facet for the search combobox (each tool carries one function tag).
 const fnCounts: Record<string, number> = {};
@@ -33,7 +44,7 @@ const featuredTools = new Set([...tPosts, ...tLabs].flatMap((p) => (p.data.tools
 
 // Each platform is a collapsible <details>. The summary holds the heading; the
 // blurb + tool grid live inside, so they fold away (and a search auto-expands them).
-const groupDetails = css({ borderTop: '1px solid token(colors.border)', py: '1.25rem' });
+const groupDetails = css({ borderTop: '1px solid token(colors.border)', py: '1.25rem', scrollMarginTop: '90px' });
 const groupSummary = css({
   cursor: 'pointer',
   listStyle: 'none',
@@ -90,6 +101,37 @@ const goCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 20
 const toolUse = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45 });
 // Function + cost tags sit in a row at the bottom of the card (shared `tag` recipe).
 const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto', pt: '0.15rem' });
+
+// "Core kit" spotlight — a slim row of chip links to the tools flagged `core: true`,
+// a quick-access callout distinct from the starred cards in the full grid below.
+const spotlightWrap = css({ mb: '2rem' });
+const spotlightLabel = css({
+  display: 'block',
+  fontFamily: 'sans',
+  fontSize: '0.75rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: 'textMuted',
+  mb: '0.7rem',
+});
+const spotlightRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' });
+const spotlightChip = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.3rem',
+  px: '0.6rem',
+  py: '0.35rem',
+  fontFamily: 'sans',
+  fontSize: '0.8rem',
+  fontWeight: 600,
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'full',
+  transition: 'border-color 200ms ease, color 200ms ease',
+  _hover: { borderColor: 'accent', color: 'accent', '& svg': { transform: 'translateX(2px)' } },
+});
 ---
 
 <BaseLayout
@@ -103,6 +145,25 @@ const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto
     description="Free and open-source tools, grouped by where they run. A star (★) marks what's in my day-to-day kit; each tool links to a short reference page. Tags mark each tool's function and cost."
   />
 
+  {/* ── Browse by platform (jump-to overview strip) ── */}
+  <GroupOverview items={platformTiles} heading="Browse by platform" />
+
+  {/* ── Core kit spotlight — the tools in day-to-day use ── */}
+  <div class={spotlightWrap}>
+    <span class={spotlightLabel}>In my day-to-day kit</span>
+    <div class={spotlightRow}>
+      {
+        coreTools.map((t) => (
+          <a href={`/tools/${t.slug}/`} class={spotlightChip}>
+            <Icon name="star" size={12} strokeWidth={0} class={css({ color: 'accent', fill: 'token(colors.accent)' })} />
+            {t.name}
+            <Icon name="arrow-right" size={12} class={css({ transition: 'transform 200ms ease' })} />
+          </a>
+        ))
+      }
+    </div>
+  </div>
+
   {/* Search + function filter (typeahead combobox) */}
   <div class={css({ mb: '0.6rem' })}>
     <TagCombobox
@@ -113,8 +174,12 @@ const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto
     />
   </div>
   <div class={css({ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', mb: '0.75rem' })}>
-    <p class={css({ color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
-      <span id="tools-result-count">{totalTools}</span> free tools across {platforms.length} groups.
+    <p class={css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.3rem 0.6rem', color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
+      <span><span id="tools-result-count">{totalTools}</span> free tools across {platforms.length} groups</span>
+      <span aria-hidden="true">·</span>
+      <span>{coreTools.length} in my kit</span>
+      <span aria-hidden="true">·</span>
+      <span>{featuredTools.size} featured in writeups</span>
     </p>
     <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', ml: { sm: 'auto' } })}>
       <FilterToggle id="tools-writeup-toggle" icon="file-text" label="In a writeup" tone="primary" />
@@ -126,7 +191,7 @@ const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto
   <div class={css({ display: 'flex', flexDirection: 'column' })}>
     {
       platforms.map((p) => (
-        <details data-tools-group open class={groupDetails}>
+        <details id={`plat-${p.id}`} data-tools-group open class={groupDetails}>
           <summary class={groupSummary}>
             <h2 class={groupHead}>
               <Icon name="chevron-right" size={18} class={chevCls} />

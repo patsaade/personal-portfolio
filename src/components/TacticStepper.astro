@@ -1,0 +1,98 @@
+---
+// Ordered sequence strip for pages whose groups are a kill-chain / lifecycle rather
+// than an unordered taxonomy — MITRE ATT&CK's 15 tactics (offense) and MITRE D3FEND's
+// 7 tactics (defense). Visualizes the shape of the matrix at a glance and jumps to
+// each tactic's section on click. Deliberately distinct from `GroupOverview`: these
+// groups have a meaningful order, so they render as a horizontally-scrolling pipeline
+// of pills sized by technique count, not a grid of tiles.
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+
+export interface TacticStepperItem {
+  /** Anchor target (no leading '#') — must match the tactic group's <details id>. */
+  id: string;
+  label: string;
+  count: number;
+  /** Secondary count to visually weight, e.g. covered / mapped-to-ATT&CK. */
+  highlight?: number;
+}
+interface Props {
+  items: TacticStepperItem[];
+  tone: 'primary' | 'accent';
+  icon: string;
+  ariaLabel: string;
+}
+const { items, tone, icon, ariaLabel } = Astro.props;
+
+// Discrete size buckets (tertiles of technique count) rather than a literal linear
+// scale — with a 15-item kill chain ranging from a handful to 40+ techniques, a
+// linear scale would make the smallest pills unreadably tiny.
+const sortedCounts = items.map((i) => i.count).sort((a, b) => a - b);
+const t1 = sortedCounts[Math.floor(sortedCounts.length / 3)] ?? 0;
+const t2 = sortedCounts[Math.floor((2 * sortedCounts.length) / 3)] ?? 0;
+function sizeOf(count: number): 'sm' | 'md' | 'lg' {
+  if (count <= t1) return 'sm';
+  if (count <= t2) return 'md';
+  return 'lg';
+}
+
+const wrap = css({ mb: '1.75rem' });
+const scroller = css({
+  display: 'flex',
+  alignItems: 'stretch',
+  gap: '0.5rem',
+  overflowX: 'auto',
+  pb: '0.35rem',
+  scrollSnapType: 'x proximity',
+  WebkitOverflowScrolling: 'touch',
+});
+const pillBase = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.2rem',
+  flexShrink: 0,
+  scrollSnapAlign: 'start',
+  minW: '7.5rem',
+  p: '0.55rem 0.7rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  transition: 'border-color 200ms ease, transform 200ms ease',
+  _hover: { transform: 'translateY(-2px)' },
+});
+const pillTone = {
+  primary: css({ _hover: { borderColor: 'primary' } }),
+  accent: css({ _hover: { borderColor: 'accent' } }),
+};
+const pillSize = {
+  sm: css({ opacity: 0.72 }),
+  md: css({ opacity: 0.87 }),
+  lg: css({ opacity: 1, borderLeftWidth: '3px', borderLeftColor: `token(colors.${tone})` }),
+};
+const pillHead = css({ display: 'flex', alignItems: 'center', gap: '0.35rem' });
+const pillLabel = css({ fontFamily: 'sans', fontWeight: 700, fontSize: '0.76rem', color: 'text', lineHeight: 1.25, whiteSpace: 'nowrap' });
+const pillMeta = css({ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.68rem', color: 'textMuted' });
+const highlightBadge = {
+  primary: css({ color: 'primary', fontWeight: 700 }),
+  accent: css({ color: 'accent', fontWeight: 700 }),
+};
+---
+
+<nav aria-label={ariaLabel} class={wrap}>
+  <div class={scroller}>
+    {
+      items.map((item) => (
+        <a href={`#${item.id}`} class={`${pillBase} ${pillTone[tone]} ${pillSize[sizeOf(item.count)]}`}>
+          <span class={pillHead}>
+            <Icon name={icon as any} size={13} class={css({ color: tone, flexShrink: 0 })} />
+            <span class={pillLabel}>{item.label}</span>
+          </span>
+          <span class={pillMeta}>
+            <span>{item.count}</span>
+            {!!item.highlight && <span class={highlightBadge[tone]}>{item.highlight} ✓</span>}
+          </span>
+        </a>
+      ))
+    }
+  </div>
+</nav>

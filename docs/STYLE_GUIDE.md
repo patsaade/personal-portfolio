@@ -189,6 +189,14 @@ distinct, intentional pattern; keep it to the key guarantees, not proper nouns.
   MITRE maps) shares this whole scaffolding — extend it, don't fork it. Adding a new toggle to a page
   is normally just: a `data-*` attribute on the card + one `{ id, attr }` entry in that page's
   `ListFilter` config + a matching `<FilterToggle>` button — the controller needs no changes.
+  Two more shared, opt-in pieces sit above the grid on these list pages: `GroupOverview` (a
+  browsable tile strip — icon + blurb + count per group, links to `#<id>` — for pages whose
+  groups are an unordered taxonomy; used on Glossary's categories and Tools' platforms) and
+  `TacticStepper` (an ordered, horizontally-scrolling pill sequence sized by item count; for
+  pages whose groups are a kill-chain/lifecycle with a real order — used on both MITRE maps).
+  Pick by data shape, not by page: unordered groups get `GroupOverview`, ordered ones get
+  `TacticStepper`. Either way, the target `<details>` group needs a matching `id` and
+  `scrollMarginTop` so the anchor jump clears the sticky header.
 - **Experience: detailed vs. condensed.** Headline/relevant roles get full timeline cards
   (company header, per-role title + dates + one-sentence summary + skill tags). Earlier,
   contract, or foundational roles go in **one condensed block** below — a single bordered

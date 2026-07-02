@@ -19,6 +19,7 @@ import CollapseAll from '../../components/CollapseAll.astro';
 import TagCombobox from '../../components/TagCombobox.astro';
 import FilterToggle from '../../components/FilterToggle.astro';
 import ListFilter from '../../components/ListFilter.astro';
+import GroupOverview from '../../components/GroupOverview.astro';
 import { tagSlug, getSortedPosts, getSortedLabs, termSlugsInBody } from '../../utils/posts';
 import { tag } from 'styled-system/recipes';
 
@@ -43,6 +44,17 @@ const catOptions = CATEGORIES.map((cat) => ({ cat, n: SECURITY_TERMS.filter((t) 
 // Map each glossary slug to its ATT&CK technique (for the on-card chip).
 const techBySlug: Record<string, (typeof ATTACK_TECHNIQUES)[number]> = {};
 for (const tech of ATTACK_TECHNIQUES) if (tech.glossarySlug) techBySlug[tech.glossarySlug] = tech;
+const attackLinkedCount = Object.keys(techBySlug).length;
+
+// "Browse by category" overview tiles — surfaces each category's icon + blurb
+// (previously only shown in the collapsed group header) as a jump-to strip.
+const categoryTiles = CATEGORIES.map((cat) => ({
+  id: tagSlug(cat),
+  icon: CATEGORY_META[cat].icon,
+  title: cat,
+  blurb: CATEGORY_META[cat].blurb,
+  count: SECURITY_TERMS.filter((t) => t.category === cat).length,
+})).filter((c) => c.count > 0);
 
 // Compact, uniform term cards: a stretched term link, a faint dictionary-style
 // initial filling the top-right corner, and an optional ATT&CK chip pinned
@@ -77,6 +89,7 @@ const cardHead = css({ display: 'flex', alignItems: 'flex-start', justifyContent
 const cardTerm = css({ fontFamily: 'sans', fontWeight: 700, fontSize: '0.86rem', color: 'text', lineHeight: 1.3, minW: 0 });
 const goArrow = css({ color: 'textMuted', flexShrink: 0, mt: '0.1rem', transition: 'transform 200ms ease, color 200ms ease' });
 const cardShort = css({ fontSize: '0.79rem', color: 'textMuted', lineHeight: 1.4 });
+const cardAka = css({ fontSize: '0.7rem', color: 'textMuted', fontStyle: 'italic' });
 // Footer pinned to the bottom: the ATT&CK chip (when the term maps to a technique).
 const cardFooter = css({ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', mt: 'auto', pt: '0.2rem' });
 const attackTag = `${tag({ tone: 'primary', mono: true })} ${css({
@@ -88,7 +101,7 @@ const attackTag = `${tag({ tone: 'primary', mono: true })} ${css({
 })}`;
 
 // Each category is a collapsible <details>, matching the Tools / Certifications pages.
-const groupDetails = css({ borderTop: '1px solid token(colors.border)', py: '1.25rem' });
+const groupDetails = css({ borderTop: '1px solid token(colors.border)', py: '1.25rem', scrollMarginTop: '90px' });
 const groupSummary = css({
   cursor: 'pointer',
   listStyle: 'none',
@@ -162,6 +175,9 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
     </a>
   </section>
 
+  {/* ── Browse by category (jump-to overview strip) ── */}
+  <GroupOverview items={categoryTiles} heading="Browse by category" />
+
   {/* ── Search + category filter (typeahead combobox) ── */}
   <div class={css({ mb: '0.6rem' })}>
     <TagCombobox
@@ -172,8 +188,14 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
     />
   </div>
   <div class={css({ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', mb: '2rem' })}>
-    <p role="status" aria-live="polite" class={css({ color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
-      <span id="totd-result-count">{total}</span> terms — every one a concept, technique, or artifact you’ll meet in a real investigation.
+    <p role="status" aria-live="polite" class={css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.3rem 0.6rem', color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
+      <span><span id="totd-result-count">{total}</span> terms — every one a concept, technique, or artifact you’ll meet in a real investigation.</span>
+      <span aria-hidden="true">·</span>
+      <span>{categoryTiles.length} categories</span>
+      <span aria-hidden="true">·</span>
+      <span>{attackLinkedCount} linked to ATT&CK</span>
+      <span aria-hidden="true">·</span>
+      <span>{mentionedTerms.size} in a writeup</span>
     </p>
     <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', ml: { sm: 'auto' } })}>
       <FilterToggle id="totd-attack-toggle" icon="crosshair" label="ATT&CK only" tone="primary" />
@@ -189,7 +211,7 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
         const terms = SECURITY_TERMS.filter((t) => t.category === cat);
         if (terms.length === 0) return null;
         return (
-          <details open data-totd-group class={groupDetails}>
+          <details id={tagSlug(cat)} open data-totd-group class={groupDetails}>
             <summary class={groupSummary}>
               <h3 class={groupHead}>
                 <Icon name="chevron-right" size={17} class={chevCls} />
@@ -215,6 +237,7 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
                         <Icon name="arrow-right" size={14} class={`gloss-go ${goArrow}`} />
                       </span>
                       <span class={`${cardShort} totd-clamp2`}>{t.short}</span>
+                      {!!t.aka?.length && <span class={cardAka}>aka {t.aka.join(', ')}</span>}
                     </a>
                     {tech && (
                       <div class={cardFooter}>
