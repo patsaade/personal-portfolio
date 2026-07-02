@@ -4,11 +4,12 @@
 // filter chips look and behave identically. The host page wires the click handler
 // to its own filtering logic by `id`; this only owns the markup + styling.
 import Icon from './Icon.astro';
+import type { IconName } from './Icon.astro';
 import { css } from 'styled-system/css';
 
 interface Props {
   id: string;
-  icon: string;
+  icon: IconName;
   label: string;
   /** Active colour — `accent` (e.g. coverage) or `primary` (e.g. cross-references). */
   tone?: 'accent' | 'primary';
@@ -42,5 +43,5 @@ const primaryCls = css({
 ---
 
 <button type="button" id={id} aria-pressed="false" data-sound="tick" class={`${base} ${tone === 'accent' ? accentCls : primaryCls}`}>
-  <Icon name={icon as any} size={14} /> {label}
+  <Icon name={icon} size={14} /> {label}
 </button>

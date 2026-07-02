@@ -64,20 +64,18 @@ export function estimateReadTime(body: string | undefined, fallback?: number): n
   return Math.max(1, Math.round(words / 200));
 }
 
-/**
- * Find posts related to the given one — same category first, then shared tags.
- */
-export function getRelatedPosts(
-  current: BlogPost,
-  all: BlogPost[],
-  limit = 3,
-): BlogPost[] {
+/** Shared relatedness scoring: same category-equivalent facet first, then shared tags. */
+function getRelated<T extends { id: string; data: { tags: string[] } }>(
+  current: T,
+  all: T[],
+  categoryOf: (entry: T) => string,
+  limit: number,
+): T[] {
   const others = all.filter((p) => p.id !== current.id);
+  const currentCategory = categoryOf(current);
   const scored = others.map((p) => {
-    let score = 0;
-    if (p.data.category === current.data.category) score += 3;
-    const shared = p.data.tags.filter((t) => current.data.tags.includes(t));
-    score += shared.length;
+    let score = categoryOf(p) === currentCategory ? 3 : 0;
+    score += p.data.tags.filter((t) => current.data.tags.includes(t)).length;
     return { post: p, score };
   });
   return scored
@@ -85,4 +83,14 @@ export function getRelatedPosts(
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map((s) => s.post);
+}
+
+/** Find posts related to the given one — same category first, then shared tags. */
+export function getRelatedPosts(current: BlogPost, all: BlogPost[], limit = 3): BlogPost[] {
+  return getRelated(current, all, (p) => p.data.category, limit);
+}
+
+/** Find labs related to the given one — same source first, then shared tags. */
+export function getRelatedLabs(current: Lab, all: Lab[], limit = 3): Lab[] {
+  return getRelated(current, all, (p) => p.data.source, limit);
 }

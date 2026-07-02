@@ -1,0 +1,55 @@
+---
+// Related-labs grid shown at the foot of a writeup. Sibling of RelatedPosts.astro —
+// same card treatment, but links into /labs/ and badges by source instead of category.
+import { css } from 'styled-system/css';
+import Badge from './Badge.astro';
+import type { Lab } from '../utils/posts';
+
+interface Props {
+  labs: Lab[];
+}
+const { labs } = Astro.props;
+---
+
+{
+  labs.length > 0 && (
+    <section
+      class={css({
+        mt: '3.5rem',
+        pt: '2rem',
+        borderTop: '1px solid token(colors.border)',
+      })}
+    >
+      <h2 class={css({ fontSize: '1.3rem', fontWeight: 700, mb: '1.25rem' })}>Related writeups</h2>
+      <div
+        class={css({
+          display: 'grid',
+          gridTemplateColumns: { base: '1fr', sm: 'repeat(3, 1fr)' },
+          gap: '1rem',
+        })}
+      >
+        {labs.map((l) => (
+          <a
+            href={`/labs/${l.id}/`}
+            class={css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+              p: '1rem',
+              border: '1px solid token(colors.border)',
+              borderRadius: 'md',
+              bg: 'bgCard',
+              transition: 'border-color 200ms ease, transform 200ms ease',
+              _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
+            })}
+          >
+            <Badge variant="primary">{l.data.source}</Badge>
+            <span class={css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.35 })}>
+              {l.data.title}
+            </span>
+          </a>
+        ))}
+      </div>
+    </section>
+  )
+}

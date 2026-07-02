@@ -1,4 +1,5 @@
 // Site-wide configuration and shared constants.
+import type { IconName } from './components/Icon.astro';
 
 export const SITE = {
   title: 'Patrick Saade',
@@ -44,7 +45,7 @@ export const MORE_LINKS = [
 ] as const;
 
 // Icon name (see Icon.astro) for each content pillar / category.
-export const CATEGORY_ICONS: Record<string, string> = {
+export const CATEGORY_ICONS: Record<string, IconName> = {
   'Memory Forensics': 'cpu',
   'Host Forensics': 'hard-drive',
   'EDR Analysis': 'shield',
@@ -53,7 +54,7 @@ export const CATEGORY_ICONS: Record<string, string> = {
   Notes: 'file-text',
 };
 
-export const categoryIcon = (category: string): string =>
+export const categoryIcon = (category: string): IconName =>
   CATEGORY_ICONS[category] ?? 'activity';
 
 // Headline stats for the home page

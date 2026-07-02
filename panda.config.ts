@@ -136,6 +136,29 @@ export default defineConfig({
           },
           defaultVariants: { tone: 'muted' },
         },
+        // One uniform tile shared by every `.card-grid` on the site — Glossary, Tools,
+        // Certifications, the ATT&CK map, and the D3FEND map. Fixes padding, minimum
+        // height, background, border, and radius so cards can't drift smaller/bigger
+        // page to page; test/card-consistency.test.ts asserts every page composes this
+        // recipe instead of hand-rolling the same properties. Per-page extras (hover
+        // shadow, `:target`, data-attr accents, stretched-link pseudo) compose via
+        // css() after it, same pattern as `tag` above.
+        card: {
+          className: 'card',
+          description: 'Uniform card tile used by every .card-grid page.',
+          base: {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.35rem',
+            p: '0.7rem 0.85rem',
+            minH: '4rem',
+            bg: 'bgCard',
+            border: '1px solid token(colors.border)',
+            borderRadius: 'md',
+            transition: 'border-color 200ms ease, transform 200ms ease',
+            _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
+          },
+        },
       },
       semanticTokens: {
         colors: {

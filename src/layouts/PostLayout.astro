@@ -25,7 +25,7 @@ interface Props {
   tools?: string[];
   headings: MarkdownHeading[];
   path: string;
-  linkTags?: boolean; // link each tag to its /tags page (blog posts only)
+  linkTags?: boolean; // link each tag back to this section's ?tag= filter (Blog or Labs)
   // Multi-part series this post belongs to (parts pre-sorted; one is `current`).
   series?: { name: string; parts: { title: string; href: string; n: number; current: boolean }[] };
 }
@@ -201,7 +201,7 @@ const crumbs = [{ label: 'Home', href: '/' }, section, { label: title }];
           <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', mt: '1.25rem' })}>
             {tags.map((t) =>
               linkTags ? (
-                <a href={`/blog/?tag=${tagSlug(t)}`} class={css({ _hover: { opacity: 0.85 } })}>
+                <a href={`${section.href}?tag=${tagSlug(t)}`} class={css({ _hover: { opacity: 0.85 } })}>
                   <Badge>#{t}</Badge>
                 </a>
               ) : (

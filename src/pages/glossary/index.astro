@@ -20,7 +20,7 @@ import TagCombobox from '../../components/TagCombobox.astro';
 import FilterToggle from '../../components/FilterToggle.astro';
 import ListFilter from '../../components/ListFilter.astro';
 import { tagSlug, getSortedPosts, getSortedLabs, termSlugsInBody } from '../../utils/posts';
-import { tag } from 'styled-system/recipes';
+import { tag, card } from 'styled-system/recipes';
 
 const today = termForDate(new Date());
 const todayDate = new Date().toLocaleDateString('en-US', {
@@ -47,23 +47,10 @@ for (const tech of ATTACK_TECHNIQUES) if (tech.glossarySlug) techBySlug[tech.glo
 // Compact, uniform term cards: a stretched term link, a faint dictionary-style
 // initial filling the top-right corner, and an optional ATT&CK chip pinned
 // bottom-right (mirroring how term pages link to ATT&CK).
-const cardClass = css({
+const cardClass = `${card()} ${css({
   position: 'relative',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.2rem',
-  p: '0.7rem 0.85rem',
-  minH: '4rem',
-  bg: 'bgCard',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'md',
-  transition: 'border-color 200ms ease, transform 200ms ease',
-  _hover: {
-    borderColor: 'primary',
-    transform: 'translateY(-2px)',
-    '& .gloss-go': { transform: 'translateX(2px)', color: 'primary' },
-  },
-});
+  _hover: { '& .gloss-go': { transform: 'translateX(2px)', color: 'primary' } },
+})}`;
 const cardLink = css({
   display: 'flex',
   flexDirection: 'column',
@@ -192,7 +179,7 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
             <summary class={groupSummary}>
               <h3 class={groupHead}>
                 <Icon name="chevron-right" size={17} class={chevCls} />
-                <Icon name={CATEGORY_META[cat].icon as any} size={19} class={css({ color: 'primary', flexShrink: 0 })} />
+                <Icon name={CATEGORY_META[cat].icon} size={19} class={css({ color: 'primary', flexShrink: 0 })} />
                 <span class="totd-grp-title">{cat}</span>
                 <span class={grpCount}>{terms.length}</span>
               </h3>

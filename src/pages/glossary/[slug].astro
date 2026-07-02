@@ -8,6 +8,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Badge from '../../components/Badge.astro';
 import Icon from '../../components/Icon.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import EntryNav from '../../components/EntryNav.astro';
 import { SITE } from '../../consts';
 import {
   SECURITY_TERMS,
@@ -15,6 +16,7 @@ import {
   termBySlug,
 } from '../../data/securityTerms';
 import { CATEGORY_SOURCES, TERM_REFERENCES, ATTACK_TECHNIQUES } from '../../data/references';
+import { TOOLS } from '../../data/tools';
 import { getSortedPosts, getSortedLabs, termSlugsInBody } from '../../utils/posts';
 
 export async function getStaticPaths() {
@@ -44,6 +46,8 @@ const catSources = (CATEGORY_SOURCES[term.category] ?? []).filter((s) => !termRe
 
 // MITRE ATT&CK technique(s) this term maps to — links to the on-site coverage map.
 const techniques = ATTACK_TECHNIQUES.filter((t) => t.glossarySlug === term.slug);
+// Tools that directly implement this concept (curated, factual subset — see tools.ts).
+const matchingTools = TOOLS.filter((t) => (t.glossarySlugs ?? []).includes(term.slug));
 
 const jsonLd = JSON.stringify({
   '@context': 'https://schema.org',
@@ -67,19 +71,6 @@ const sectionH2 = css({
   mb: '0.75rem',
 });
 const para = css({ color: 'text', lineHeight: 1.8, fontSize: '1.02rem' });
-const navLink = css({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.25rem',
-  p: '0.85rem 1.1rem',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'md',
-  bg: 'bgCard',
-  transition: 'border-color 200ms ease, transform 200ms ease',
-  _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
-});
-const navMeta = css({ fontSize: '0.72rem', fontFamily: 'sans', color: 'textMuted' });
-const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
 const refLink = css({
   display: 'inline-flex',
   alignItems: 'center',
@@ -113,7 +104,7 @@ const attackChip = css({
 
   <header class={css({ mb: '1.5rem' })}>
     <p class={css({ fontFamily: 'sans', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'primary', mb: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' })}>
-      <Icon name={CATEGORY_META[term.category].icon as any} size={15} />
+      <Icon name={CATEGORY_META[term.category].icon} size={15} />
       {term.category}
     </p>
     <h1 class={css({ fontSize: { base: '2.1rem', md: '2.75rem' }, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 })}>
@@ -194,6 +185,38 @@ const attackChip = css({
   }
 
   {
+    matchingTools.length > 0 && (
+      <>
+        <h2 class={sectionH2}><Icon name="wrench" size={18} class={css({ color: 'primary' })} /> Tools</h2>
+        <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' })}>
+          {matchingTools.map((t) => (
+            <a
+              href={`/tools/${t.slug}/`}
+              class={css({
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                px: '0.8rem',
+                py: '0.45rem',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                bg: 'bgCard',
+                border: '1px solid token(colors.border)',
+                borderRadius: 'md',
+                transition: 'border-color 200ms ease, color 200ms ease',
+                _hover: { borderColor: 'primary', color: 'primary' },
+              })}
+            >
+              {t.name}
+              <Icon name="arrow-right" size={13} />
+            </a>
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  {
     writeups.length > 0 && (
       <>
         <h2 class={sectionH2}><Icon name="file-text" size={18} class={css({ color: 'primary' })} /> Mentioned in my writeups</h2>
@@ -244,35 +267,11 @@ const attackChip = css({
     )
   }
 
-  {/* Prev / next browse */}
-  <nav
-    aria-label="More terms"
-    class={css({
-      display: 'grid',
-      gridTemplateColumns: { base: '1fr', sm: '1fr 1fr' },
-      gap: '1rem',
-      mt: '3rem',
-      pt: '1.5rem',
-      borderTop: '1px solid token(colors.border)',
-    })}
-  >
-    {prev ? (
-      <a href={`/glossary/${prev.slug}/`} class={navLink}>
-        <span class={navMeta}>← Previous</span>
-        <span class={navTitle}>{prev.term}</span>
-      </a>
-    ) : (
-      <span />
-    )}
-    {next ? (
-      <a href={`/glossary/${next.slug}/`} class={`${navLink} ${css({ textAlign: 'right', alignItems: 'flex-end' })}`}>
-        <span class={navMeta}>Next →</span>
-        <span class={navTitle}>{next.term}</span>
-      </a>
-    ) : (
-      <span />
-    )}
-  </nav>
+  <EntryNav
+    ariaLabel="More terms"
+    prev={prev ? { href: `/glossary/${prev.slug}/`, label: prev.term } : null}
+    next={next ? { href: `/glossary/${next.slug}/`, label: next.term } : null}
+  />
 
   <script type="application/ld+json" is:inline set:html={jsonLd} />
 </BaseLayout>

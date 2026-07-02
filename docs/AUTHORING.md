@@ -38,6 +38,7 @@ Create `src/content/blog/<slug>.mdx`. The filename (minus extension) becomes the
 | `series`     |   | string | Group multi-part posts — those sharing this value render a linked series box. |
 | `seriesOrder`|   | number | Position within the series (1, 2, 3…). |
 | `attack`     |   | string[] | MITRE ATT&CK technique IDs covered, e.g. `["T1003","T1055.012"]`; marks them "covered" on `/attack-map/`. |
+| `d3fend`     |   | string[] | MITRE D3FEND technique IDs demonstrated, e.g. `["D3-FH","D3-PM"]`; feeds a "Mentioned in my writeups" link on `/d3fend/[id]/`. |
 | `featured`   |   | boolean | `true` surfaces it on the home page. |
 | `draft`      |   | boolean | `true` hides it from production builds. |
 
@@ -83,6 +84,7 @@ Create `src/content/labs/<slug>.mdx` → `/labs/<slug>/`.
 | `series`     |   | string | Group multi-part labs. |
 | `seriesOrder`|   | number | Position within the series. |
 | `attack`     |   | string[] | ATT&CK technique IDs covered; feeds `/attack-map/`. |
+| `d3fend`     |   | string[] | D3FEND technique IDs demonstrated; feeds `/d3fend/`. |
 | `draft`      |   | boolean | |
 
 **Recommended section structure:**

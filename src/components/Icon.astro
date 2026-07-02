@@ -2,7 +2,7 @@
 // Lightweight inline-SVG icon set (lucide-style, stroke-based, currentColor).
 // Renders at build time — no client JS, no dependency.
 interface Props {
-  name: keyof typeof ICONS;
+  name: IconName;
   size?: number;
   strokeWidth?: number;
   class?: string;
@@ -102,6 +102,11 @@ const ICONS = {
   'volume-x':
     '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/>',
 } as const;
+
+// Shared with any data file that stores an icon key (tools.ts, certifications.ts,
+// securityTerms.ts's CATEGORY_META, consts.ts's CATEGORY_ICONS) so a typo'd icon
+// name is a build-time type error instead of a silent no-render.
+export type IconName = keyof typeof ICONS;
 
 const { name, size = 18, strokeWidth = 2, class: className, label } = Astro.props;
 const inner = ICONS[name];

@@ -11,12 +11,21 @@ import Icon from '../../components/Icon.astro';
 import EntryNav from '../../components/EntryNav.astro';
 import { D3FEND_TECHNIQUES, D3FEND_VERSION, d3fendById } from '../../data/d3fend';
 import { ATTACK_TECHNIQUES } from '../../data/references';
+import { getSortedPosts, getSortedLabs } from '../../utils/posts';
 
 export async function getStaticPaths() {
-  return D3FEND_TECHNIQUES.map((tech) => ({ params: { id: tech.id }, props: { tech } }));
+  // Invert the posts' `d3fend` frontmatter so each technique knows which writeups demonstrate it.
+  const [posts, labs] = await Promise.all([getSortedPosts(), getSortedLabs()]);
+  return D3FEND_TECHNIQUES.map((tech) => {
+    const writeups = [
+      ...posts.filter((p) => (p.data.d3fend ?? []).includes(tech.id)).map((p) => ({ title: p.data.title, href: `/blog/${p.id}/`, kind: 'Post' })),
+      ...labs.filter((l) => (l.data.d3fend ?? []).includes(tech.id)).map((l) => ({ title: l.data.title, href: `/labs/${l.id}/`, kind: 'Lab' })),
+    ];
+    return { params: { id: tech.id }, props: { tech, writeups } };
+  });
 }
 
-const { tech } = Astro.props;
+const { tech, writeups } = Astro.props;
 
 const idx = D3FEND_TECHNIQUES.findIndex((t) => t.id === tech.id);
 const prev = idx > 0 ? D3FEND_TECHNIQUES[idx - 1] : null;
@@ -80,6 +89,20 @@ const monoId = css({ fontFamily: 'mono', fontWeight: 700, color: 'primary' });
     </>
   )}
 
+  {tech.significance && (
+    <>
+      <h2 class={sectionH2}><Icon name="shield" size={18} class={css({ color: 'primary' })} /> Why it matters</h2>
+      <p class={para}>{tech.significance}</p>
+    </>
+  )}
+
+  {tech.example && (
+    <>
+      <h2 class={sectionH2}><Icon name="terminal" size={18} class={css({ color: 'primary' })} /> In practice</h2>
+      <p class={`${para} ${css({ borderLeft: '3px solid token(colors.primary)', pl: '1rem', color: 'textMuted', fontStyle: 'italic' })}`}>{tech.example}</p>
+    </>
+  )}
+
   {counters.length > 0 && (
     <>
       <h2 class={sectionH2}><Icon name="crosshair" size={18} class={css({ color: 'primary' })} /> Counters these ATT&CK techniques</h2>
@@ -135,6 +158,23 @@ const monoId = css({ fontFamily: 'mono', fontWeight: 700, color: 'primary' });
               <Icon name="arrow-right" size={14} class={css({ color: 'primary', flexShrink: 0 })} />
               <span class={monoId}>{s.id}</span>
               <span>{s.name}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </>
+  )}
+
+  {writeups.length > 0 && (
+    <>
+      <h2 class={sectionH2}><Icon name="file-text" size={18} class={css({ color: 'primary' })} /> Covered in my writeups</h2>
+      <ul class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' })}>
+        {writeups.map((w) => (
+          <li>
+            <a href={w.href} class={`${refLink} ${css({ gap: '0.5rem' })}`}>
+              <Icon name="arrow-right" size={14} class={css({ color: 'primary', flexShrink: 0 })} />
+              <span>{w.title}</span>
+              <span class={css({ fontFamily: 'sans', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'textMuted' })}>{w.kind}</span>
             </a>
           </li>
         ))}

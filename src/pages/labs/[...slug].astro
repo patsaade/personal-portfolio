@@ -1,8 +1,12 @@
 ---
-// Single lab writeup — renders an MDX lab entry via PostLayout.
+// Single lab writeup — renders an MDX lab entry via PostLayout, plus related + prev/next
+// (mirrors blog/[...slug].astro's pattern).
 import { render } from 'astro:content';
+import { css } from 'styled-system/css';
 import PostLayout from '../../layouts/PostLayout.astro';
-import { estimateReadTime, getSortedLabs } from '../../utils/posts';
+import RelatedLabs from '../../components/RelatedLabs.astro';
+import Icon from '../../components/Icon.astro';
+import { estimateReadTime, getSortedLabs, getRelatedLabs } from '../../utils/posts';
 
 // Prerender to static HTML (required: getStaticPaths is ignored under output: 'server').
 export const prerender = true;
@@ -20,10 +24,15 @@ const { lab } = Astro.props;
 const { Content, headings } = await render(lab);
 const readTime = estimateReadTime(lab.body);
 
-const tags = [...new Set([lab.data.source, ...lab.data.tags])];
+const allLabs = await getSortedLabs();
+const related = getRelatedLabs(lab, allLabs);
+
+// Adjacent labs (allLabs is newest-first): newer = previous index, older = next index.
+const idx = allLabs.findIndex((l) => l.id === lab.id);
+const newer = idx > 0 ? allLabs[idx - 1] : null;
+const older = idx >= 0 && idx < allLabs.length - 1 ? allLabs[idx + 1] : null;
 
 // Series: sibling labs sharing this lab's `series`, ordered by `seriesOrder`.
-const allLabs = await getSortedLabs();
 const series = lab.data.series
   ? {
       name: lab.data.series,
@@ -33,6 +42,27 @@ const series = lab.data.series
         .map((p, i) => ({ title: p.data.title, href: `/labs/${p.id}/`, n: i + 1, current: p.id === lab.id })),
     }
   : undefined;
+
+const navLink = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.25rem',
+  p: '1rem 1.25rem',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  bg: 'bgCard',
+  transition: 'border-color 200ms ease, transform 200ms ease',
+  _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
+});
+const navMeta = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.3rem',
+  fontSize: '0.75rem',
+  fontFamily: 'sans',
+  color: 'textMuted',
+});
+const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
 ---
 
 <PostLayout
@@ -42,11 +72,51 @@ const series = lab.data.series
   date={lab.data.date}
   readTime={readTime}
   difficulty={lab.data.difficulty}
-  tags={tags}
+  tags={lab.data.tags}
   tools={lab.data.tools}
   headings={headings}
   path={`/labs/${lab.id}/`}
   series={series}
+  linkTags
 >
   <Content />
+  <Fragment slot="footer">
+    <RelatedLabs labs={related} />
+    {
+      (newer || older) && (
+        <nav
+          aria-label="More writeups"
+          class={css({
+            display: 'grid',
+            gridTemplateColumns: { base: '1fr', sm: '1fr 1fr' },
+            gap: '1rem',
+            mt: '2.5rem',
+            pt: '1.5rem',
+            borderTop: '1px solid token(colors.border)',
+          })}
+        >
+          {older ? (
+            <a href={`/labs/${older.id}/`} class={navLink}>
+              <span class={navMeta}>
+                <Icon name="arrow-left" size={13} /> Older
+              </span>
+              <span class={navTitle}>{older.data.title}</span>
+            </a>
+          ) : (
+            <span />
+          )}
+          {newer ? (
+            <a href={`/labs/${newer.id}/`} class={`${navLink} ${css({ textAlign: 'right', alignItems: 'flex-end' })}`}>
+              <span class={navMeta}>
+                Newer <Icon name="arrow-right" size={13} />
+              </span>
+              <span class={navTitle}>{newer.data.title}</span>
+            </a>
+          ) : (
+            <span />
+          )}
+        </nav>
+      )
+    }
+  </Fragment>
 </PostLayout>

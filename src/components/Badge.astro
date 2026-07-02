@@ -2,11 +2,11 @@
 // Small pill/tag with an optional leading icon and color variants.
 import { css } from 'styled-system/css';
 import Icon from './Icon.astro';
+import type { IconName } from './Icon.astro';
 
 interface Props {
   variant?: 'default' | 'primary' | 'accent' | 'difficulty';
-  difficulty?: string;
-  icon?: string;
+  icon?: IconName;
 }
 
 const { variant = 'default', icon } = Astro.props;
@@ -45,6 +45,6 @@ const className = css(base, variants[variant]);
 ---
 
 <span class={className}>
-  {icon && <Icon name={icon as any} size={12} strokeWidth={2.25} />}
+  {icon && <Icon name={icon} size={12} strokeWidth={2.25} />}
   <slot />
 </span>

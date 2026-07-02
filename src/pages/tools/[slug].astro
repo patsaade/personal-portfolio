@@ -9,7 +9,9 @@ import { tag } from 'styled-system/recipes';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import Icon from '../../components/Icon.astro';
+import EntryNav from '../../components/EntryNav.astro';
 import { TOOLS, costTone } from '../../data/tools';
+import { termBySlug } from '../../data/securityTerms';
 import { getSortedPosts, getSortedLabs } from '../../utils/posts';
 
 export async function getStaticPaths() {
@@ -32,24 +34,24 @@ const prev = idx > 0 ? TOOLS[idx - 1] : null;
 const next = idx >= 0 && idx < TOOLS.length - 1 ? TOOLS[idx + 1] : null;
 // Other tools sharing this tool's function tag (exact, from the data).
 const similar = TOOLS.filter((t) => t.fn === tool.fn && t.slug !== tool.slug);
+// Curated glossary concept(s) this tool directly implements (see tools.ts).
+const glossaryTerms = (tool.glossarySlugs ?? []).map((s) => termBySlug(s)).filter(Boolean);
 
 const sectionH2 = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', fontWeight: 700, mt: '2.5rem', mb: '0.75rem' });
 const para = css({ color: 'text', lineHeight: 1.8, fontSize: '1.02rem' });
 const exampleP = css({ borderLeft: '3px solid token(colors.primary)', pl: '1rem', color: 'textMuted', fontStyle: 'italic' });
 const refLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', color: 'text', transition: 'color 150ms ease', _hover: { color: 'primary' } });
-const navLink = css({
+const glossCard = css({
   display: 'flex',
   flexDirection: 'column',
-  gap: '0.25rem',
-  p: '0.85rem 1.1rem',
+  gap: '0.3rem',
+  p: '1rem 1.15rem',
+  bg: 'bgCard',
   border: '1px solid token(colors.border)',
   borderRadius: 'md',
-  bg: 'bgCard',
   transition: 'border-color 200ms ease, transform 200ms ease',
   _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
 });
-const navMeta = css({ fontSize: '0.72rem', fontFamily: 'sans', color: 'textMuted' });
-const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
 ---
 
 <BaseLayout title={`${tool.name} — DFIR tool`} description={tool.what ?? tool.use}>
@@ -103,6 +105,22 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
     <>
       <h2 class={sectionH2}><Icon name="terminal" size={18} class={css({ color: 'primary' })} /> In practice</h2>
       <p class={`${para} ${exampleP}`}>{tool.example}</p>
+    </>
+  )}
+
+  {glossaryTerms.length > 0 && (
+    <>
+      <h2 class={sectionH2}><Icon name="book-open" size={18} class={css({ color: 'primary' })} /> In the glossary</h2>
+      <div class={css({ display: 'flex', flexDirection: 'column', gap: '0.6rem' })}>
+        {glossaryTerms.map((g) => (
+          <a href={`/glossary/${g!.slug}/`} class={glossCard}>
+            <span class={css({ fontWeight: 700, color: 'text', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' })}>
+              {g!.term} <Icon name="arrow-right" size={14} class={css({ color: 'primary' })} />
+            </span>
+            <span class={css({ fontSize: '0.9rem', color: 'textMuted', lineHeight: 1.5 })}>{g!.short}</span>
+          </a>
+        ))}
+      </div>
     </>
   )}
 
@@ -171,25 +189,9 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
     canonical site. Cost reflects the free/open-source tier — some tools offer paid upgrades.
   </p>
 
-  <nav
-    aria-label="More tools"
-    class={css({ display: 'grid', gridTemplateColumns: { base: '1fr', sm: '1fr 1fr' }, gap: '1rem', mt: '3rem', pt: '1.5rem', borderTop: '1px solid token(colors.border)' })}
-  >
-    {prev ? (
-      <a href={`/tools/${prev.slug}/`} class={navLink}>
-        <span class={navMeta}>← Previous</span>
-        <span class={navTitle}>{prev.name}</span>
-      </a>
-    ) : (
-      <span />
-    )}
-    {next ? (
-      <a href={`/tools/${next.slug}/`} class={`${navLink} ${css({ textAlign: 'right', alignItems: 'flex-end' })}`}>
-        <span class={navMeta}>Next →</span>
-        <span class={navTitle}>{next.name}</span>
-      </a>
-    ) : (
-      <span />
-    )}
-  </nav>
+  <EntryNav
+    ariaLabel="More tools"
+    prev={prev ? { href: `/tools/${prev.slug}/`, label: prev.name } : null}
+    next={next ? { href: `/tools/${next.slug}/`, label: next.name } : null}
+  />
 </BaseLayout>

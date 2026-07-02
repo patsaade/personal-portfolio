@@ -6,6 +6,8 @@
 // their Credly badge; in-pursuit certs link to the official cert page (no badge
 // yet). Don't invent certs, issuers, or badge URLs.
 
+import type { IconName } from '../components/Icon.astro';
+
 export interface Certification {
   /** Short display name (e.g. "CySA+", "CSIE"). */
   name: string;
@@ -24,7 +26,7 @@ export interface Certification {
 
 export interface CertIssuer {
   name: string;
-  icon: string;
+  icon: IconName;
   blurb: string;
 }
 

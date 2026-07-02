@@ -18,6 +18,7 @@
 // and the rotation math.
 // ─────────────────────────────────────────────────────────────────────────
 
+import type { IconName } from '../components/Icon.astro';
 import curatedTerms from './terms/curated.json';
 import memoryTerms from './terms/memory.json';
 import hostDiskTerms from './terms/host-disk.json';
@@ -72,7 +73,7 @@ export interface SecurityTerm {
 }
 
 /** Icon (see Icon.astro) + blurb for each category, used on the glossary index. */
-export const CATEGORY_META: Record<SecurityCategory, { icon: string; blurb: string }> = {
+export const CATEGORY_META: Record<SecurityCategory, { icon: IconName; blurb: string }> = {
   'Memory Forensics': { icon: 'cpu', blurb: 'Evidence that lives only in RAM.' },
   'Host & Disk Forensics': { icon: 'hard-drive', blurb: 'Artifacts left behind on disk.' },
   'Malware Analysis & RE': { icon: 'bug', blurb: 'How malicious code hides, runs, and is reversed.' },

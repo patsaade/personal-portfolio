@@ -27,6 +27,8 @@ const blog = defineCollection({
     seriesOrder: z.number().optional(),
     // MITRE ATT&CK technique IDs this post covers (e.g. ['T1003','T1055.012']); feeds the coverage map.
     attack: z.array(z.string()).default([]),
+    // MITRE D3FEND technique IDs this post demonstrates (e.g. ['D3-FH','D3-PM']); feeds the D3FEND map.
+    d3fend: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
     featured: z.boolean().default(false),
   }),
@@ -50,6 +52,7 @@ const labs = defineCollection({
     series: z.string().optional(),
     seriesOrder: z.number().optional(),
     attack: z.array(z.string()).default([]),
+    d3fend: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
   }),
 });

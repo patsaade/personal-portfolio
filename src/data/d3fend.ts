@@ -10,13 +10,20 @@ import {
   D3FEND_TACTIC_ORDER,
   D3FEND_TACTICS,
   D3FEND_VERSION,
-  type D3fendTechnique,
+  type D3fendTechnique as GeneratedD3fendTechnique,
 } from './d3fend-techniques.generated';
+import { D3FEND_OVERLAY, type D3fendOverlay } from './d3fend-overlay';
 
 export { D3FEND_TACTIC_ORDER, D3FEND_TACTICS, D3FEND_VERSION };
-export type { D3fendTechnique };
 
-export const D3FEND_TECHNIQUES = D3FEND_GENERATED;
+// Generated MITRE data enriched with the curated overlay (empty today — see
+// d3fend-overlay.ts). Same shape as AttackTechnique in references.ts.
+export interface D3fendTechnique extends GeneratedD3fendTechnique, D3fendOverlay {}
+
+export const D3FEND_TECHNIQUES: D3fendTechnique[] = D3FEND_GENERATED.map((t) => {
+  const o = D3FEND_OVERLAY[t.id];
+  return o ? { ...t, ...o } : t;
+});
 
 export const d3fendById = (id: string): D3fendTechnique | undefined =>
   D3FEND_TECHNIQUES.find((t) => t.id === id);
