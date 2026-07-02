@@ -15,7 +15,15 @@ export default defineConfig({
   adapter: vercel({
     webAnalytics: { enabled: true },
   }),
-  integrations: [mdx(), sitemap()],
+  integrations: [
+    mdx(),
+    sitemap({
+      // Keep the sitemap free of pages that carry a noindex meta tag — listing a
+      // noindex URL in the sitemap sends crawlers a contradictory signal. Both
+      // legacy URLs meta-refresh to /glossary/ and are marked noindex there.
+      filter: (page) => !page.includes('/word-of-the-day/') && !page.includes('/term-of-the-day/'),
+    }),
+  ],
   markdown: {
     shikiConfig: {
       // Dark theme for code blocks (matches DFIR aesthetic)

@@ -24,6 +24,10 @@ interface Props {
   image?: string;
   type?: 'website' | 'article';
   publishedDate?: Date;
+  updatedDate?: Date;
+  tags?: string[];
+  section?: string;
+  robots?: string;
 }
 
 const props = Astro.props;

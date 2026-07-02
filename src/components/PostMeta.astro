@@ -6,12 +6,13 @@ import { getFormattedDate, getISODate } from '../utils/date';
 
 interface Props {
   date: Date;
+  updated?: Date;
   readTime?: number;
   difficulty?: string;
   author?: string;
 }
 
-const { date, readTime, difficulty, author } = Astro.props;
+const { date, updated, readTime, difficulty, author } = Astro.props;
 
 const item = css({
   display: 'inline-flex',
@@ -39,6 +40,11 @@ const item = css({
   <time class={item} datetime={getISODate(date)}>
     <Icon name="calendar" size={14} /> {getFormattedDate(date)}
   </time>
+  {updated && (
+    <time class={item} datetime={getISODate(updated)}>
+      <Icon name="check" size={14} /> Updated {getFormattedDate(updated)}
+    </time>
+  )}
   {readTime && (
     <span class={item}>
       <Icon name="clock" size={14} /> {readTime} min read

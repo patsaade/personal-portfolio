@@ -9,6 +9,14 @@ interface Props {
   image?: string;
   type?: 'website' | 'article';
   publishedDate?: Date;
+  /** Set when an article has a real update, distinct from its publish date. */
+  updatedDate?: Date;
+  /** Article-only: topic tags, surfaced as BlogPosting `keywords`. */
+  tags?: string[];
+  /** Article-only: the post's category, surfaced as BlogPosting `articleSection`. */
+  section?: string;
+  /** Override for pages that shouldn't be indexed (e.g. the 404 page). */
+  robots?: string;
 }
 
 const {
@@ -17,6 +25,10 @@ const {
   image,
   type = 'website',
   publishedDate,
+  updatedDate,
+  tags,
+  section,
+  robots = 'index, follow, max-image-preview:large',
 } = Astro.props;
 
 const pageTitle = title ? `${title} · ${SITE.title}` : `${SITE.title} — ${SITE.tagline}`;
@@ -36,7 +48,7 @@ const graph: Record<string, unknown>[] = [
     name: SITE.author,
     url: SITE.url,
     jobTitle: 'Senior Information Security Analyst',
-    sameAs: [SOCIALS.linkedin, SOCIALS.github],
+    sameAs: [SOCIALS.linkedin, SOCIALS.github, SOCIALS.credly],
   },
   {
     '@type': 'WebSite',
@@ -55,6 +67,11 @@ if (type === 'article') {
     description,
     image: ogImage.toString(),
     datePublished: publishedDate?.toISOString(),
+    // Falls back to datePublished when the post has no real edit — dateModified
+    // should never be absent or earlier than datePublished on an article.
+    dateModified: (updatedDate ?? publishedDate)?.toISOString(),
+    ...(tags && tags.length ? { keywords: tags.join(', ') } : {}),
+    ...(section ? { articleSection: section } : {}),
     author: { '@id': personId },
     publisher: { '@id': personId },
     mainEntityOfPage: canonicalURL.toString(),
@@ -71,7 +88,7 @@ const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': grap
 <title>{pageTitle}</title>
 <meta name="description" content={description} />
 <meta name="author" content={SITE.author} />
-<meta name="robots" content="index, follow, max-image-preview:large" />
+<meta name="robots" content={robots} />
 <meta name="theme-color" content="#1b1518" />
 <link rel="canonical" href={canonicalURL} />
 <link rel="sitemap" href="/sitemap-index.xml" />
@@ -108,6 +125,9 @@ const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': grap
 <meta property="og:site_name" content={SITE.title} />
 {publishedDate && (
   <meta property="article:published_time" content={publishedDate.toISOString()} />
+)}
+{updatedDate && (
+  <meta property="article:modified_time" content={updatedDate.toISOString()} />
 )}
 
 <!-- Twitter / X card -->
