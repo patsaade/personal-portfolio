@@ -10,7 +10,27 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import Icon from '../../components/Icon.astro';
 import { TOOLS, costTone } from '../../data/tools';
-import { getSortedPosts, getSortedLabs } from '../../utils/posts';
+import { CATEGORY_META, SECURITY_TERMS, type SecurityCategory } from '../../data/securityTerms';
+import { getSortedPosts, getSortedLabs, tagSlug } from '../../utils/posts';
+
+// A tool's function tag maps loosely to the glossary category covering the same
+// ground — a derived cross-link (no new authoring), so e.g. a Memory tool points
+// at the Memory Forensics category. Left out where no category fits well (broad
+// "Platform"/"Utility" tools).
+const FN_TO_CATEGORY: Partial<Record<string, SecurityCategory>> = {
+  Detection: 'Detection, Hunting & IR',
+  Host: 'Host & Disk Forensics',
+  Imaging: 'Host & Disk Forensics',
+  Intel: 'Threat Intelligence & Frameworks',
+  Logs: 'Logging & Telemetry',
+  Malware: 'Malware Analysis & RE',
+  Memory: 'Memory Forensics',
+  Network: 'Network Forensics & C2',
+  OSINT: 'Threat Intelligence & Frameworks',
+  Registry: 'Host & Disk Forensics',
+  Timeline: 'Host & Disk Forensics',
+  Triage: 'Host & Disk Forensics',
+};
 
 export async function getStaticPaths() {
   // Reverse-link writeups whose `tools` frontmatter lists this tool (by name).
@@ -32,6 +52,9 @@ const prev = idx > 0 ? TOOLS[idx - 1] : null;
 const next = idx >= 0 && idx < TOOLS.length - 1 ? TOOLS[idx + 1] : null;
 // Other tools sharing this tool's function tag (exact, from the data).
 const similar = TOOLS.filter((t) => t.fn === tool.fn && t.slug !== tool.slug);
+// The glossary category covering the same ground as this tool's function, if any.
+const relatedCategory = FN_TO_CATEGORY[tool.fn];
+const relatedCategoryCount = relatedCategory ? SECURITY_TERMS.filter((t) => t.category === relatedCategory).length : 0;
 
 const sectionH2 = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', fontWeight: 700, mt: '2.5rem', mb: '0.75rem' });
 const para = css({ color: 'text', lineHeight: 1.8, fontSize: '1.02rem' });
@@ -154,6 +177,34 @@ const navTitle = css({ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 });
           </a>
         ))}
       </div>
+    </>
+  )}
+
+  {relatedCategory && (
+    <>
+      <h2 class={sectionH2}><Icon name="book-open" size={18} class={css({ color: 'primary' })} /> Related glossary terms</h2>
+      <a
+        href={`/glossary/#${tagSlug(relatedCategory)}`}
+        class={css({
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.6rem',
+          p: '0.7rem 1rem',
+          borderRadius: 'md',
+          border: '1px solid token(colors.border)',
+          bg: 'bgCard',
+          fontSize: '0.9rem',
+          color: 'text',
+          transition: 'border-color 200ms ease, color 200ms ease',
+          _hover: { borderColor: 'primary', color: 'primary', '& .x-arrow': { transform: 'translateX(3px)' } },
+        })}
+      >
+        <Icon name={CATEGORY_META[relatedCategory].icon as any} size={16} class={css({ color: 'primary', flexShrink: 0 })} />
+        <span>
+          Browse <strong class={css({ fontWeight: 700 })}>{relatedCategory}</strong> in the glossary — {relatedCategoryCount} terms covering the same ground.
+        </span>
+        <Icon name="arrow-right" size={15} class={`x-arrow ${css({ ml: 'auto', color: 'primary', flexShrink: 0, transition: 'transform 200ms ease' })}`} />
+      </a>
     </>
   )}
 
