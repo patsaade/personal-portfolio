@@ -2,10 +2,9 @@
 // Both the OG endpoint (src/pages/og/[...slug].png.ts) and BaseHead import this,
 // so the per-page <meta og:image> URL always matches a generated image.
 import { getCollection } from 'astro:content';
-import { tagSlug } from '../utils/posts';
 
 export interface OgEntry {
-  /** Path-style slug, e.g. 'index', 'tools', 'blog/why-dfir', 'tags/dfir'. */
+  /** Path-style slug, e.g. 'index', 'tools', 'blog/why-dfir'. */
   slug: string;
   title: string;
   eyebrow: string;
@@ -22,12 +21,11 @@ const STATIC_ENTRIES: OgEntry[] = [
   { slug: 'certifications', title: 'Certifications', eyebrow: 'Credentials' },
   { slug: 'colophon', title: 'How this site is built', eyebrow: 'Colophon' },
   { slug: 'privacy', title: 'Privacy policy', eyebrow: 'Legal' },
-  { slug: 'tags', title: 'Browse by tag', eyebrow: 'Index' },
 ];
 
 const STATIC_SLUGS = new Set(STATIC_ENTRIES.map((e) => e.slug));
 
-/** Every social card to generate: static pages + each post, lab, and tag. */
+/** Every social card to generate: static pages + each post and lab. */
 export async function getOgEntries(): Promise<OgEntry[]> {
   const entries: OgEntry[] = [...STATIC_ENTRIES];
 
@@ -39,12 +37,6 @@ export async function getOgEntries(): Promise<OgEntry[]> {
   const labs = (await getCollection('labs')).filter((l) => !l.data.draft);
   for (const l of labs) {
     entries.push({ slug: `labs/${l.id}`, title: l.data.title, eyebrow: `Lab · ${l.data.source}` });
-  }
-
-  const tags = new Map<string, string>();
-  for (const p of posts) for (const t of p.data.tags) tags.set(tagSlug(t), t);
-  for (const [slug, display] of tags) {
-    entries.push({ slug: `tags/${slug}`, title: `#${display}`, eyebrow: 'Tag' });
   }
 
   return entries;
@@ -62,6 +54,6 @@ export function ogSlugForPath(pathname: string): string {
   if (s === 'glossary' || s.startsWith('glossary/')) return 'glossary';
   if (s === 'word-of-the-day' || s === 'term-of-the-day') return 'glossary';
   if (STATIC_SLUGS.has(s)) return s;
-  if (s.startsWith('blog/') || s.startsWith('labs/') || s.startsWith('tags/')) return s;
+  if (s.startsWith('blog/') || s.startsWith('labs/')) return s;
   return 'index';
 }
