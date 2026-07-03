@@ -53,6 +53,7 @@ const glossCard = css({
   _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
 });
 const codeBlock = css({
+  m: 0,
   p: '0.6rem 0.9rem',
   fontFamily: 'mono',
   fontSize: '0.85rem',
@@ -115,7 +116,7 @@ const codeBlock = css({
   {tool.syntax && (
     <>
       <h2 class={sectionH2}><Icon name="terminal" size={18} class={css({ color: 'primary' })} /> Usage</h2>
-      <p class={codeBlock}>{tool.syntax}</p>
+      <pre class={codeBlock}><code>{tool.syntax}</code></pre>
     </>
   )}
 

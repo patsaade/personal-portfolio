@@ -1,0 +1,118 @@
+---
+// DFIR command cheat sheet — every tool's install + command-line syntax in one
+// scannable reference page, grouped by platform. Pure derived content: nothing
+// here is authored beyond what already lives in tools.ts (install/syntax fields),
+// so it stays accurate automatically as that data grows. Tools with neither field
+// (web/SaaS tools, GUI-only tools where a fabricated example would mislead) are
+// left out — this page is specifically a command reference, not a full tool list
+// (see /tools/ for that). Static page — prerendered to the CDN.
+export const prerender = true;
+import { css } from 'styled-system/css';
+import { tag, card } from 'styled-system/recipes';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import Icon from '../../components/Icon.astro';
+import GroupOverview from '../../components/GroupOverview.astro';
+import { TOOL_PLATFORMS, costTone } from '../../data/tools';
+
+// Only tools that have at least one of install/syntax — a platform disappears
+// entirely from this page if none of its tools qualify.
+const platforms = TOOL_PLATFORMS.map((p) => ({
+  ...p,
+  tools: p.tools.filter((t) => t.install || t.syntax),
+})).filter((p) => p.tools.length > 0);
+
+const totalEntries = platforms.reduce((n, p) => n + p.tools.length, 0);
+
+const platformTiles = platforms.map((p) => ({
+  id: `cheat-${p.id}`,
+  icon: p.icon,
+  title: p.title,
+  blurb: p.blurb,
+  count: p.tools.length,
+}));
+
+const sectionH2 = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  fontSize: '1.3rem',
+  fontWeight: 700,
+  mt: '2.5rem',
+  mb: '1rem',
+  pt: '1.5rem',
+  borderTop: '1px solid token(colors.border)',
+  scrollMarginTop: '90px',
+});
+const entryCard = `${card()} ${css({ gap: '0.5rem' })}`;
+const entryHead = css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' });
+const entryName = css({ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontFamily: 'sans', fontWeight: 700, fontSize: '0.98rem', color: 'text', transition: 'color 150ms ease', _hover: { color: 'primary' } });
+const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'textMuted' });
+const installLine = css({ fontSize: '0.88rem', color: 'text', lineHeight: 1.6 });
+const codeBlock = css({
+  m: 0,
+  p: '0.6rem 0.85rem',
+  fontFamily: 'mono',
+  fontSize: '0.82rem',
+  color: 'text',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  overflowX: 'auto',
+  whiteSpace: 'pre',
+});
+---
+
+<BaseLayout
+  title="DFIR Command Cheat Sheet"
+  description="Install commands and command-line syntax for every tool in the toolkit that has one, grouped by platform — a quick-reference field guide."
+>
+  <PageHeader
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Tools', href: '/tools/' }, { label: 'Cheat Sheet' }]}
+    eyebrow="Quick Reference"
+    title="DFIR command cheat sheet"
+    description={`Install commands and command-line syntax for the ${totalEntries} tools in the kit that have one — a scannable field guide, not a full tool list (see the Tools page for that, including web/GUI-only tools). Every line comes straight from each tool's own detail page.`}
+  />
+
+  <GroupOverview items={platformTiles} heading="Jump to platform" />
+
+  <p class={css({ color: 'textMuted', fontSize: '0.85rem', mb: '1.5rem' })}>
+    Use your browser's find-in-page (Ctrl/Cmd+F) to jump straight to a tool.
+  </p>
+
+  {
+    platforms.map((p) => (
+      <section id={`cheat-${p.id}`}>
+        <h2 class={sectionH2}>
+          <Icon name={p.icon} size={20} class={css({ color: 'primary', flexShrink: 0 })} />
+          {p.title}
+        </h2>
+        <div class={css({ display: 'flex', flexDirection: 'column', gap: '0.75rem' })}>
+          {p.tools.map((t) => (
+            <div class={entryCard}>
+              <div class={entryHead}>
+                <a href={`/tools/${t.slug}/`} class={entryName}>
+                  {t.core && <Icon name="star" size={13} strokeWidth={0} class={css({ color: 'accent', fill: 'token(colors.accent)' })} label="In my kit" />}
+                  {t.name}
+                  <Icon name="arrow-right" size={13} class={css({ color: 'textMuted' })} />
+                </a>
+                <span class={tag({ tone: costTone(t.cost) })}>{t.cost}</span>
+              </div>
+              {t.install && (
+                <p class={installLine}>
+                  <span class={fieldLabel}>Install</span> {t.install}
+                </p>
+              )}
+              {t.syntax && (
+                <div>
+                  <span class={fieldLabel}>Usage</span>
+                  <pre class={codeBlock}><code>{t.syntax}</code></pre>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+    ))
+  }
+</BaseLayout>

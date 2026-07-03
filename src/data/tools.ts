@@ -136,6 +136,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'An endpoint visibility and collection platform that queries and hunts across many hosts using its VQL query language.',
         why: 'It scales triage and live response from one machine to a whole fleet, collecting artifacts on demand during an incident.',
         example: 'A single VQL hunt sweeps every endpoint for the persistence registry key tied to the intrusion.',
+        glossarySlugs: ['threat-hunting'],
       },
       {
         name: 'Wireshark', slug: 'wireshark', use: 'Deep packet capture & protocol analysis', fn: 'Network', cost: 'Open source',
@@ -183,6 +184,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A large-scale full-packet capture, indexing, and search system (formerly Moloch) with a web interface over stored sessions.',
         why: 'When you need to return to the actual packets weeks later, Arkime makes historical full-PCAP searchable.',
         example: 'Searching by IP and date pulls the exact session where data left the network.',
+        glossarySlugs: ['packet-capture'],
       },
       {
         name: 'YARA', slug: 'yara', use: 'Pattern-matching to identify & classify malware', fn: 'Malware', cost: 'Open source',
@@ -206,6 +208,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A vendor-neutral, YAML-based rule format for log detections, with converters that compile rules to many SIEM query languages.',
         why: 'Sigma decouples detection logic from any one SIEM, so a rule written once can run everywhere.',
         example: 'One Sigma rule for suspicious PowerShell converts cleanly to both Splunk and Elastic queries.',
+        glossarySlugs: ['detection-rule'],
       },
       {
         name: 'Hayabusa', slug: 'hayabusa', use: 'Sigma-based Windows event log threat hunting', fn: 'Logs', cost: 'Open source',
@@ -313,6 +316,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         url: 'https://ericzimmerman.github.io/',
         install: 'Download individually, or via Eric Zimmerman\'s own Get-ZimmermanTools.ps1 script',
         syntax: 'PECmd.exe -f Prefetch_File.pf',
+        references: [{ name: 'SANS — Eric Zimmerman\'s Tools Cheat Sheet', url: 'https://www.sans.org/posters/eric-zimmerman-tools-cheat-sheet/' }],
         what: 'A suite of free Windows forensic parsers — MFTECmd, Registry Explorer, PECmd, EvtxECmd, and more — each focused on one artifact.',
         why: 'These are the reference parsers for core Windows artifacts, trusted for accurate, examiner-grade output.',
         example: 'PECmd parses prefetch to show exactly when and how often a program ran.',
@@ -336,6 +340,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         url: 'https://learn.microsoft.com/sysinternals/',
         install: 'Download the Sysinternals Suite ZIP from Microsoft Learn',
         syntax: 'procmon.exe /AcceptEula /Quiet /Minimized /Backingfile C:\\Logs\\trace.pml',
+        references: [{ name: 'Troubleshooting with the Windows Sysinternals Tools (Microsoft Learn)', url: 'https://learn.microsoft.com/en-us/sysinternals/resources/troubleshooting-book' }],
         what: 'Microsoft’s collection of Windows utilities — Process Explorer, Procmon, Autoruns, TCPView — for live system inspection.',
         why: 'They give immediate, trusted visibility into processes, autostarts, and activity during live response.',
         example: 'Autoruns lists every autostart entry, exposing a persistence mechanism at a glance.',
@@ -380,6 +385,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         url: 'https://github.com/Velocidex/WinPmem',
         install: 'Download the signed binary from GitHub releases (Velocidex/WinPmem)',
         syntax: 'winpmem64.exe memory.raw',
+        references: [{ name: 'WinPmem — Acquiring Memory (Official Docs)', url: 'https://winpmem.velocidex.com/docs/memory/' }],
         what: 'An open-source Windows physical-memory acquisition driver and tool from the Velocidex project.',
         why: 'Reliable RAM capture preserves volatile evidence before a host is powered down.',
         example: 'WinPmem writes a full physical-memory image for later Volatility analysis.',
@@ -587,9 +593,11 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         name: 'ANY.RUN', slug: 'any-run', use: 'Interactive online malware sandbox', fn: 'Malware', cost: 'Freemium',
         tags: ['malware', 'sandbox', 'interactive', 'dynamic-analysis'],
         url: 'https://any.run/',
+        references: [{ name: 'ANY.RUN — Guides and Tutorials', url: 'https://any.run/cybersecurity-blog/guides/' }],
         what: 'An interactive online malware sandbox that runs a sample in a VM you can control in real time.',
         why: 'Interactivity lets analysts click through multi-stage malware that automated sandboxes miss.',
         example: 'Detonating a document, you watch it spawn PowerShell and reach out to its C2.',
+        glossarySlugs: ['sandboxing'],
       },
       {
         name: 'Hybrid Analysis', slug: 'hybrid-analysis', use: 'Free file & URL sandbox plus scanning', fn: 'Malware', cost: 'Free',
@@ -599,6 +607,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A free file and URL sandbox (CrowdStrike Falcon Sandbox) with behavioral reports and scanning.',
         why: 'It provides detailed automated behavior analysis at no cost for community use.',
         example: 'Submitting a sample returns its dropped files, network calls, and ATT&CK mapping.',
+        glossarySlugs: ['sandboxing'],
       },
       {
         name: 'Joe Sandbox', slug: 'joe-sandbox', use: 'Automated malware sandbox (Cloud Basic tier)', fn: 'Malware', cost: 'Freemium',
@@ -608,6 +617,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'An automated malware analysis sandbox with a free Cloud Basic tier and detailed behavior reports.',
         why: 'Deep, structured detonation reports help analysts understand a sample’s full behavior.',
         example: 'A report details the registry, file, and network changes a sample makes.',
+        glossarySlugs: ['sandboxing'],
       },
       {
         name: 'MalwareBazaar', slug: 'malwarebazaar', use: 'Search & download malware samples (abuse.ch)', fn: 'Intel', cost: 'Free',
@@ -626,6 +636,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'An abuse.ch feed and lookup of malware distribution URLs.',
         why: 'It supplies fresh, community-sourced indicators for blocking and enrichment.',
         example: 'A lookup confirms a URL is a known malware payload host.',
+        glossarySlugs: ['indicator-of-compromise'],
       },
       {
         name: 'ThreatFox', slug: 'threatfox', use: 'IOC search & sharing (abuse.ch)', fn: 'Intel', cost: 'Free',
@@ -635,6 +646,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'An abuse.ch platform for searching and sharing indicators of compromise.',
         why: 'It’s a free, current IOC source to enrich and correlate findings.',
         example: 'An IP lookup returns the malware family and campaign it’s associated with.',
+        glossarySlugs: ['indicator-of-compromise'],
       },
       {
         name: 'AbuseIPDB', slug: 'abuseipdb', use: 'IP address reputation lookups', fn: 'OSINT', cost: 'Freemium',
@@ -653,6 +665,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A search engine for internet-connected hosts and services, indexing banners and exposures.',
         why: 'It reveals an organization’s external attack surface and a suspect host’s exposed services.',
         example: 'Searching an IP lists its open ports and the software versions they advertise.',
+        glossarySlugs: ['open-source-intelligence'],
       },
       {
         name: 'GreyNoise', slug: 'greynoise', use: 'Tell targeted activity from internet scan noise', fn: 'OSINT', cost: 'Freemium',

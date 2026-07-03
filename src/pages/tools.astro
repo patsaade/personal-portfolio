@@ -2,7 +2,9 @@
 // Tools page — free / open-source DFIR toolkit, grouped by the platform a tool
 // runs on (Cross-platform, Windows, macOS & Linux, Web). A star marks the tools
 // in my day-to-day kit; each card carries a function tag + a cost tag and links to
-// its own detail page (/tools/[slug]/). Data lives in src/data/tools.ts. Searchable.
+// its own detail page (/tools/[slug]/). Data lives in src/data/tools.ts. Searchable
+// by function (combobox) and cost tier (chip row — "just show me the open-source
+// ones"), both shareable via URL (?q / ?cost).
 // Static page — prerender to HTML served from the CDN (output: 'server' is on-demand by default).
 export const prerender = true;
 import { css } from 'styled-system/css';
@@ -37,6 +39,12 @@ for (const p of platforms) for (const t of p.tools) fnCounts[t.fn] = (fnCounts[t
 const fnOptions = Object.keys(fnCounts)
   .sort()
   .map((fn) => ({ value: tagSlug(fn), label: fn, count: fnCounts[fn] }));
+
+// Cost tier — a second, independent facet (chip row, ANDed with the function
+// combobox) so "just show me the open-source ones" is a click, not free text.
+const costCounts: Record<string, number> = {};
+for (const p of platforms) for (const t of p.tools) costCounts[t.cost] = (costCounts[t.cost] ?? 0) + 1;
+const costTiers = Object.keys(costCounts).sort();
 
 // Tools featured in a writeup (matched by name in post/lab `tools` frontmatter).
 const [tPosts, tLabs] = await Promise.all([getSortedPosts(), getSortedLabs()]);
@@ -96,6 +104,25 @@ const goCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 20
 const toolUse = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45 });
 // Function + cost tags sit in a row at the bottom of the card (shared `tag` recipe).
 const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto', pt: '0.15rem' });
+
+// Cost-tier chip row — same exclusive single-select chip pattern as Blog's category
+// chips and Labs' source chips, wired through ListFilter's chipGroup.
+const filterRow = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem', mb: '0.75rem' });
+const rowLabel = css({ fontFamily: 'sans', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted', mr: '0.1rem' });
+const costChip = css({
+  fontFamily: 'sans',
+  fontSize: '0.82rem',
+  px: '0.8rem',
+  py: '0.4rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  bg: 'transparent',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'text' },
+  '&[data-active]': { bg: 'primary', color: 'onPrimary', borderColor: 'primary' },
+});
 
 // "Core kit" spotlight — a slim row of chip links to the tools flagged `core: true`,
 // a quick-access callout distinct from the starred cards in the full grid below.
@@ -168,6 +195,18 @@ const spotlightChip = css({
       label="Search tools or filter by function"
     />
   </div>
+
+  {/* Cost-tier chips — a click, not a typed guess, for "just show me the open-source ones" */}
+  <div class={filterRow}>
+    <span class={rowLabel}>Cost</span>
+    <button class={costChip} data-filter="all" data-active aria-pressed="true" type="button">All</button>
+    {
+      costTiers.map((c) => (
+        <button class={costChip} data-filter={c} aria-pressed="false" type="button">{c}</button>
+      ))
+    }
+  </div>
+
   <div class={css({ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', mb: '0.75rem' })}>
     <p role="status" aria-live="polite" class={css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.3rem 0.6rem', color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
       <span><span id="tools-result-count">{totalTools}</span> free tools across {platforms.length} groups</span>
@@ -202,6 +241,7 @@ const spotlightChip = css({
                 href={`/tools/${t.slug}/`}
                 class={toolCard}
                 data-fn={tagSlug(t.fn)}
+                data-cost={t.cost}
                 data-tools-card={`${t.name} ${t.use} ${t.fn} ${t.cost} ${p.title} ${t.tags.join(' ')}`.toLowerCase()}
                 {...(featuredTools.has(t.name.toLowerCase()) ? { 'data-in-writeup': true } : {})}
                 {...(t.core ? { 'data-core': true } : {})}
@@ -241,7 +281,8 @@ const spotlightChip = css({
       countId: 'tools-result-count',
       emptyId: 'tools-empty',
       facetAttr: 'data-fn',
-      hydrateQueryParam: 'q',
+      chipGroup: { selector: '[data-filter]', attr: 'data-cost' },
+      urlSync: { queryParam: 'q', chipParam: 'cost' },
       toggles: [
         { id: 'tools-writeup-toggle', attr: 'data-in-writeup' },
         { id: 'tools-core-toggle', attr: 'data-core' },

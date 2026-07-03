@@ -1,0 +1,55 @@
+---
+// "Tools" cross-link section shared by the ATT&CK and D3FEND technique detail
+// pages — derived purely from the already-curated tool<->glossary link (see
+// tools.ts's glossarySlugs), no new heuristic. Same DRY split as EntryNav/
+// RelatedLabs/RelatedPosts: this component owns markup + styling only, the host
+// page computes `tools` (technique.glossarySlug -> term -> matching TOOLS).
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+import type { ToolEntry } from '../data/tools';
+
+interface Props {
+  tools: ToolEntry[];
+  /** The glossary term these tools implement, already lowercased, e.g. "memory acquisition". */
+  conceptTerm: string;
+  /** Completes "relevant to ___:" — e.g. "investigating this technique" (ATT&CK) or "this technique" (D3FEND). */
+  relevantTo: string;
+}
+const { tools, conceptTerm, relevantTo } = Astro.props;
+
+const sectionH2 = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', fontWeight: 700, mt: '2.5rem', mb: '0.75rem' });
+const toolChip = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  px: '0.8rem',
+  py: '0.45rem',
+  fontSize: '0.9rem',
+  fontWeight: 600,
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  transition: 'border-color 200ms ease, color 200ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+---
+
+{
+  tools.length > 0 && (
+    <>
+      <h2 class={sectionH2}><Icon name="wrench" size={18} class={css({ color: 'primary' })} /> Tools</h2>
+      <p class={css({ color: 'textMuted', fontSize: '0.92rem', mb: '0.85rem', lineHeight: 1.7 })}>
+        Tools that implement {conceptTerm}, relevant to {relevantTo}:
+      </p>
+      <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' })}>
+        {tools.map((t) => (
+          <a href={`/tools/${t.slug}/`} class={toolChip}>
+            {t.core && <Icon name="star" size={12} strokeWidth={0} class={css({ color: 'accent', fill: 'token(colors.accent)' })} label="In my kit" />}
+            {t.name}
+            <Icon name="arrow-right" size={13} />
+          </a>
+        ))}
+      </div>
+    </>
+  )
+}

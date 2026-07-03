@@ -10,9 +10,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import Icon from '../../components/Icon.astro';
 import EntryNav from '../../components/EntryNav.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
 import { termBySlug } from '../../data/securityTerms';
 import { ATTACK_TECHNIQUES } from '../../data/references';
 import { d3fendCountering } from '../../data/d3fend';
+import { TOOLS } from '../../data/tools';
 import { getSortedPosts, getSortedLabs } from '../../utils/posts';
 import { tag } from 'styled-system/recipes';
 
@@ -34,6 +36,10 @@ const idx = ATTACK_TECHNIQUES.findIndex((t) => t.id === tech.id);
 const prev = idx > 0 ? ATTACK_TECHNIQUES[idx - 1] : null;
 const next = idx >= 0 && idx < ATTACK_TECHNIQUES.length - 1 ? ATTACK_TECHNIQUES[idx + 1] : null;
 const gloss = tech.glossarySlug ? termBySlug(tech.glossarySlug) : null;
+// Tools that implement the mapped glossary concept — derived purely from the
+// already-curated, already-verified tool<->glossary links (tools.ts), not a new
+// heuristic: technique -> glossary term -> tools whose glossarySlugs include it.
+const relatedTools = gloss ? TOOLS.filter((t) => (t.glossarySlugs ?? []).includes(gloss.slug)) : [];
 const parentId = tech.id.includes('.') ? tech.id.split('.')[0] : null;
 const parent = parentId ? ATTACK_TECHNIQUES.find((t) => t.id === parentId) : null;
 // Lineage (exact, from the IDs): a parent's sub-techniques, or a sub's siblings.
@@ -201,6 +207,8 @@ const refLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.5rem
       </a>
     </>
   )}
+
+  {gloss && <RelatedTools tools={relatedTools} conceptTerm={gloss.term.toLowerCase()} relevantTo="investigating this technique" />}
 
   {defenses.length > 0 && (
     <>
