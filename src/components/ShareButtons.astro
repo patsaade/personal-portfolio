@@ -41,7 +41,8 @@ const btn = css({
   <button class={btn} type="button" data-copy-url={url} data-sound="copy" id="copy-link-btn" aria-label="Copy link to clipboard"><Icon name="copy" size={15} /><span class="copy-link-label">Copy link</span></button>
 </div>
 
-<script is:inline>
+<script>
+  // @ts-nocheck — vanilla DOM client script
   (function () {
     var btn = document.getElementById('copy-link-btn');
     if (!btn) return;

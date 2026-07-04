@@ -104,9 +104,14 @@ const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': grap
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 <link rel="manifest" href="/site.webmanifest" />
 
-<!-- Preload the always-visible Redaction faces: body (grade 0) + wordmark (grade 50). -->
+<!-- Preload the Redaction faces needed for first paint: body (grade 0, regular),
+     wordmark (grade 50, bold), and the declassify heading decode's start (grade
+     100, bold) + settled (grade 0, bold) frames — every H1 runs that animation
+     on load, so both ends of it need to be available without a font-swap flash. -->
 <link rel="preload" href="/fonts/redaction/redaction-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/redaction/redaction-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="preload" href="/fonts/redaction/redaction-50-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/redaction/redaction-100-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
 
 <!-- Structured data -->
 <script type="application/ld+json" is:inline set:html={jsonLd} />

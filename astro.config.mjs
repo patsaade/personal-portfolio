@@ -6,7 +6,10 @@ import vercel from '@astrojs/vercel';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://patricksaade.com',
+  // www is the canonical serving domain in production (the apex domain 307s
+  // here); matching it avoids a redirect hop on every generated absolute URL
+  // (canonical tags, sitemap, RSS, OG images, JSON-LD).
+  site: 'https://www.patricksaade.com',
   output: 'server',
   // Canonical URL form is trailing-slash (matches the canonical tags + sitemap).
   // 'always' 308-redirects any no-slash URL (typed or external) to that form;
@@ -37,5 +40,20 @@ export default defineConfig({
   image: {
     // Allow optimization of local forensics screenshots
     responsiveStyles: true,
+  },
+  vite: {
+    build: {
+      // Astro hoists non-`is:inline` component <script> tags into their own
+      // chunk, then — by Vite's default assetsInlineLimit (4096 bytes) —
+      // silently re-inlines any chunk under that size back into every page
+      // that uses it. That's the opposite of what hoisting a shared,
+      // site-wide component script (nav, background canvas, …) is for: the
+      // point is one cached file, not N re-inlined copies. Only override the
+      // threshold for those hoisted-script chunks (named
+      // `<Component>.astro_astro_type_script_*`); everything else (images,
+      // etc.) keeps Vite's normal inlining behavior.
+      assetsInlineLimit: (filePath) =>
+        /\.astro_astro_type_script_index_\d+_lang/.test(filePath) ? false : undefined,
+    },
   },
 });

@@ -105,7 +105,8 @@ const props = Astro.props;
     <BackToTop />
 
     {/* Register the service worker for offline reading + fast repeat loads (see public/sw.js). */}
-    <script is:inline>
+    <script>
+      // @ts-nocheck — vanilla DOM client script
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {
           navigator.serviceWorker.register('/sw.js').catch(function () {});

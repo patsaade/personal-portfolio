@@ -56,7 +56,8 @@ const toc = Astro.props.headings.filter((h) => h.depth === 2 || h.depth === 3);
   )
 }
 
-<script is:inline>
+<script>
+  // @ts-nocheck — vanilla DOM client script
   (function () {
     var links = Array.from(document.querySelectorAll('[data-toc-link]'));
     if (!links.length) return;

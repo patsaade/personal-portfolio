@@ -699,7 +699,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         name: 'Unfurl', slug: 'unfurl', use: 'Break down & visualize complex URLs', fn: 'Utility', cost: 'Open source',
         tags: ['url-analysis', 'decode', 'visualization'],
         url: 'https://dfir.blog/unfurl/',
-        references: [{ name: 'Official GitHub Repository', url: 'https://github.com/obsidianforensics/unfurl' }],
+        references: [{ name: 'Official GitHub Repository', url: 'https://github.com/RyanDFIR/unfurl' }],
         what: 'A tool (dfir.blog) that breaks a complex URL into its components and visualizes the embedded data.',
         why: 'Many URLs encode timestamps, IDs, and tracking data useful to an investigation.',
         example: 'Unfurl decodes a long redirect URL to expose the embedded original destination.',

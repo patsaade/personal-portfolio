@@ -48,7 +48,8 @@ const btnCls = css({
   <Icon name="arrow-up" size={20} strokeWidth={2.5} />
 </button>
 
-<script is:inline>
+<script>
+  // @ts-nocheck — vanilla DOM client script
   (function () {
     var btn = document.getElementById('back-to-top');
     if (!btn) return;

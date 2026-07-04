@@ -54,7 +54,8 @@ const btn = css({
   <span data-collapse-label>Expand all</span>
 </button>
 
-<script is:inline>
+<script>
+  // @ts-nocheck — vanilla DOM client script
   (function () {
     function init() {
       var buttons = document.querySelectorAll('[data-collapse-all]:not([data-ready])');

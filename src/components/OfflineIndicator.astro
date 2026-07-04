@@ -45,7 +45,8 @@ const ico = css({ display: 'inline-flex', flexShrink: 0 });
   <span id="offline-text"></span>
 </div>
 
-<script is:inline>
+<script>
+  // @ts-nocheck — vanilla DOM client script
   (function () {
     var el = document.getElementById('offline-indicator');
     if (!el) return;

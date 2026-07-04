@@ -55,6 +55,8 @@ const moreMenuInner = css({
   borderRadius: 'lg',
   boxShadow: 'cardHover',
   p: '0.4rem',
+  m: 0,
+  listStyle: 'none',
   display: 'flex',
   flexDirection: 'column',
   gap: '0.05rem',
@@ -199,8 +201,8 @@ const mobileSummary = css({
             <button
               type="button"
               id={`nav-${d.id}-btn`}
-              aria-haspopup="true"
               aria-expanded="false"
+              aria-controls={`nav-${d.id}-menu`}
               aria-label={`${d.label} links`}
               data-sound="tick"
               class={`nav-more-btn ${moreBtn} ${isAnyActive(d.links) ? moreBtnActive : ''}`}
@@ -209,13 +211,15 @@ const mobileSummary = css({
               <Icon name="chevron-down" size={13} strokeWidth={2.5} class="nav-more-chev" />
             </button>
             <div id={`nav-${d.id}-menu`} class={`nav-more-menu ${moreMenuOuter}`}>
-              <div class={moreMenuInner} role="menu" aria-label={d.label}>
+              <ul class={moreMenuInner} aria-label={`${d.label} links`}>
                 {d.links.map((link) => (
-                  <a href={link.href} role="menuitem" aria-current={isActive(link.href) ? 'page' : undefined} class={moreLink}>
-                    {link.label}
-                  </a>
+                  <li>
+                    <a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class={moreLink}>
+                      {link.label}
+                    </a>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           </li>
         ))}
@@ -360,7 +364,8 @@ const mobileSummary = css({
   </ul>
 </header>
 
-<script is:inline>
+<script>
+  // @ts-nocheck — vanilla DOM client script
   (function () {
     var toggle = document.getElementById('mobile-menu-toggle');
     var menu = document.getElementById('mobile-menu');

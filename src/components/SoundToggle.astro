@@ -34,7 +34,8 @@ const btn = css({
   <span data-snd-icon="on" hidden class={css({ display: 'inline-flex' })}><Icon name="volume-2" size={16} /></span>
 </button>
 
-<script is:inline>
+<script>
+  // @ts-nocheck — vanilla DOM client script
   (function () {
     var btn = document.querySelector('[data-sound-toggle]');
     if (!btn || !window.__sound) return;
