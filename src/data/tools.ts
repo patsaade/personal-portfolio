@@ -82,7 +82,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         example: 'Browsing the proc directory shows each process as a folder you can open to read its modules and strings.',
       },
       {
-        name: 'Autopsy', slug: 'autopsy', use: 'GUI disk forensics & keyword/artifact analysis', fn: 'Host', cost: 'Open source', core: true,
+        name: 'Autopsy', slug: 'autopsy', use: 'GUI front-end (built on Sleuth Kit) for keyword/artifact analysis', fn: 'Host', cost: 'Open source', core: true,
         tags: ['disk', 'sleuth-kit', 'gui', 'file-carving', 'timeline', 'keyword-search'],
         url: 'https://www.autopsy.com/',
         install: 'Windows: MSI installer from autopsy.com (bundles The Sleuth Kit). Linux/macOS: requires The Sleuth Kit installed separately.',
@@ -418,7 +418,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         glossarySlugs: ['registry-hives'],
       },
       {
-        name: 'PEStudio', slug: 'pestudio', use: 'Static PE triage & malware indicators', fn: 'Malware', cost: 'Free',
+        name: 'PEStudio', slug: 'pestudio', use: 'Static PE triage & malware indicators', fn: 'Malware', cost: 'Freemium',
         tags: ['windows', 'pe', 'static-analysis', 'malware-indicators'],
         url: 'https://www.winitor.com/',
         install: 'Free for private/non-commercial use only, from winitor.com; a paid Pro license is required for professional use',
