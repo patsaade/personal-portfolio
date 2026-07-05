@@ -2,22 +2,34 @@
   {
     "term": "Symmetric Encryption",
     "slug": "symmetric-encryption",
-    "aka": ["Secret-Key Encryption"],
+    "aka": [
+      "Secret-Key Encryption"
+    ],
     "short": "Encryption where the same key both encrypts and decrypts the data.",
     "definition": "A scheme in which a single shared secret key is used for both encryption and decryption. It is fast and well suited to bulk data, but every party that can decrypt must hold the same key.",
     "significance": "Symmetric ciphers protect most data at rest and in transit because of their speed, so the hard problem shifts to distributing and safeguarding the shared key. In an investigation, recovering that key from memory or a config often unlocks otherwise opaque evidence.",
     "example": "A backup archive encrypted with AES using one passphrase that must be supplied again to restore it.",
-    "related": ["asymmetric-encryption", "aes", "key-derivation-function"]
+    "related": [
+      "asymmetric-encryption",
+      "aes",
+      "key-derivation-function"
+    ]
   },
   {
     "term": "Asymmetric Encryption",
     "slug": "asymmetric-encryption",
-    "aka": ["Public-Key Cryptography"],
+    "aka": [
+      "Public-Key Cryptography"
+    ],
     "short": "A key pair where the public key encrypts and the private key decrypts.",
     "definition": "A scheme that uses a mathematically linked key pair: a freely shareable public key and a secret private key. Data encrypted with one key can only be reversed with the other, which also enables digital signatures.",
     "significance": "It solves the key-distribution problem that symmetric crypto cannot, underpinning TLS, code signing, and PKI. Compromise or theft of a private key is therefore a high-severity event that can impersonate an identity or decrypt captured traffic.",
     "example": "A server publishes its public key so clients can establish a session without ever sharing a secret in advance.",
-    "related": ["symmetric-encryption", "rsa", "digital-signature"]
+    "related": [
+      "symmetric-encryption",
+      "rsa",
+      "digital-signature"
+    ]
   },
   {
     "term": "Block Cipher",
@@ -26,7 +38,11 @@
     "definition": "A symmetric algorithm that transforms plaintext in fixed-length chunks (blocks), typically 128 bits, under a secret key. To encrypt data longer than one block, it is combined with a mode of operation.",
     "significance": "Block ciphers like AES are the workhorse of modern encryption, but their security in practice depends entirely on the mode chosen, since a poor mode can leak structure even with a strong cipher.",
     "example": "AES processing a file 16 bytes at a time, each block transformed under the same key.",
-    "related": ["stream-cipher", "aes", "block-cipher-mode"]
+    "related": [
+      "stream-cipher",
+      "aes",
+      "block-cipher-mode"
+    ]
   },
   {
     "term": "Stream Cipher",
@@ -35,147 +51,248 @@
     "definition": "A symmetric algorithm that generates a pseudo-random keystream and combines it with the plaintext, usually by XOR, processing data continuously rather than in fixed blocks.",
     "significance": "Stream ciphers suit real-time and variable-length traffic, but reusing a keystream (same key and nonce) is catastrophic — it lets an attacker XOR two ciphertexts and strip the encryption entirely.",
     "example": "ChaCha20 producing a keystream that is XORed with a video feed as it is transmitted.",
-    "related": ["block-cipher", "nonce", "csprng"]
+    "related": [
+      "block-cipher",
+      "nonce",
+      "csprng"
+    ]
   },
   {
     "term": "Advanced Encryption Standard",
     "slug": "aes",
-    "aka": ["AES", "Rijndael"],
+    "aka": [
+      "AES",
+      "Rijndael"
+    ],
     "short": "The standardized symmetric block cipher used to protect most data today.",
     "definition": "A symmetric block cipher standardized by NIST in 2001, operating on 128-bit blocks with 128-, 192-, or 256-bit keys. It is the default choice for bulk encryption worldwide.",
     "significance": "AES underlies disk encryption, TLS, VPNs, and archive formats, so recognizing it — and locating its keys — is routine in forensics. It has no practical break, which means recovered data usually hinges on obtaining the key, not attacking the algorithm.",
     "example": "A full-disk encryption product storing volumes as AES-256 ciphertext, decryptable only with the right key.",
-    "related": ["block-cipher", "block-cipher-mode", "full-disk-encryption"]
+    "related": [
+      "block-cipher",
+      "block-cipher-mode",
+      "full-disk-encryption"
+    ]
   },
   {
     "term": "RSA",
     "slug": "rsa",
-    "aka": ["Rivest–Shamir–Adleman"],
+    "aka": [
+      "Rivest–Shamir–Adleman"
+    ],
     "short": "A widely used public-key algorithm based on the difficulty of factoring.",
     "definition": "An asymmetric algorithm whose security rests on the hardness of factoring the product of two large primes. It supports both encryption and digital signatures using a public/private key pair.",
     "significance": "RSA has secured TLS certificates, code signing, and key exchange for decades, but it requires large keys (2048 bits and up) and is a prime target for future quantum attacks, which is driving migration toward post-quantum schemes.",
     "example": "A certificate authority signing a website's certificate with its RSA private key so browsers can verify it.",
-    "related": ["asymmetric-encryption", "elliptic-curve-cryptography", "post-quantum-cryptography"]
+    "related": [
+      "asymmetric-encryption",
+      "elliptic-curve-cryptography",
+      "post-quantum-cryptography"
+    ]
   },
   {
     "term": "Elliptic Curve Cryptography",
     "slug": "elliptic-curve-cryptography",
-    "aka": ["ECC", "ECDSA", "ECDH"],
+    "aka": [
+      "ECC",
+      "ECDSA",
+      "ECDH"
+    ],
     "short": "Public-key crypto offering strong security with much smaller keys.",
     "definition": "A family of asymmetric algorithms built on the algebra of elliptic curves over finite fields. It delivers security comparable to RSA at a fraction of the key size and computational cost.",
     "significance": "Smaller keys and faster operations make ECC the preferred choice for TLS, mobile, and constrained devices, so it appears constantly in modern certificates and key exchanges. Like RSA, it is vulnerable to large-scale quantum computing.",
     "example": "A modern TLS handshake negotiating keys with an elliptic-curve algorithm instead of legacy RSA.",
-    "related": ["rsa", "diffie-hellman", "post-quantum-cryptography"]
+    "related": [
+      "rsa",
+      "diffie-hellman",
+      "post-quantum-cryptography"
+    ]
   },
   {
     "term": "Diffie–Hellman Key Exchange",
     "slug": "diffie-hellman",
-    "aka": ["DH", "DHKE"],
+    "aka": [
+      "DH",
+      "DHKE"
+    ],
     "short": "A method for two parties to derive a shared secret over an open channel.",
     "definition": "A key-agreement protocol that lets two parties who have never met compute a shared secret over an insecure channel, without ever transmitting the secret itself. Each side combines its private value with the other's public value.",
     "significance": "Diffie–Hellman is the engine behind modern session-key negotiation and is what enables perfect forward secrecy, since a fresh exchange per session means stealing a long-term key does not unlock past traffic.",
     "example": "Two endpoints exchanging public values to agree on a session key that no eavesdropper can reconstruct.",
-    "related": ["perfect-forward-secrecy", "tls-handshake", "elliptic-curve-cryptography"]
+    "related": [
+      "perfect-forward-secrecy",
+      "tls-handshake",
+      "elliptic-curve-cryptography"
+    ]
   },
   {
     "term": "Cryptographic Hash Function",
     "slug": "cryptographic-hash-function",
-    "aka": ["Hash Function", "Digest"],
+    "aka": [
+      "Hash Function",
+      "Digest"
+    ],
     "short": "A one-way function mapping any input to a fixed-size fingerprint.",
     "definition": "A deterministic function that turns arbitrary input into a fixed-length digest, designed to be one-way and collision-resistant — infeasible to invert or to find two inputs with the same output.",
     "significance": "Hashes are everywhere in DFIR: verifying evidence integrity, deduplicating files, and matching known-bad indicators. A change of even one bit yields a completely different digest, which is what makes them reliable integrity checks.",
     "example": "Computing a SHA-256 digest of a disk image at acquisition and re-checking it later to prove nothing changed.",
-    "related": ["md5", "hash-collision", "hmac"]
+    "related": [
+      "md5",
+      "hash-collision",
+      "hmac"
+    ]
   },
   {
     "term": "MD5",
     "slug": "md5",
-    "aka": ["Message Digest 5"],
+    "aka": [
+      "Message Digest 5"
+    ],
     "short": "A fast but cryptographically broken 128-bit hash, deprecated for security.",
     "definition": "A 128-bit hashing algorithm from the early 1990s, once ubiquitous for checksums and integrity. Practical collision attacks have since made it unsuitable for any security purpose.",
     "significance": "MD5 still shows up as a fast file identifier in threat-intel feeds and forensic tooling, but it must never be trusted to prove integrity or authenticity, because attackers can craft two different files with the same MD5.",
     "example": "Using an MD5 hash to look up a sample in a malware database, while relying on SHA-256 for any integrity claim.",
-    "related": ["cryptographic-hash-function", "hash-collision", "digital-signature"]
+    "related": [
+      "cryptographic-hash-function",
+      "hash-collision",
+      "digital-signature"
+    ]
   },
   {
     "term": "Hash Collision",
     "slug": "hash-collision",
-    "aka": ["Collision"],
+    "aka": [
+      "Collision"
+    ],
     "short": "Two different inputs producing the same hash digest.",
     "definition": "A situation where two distinct inputs map to an identical hash output. Collisions exist for every hash by the pigeonhole principle, but a secure hash makes finding one computationally infeasible.",
     "significance": "Practical collisions break the guarantees that signatures and integrity checks depend on — they let an attacker substitute a malicious file for a benign one that shares the same digest, which is exactly why MD5 and SHA-1 were retired.",
     "example": "Two crafted documents with matching MD5 digests, so a signature over one silently validates the other.",
-    "related": ["cryptographic-hash-function", "md5", "digital-signature"]
+    "related": [
+      "cryptographic-hash-function",
+      "md5",
+      "digital-signature"
+    ]
   },
   {
     "term": "HMAC",
     "slug": "hmac",
-    "aka": ["Hash-based Message Authentication Code"],
+    "aka": [
+      "Hash-based Message Authentication Code"
+    ],
     "short": "A keyed hash that proves a message's integrity and authenticity.",
     "definition": "A construction that combines a cryptographic hash with a secret key to produce a message authentication code. Only parties holding the key can generate or verify a valid HMAC.",
     "significance": "HMAC proves both that data was not tampered with and that it came from someone with the key, which a bare hash cannot. It secures API tokens, session cookies, and protocol messages, so a leaked HMAC key lets an attacker forge trusted requests.",
     "example": "An API signing each request with HMAC-SHA256 so the server rejects any tampered or unauthenticated call.",
-    "related": ["cryptographic-hash-function", "authenticated-encryption", "digital-signature"]
+    "related": [
+      "cryptographic-hash-function",
+      "authenticated-encryption",
+      "digital-signature"
+    ]
   },
   {
     "term": "Salting",
     "slug": "salting",
-    "aka": ["Salt"],
+    "aka": [
+      "Salt"
+    ],
     "short": "Adding unique random data to each password before hashing it.",
     "definition": "The practice of prepending or appending a unique, random value to each password before hashing, so identical passwords produce different stored hashes. The salt is stored alongside the hash and need not be secret.",
     "significance": "Salting defeats precomputed rainbow tables and stops an attacker from cracking many accounts at once, since each hash must be attacked individually. Finding unsalted password hashes in a breach is a serious red flag.",
     "example": "Two users with the password 'summer2025' having entirely different stored hashes because each got a random salt.",
-    "related": ["key-derivation-function", "cryptographic-hash-function", "csprng"]
+    "related": [
+      "key-derivation-function",
+      "cryptographic-hash-function",
+      "csprng"
+    ]
   },
   {
     "term": "Steganography",
     "slug": "steganography",
-    "aka": ["Stego"],
+    "aka": [
+      "Stego"
+    ],
     "short": "Hiding data inside other files so its very existence is concealed.",
     "definition": "The practice of concealing a message within another, innocuous-looking carrier — such as an image, audio file, or network packet — so that the secret data is not merely encrypted but hidden from view entirely. Unlike encryption, the goal is to avoid detection, not just to deny reading.",
     "significance": "Adversaries use steganography to smuggle payloads, exfiltrate data, and conceal command channels inside files that pass casual inspection, which makes it a quiet evasion technique defenders must specifically look for during malware and data-loss investigations.",
     "example": "Malware that hides an encrypted second-stage payload inside the unused bits of a PNG image hosted on a public site.",
-    "related": ["encoding", "symmetric-encryption", "tokenization"]
+    "related": [
+      "encoding",
+      "symmetric-encryption",
+      "tokenization"
+    ]
   },
   {
     "term": "Key Derivation Function",
     "slug": "key-derivation-function",
-    "aka": ["KDF", "PBKDF2", "bcrypt", "scrypt", "Argon2"],
+    "aka": [
+      "KDF",
+      "PBKDF2",
+      "bcrypt",
+      "scrypt",
+      "Argon2"
+    ],
     "short": "A deliberately slow function that turns a password into a key or hash.",
     "definition": "A function that stretches a password or other low-entropy secret into a cryptographic key or storage hash, intentionally using high CPU and memory cost. Examples include PBKDF2, bcrypt, scrypt, and Argon2.",
     "significance": "By making each guess expensive, a strong KDF blunts offline brute-force and GPU cracking of stolen credentials. The choice and work-factor of the KDF often decides whether a breached password database is crackable in practice.",
     "example": "Storing login credentials with Argon2 at a tuned memory cost so each cracking attempt is slow and resource-heavy.",
-    "related": ["salting", "csprng", "symmetric-encryption"]
+    "related": [
+      "salting",
+      "csprng",
+      "symmetric-encryption"
+    ]
   },
   {
     "term": "Nonce / Initialization Vector",
     "slug": "nonce",
-    "aka": ["IV", "Initialization Vector"],
+    "aka": [
+      "IV",
+      "Initialization Vector"
+    ],
     "short": "A unique value that makes each encryption operation distinct.",
     "definition": "A number used once (nonce) or an initialization vector (IV) is a non-secret value fed into a cipher so that encrypting the same plaintext twice yields different ciphertext. Many modes require it to be unique and, for some, unpredictable.",
     "significance": "Reusing a nonce or IV with the same key is one of the most common and devastating crypto mistakes — in stream ciphers and GCM it can expose plaintext or forge messages. Auditing for nonce reuse is a recurring task in crypto review.",
     "example": "A GCM-encrypted session generating a fresh random IV for every message so no two are ever encrypted identically.",
-    "related": ["block-cipher-mode", "stream-cipher", "csprng"]
+    "related": [
+      "block-cipher-mode",
+      "stream-cipher",
+      "csprng"
+    ]
   },
   {
     "term": "Block Cipher Mode of Operation",
     "slug": "block-cipher-mode",
-    "aka": ["ECB", "CBC", "GCM"],
+    "aka": [
+      "ECB",
+      "CBC",
+      "GCM"
+    ],
     "short": "The scheme that lets a block cipher encrypt data longer than one block.",
     "definition": "A method for applying a block cipher across many blocks of data. Common modes include ECB (insecure, leaks patterns), CBC (chains blocks together), and GCM (adds built-in authentication).",
     "significance": "The mode determines real-world security as much as the cipher itself: ECB reveals structure in the ciphertext, CBC is vulnerable to padding-oracle attacks if misused, and GCM provides authenticated encryption. Spotting the wrong mode is a frequent finding in security reviews.",
     "example": "An image encrypted in ECB mode whose outline is still visible because identical blocks produce identical ciphertext.",
-    "related": ["block-cipher", "authenticated-encryption", "padding-oracle-attack"]
+    "related": [
+      "block-cipher",
+      "authenticated-encryption",
+      "padding-oracle-attack"
+    ]
   },
   {
     "term": "Authenticated Encryption",
     "slug": "authenticated-encryption",
-    "aka": ["AEAD", "Authenticated Encryption with Associated Data"],
+    "aka": [
+      "AEAD",
+      "Authenticated Encryption with Associated Data"
+    ],
     "short": "Encryption that guarantees both confidentiality and integrity at once.",
     "definition": "A class of schemes (such as AES-GCM and ChaCha20-Poly1305) that encrypt data and produce an authentication tag in one operation, so any tampering with the ciphertext is detected on decryption.",
     "significance": "It closes the gap that plain encryption leaves open — confidentiality without integrity invites padding-oracle and bit-flipping attacks. Modern protocols mandate AEAD, and its absence is a notable weakness in any custom crypto.",
     "example": "A token sealed with AES-GCM that fails to decrypt if even one byte of the ciphertext is altered.",
-    "related": ["block-cipher-mode", "hmac", "padding-oracle-attack"]
+    "related": [
+      "block-cipher-mode",
+      "hmac",
+      "padding-oracle-attack"
+    ]
   },
   {
     "term": "Digital Signature",
@@ -184,107 +301,175 @@
     "definition": "A value produced by signing data with a private key, which anyone can verify with the corresponding public key. It proves the signer's identity (authenticity), that the data is unchanged (integrity), and that they cannot deny it (non-repudiation).",
     "significance": "Digital signatures underpin code signing, certificates, and document trust, so verifying them is core to malware triage and supply-chain analysis. A stolen signing key lets an attacker sign malware that the OS trusts.",
     "example": "Verifying a driver's digital signature to confirm it came from the stated publisher and was not modified.",
-    "related": ["asymmetric-encryption", "public-key-infrastructure", "cryptographic-hash-function"]
+    "related": [
+      "asymmetric-encryption",
+      "public-key-infrastructure",
+      "cryptographic-hash-function"
+    ]
   },
   {
     "term": "Public Key Infrastructure",
     "slug": "public-key-infrastructure",
-    "aka": ["PKI"],
+    "aka": [
+      "PKI"
+    ],
     "short": "The system of authorities and certificates that binds keys to identities.",
     "definition": "The framework of certificate authorities, certificates, policies, and revocation mechanisms that ties public keys to verified identities and lets parties trust each other's keys.",
     "significance": "PKI is what makes public-key crypto usable at scale — it answers 'whose key is this?' Breakdowns such as a compromised CA, an expired certificate, or missing revocation checks translate directly into trust failures and impersonation.",
     "example": "A browser trusting a website because its certificate chains up to a recognized root certificate authority.",
-    "related": ["certificate-authority", "digital-signature", "certificate-transparency"]
+    "related": [
+      "certificate-authority",
+      "digital-signature",
+      "certificate-transparency"
+    ]
   },
   {
     "term": "Certificate Authority",
     "slug": "certificate-authority",
-    "aka": ["CA"],
+    "aka": [
+      "CA"
+    ],
     "short": "A trusted entity that issues and signs digital certificates.",
     "definition": "An organization that verifies the identity of certificate requesters and issues digitally signed certificates binding a public key to that identity. Operating systems and browsers ship with a set of trusted root CAs.",
     "significance": "A CA is a single point of trust for everyone relying on its certificates, so a compromised or rogue CA can issue valid certificates for any domain and enable undetected interception. CA mis-issuance is one of the most serious failures in web security.",
     "example": "An attacker who fraudulently obtains a certificate from a CA being able to impersonate a bank's website.",
-    "related": ["public-key-infrastructure", "certificate-transparency", "certificate-pinning"]
+    "related": [
+      "public-key-infrastructure",
+      "certificate-transparency",
+      "certificate-pinning"
+    ]
   },
   {
     "term": "Certificate Pinning",
     "slug": "certificate-pinning",
-    "aka": ["Pinning", "HPKP"],
+    "aka": [
+      "Pinning",
+      "HPKP"
+    ],
     "short": "Hardcoding a known certificate or key so others are rejected.",
     "definition": "A technique where an application is configured to accept only a specific certificate or public key for a server, rather than any certificate that chains to a trusted CA. Anything else is refused, even if otherwise valid.",
     "significance": "Pinning defends against rogue or compromised CAs and man-in-the-middle interception, which is why malware analysts often must defeat it to inspect an app's encrypted C2 traffic.",
     "example": "A mobile app refusing to connect through a proxy because the intercepting certificate does not match its pinned key.",
-    "related": ["certificate-authority", "public-key-infrastructure", "tls-handshake"]
+    "related": [
+      "certificate-authority",
+      "public-key-infrastructure",
+      "tls-handshake"
+    ]
   },
   {
     "term": "Certificate Transparency",
     "slug": "certificate-transparency",
-    "aka": ["CT"],
+    "aka": [
+      "CT"
+    ],
     "short": "Public append-only logs of every issued TLS certificate.",
     "definition": "A system of publicly auditable, append-only logs that record certificates as they are issued. Browsers can require that a certificate appear in these logs to be trusted.",
     "significance": "CT makes mis-issued or fraudulent certificates discoverable, letting domain owners and defenders spot unauthorized certificates for their names. Monitoring CT logs is a practical early-warning signal for phishing and impersonation infrastructure.",
     "example": "A security team finding a lookalike domain's certificate in CT logs days before a phishing campaign launches.",
-    "related": ["certificate-authority", "public-key-infrastructure", "digital-signature"]
+    "related": [
+      "certificate-authority",
+      "public-key-infrastructure",
+      "digital-signature"
+    ]
   },
   {
     "term": "TLS Handshake",
     "slug": "tls-handshake",
-    "aka": ["SSL/TLS Handshake"],
+    "aka": [
+      "SSL/TLS Handshake"
+    ],
     "short": "The negotiation that sets up an encrypted TLS connection.",
     "definition": "The opening exchange of a TLS session in which client and server agree on a protocol version and cipher suite, authenticate via certificates, and establish shared session keys before any application data flows.",
     "significance": "The handshake decides the security of everything that follows, so its details matter in forensics and detection — weak cipher choices, downgrade attempts, and certificate anomalies all surface here, and the unencrypted handshake fields are valuable for fingerprinting traffic.",
     "example": "Inspecting a packet capture's handshake to see a client and server settle on an ECDHE cipher suite for forward secrecy.",
-    "related": ["diffie-hellman", "perfect-forward-secrecy", "certificate-pinning"]
+    "related": [
+      "diffie-hellman",
+      "perfect-forward-secrecy",
+      "certificate-pinning"
+    ]
   },
   {
     "term": "Perfect Forward Secrecy",
     "slug": "perfect-forward-secrecy",
-    "aka": ["PFS", "Forward Secrecy"],
+    "aka": [
+      "PFS",
+      "Forward Secrecy"
+    ],
     "short": "Past sessions stay safe even if a long-term key is later stolen.",
     "definition": "A property of key-exchange schemes where each session uses ephemeral keys, so compromising a server's long-term private key does not let an attacker decrypt previously recorded sessions.",
     "significance": "PFS limits the damage of key theft and defeats 'harvest now, decrypt later' attacks against captured traffic. Its presence or absence directly determines whether old recorded sessions can be retroactively decrypted in an investigation.",
     "example": "An attacker who steals a server's private key still being unable to decrypt last month's captured TLS sessions because each used ephemeral Diffie–Hellman keys.",
-    "related": ["diffie-hellman", "tls-handshake", "asymmetric-encryption"]
+    "related": [
+      "diffie-hellman",
+      "tls-handshake",
+      "asymmetric-encryption"
+    ]
   },
   {
     "term": "Encoding vs. Encryption",
     "slug": "encoding",
-    "aka": ["Base64", "Hex Encoding"],
+    "aka": [
+      "Base64",
+      "Hex Encoding"
+    ],
     "short": "Reversible data representation like Base64 that provides no security.",
     "definition": "Encoding transforms data into another representation (such as Base64 or hexadecimal) for safe transport or storage. It is fully reversible by anyone and, unlike encryption, requires no key and provides no confidentiality.",
     "significance": "Treating encoding as protection is a common and dangerous error — Base64 is trivially decoded. In DFIR the reverse is the point: attackers Base64-encode payloads and commands to evade simple filters, so analysts routinely decode it during triage.",
     "example": "Decoding a Base64 blob in a malicious script to reveal the plaintext PowerShell command underneath.",
-    "related": ["symmetric-encryption", "cryptographic-hash-function", "steganography"]
+    "related": [
+      "symmetric-encryption",
+      "cryptographic-hash-function",
+      "steganography"
+    ]
   },
   {
     "term": "Cryptographically Secure PRNG",
     "slug": "csprng",
-    "aka": ["CSPRNG", "Secure Random"],
+    "aka": [
+      "CSPRNG",
+      "Secure Random"
+    ],
     "short": "A random generator suitable for keys, nonces, and tokens.",
     "definition": "A pseudo-random number generator whose output is unpredictable even to an attacker who sees prior outputs, seeded from a high-entropy source. It is the only acceptable randomness source for cryptographic material.",
     "significance": "Keys, IVs, salts, and session tokens are only as strong as the randomness behind them — a predictable or weakly seeded generator has broken real systems by making keys guessable. Auditing for non-cryptographic random use is a standard review step.",
     "example": "Generating session tokens from a CSPRNG rather than a fast but predictable general-purpose random function.",
-    "related": ["nonce", "key-derivation-function", "stream-cipher"]
+    "related": [
+      "nonce",
+      "key-derivation-function",
+      "stream-cipher"
+    ]
   },
   {
     "term": "Full-Disk Encryption",
     "slug": "full-disk-encryption",
-    "aka": ["FDE"],
+    "aka": [
+      "FDE"
+    ],
     "short": "Encrypting an entire volume so it is unreadable without the key.",
     "definition": "A data-at-rest protection that transparently encrypts every sector of a storage volume, decrypting on the fly once the device is unlocked at boot or login. The disk is opaque without the key.",
     "significance": "FDE protects data on lost or stolen devices, but it also shapes forensics: once a system is powered off and locked, the disk is unreadable, so investigators may need to image while it is running or recover keys from memory — reinforcing why volatile capture comes first.",
     "example": "A stolen laptop whose drive yields only ciphertext because full-disk encryption locked the volume at shutdown.",
-    "related": ["aes", "hardware-security-module", "symmetric-encryption"]
+    "related": [
+      "aes",
+      "hardware-security-module",
+      "symmetric-encryption"
+    ]
   },
   {
     "term": "Hardware Security Module",
     "slug": "hardware-security-module",
-    "aka": ["HSM"],
+    "aka": [
+      "HSM"
+    ],
     "short": "A tamper-resistant device that generates and guards cryptographic keys.",
     "definition": "A dedicated, tamper-resistant hardware device that generates, stores, and uses cryptographic keys so the keys never leave it in plaintext. Cryptographic operations happen inside the module's protected boundary.",
     "significance": "HSMs anchor the trust of CAs, payment systems, and code-signing pipelines by keeping private keys out of reach even on a compromised host. Their use (or absence) is a key factor in how recoverable a stolen key actually is.",
     "example": "A certificate authority performing all signing inside an HSM so its root private key never exists in server memory.",
-    "related": ["public-key-infrastructure", "tokenization", "full-disk-encryption"]
+    "related": [
+      "public-key-infrastructure",
+      "tokenization",
+      "full-disk-encryption"
+    ]
   },
   {
     "term": "Tokenization",
@@ -293,17 +478,28 @@
     "definition": "A data-protection method that substitutes sensitive values, such as card or account numbers, with non-sensitive tokens that have no exploitable meaning. The mapping back to the original is held in a separate, secured vault.",
     "significance": "Because tokens are not mathematically derived from the data, a breached system holding only tokens exposes nothing useful, which is why tokenization is central to payment and PII handling and can shrink compliance scope.",
     "example": "An e-commerce database storing payment tokens instead of real card numbers, so a database leak reveals no usable cards.",
-    "related": ["hardware-security-module", "symmetric-encryption", "encoding"]
+    "related": [
+      "hardware-security-module",
+      "symmetric-encryption",
+      "encoding"
+    ]
   },
   {
     "term": "Post-Quantum Cryptography",
     "slug": "post-quantum-cryptography",
-    "aka": ["PQC", "Quantum-Resistant Cryptography"],
+    "aka": [
+      "PQC",
+      "Quantum-Resistant Cryptography"
+    ],
     "short": "Algorithms designed to resist attacks from quantum computers.",
     "definition": "Cryptographic algorithms built on mathematical problems believed to remain hard even for large-scale quantum computers, intended to replace RSA and elliptic-curve schemes that quantum attacks would break.",
     "significance": "A sufficiently powerful quantum computer would break today's public-key crypto, and adversaries may already be recording encrypted traffic to decrypt later, so migrating to PQC and keeping systems crypto-agile is now a forward-looking defensive priority.",
     "example": "An organization beginning to deploy a NIST-selected post-quantum key-exchange algorithm alongside its existing elliptic-curve one.",
-    "related": ["rsa", "elliptic-curve-cryptography", "perfect-forward-secrecy"]
+    "related": [
+      "rsa",
+      "elliptic-curve-cryptography",
+      "perfect-forward-secrecy"
+    ]
   },
   {
     "term": "Padding Oracle Attack",
@@ -312,6 +508,26 @@
     "definition": "An attack against certain block-cipher modes (notably CBC without integrity protection) in which the system reveals whether a decrypted message's padding is valid. An attacker uses that single bit of feedback to recover plaintext one byte at a time, without the key.",
     "significance": "It is a textbook example of why encryption alone is not enough and why authenticated encryption matters — distinguishable error responses or timing can fully break confidentiality. It has compromised real-world TLS and web frameworks.",
     "example": "An attacker recovering a session cookie's plaintext by submitting modified ciphertexts and watching which ones return a padding error.",
-    "related": ["block-cipher-mode", "authenticated-encryption", "block-cipher"]
+    "related": [
+      "block-cipher-mode",
+      "authenticated-encryption",
+      "block-cipher"
+    ]
+  },
+  {
+    "term": "SHA-256",
+    "slug": "sha-256",
+    "aka": [
+      "Secure Hash Algorithm 256"
+    ],
+    "short": "A 256-bit cryptographic hash function in the SHA-2 family.",
+    "definition": "SHA-256 is a member of the SHA-2 family of cryptographic hash functions, producing a fixed 256-bit digest from any input. It is collision-resistant in practice and is the de facto standard hash used for file integrity verification, digital signatures, and evidence hashing, having replaced MD5 and SHA-1 for security-sensitive use.",
+    "significance": "Forensic images and evidence files are routinely hashed with SHA-256 (often alongside MD5 for legacy tool compatibility) to prove the data hasn't changed since acquisition — a mismatch immediately signals tampering or corruption and can break the chain of custody.",
+    "example": "Comparing the SHA-256 hash of a forensic image against the value recorded at acquisition time confirms it hasn't been altered before analysis.",
+    "related": [
+      "cryptographic-hash-function",
+      "md5",
+      "hash-collision"
+    ]
   }
 ]

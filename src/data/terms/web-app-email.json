@@ -571,5 +571,53 @@
       "cross-origin-resource-sharing",
       "clickjacking"
     ]
+  },
+  {
+    "term": "Smishing",
+    "slug": "smishing",
+    "aka": [
+      "SMS Phishing"
+    ],
+    "short": "Phishing carried out over SMS text messages instead of email.",
+    "definition": "Smishing is phishing conducted via SMS text message rather than email — typically a text urging the recipient to click a link, call a number, or reply with sensitive information, often impersonating a delivery service, bank, or a company's own IT/HR department.",
+    "significance": "SMS lacks most of the anti-phishing tooling built for email (link scanning, sender authentication, attachment sandboxing), and mobile users tend to trust texts more than email, making smishing an increasingly common initial-access vector that email-focused defenses don't cover.",
+    "example": "An employee receives a text claiming to be from IT, asking them to click a link and re-enter their credentials to 'verify their account.'",
+    "related": [
+      "phishing",
+      "quishing",
+      "vishing"
+    ]
+  },
+  {
+    "term": "Vishing",
+    "slug": "vishing",
+    "aka": [
+      "Voice Phishing"
+    ],
+    "short": "Phishing carried out over a phone call instead of email or text.",
+    "definition": "Vishing (voice phishing) is a social-engineering attack conducted over a phone call, in which an attacker impersonates a trusted party — IT support, a bank, an executive — to manipulate the target into revealing credentials, approving an MFA prompt, or taking some other action.",
+    "significance": "A live human on the phone can adapt and pressure a target in real time in a way a static email can't, and it's been the entry point for several high-profile breaches where an attacker talked a helpdesk into resetting credentials or an employee into approving a fraudulent MFA push.",
+    "example": "An attacker calls the helpdesk posing as a locked-out employee and talks the technician into resetting the account's password and MFA.",
+    "related": [
+      "phishing",
+      "smishing",
+      "mfa-fatigue"
+    ]
+  },
+  {
+    "term": "Typosquatting",
+    "slug": "typosquatting",
+    "aka": [
+      "URL Hijacking"
+    ],
+    "short": "Registering a domain that's a common misspelling of a legitimate one.",
+    "definition": "Typosquatting is registering a domain name that is a slight misspelling, extra/missing character, or visually similar variant of a legitimate domain, so users who mistype or misread the real address land on the attacker's site instead — often a phishing page or malware download.",
+    "significance": "It preys on ordinary typing mistakes rather than tricking users into clicking anything, so it's a persistent, low-effort background threat that defenders address through proactive domain monitoring rather than by warning users about a single email.",
+    "example": "A user typing a common misspelling of a popular webmail domain lands on a lookalike page built to harvest their credentials.",
+    "related": [
+      "lookalike-domain",
+      "phishing",
+      "dependency-confusion"
+    ]
   }
 ]
