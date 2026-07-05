@@ -2,683 +2,401 @@
   {
     "term": "USN Journal",
     "slug": "usn-journal",
-    "aka": [
-      "$UsnJrnl",
-      "Update Sequence Number Journal",
-      "Change Journal"
-    ],
+    "aka": ["$UsnJrnl", "Update Sequence Number Journal", "Change Journal"],
     "short": "NTFS log of per-file change records, invaluable for reconstructing activity.",
     "location": "$Extend\\$UsnJrnl:$J (records) and :$Max (metadata), in the root directory of an NTFS volume",
     "definition": "A persistent NTFS feature that records a sequential stream of change records ($UsnJrnl:$J) describing what happened to files and directories — creation, deletion, rename, data overwrite, and attribute changes. Each record carries the file reference, parent reference, timestamp, and a reason code.",
     "significance": "It often survives long after a file is gone, so it lets an investigator prove that a now-deleted file existed and was created, renamed, or wiped — even when the MFT entry has been reused. The reason flags reconstruct an attacker's staging-and-cleanup sequence.",
     "example": "Carving $UsnJrnl:$J showed a payload dropped to %TEMP%, executed, then deleted minutes later, all under a single process burst.",
-    "related": [
-      "logfile-ntfs",
-      "master-file-table-slack",
-      "mac-times"
-    ]
+    "related": ["logfile-ntfs", "master-file-table-slack", "mac-times"]
   },
   {
     "term": "$LogFile (NTFS)",
     "slug": "logfile-ntfs",
-    "aka": [
-      "NTFS transaction log"
-    ],
+    "aka": ["NTFS transaction log"],
     "short": "NTFS journal of pending metadata transactions used to keep the volume consistent.",
     "location": "$LogFile, in the root directory of an NTFS volume",
     "definition": "A metadata file ($LogFile) that NTFS uses as a write-ahead transaction log to keep the file system consistent after a crash. It stores redo/undo records for changes to the MFT, indexes, and other metadata structures.",
     "significance": "Because it captures low-level metadata mutations in order, parsing it can reveal file creations, deletions, and renames that happened within its (often short) retention window — frequently corroborating or filling gaps left by the USN journal.",
     "example": "$LogFile redo records exposed an INDX entry for a deleted staging folder that no longer appeared anywhere in the live MFT.",
-    "related": [
-      "usn-journal",
-      "master-file-table-slack",
-      "index-attribute-i30"
-    ]
+    "related": ["usn-journal", "master-file-table-slack", "index-attribute-i30"]
   },
   {
     "term": "INDX Attribute ($I30)",
     "slug": "index-attribute-i30",
-    "aka": [
-      "$I30",
-      "INDX records",
-      "directory index"
-    ],
+    "aka": ["$I30", "INDX records", "directory index"],
     "short": "B-tree index NTFS uses for directory listings; its slack can resurrect deleted names.",
     "location": "The $I30 index inside each directory's MFT record — resident via $INDEX_ROOT, or non-resident via $INDEX_ALLOCATION + $BITMAP for larger directories",
     "definition": "The B-tree index NTFS maintains for each directory ($I30 for filename indexing) that maps child filenames to their MFT entries. Entries are stored in fixed-size INDX records made up of an active node area and unused slack.",
     "significance": "When a file is deleted, its index entry is removed from the active tree but the bytes often linger in INDX slack, so parsing $I30 slack can recover filenames, sizes, and timestamps of files long since unlinked from a directory.",
     "example": "INDX slack on the user's Desktop directory still held the filename and $FN timestamps of an exfil archive that had been deleted and overwritten.",
-    "related": [
-      "logfile-ntfs",
-      "master-file-table-slack",
-      "mac-times"
-    ]
+    "related": ["logfile-ntfs", "master-file-table-slack", "mac-times"]
   },
   {
     "term": "Resident vs. Non-Resident Attributes",
     "slug": "resident-non-resident-attributes",
-    "aka": [
-      "resident data",
-      "non-resident data"
-    ],
+    "aka": ["resident data", "non-resident data"],
     "short": "Whether a file's data lives inside its MFT record or out in disk clusters.",
     "definition": "In NTFS, every file attribute is either resident (stored entirely inside the 1 KB MFT record) or non-resident (stored in external clusters referenced by data runs). Small files and short data streams stay resident; larger ones spill out.",
     "significance": "It changes where evidence physically lives: resident content is recovered straight from the MFT even if its clusters are reallocated, while non-resident content requires following data runs and is subject to cluster overwrite. Knowing which applies guides recovery strategy.",
     "example": "A tiny dropped script was fully resident, so its source was recovered intact from the MFT record long after the file was deleted.",
-    "related": [
-      "master-file-table-slack",
-      "data-runs",
-      "file-slack"
-    ]
+    "related": ["master-file-table-slack", "data-runs", "file-slack"]
   },
   {
     "term": "MFT Record Slack",
     "slug": "master-file-table-slack",
-    "aka": [
-      "MFT slack",
-      "FILE record slack"
-    ],
+    "aka": ["MFT slack", "FILE record slack"],
     "short": "Unused tail bytes inside a 1 KB MFT record that can retain old metadata.",
     "definition": "Each NTFS MFT entry is a fixed 1 KB record, but the active attributes rarely fill it. The leftover space between the end of the in-use attributes and the record boundary is MFT record slack.",
     "significance": "When a record is reused for a new file, prior attribute data and old filenames can remain in the slack, letting an examiner recover traces of a previously deleted file that occupied that same record number.",
     "example": "MFT record slack preserved a $FILE_NAME attribute from an earlier deleted executable that had reused the same record index.",
-    "related": [
-      "resident-non-resident-attributes",
-      "file-slack",
-      "data-runs"
-    ]
+    "related": ["resident-non-resident-attributes", "file-slack", "data-runs"]
   },
   {
     "term": "$Bitmap (NTFS)",
     "slug": "bitmap-ntfs",
-    "aka": [
-      "cluster allocation bitmap"
-    ],
+    "aka": ["cluster allocation bitmap"],
     "short": "NTFS map of which clusters are allocated; defines what counts as unallocated.",
     "location": "$Bitmap, in the root directory of an NTFS volume",
     "definition": "A metadata file ($Bitmap) in which each bit tracks whether a corresponding cluster on the volume is allocated or free. NTFS consults it to decide where to place new data.",
     "significance": "It is the authority on which clusters are free versus in use, so it defines the boundary of unallocated space that carving and deleted-file recovery target. Discrepancies between the bitmap and the MFT can indicate corruption or anti-forensic tampering.",
     "example": "Comparing $Bitmap against the MFT revealed clusters marked free that still held a deleted database, guiding a successful carve.",
-    "related": [
-      "unallocated-space",
-      "data-runs",
-      "file-carving-signature"
-    ]
+    "related": ["unallocated-space", "data-runs", "file-carving-signature"]
   },
   {
     "term": "Data Runs",
     "slug": "data-runs",
-    "aka": [
-      "run list",
-      "cluster runs"
-    ],
+    "aka": ["run list", "cluster runs"],
     "short": "Compact NTFS map of which clusters hold a non-resident file's content.",
     "definition": "The encoded list in an MFT record that describes where a non-resident attribute's data physically resides, expressed as a series of (length, offset) pairs pointing to runs of contiguous clusters on the volume.",
     "significance": "Reconstructing a fragmented or partially overwritten file requires correctly decoding its data runs; a corrupted or attacker-truncated run list can hide or mislead about where evidence lives on disk.",
     "example": "Decoding the data runs let the examiner reassemble a fragmented archive whose clusters were scattered across the volume.",
-    "related": [
-      "resident-non-resident-attributes",
-      "bitmap-ntfs",
-      "unallocated-space"
-    ]
+    "related": ["resident-non-resident-attributes", "bitmap-ntfs", "unallocated-space"]
   },
   {
     "term": "File Slack",
     "slug": "file-slack",
-    "aka": [
-      "slack space",
-      "RAM slack",
-      "drive slack"
-    ],
+    "aka": ["slack space", "RAM slack", "drive slack"],
     "short": "Leftover space between a file's real end and its last allocated cluster.",
     "definition": "The unused area between the logical end of a file and the end of the last cluster allocated to it. It splits into RAM slack (padded by the OS at write time) and drive slack (residual data from prior occupants of those sectors).",
     "significance": "Slack frequently contains fragments of previously deleted files or, deliberately, data hidden by an actor who knows the file system will not overwrite it. Examining slack can surface evidence invisible to a normal file listing.",
     "example": "Drive slack behind an innocuous text file held remnants of an earlier credential dump that had occupied the same clusters.",
-    "related": [
-      "master-file-table-slack",
-      "unallocated-space",
-      "slack-space-hiding"
-    ]
+    "related": ["master-file-table-slack", "unallocated-space", "slack-space-hiding"]
   },
   {
     "term": "Unallocated Space",
     "slug": "unallocated-space",
-    "aka": [
-      "free space",
-      "unallocated clusters"
-    ],
+    "aka": ["free space", "unallocated clusters"],
     "short": "Disk areas not currently assigned to a file but often holding recoverable data.",
     "definition": "Clusters that the file system marks as not currently in use by any active file. Deleting a file typically returns its clusters here without immediately erasing their contents.",
     "significance": "It is the primary hunting ground for deleted-file recovery and carving, since residual data persists until those clusters are reused. Large, fresh expanses of zeroed unallocated space can themselves indicate deliberate wiping.",
     "example": "Carving unallocated space recovered intact copies of documents the user had emptied from the Recycle Bin a week earlier.",
-    "related": [
-      "file-carving-signature",
-      "deleted-file-recovery",
-      "bitmap-ntfs"
-    ]
+    "related": ["file-carving-signature", "deleted-file-recovery", "bitmap-ntfs"]
   },
   {
     "term": "Deleted-File Recovery",
     "slug": "deleted-file-recovery",
-    "aka": [
-      "undeletion",
-      "file recovery"
-    ],
+    "aka": ["undeletion", "file recovery"],
     "short": "Restoring removed files from lingering metadata or residual cluster data.",
     "definition": "The process of restoring files that have been deleted, by reusing leftover file-system metadata (such as an unreallocated MFT or directory entry) that still points to the original clusters, or by recovering the underlying data directly.",
     "significance": "Recovering deleted files frequently yields the most probative evidence in a case — staging archives, scripts, or documents an actor tried to remove. Success depends on how much metadata and cluster content survive after deletion.",
     "example": "An unreallocated MFT entry still referenced valid clusters, letting the analyst undelete an attacker's batch script byte-for-byte.",
-    "related": [
-      "unallocated-space",
-      "file-carving-signature",
-      "recycle-bin-i-r"
-    ]
+    "related": ["unallocated-space", "file-carving-signature", "recycle-bin-i-r"]
   },
   {
     "term": "Bit-for-Bit Imaging",
     "slug": "bit-for-bit-imaging",
-    "aka": [
-      "forensic image",
-      "physical image",
-      "sector-by-sector copy"
-    ],
+    "aka": ["forensic image", "physical image", "sector-by-sector copy"],
     "short": "An exact sector-level duplicate of storage media for examination.",
     "definition": "Acquiring a complete, sector-level duplicate of a storage device — including allocated, unallocated, and slack areas — so the copy is identical to the original at the bit level rather than just copying visible files.",
     "significance": "Working from a verified image rather than the original preserves evidence integrity, captures deleted and hidden data that a logical copy would miss, and lets analysis proceed without altering the source. It is the foundational step of defensible disk forensics.",
     "example": "The responder captured a bit-for-bit image of the laptop's SSD on-site so analysis could proceed without touching the original drive.",
-    "related": [
-      "write-blocking",
-      "image-hash-verification",
-      "image-formats-raw-ewf"
-    ]
+    "related": ["write-blocking", "image-hash-verification", "image-formats-raw-ewf"]
   },
   {
     "term": "Write Blocking",
     "slug": "write-blocking",
-    "aka": [
-      "write blocker",
-      "forensic bridge"
-    ],
+    "aka": ["write blocker", "forensic bridge"],
     "short": "Hardware or software that prevents any writes to evidence media during acquisition.",
     "definition": "A control — implemented in hardware as an inline bridge or in software via OS settings — that allows reading from a storage device while blocking all write commands, so the act of acquiring or examining the media cannot alter it.",
     "significance": "It guarantees the source drive is not modified during imaging, which is central to evidence integrity and admissibility. Even mounting a disk read-only without enforced blocking can silently change timestamps, so a write blocker removes that risk.",
     "example": "The drive was attached through a hardware write blocker, and the post-acquisition hash matched the source, proving nothing was written.",
-    "related": [
-      "bit-for-bit-imaging",
-      "image-hash-verification",
-      "mac-times"
-    ]
+    "related": ["bit-for-bit-imaging", "image-hash-verification", "mac-times"]
   },
   {
     "term": "Image Hash Verification",
     "slug": "image-hash-verification",
-    "aka": [
-      "hash verification",
-      "acquisition hashing",
-      "integrity hashing"
-    ],
+    "aka": ["hash verification", "acquisition hashing", "integrity hashing"],
     "short": "Hashing source and image to prove the forensic copy is bit-identical.",
     "definition": "Computing a cryptographic hash (such as MD5, SHA-1, or SHA-256) of the source media and of the acquired image, then comparing them, to mathematically demonstrate the copy is identical and that the evidence has not changed since acquisition.",
     "significance": "Matching hashes are the backbone of evidence integrity: they let an examiner prove in court or report that the analyzed image is a faithful copy and detect any later alteration of the evidence file down to a single bit.",
     "example": "Re-hashing the image before analysis still matched the acquisition value, confirming the evidence was untouched in storage.",
-    "related": [
-      "bit-for-bit-imaging",
-      "write-blocking",
-      "image-formats-raw-ewf"
-    ]
+    "related": ["bit-for-bit-imaging", "write-blocking", "image-formats-raw-ewf"]
   },
   {
     "term": "Forensic Image Formats",
     "slug": "image-formats-raw-ewf",
-    "aka": [
-      "raw image",
-      "dd image",
-      "expert witness format",
-      "E01"
-    ],
+    "aka": ["raw image", "dd image", "expert witness format", "E01"],
     "short": "Container formats for disk images, from flat raw to compressed, hashed evidence files.",
     "definition": "The container formats used to store acquired media. A raw (dd) image is a flat, unmodified byte stream, while expert-witness-style formats wrap the data with compression, segmentation, embedded case metadata, and stored hashes for integrity checking.",
     "significance": "The format dictates what verification and metadata travel with the evidence and how it is mounted for analysis. Embedded hashing and case metadata in richer formats support chain-of-evidence requirements that a bare raw image lacks.",
     "example": "The team chose a compressed, hash-embedded image format to fit the multi-terabyte array onto the evidence drive while preserving integrity.",
-    "related": [
-      "bit-for-bit-imaging",
-      "image-hash-verification",
-      "write-blocking"
-    ]
+    "related": ["bit-for-bit-imaging", "image-hash-verification", "write-blocking"]
   },
   {
     "term": "Volume Shadow Copy",
     "slug": "volume-shadow-copy",
-    "aka": [
-      "VSS",
-      "shadow copy",
-      "Volume Shadow Copy Service"
-    ],
+    "aka": ["VSS", "shadow copy", "Volume Shadow Copy Service"],
     "short": "Windows point-in-time volume snapshots that preserve earlier versions of files.",
     "location": "\\\\?\\GLOBALROOT\\Device\\HarddiskVolumeShadowCopyN\\",
     "definition": "Point-in-time, block-level snapshots of an NTFS volume created by the Volume Shadow Copy Service, typically when restore points or backups are made. They capture the prior state of files and metadata at the moment the snapshot was taken.",
     "significance": "Shadow copies are a powerful source of historical evidence — they can hold earlier, unmodified versions of files that were later altered, deleted, or encrypted, letting an investigator reconstruct a system as it looked days or weeks before an incident.",
     "example": "A shadow copy from the day before the ransomware ran preserved clean copies of files and the attacker's staging folder before cleanup.",
-    "related": [
-      "mac-times",
-      "deleted-file-recovery",
-      "registry-hives"
-    ]
+    "related": ["mac-times", "deleted-file-recovery", "registry-hives"]
   },
   {
     "term": "Registry Hives",
     "slug": "registry-hives",
-    "aka": [
-      "SAM",
-      "SYSTEM",
-      "SOFTWARE",
-      "NTUSER.DAT",
-      "UsrClass.dat"
-    ],
+    "aka": ["SAM", "SYSTEM", "SOFTWARE", "NTUSER.DAT", "UsrClass.dat"],
     "short": "On-disk files backing the Windows registry, each holding distinct forensic value.",
     "location": "C:\\Windows\\System32\\config\\{SAM,SECURITY,SOFTWARE,SYSTEM,DEFAULT}, plus NTUSER.DAT per user profile",
     "definition": "The on-disk files that store the Windows registry tree. System-wide hives (SAM, SECURITY, SYSTEM, SOFTWARE) live under the config directory, while per-user settings live in each profile's NTUSER.DAT and UsrClass.dat.",
     "significance": "Hives are a dense source of configuration and user-activity evidence — accounts, installed software, services, network history, and per-user actions — and because copies exist in shadow copies and backups, examiners can compare current and historical registry state.",
     "example": "Parsing the SYSTEM and SOFTWARE hives revealed a malicious service and the install path of an unauthorized remote-access tool.",
-    "related": [
-      "run-keys",
-      "amcache",
-      "shimcache-appcompatcache"
-    ]
+    "related": ["run-keys", "amcache", "shimcache-appcompatcache"]
   },
   {
     "term": "Registry Run Keys",
     "slug": "run-keys",
-    "aka": [
-      "Run/RunOnce keys",
-      "ASEP"
-    ],
+    "aka": ["Run/RunOnce keys", "ASEP"],
     "short": "Registry locations that auto-launch programs at logon or boot.",
     "location": "HKLM/HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run and \\RunOnce",
     "definition": "Registry values under keys such as Run, RunOnce, and related auto-start extensibility points that cause specified programs to execute automatically when Windows boots or a user logs on.",
     "significance": "They are among the most common persistence mechanisms, so reviewing run keys across the SOFTWARE and NTUSER hives quickly surfaces malware set to relaunch after reboot — and the entry's path and value name often identify the implant.",
     "example": "A Run value pointing at a renamed binary in the user's AppData folder revealed how the backdoor survived every reboot.",
-    "related": [
-      "registry-hives",
-      "scheduled-task-artifacts",
-      "amcache"
-    ]
+    "related": ["registry-hives", "scheduled-task-artifacts", "amcache"]
   },
   {
     "term": "AmCache",
     "slug": "amcache",
-    "aka": [
-      "Amcache.hve",
-      "Application Compatibility cache"
-    ],
+    "aka": ["Amcache.hve", "Application Compatibility cache"],
     "short": "Registry hive recording executed/installed programs with hashes and timestamps.",
     "location": "C:\\Windows\\AppCompat\\Programs\\Amcache.hve",
     "definition": "A registry hive (Amcache.hve) maintained by the application compatibility infrastructure that records metadata about programs present and run on a system, including full path, first-execution or installation time, file size, and a SHA-1 of the binary.",
     "significance": "Because it stores a SHA-1 for each tracked executable, AmCache lets investigators identify and hash malware that has since been deleted, confirm presence and execution, and pivot on the hash across the environment — making it a cornerstone program-execution artifact.",
     "example": "AmCache held the SHA-1 and first-run time of a deleted dropper, letting the team hunt that exact hash across every endpoint.",
-    "related": [
-      "shimcache-appcompatcache",
-      "registry-hives",
-      "userassist"
-    ]
+    "related": ["shimcache-appcompatcache", "registry-hives", "userassist"]
   },
   {
     "term": "ShimCache",
     "slug": "shimcache-appcompatcache",
-    "aka": [
-      "AppCompatCache",
-      "Application Compatibility Cache"
-    ],
+    "aka": ["AppCompatCache", "Application Compatibility Cache"],
     "short": "SYSTEM-hive cache of executable paths and file times, evidence of presence.",
     "location": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\AppCompatCache",
     "definition": "A cache within the SYSTEM hive (the Application Compatibility Cache) that the OS uses to track executables for shimming purposes, recording file path, the file's last-modified time, and on some versions a flag indicating execution.",
     "significance": "ShimCache often retains entries for binaries that ran or were present even after they are deleted, and its ordering can help sequence activity — making it a key corroborating execution/presence artifact, though analysts must understand its version-specific quirks to interpret it correctly.",
     "example": "A ShimCache entry placed a now-deleted lateral-movement tool on the host days before any log captured it.",
-    "related": [
-      "amcache",
-      "registry-hives",
-      "userassist"
-    ]
+    "related": ["amcache", "registry-hives", "userassist"]
   },
   {
     "term": "SRUM",
     "slug": "srum",
-    "aka": [
-      "System Resource Usage Monitor",
-      "SRUDB.dat"
-    ],
+    "aka": ["System Resource Usage Monitor", "SRUDB.dat"],
     "short": "Windows database logging per-app resource and network usage over time.",
     "location": "C:\\Windows\\System32\\sru\\SRUDB.dat (Windows 8+)",
     "definition": "The System Resource Usage Monitor, an ESE database (SRUDB.dat) that Windows uses to record per-application and per-user resource consumption over time — CPU, and notably bytes sent and received per network interface, bucketed roughly hourly.",
     "significance": "SRUM is a uniquely valuable artifact for quantifying data movement: it can show that a specific process pushed gigabytes out over the network in a given hour, helping confirm and size exfiltration even when network logs are absent.",
     "example": "SRUM showed an unknown process transmitting tens of gigabytes outbound in the hours before the breach was detected.",
-    "related": [
-      "bam-dam",
-      "amcache",
-      "windows-search-index"
-    ]
+    "related": ["bam-dam", "amcache", "windows-search-index"]
   },
   {
     "term": "Jump Lists",
     "slug": "jump-lists",
-    "aka": [
-      "AutomaticDestinations",
-      "CustomDestinations"
-    ],
+    "aka": ["AutomaticDestinations", "CustomDestinations"],
     "short": "Per-application taskbar history of recently and frequently opened items.",
     "location": "%AppData%\\Roaming\\Microsoft\\Windows\\Recent\\AutomaticDestinations\\*.automaticDestinations-ms and \\CustomDestinations\\*.customDestinations-ms",
     "definition": "Files stored per user that back the Windows taskbar's recent/frequent lists, recording which documents, folders, and resources a user opened with a given application. They live as AutomaticDestinations and CustomDestinations files keyed by an application identifier.",
     "significance": "Jump Lists tie file and resource access to a specific application and user, including paths to network shares or removable media, and they persist after the referenced files are gone — making them strong evidence of user-driven file access.",
     "example": "A Jump List for the archive utility listed a UNC path to a file share the user had no business touching, pinpointing data access.",
-    "related": [
-      "lnk-files",
-      "mru-lists",
-      "userassist"
-    ]
+    "related": ["lnk-files", "mru-lists", "userassist"]
   },
   {
     "term": "LNK Files",
     "slug": "lnk-files",
-    "aka": [
-      "shortcut files",
-      "shell link"
-    ],
+    "aka": ["shortcut files", "shell link"],
     "short": "Windows shortcut files that embed rich metadata about their target.",
     "location": "%AppData%\\Roaming\\Microsoft\\Windows\\Recent\\, plus the Desktop and Start Menu",
     "definition": "Windows shortcut files (.lnk) that point to a target object and embed metadata about it: the full and volume-relative path, target size, MAC timestamps captured when the shortcut was created or updated, volume serial, and sometimes the source machine.",
     "significance": "Even after a target file or external drive is removed, its LNK file preserves where the item lived and when it was accessed, letting examiners prove a user opened a specific document — including from now-absent USB media — and reconstruct access timelines.",
     "example": "An auto-generated LNK file recorded that a sensitive spreadsheet had been opened from a USB drive's volume serial that was no longer present.",
-    "related": [
-      "jump-lists",
-      "mru-lists",
-      "mac-times"
-    ]
+    "related": ["jump-lists", "mru-lists", "mac-times"]
   },
   {
     "term": "Recycle Bin ($I / $R)",
     "slug": "recycle-bin-i-r",
-    "aka": [
-      "$Recycle.Bin",
-      "$I files",
-      "$R files"
-    ],
+    "aka": ["$Recycle.Bin", "$I files", "$R files"],
     "short": "Per-user deleted-file store pairing metadata ($I) with recoverable content ($R).",
     "location": "C:\\$Recycle.Bin\\<SID>\\ per NTFS volume; $I<name> holds metadata, $R<name> holds content",
     "definition": "The per-user $Recycle.Bin store where files sent to the Recycle Bin are kept as a pair: an $I file holding the original path, size, and deletion timestamp, and an $R file holding the actual file content.",
     "significance": "It directly ties a deleted file to the user account that deleted it, when, and from where — and the $R content is often fully recoverable. Even after emptying, $I/$R remnants in unallocated space can reconstruct what was discarded.",
     "example": "An $I record showed a confidential design document deleted under a specific user's SID, and its paired $R file recovered the content intact.",
-    "related": [
-      "deleted-file-recovery",
-      "mac-times",
-      "unallocated-space"
-    ]
+    "related": ["deleted-file-recovery", "mac-times", "unallocated-space"]
   },
   {
     "term": "Thumbnail Cache",
     "slug": "thumbcache",
-    "aka": [
-      "thumbcache",
-      "thumbs.db",
-      "thumbnail database"
-    ],
+    "aka": ["thumbcache", "thumbs.db", "thumbnail database"],
     "short": "Cached image/document thumbnails that persist after the originals are deleted.",
     "location": "%LocalAppData%\\Microsoft\\Windows\\Explorer\\thumbcache_*.db",
     "definition": "Databases Windows builds to store thumbnail previews of images, documents, and other files a user has browsed, kept centrally per user (thumbcache_*.db) and historically as per-folder thumbs.db files.",
     "significance": "Thumbnails outlive their source files, so the cache can prove that an image or document existed and was viewed on a system even after the original is deleted or the external media is gone — frequently decisive in possession and data-handling cases.",
     "example": "The thumbnail cache still held previews of proprietary diagrams whose source files had been deleted from the user's drive.",
-    "related": [
-      "windows-search-index",
-      "deleted-file-recovery",
-      "lnk-files"
-    ]
+    "related": ["windows-search-index", "deleted-file-recovery", "lnk-files"]
   },
   {
     "term": "Browser Artifacts",
     "slug": "browser-artifacts",
-    "aka": [
-      "browsing history",
-      "web cache",
-      "cookies"
-    ],
+    "aka": ["browsing history", "web cache", "cookies"],
     "short": "On-disk web history, cache, cookies, and downloads from a browser profile.",
     "definition": "The on-disk data a web browser stores in its profile: visited-URL history with timestamps and visit counts, cached page resources, cookies, saved form and login data, and download records noting source URL and save location.",
     "significance": "These artifacts reconstruct what a user did online — phishing pages visited, webmail or cloud-storage uploads, and tools downloaded — and the download history in particular often pinpoints where a malicious file came from and when it landed on disk.",
     "example": "Browser download records linked a malicious installer to the exact URL it was fetched from minutes before first execution.",
-    "related": [
-      "mru-lists",
-      "windows-search-index",
-      "mac-times"
-    ]
+    "related": ["mru-lists", "windows-search-index", "mac-times"]
   },
   {
     "term": "Windows Search Index",
     "slug": "windows-search-index",
-    "aka": [
-      "Windows.edb",
-      "Search index"
-    ],
+    "aka": ["Windows.edb", "Search index"],
     "short": "Indexed properties and text content of files, often outliving the originals.",
     "location": "C:\\ProgramData\\Microsoft\\Search\\Data\\Applications\\Windows\\Windows.edb (Windows 7-10); Windows 11 uses SQLite Windows.db / Windows-gather.db in the same folder",
     "definition": "The database (historically Windows.edb, an ESE store) that the Windows Search service builds by indexing file names, properties, and in many cases the full text content and metadata of documents and email across indexed locations.",
     "significance": "Because it can retain indexed file paths, properties, and even text snippets after the underlying files are deleted, the search index can prove a document existed and reveal its content or recipients — sometimes recovering information available nowhere else on disk.",
     "example": "The search index still contained the indexed body text of emails whose source store had since been wiped from the machine.",
-    "related": [
-      "srum",
-      "thumbcache",
-      "browser-artifacts"
-    ]
+    "related": ["srum", "thumbcache", "browser-artifacts"]
   },
   {
     "term": "Pagefile",
     "slug": "pagefile",
-    "aka": [
-      "pagefile.sys",
-      "swap file",
-      "page file"
-    ],
+    "aka": ["pagefile.sys", "swap file", "page file"],
     "short": "On-disk virtual-memory backing store that can hold fragments of RAM.",
     "location": "%SystemDrive%\\pagefile.sys (typically C:\\pagefile.sys)",
     "definition": "The on-disk virtual-memory backing store (pagefile.sys on Windows; swap space on other systems) where the OS pages out portions of memory when physical RAM is under pressure.",
     "significance": "Although unstructured, the pagefile can contain fragments of process memory — command lines, URLs, credentials, decrypted malware strings, or chat text — that no longer exist anywhere else, so carving it frequently yields evidence absent from the file system proper.",
     "example": "String carving the pagefile surfaced a plaintext attacker command and a clear-text password that had been swapped out of a process.",
-    "related": [
-      "hibernation-file",
-      "file-carving-signature",
-      "slack-space-hiding"
-    ]
+    "related": ["hibernation-file", "file-carving-signature", "slack-space-hiding"]
   },
   {
     "term": "MRU Lists",
     "slug": "mru-lists",
-    "aka": [
-      "Most Recently Used",
-      "RecentDocs",
-      "OpenSavePidlMRU"
-    ],
+    "aka": ["Most Recently Used", "RecentDocs", "OpenSavePidlMRU"],
     "short": "Registry records of recently opened, saved, or typed items per user.",
     "location": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\{RunMRU, ComDlg32\\OpenSavePidlMRU, RecentDocs} in NTUSER.DAT",
     "definition": "Most-Recently-Used lists kept in the registry that track the files, paths, search terms, and dialog selections a user most recently interacted with — for example RecentDocs, the open/save common-dialog history, and typed-path lists.",
     "significance": "MRU keys directly attribute file and resource access to a user account with ordering and, via the key's last-write time, timing — quickly showing what documents, folders, or removable media a user recently opened or saved without relying on the files still existing.",
     "example": "The open/save dialog MRU showed the user had recently saved an export to a removable drive just before resigning.",
-    "related": [
-      "userassist",
-      "lnk-files",
-      "jump-lists"
-    ]
+    "related": ["userassist", "lnk-files", "jump-lists"]
   },
   {
     "term": "UserAssist",
     "slug": "userassist",
-    "aka": [
-      "UserAssist keys"
-    ],
+    "aka": ["UserAssist keys"],
     "short": "Per-user registry record of GUI program launches, counts, and last-run time.",
     "location": "NTUSER.DAT, under Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{GUID}\\Count (ROT13-encoded)",
     "definition": "A set of NTUSER.DAT registry keys that record GUI-launched programs a user ran, storing a ROT13-obfuscated path, an execution count, and the last execution time for each.",
     "significance": "UserAssist provides direct, per-user evidence that a specific program was launched interactively, how many times, and when last — useful for proving a user knowingly ran a tool and for building an execution timeline tied to that account.",
     "example": "A UserAssist entry showed a credential-theft utility had been launched four times under the suspect's profile, with a last-run timestamp.",
-    "related": [
-      "mru-lists",
-      "amcache",
-      "bam-dam"
-    ]
+    "related": ["mru-lists", "amcache", "bam-dam"]
   },
   {
     "term": "BAM / DAM",
     "slug": "bam-dam",
-    "aka": [
-      "Background Activity Moderator",
-      "Desktop Activity Moderator"
-    ],
+    "aka": ["Background Activity Moderator", "Desktop Activity Moderator"],
     "short": "Registry record of program execution per user with last-run timestamps.",
     "location": "HKLM\\SYSTEM\\CurrentControlSet\\Services\\bam\\State\\UserSettings\\<SID> (DAM is a separate, Connected-Standby-only artifact under \\dam\\State\\UserSettings\\<SID>)",
     "definition": "The Background Activity Moderator and Desktop Activity Moderator, Windows components whose registry entries record the full paths of executables run per user along with the last time each ran.",
     "significance": "BAM/DAM give a clean, user-scoped list of recently executed programs with timestamps, often capturing malware execution that other artifacts missed and providing an independent corroboration point for an execution timeline.",
     "example": "A BAM entry tied execution of a malicious binary to a specific user SID and a timestamp matching the intrusion window.",
-    "related": [
-      "userassist",
-      "amcache",
-      "srum"
-    ]
+    "related": ["userassist", "amcache", "srum"]
   },
   {
     "term": "Scheduled-Task Artifacts",
     "slug": "scheduled-task-artifacts",
-    "aka": [
-      "Task Scheduler artifacts",
-      "task XML"
-    ],
+    "aka": ["Task Scheduler artifacts", "task XML"],
     "short": "On-disk task definitions and registry entries used for execution and persistence.",
     "location": "C:\\Windows\\System32\\Tasks\\, plus HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Schedule\\TaskCache\\{Tasks,Tree}",
     "definition": "The on-disk XML task definition files and corresponding registry entries that the Windows Task Scheduler uses to store each task's action, trigger, run-as account, and last-run/next-run state.",
     "significance": "Scheduled tasks are a frequent persistence and execution mechanism, so reviewing the task XML and registry — including author, command line, and trigger — reveals attacker-created tasks set to relaunch payloads, often with timestamps tying creation to the intrusion.",
     "example": "A task XML created at logon revealed a hidden command line relaunching a beacon every few hours under SYSTEM.",
-    "related": [
-      "run-keys",
-      "registry-hives",
-      "amcache"
-    ]
+    "related": ["run-keys", "registry-hives", "amcache"]
   },
   {
     "term": "Partition Scheme (MBR / GPT)",
     "slug": "partition-scheme-mbr-gpt",
-    "aka": [
-      "MBR",
-      "GPT",
-      "partition table"
-    ],
+    "aka": ["MBR", "GPT", "partition table"],
     "short": "Disk layout metadata defining where volumes begin, end, and what type they are.",
     "definition": "The on-disk structures that describe how a drive is divided into volumes: the legacy Master Boot Record with its four-entry partition table at sector zero, and the newer GUID Partition Table with a header and array of partition entries plus backups.",
     "significance": "Correctly reading the partition scheme is the first step in any disk exam, and tampering here — a deleted or altered partition entry, or data tucked into inter-partition gaps — can hide entire volumes or boot-level malware that a naive examiner would overlook.",
     "example": "A wiped MBR partition entry concealed a second NTFS volume that, once re-located, held the attacker's entire toolkit.",
-    "related": [
-      "bit-for-bit-imaging",
-      "slack-space-hiding",
-      "file-carving-signature"
-    ]
+    "related": ["bit-for-bit-imaging", "slack-space-hiding", "file-carving-signature"]
   },
   {
     "term": "File Signatures",
     "slug": "file-carving-signature",
-    "aka": [
-      "magic bytes",
-      "file headers",
-      "magic numbers"
-    ],
+    "aka": ["magic bytes", "file headers", "magic numbers"],
     "short": "Header/footer byte patterns that identify a file's true type regardless of name.",
     "definition": "Characteristic byte sequences at the start (and sometimes end) of a file — magic numbers — that identify its real format independent of its extension. Carving and type-identification tools key off these headers and footers.",
     "significance": "Signatures let examiners detect files renamed to hide their nature (an executable masquerading as a .jpg) and drive signature-based carving, which recovers files from unallocated space by recognizing headers and footers when no file-system metadata remains.",
     "example": "A file named report.jpg carried an executable's magic bytes, exposing a renamed payload staged for later use.",
-    "related": [
-      "slack-space-hiding",
-      "unallocated-space",
-      "deleted-file-recovery"
-    ]
+    "related": ["slack-space-hiding", "unallocated-space", "deleted-file-recovery"]
   },
   {
     "term": "MAC(b) Times",
     "slug": "mac-times",
-    "aka": [
-      "MACB",
-      "Modified Accessed Changed Born",
-      "file timestamps"
-    ],
+    "aka": ["MACB", "Modified Accessed Changed Born", "file timestamps"],
     "short": "The Modified, Accessed, metadata-Changed, and Born timestamps of a file.",
     "definition": "The set of file system timestamps tracked per object: Modified (content change), Accessed (last read), Changed (metadata change, e.g., MFT entry update), and Born/Created. On NTFS these exist in both the $STANDARD_INFORMATION and $FILE_NAME attributes.",
     "significance": "MAC(b) times are the raw material of timeline analysis, and the divergence between the two NTFS timestamp sets is a classic tell for timestomping — making them central both to reconstructing events and to detecting attempts to falsify them.",
     "example": "A file's $STANDARD_INFORMATION times predated the OS install while its $FILE_NAME times did not, exposing manipulated timestamps.",
-    "related": [
-      "timeline-analysis",
-      "super-timeline",
-      "usn-journal"
-    ]
+    "related": ["timeline-analysis", "super-timeline", "usn-journal"]
   },
   {
     "term": "Timeline Analysis",
     "slug": "timeline-analysis",
-    "aka": [
-      "forensic timeline",
-      "temporal analysis"
-    ],
+    "aka": ["forensic timeline", "temporal analysis"],
     "short": "Ordering filesystem and artifact timestamps to reconstruct events.",
     "definition": "The technique of collecting timestamps from the file system and other artifacts and arranging them chronologically to reconstruct the sequence of events on a system — when files were created, programs ran, and the volume was modified.",
     "significance": "A timeline turns scattered artifacts into a coherent narrative of an intrusion, letting an investigator establish the initial access moment, the order of attacker actions, and the dwell period, which is often the core deliverable of a host investigation.",
     "example": "Lining up file creation, execution, and deletion times pinned the intrusion's start to a single malicious document opened that morning.",
-    "related": [
-      "super-timeline",
-      "mac-times",
-      "usn-journal"
-    ]
+    "related": ["super-timeline", "mac-times", "usn-journal"]
   },
   {
     "term": "Super Timeline",
     "slug": "super-timeline",
-    "aka": [
-      "super-timeline",
-      "combined timeline"
-    ],
+    "aka": ["super-timeline", "combined timeline"],
     "short": "A unified timeline merging filesystem, registry, log, and artifact events.",
     "definition": "An aggregated, normalized timeline that fuses timestamps from many sources at once — file system MAC times, registry key writes, event logs, browser and program-execution artifacts — into a single chronological view, typically using a standardized intermediate format.",
     "significance": "By correlating evidence from every artifact on one axis, a super timeline reveals relationships a single-source timeline would miss — such as a registry persistence write seconds after a download — though its volume demands careful filtering to separate attacker activity from noise.",
     "example": "The super timeline showed a download, a registry run-key write, and a scheduled-task creation all within the same two-minute window.",
-    "related": [
-      "timeline-analysis",
-      "mac-times",
-      "registry-hives"
-    ]
+    "related": ["timeline-analysis", "mac-times", "registry-hives"]
   },
   {
     "term": "Slack-Space Hiding",
     "slug": "slack-space-hiding",
-    "aka": [
-      "data hiding",
-      "slack hiding"
-    ],
+    "aka": ["data hiding", "slack hiding"],
     "short": "Concealing data in slack, unused, or non-standard disk areas to evade detection.",
     "definition": "Anti-forensic techniques that stash data where normal file listings and many tools do not look — file slack, volume slack, unpartitioned gaps, host-protected areas, or other unallocated regions — so the file system reports nothing while the data persists on disk.",
     "significance": "It lets an actor cache tools or stolen data on a host while staying invisible to ordinary inspection, so examiners must deliberately scan slack, inter-partition gaps, and device-reserved areas rather than trusting the live file system to reveal everything.",
     "example": "Tooling that ignored the file system found an encrypted archive tucked into the gap between two partitions.",
-    "related": [
-      "file-slack",
-      "partition-scheme-mbr-gpt",
-      "unallocated-space"
-    ]
+    "related": ["file-slack", "partition-scheme-mbr-gpt", "unallocated-space"]
   },
   {
     "term": "Live Response",
     "slug": "live-response",
-    "aka": [
-      "Triage Collection",
-      "Live Triage"
-    ],
+    "aka": ["Triage Collection", "Live Triage"],
     "short": "Collecting volatile evidence from a running system before it's shut down or imaged.",
     "definition": "Live response (or live/triage collection) is the practice of gathering volatile evidence — running processes, network connections, memory, logged-in users — from a system while it's still powered on and running, before it's shut down for a full forensic image, since that evidence would otherwise be lost.",
     "significance": "Order of volatility means the most fragile evidence (memory, network state) disappears the moment a machine is powered off, so live response is often the difference between capturing what an attacker was actually doing and only finding what they left behind on disk.",
     "example": "Before pulling the network cable, a responder captures a memory image and the active connection list from a compromised host, preserving evidence a later disk image alone couldn't recover.",
-    "related": [
-      "order-of-volatility",
-      "memory-acquisition",
-      "bit-for-bit-imaging"
-    ]
+    "related": ["order-of-volatility", "memory-acquisition", "bit-for-bit-imaging"]
   }
 ]

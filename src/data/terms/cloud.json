@@ -563,17 +563,11 @@
   {
     "term": "Attack Surface Management",
     "slug": "attack-surface-management",
-    "aka": [
-      "ASM",
-      "External Attack Surface Management"
-    ],
+    "aka": ["ASM", "External Attack Surface Management"],
     "short": "Continuously discovering and monitoring an organization's externally exposed assets.",
     "definition": "Attack Surface Management (ASM) is the continuous discovery, inventory, and monitoring of an organization's externally facing assets — domains, IPs, cloud services, exposed APIs, forgotten subdomains — to find what an outside attacker could see and target before they do.",
     "significance": "Shadow IT and forgotten assets (an old subdomain, a test server left exposed) are a common real-world entry point, so ASM's outside-in view catches exposures that internal asset inventories — which only know about what IT was told to track — routinely miss.",
     "example": "An ASM scan surfaces a long-forgotten staging subdomain still running an outdated, vulnerable CMS, invisible to the internal asset inventory.",
-    "related": [
-      "cloud-security-posture-management",
-      "vulnerability-scanning"
-    ]
+    "related": ["cloud-security-posture-management", "vulnerability-scanning"]
   }
 ]
