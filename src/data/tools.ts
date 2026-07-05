@@ -195,7 +195,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         glossarySlugs: ['packet-capture'],
       },
       {
-        name: 'YARA', slug: 'yara', use: 'Pattern-matching to identify & classify malware', fn: 'Malware', cost: 'Open source',
+        name: 'YARA', slug: 'yara', use: 'Pattern-matching to identify & classify malware', fn: 'Detection', cost: 'Open source',
         tags: ['malware', 'pattern-matching', 'signatures', 'classification'],
         url: 'https://virustotal.github.io/yara/',
         install: 'apt install yara or brew install yara (the CLI ships separately from the yara-python bindings)',
@@ -243,7 +243,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         glossarySlugs: ['windows-event-log'],
       },
       {
-        name: 'Ghidra', slug: 'ghidra', use: 'Software reverse-engineering suite', fn: 'Malware', cost: 'Open source',
+        name: 'Ghidra', slug: 'ghidra', use: 'Software reverse-engineering suite', fn: 'Reverse Engineering', cost: 'Open source',
         tags: ['malware', 'reverse-engineering', 'disassembler', 'decompiler'],
         url: 'https://github.com/NationalSecurityAgency/ghidra',
         install: 'Download from GitHub releases (NationalSecurityAgency/ghidra); requires a 64-bit JDK',
@@ -255,7 +255,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         glossarySlugs: ['disassembly'],
       },
       {
-        name: 'Cutter', slug: 'cutter', use: 'Reverse-engineering platform built on rizin', fn: 'Malware', cost: 'Open source',
+        name: 'Cutter', slug: 'cutter', use: 'Reverse-engineering platform built on rizin', fn: 'Reverse Engineering', cost: 'Open source',
         tags: ['malware', 'reverse-engineering', 'rizin', 'decompiler', 'debugger'],
         url: 'https://cutter.re/',
         install: 'AppImage/installer from GitHub releases (rizinorg/cutter)',
@@ -270,7 +270,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         glossarySlugs: ['disassembly'],
       },
       {
-        name: 'capa', slug: 'capa', use: 'Identify capabilities in executables & shellcode', fn: 'Malware', cost: 'Open source',
+        name: 'capa', slug: 'capa', use: 'Identify capabilities in executables & shellcode', fn: 'Static', cost: 'Open source',
         tags: ['malware', 'capabilities', 'static-analysis', 'shellcode'],
         url: 'https://github.com/mandiant/capa',
         install: 'Standalone binary from GitHub releases (bundles the default rule set), or pip install flare-capa (requires capa-rules downloaded separately)',
@@ -281,7 +281,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         example: 'capa reports that a sample can install a service and communicate over HTTP, guiding triage.',
       },
       {
-        name: 'Detect It Easy', slug: 'detect-it-easy', use: 'File type, packer & compiler identification', fn: 'Malware', cost: 'Open source',
+        name: 'Detect It Easy', slug: 'detect-it-easy', use: 'File type, packer & compiler identification', fn: 'Static', cost: 'Open source',
         tags: ['malware', 'packer-detection', 'file-identification', 'static-triage'],
         url: 'https://github.com/horsicq/Detect-It-Easy',
         install: 'Download from GitHub releases (horsicq/DIE-engine)',
@@ -418,7 +418,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         glossarySlugs: ['registry-hives'],
       },
       {
-        name: 'PEStudio', slug: 'pestudio', use: 'Static PE triage & malware indicators', fn: 'Malware', cost: 'Freemium',
+        name: 'PEStudio', slug: 'pestudio', use: 'Static PE triage & malware indicators', fn: 'Static', cost: 'Freemium',
         tags: ['windows', 'pe', 'static-analysis', 'malware-indicators'],
         url: 'https://www.winitor.com/',
         install: 'Free for private/non-commercial use only, from winitor.com; a paid Pro license is required for professional use',
@@ -433,7 +433,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         glossarySlugs: ['portable-executable-format'],
       },
       {
-        name: 'x64dbg', slug: 'x64dbg', use: 'Open-source Windows debugger', fn: 'Malware', cost: 'Open source',
+        name: 'x64dbg', slug: 'x64dbg', use: 'Open-source Windows debugger', fn: 'Reverse Engineering', cost: 'Open source',
         tags: ['windows', 'debugger', 'dynamic-analysis', 'reverse-engineering'],
         url: 'https://x64dbg.com/',
         install: 'Download the ZIP from x64dbg.com (redirects to SourceForge/GitHub snapshot builds)',
@@ -456,7 +456,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         example: 'USBDeview lists every USB device ever connected, with first and last connection times.',
       },
       {
-        name: 'Loki', slug: 'loki', use: 'IOC & YARA scanner for compromise checks', fn: 'Malware', cost: 'Open source',
+        name: 'Loki', slug: 'loki', use: 'IOC & YARA scanner for compromise checks', fn: 'Detection', cost: 'Open source',
         tags: ['ioc', 'yara', 'scanner', 'compromise-assessment'],
         url: 'https://github.com/Neo23x0/Loki',
         install: 'Download the source .zip from GitHub releases and run with Python 3 — note: Loki is in inactive maintenance; the author recommends LOKI RS or THOR Lite instead',
@@ -485,7 +485,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         example: 'A fresh SIFT VM already has Plaso, The Sleuth Kit, and Volatility installed and ready.',
       },
       {
-        name: 'REMnux', slug: 'remnux', use: 'Linux toolkit for malware analysis', fn: 'Malware', cost: 'Free',
+        name: 'REMnux', slug: 'remnux', use: 'Linux toolkit for malware analysis', fn: 'Platform', cost: 'Free',
         tags: ['malware', 'linux', 'distro', 'reverse-engineering', 'toolkit'],
         url: 'https://remnux.org/',
         install: 'curl -O https://REMnux.org/remnux && chmod +x remnux && sudo ./remnux install — or import the OVA appliance',
@@ -582,7 +582,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
     blurb: 'Run in the browser — free to use (some have paid tiers).',
     tools: [
       {
-        name: 'VirusTotal', slug: 'virustotal', use: 'Multi-engine file/URL/hash reputation & intel', fn: 'Malware', cost: 'Freemium', core: true,
+        name: 'VirusTotal', slug: 'virustotal', use: 'Multi-engine file/URL/hash reputation & intel', fn: 'Intel', cost: 'Freemium', core: true,
         tags: ['malware', 'reputation', 'hash', 'url', 'multi-engine', 'threat-intel'],
         url: 'https://www.virustotal.com/',
         references: [{ name: 'Official API Documentation', url: 'https://docs.virustotal.com/reference/overview' }],
@@ -611,7 +611,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         glossarySlugs: ['sandboxing'],
       },
       {
-        name: 'ANY.RUN', slug: 'any-run', use: 'Interactive online malware sandbox', fn: 'Malware', cost: 'Freemium',
+        name: 'ANY.RUN', slug: 'any-run', use: 'Interactive online malware sandbox', fn: 'Sandbox', cost: 'Freemium',
         tags: ['malware', 'sandbox', 'interactive', 'dynamic-analysis'],
         url: 'https://any.run/',
         references: [{ name: 'ANY.RUN — Guides and Tutorials', url: 'https://any.run/cybersecurity-blog/guides/' }],
@@ -621,7 +621,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         glossarySlugs: ['sandboxing'],
       },
       {
-        name: 'Hybrid Analysis', slug: 'hybrid-analysis', use: 'Free file & URL sandbox plus scanning', fn: 'Malware', cost: 'Free',
+        name: 'Hybrid Analysis', slug: 'hybrid-analysis', use: 'Free file & URL sandbox plus scanning', fn: 'Sandbox', cost: 'Free',
         tags: ['malware', 'sandbox', 'behavior', 'crowdstrike'],
         url: 'https://www.hybrid-analysis.com/',
         references: [{ name: 'Falcon Sandbox API v2 Documentation', url: 'https://www.hybrid-analysis.com/docs/api/v2' }],
@@ -631,7 +631,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         glossarySlugs: ['sandboxing'],
       },
       {
-        name: 'Joe Sandbox', slug: 'joe-sandbox', use: 'Automated malware sandbox (Cloud Basic tier)', fn: 'Malware', cost: 'Freemium',
+        name: 'Joe Sandbox', slug: 'joe-sandbox', use: 'Automated malware sandbox (Cloud Basic tier)', fn: 'Sandbox', cost: 'Freemium',
         tags: ['malware', 'sandbox', 'automated', 'behavior'],
         url: 'https://www.joesandbox.com/',
         references: [{ name: 'Official Python API Wrapper (jbxapi)', url: 'https://github.com/joesecurity/jbxapi' }],
