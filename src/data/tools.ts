@@ -255,6 +255,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A free reverse-engineering platform built on the rizin framework, with a graph view, decompiler, and debugger.',
         why: 'It offers an approachable GUI for static and dynamic reverse engineering on top of an open-source engine.',
         example: 'Stepping through a function in Cutter shows how a packer unpacks its next stage.',
+        glossarySlugs: ['disassembly'],
       },
       {
         name: 'capa', slug: 'capa', use: 'Identify capabilities in executables & shellcode', fn: 'Malware', cost: 'Open source',
@@ -549,6 +550,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         url: 'https://github.com/ydkhatri/UnifiedLogReader',
         install: 'Archived/unmaintained — clone the GitHub repo and pip install -r requirements.txt (the maintainer now recommends mandiant/macos-UnifiedLogs)',
         syntax: 'python3 UnifiedLogReader.py tracev3_folder uuidtext_folder timesync_folder output_path',
+        references: [{ name: 'UnifiedLogReader README (usage & project status)', url: 'https://github.com/ydkhatri/UnifiedLogReader/blob/master/README.md' }],
         what: 'A tool to parse Apple’s binary Unified Logging (.tracev3) into readable records.',
         why: 'macOS unified logs hold rich activity but are opaque; this tool makes them analyzable.',
         example: 'Parsing the logs reveals process launches around the time of a suspected compromise.',
@@ -579,6 +581,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A web app (GCHQ) for decoding, deobfuscating, and transforming data through chained operations called recipes.',
         why: 'Analysts constantly decode and transform artifacts; CyberChef does it without writing scripts.',
         example: 'A recipe base64-decodes then gunzips an obfuscated PowerShell payload in one step.',
+        glossarySlugs: ['encoding', 'obfuscation'],
       },
       {
         name: 'urlscan.io', slug: 'urlscan', use: 'Sandbox & inspect suspicious URLs', fn: 'OSINT', cost: 'Freemium',
@@ -588,6 +591,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         what: 'A service that visits and sandboxes a URL, recording the resources, screenshots, and behavior of the page.',
         why: 'It lets you safely inspect a suspicious link without visiting it yourself.',
         example: 'Scanning a phishing URL captures the cloned login page and the domain it posts credentials to.',
+        glossarySlugs: ['sandboxing'],
       },
       {
         name: 'ANY.RUN', slug: 'any-run', use: 'Interactive online malware sandbox', fn: 'Malware', cost: 'Freemium',
