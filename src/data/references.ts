@@ -33,7 +33,7 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     },
     {
       "name": "SANS — Memory Forensics Cheat Sheet",
-      "url": "https://www.sans.org/posters/memory-forensics-cheat-sheet"
+      "url": "https://www.sans.org/posters/memory-forensics"
     },
   ],
   "Host & Disk Forensics": [
@@ -51,7 +51,7 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     },
     {
       "name": "NIST CFTT — Forensic File Carving Specifications",
-      "url": "https://www.nist.gov/itl/ssd/software-quality-group/computer-forensics-tool-testing-program-cftt/cftt-technical-0"
+      "url": "https://www.nist.gov/itl/csd/secure-systems-and-applications/computer-forensics-tool-testing-program-cftt/cftt-3"
     },
   ],
   "Malware Analysis & RE": [
@@ -233,7 +233,7 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     },
     {
       "name": "RFC 5424 — The Syslog Protocol",
-      "url": "https://www.rfc-editor.org/rfc/rfc5424"
+      "url": "https://www.rfc-editor.org/info/rfc5424/"
     },
   ],
   "Linux, macOS & Mobile Forensics": [
@@ -556,7 +556,7 @@ export const TERM_REFERENCES: Record<string, Reference> = {
   },
   "identity-and-access-management": {
     "name": "NIST — Identity & Access Management",
-    "url": "https://www.nist.gov/identity-access-management"
+    "url": "https://www.nist.gov/identity-and-access-management"
   },
   "privileged-container": {
     "name": "MITRE ATT&CK T1611 — Escape to Host",
@@ -744,15 +744,15 @@ export const TERM_REFERENCES: Record<string, Reference> = {
   },
   "sender-policy-framework": {
     "name": "RFC 7208: Sender Policy Framework (SPF) for Authorizing Use of Domains in Email",
-    "url": "https://www.rfc-editor.org/rfc/rfc7208"
+    "url": "https://www.rfc-editor.org/info/rfc7208/"
   },
   "domainkeys-identified-mail": {
     "name": "RFC 6376: DomainKeys Identified Mail (DKIM) Signatures",
-    "url": "https://www.rfc-editor.org/rfc/rfc6376"
+    "url": "https://www.rfc-editor.org/info/rfc6376/"
   },
   "domain-based-message-authentication": {
     "name": "RFC 7489: Domain-based Message Authentication, Reporting, and Conformance (DMARC)",
-    "url": "https://www.rfc-editor.org/rfc/rfc7489"
+    "url": "https://www.rfc-editor.org/info/rfc7489/"
   },
   "thread-hijacking": {
     "name": "MITRE ATT&CK T1566 — Phishing",
@@ -796,11 +796,11 @@ export const TERM_REFERENCES: Record<string, Reference> = {
   },
   "json-web-token": {
     "name": "RFC 7519 — JSON Web Token (JWT)",
-    "url": "https://www.rfc-editor.org/rfc/rfc7519"
+    "url": "https://www.rfc-editor.org/info/rfc7519/"
   },
   "oauth": {
     "name": "RFC 6749: The OAuth 2.0 Authorization Framework",
-    "url": "https://www.rfc-editor.org/rfc/rfc6749"
+    "url": "https://www.rfc-editor.org/info/rfc6749/"
   },
   "api-security": {
     "name": "OWASP API Security Project (API Security Top 10)",
