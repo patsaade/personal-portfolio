@@ -16,16 +16,23 @@ import FilterToggle from '../../components/FilterToggle.astro';
 import ListFilter from '../../components/ListFilter.astro';
 import TacticStepper from '../../components/TacticStepper.astro';
 import { tag, card } from 'styled-system/recipes';
-import { tagSlug } from '../../utils/posts';
-import { D3FEND_TECHNIQUES, D3FEND_TACTIC_ORDER, D3FEND_VERSION, d3fendById } from '../../data/d3fend';
+import { getSortedPosts, getSortedLabs, tagSlug } from '../../utils/posts';
+import { D3FEND_TECHNIQUES, D3FEND_TACTIC_ORDER, D3FEND_TACTICS, D3FEND_VERSION, d3fendById } from '../../data/d3fend';
+
+// Techniques explicitly covered by a post/lab (via its `d3fend` frontmatter) —
+// mirrors the ATT&CK Map's `covered` set (attack-map.astro).
+const [posts, labs] = await Promise.all([getSortedPosts(), getSortedLabs()]);
+const covered = new Set([...posts, ...labs].flatMap((p) => p.data.d3fend ?? []));
 
 // Group techniques by tactic, in D3FEND matrix order, populated only.
 const byTactic: Record<string, typeof D3FEND_TECHNIQUES> = {};
 for (const t of D3FEND_TECHNIQUES) (byTactic[t.tactic] ??= []).push(t);
 const tactics = D3FEND_TACTIC_ORDER.filter((name) => byTactic[name]?.length);
+const tacticDefinitions = new Map(D3FEND_TACTICS.map((t) => [t.name, t.definition]));
 
 const total = D3FEND_TECHNIQUES.length;
 const mappedCount = D3FEND_TECHNIQUES.filter((t) => t.counters.length).length;
+const coveredCount = D3FEND_TECHNIQUES.filter((t) => covered.has(t.id)).length;
 
 // Defense-lifecycle stepper: one pill per tactic, in matrix order, sized by
 // technique count with the ATT&CK-mapped count highlighted.
@@ -53,14 +60,20 @@ const chevCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 
 const tacticHead = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', m: 0, fontSize: '1.05rem', fontWeight: 700 });
 const tacCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600, color: 'textMuted', bg: 'bgSubtle', border: '1px solid token(colors.border)', borderRadius: 'full', px: '0.5rem', py: '0.1rem' });
 const tacMappedCount = css({ fontFamily: 'sans', fontSize: '0.72rem', fontWeight: 600, color: 'accent' });
+// A <span> (not <p>) since it lives inside <summary>, whose content model is
+// phrasing content — display:block here is purely visual, not a flow element.
+const tacDefinitionP = css({ display: 'block', color: 'textMuted', fontSize: '0.85rem', lineHeight: 1.6, mt: '0.4rem', ml: '2.55rem' });
 const chip = `${card()} ${css({
   scrollMarginTop: '90px', // clear the sticky header when linked to via #<id>
-  '&[data-mapped]': { borderLeftWidth: '3px', borderLeftColor: 'accent' },
+  // Left border marks "covered in a writeup" — same visual language as the ATT&CK
+  // Map's chip (data-mapped is toggle-only there, no unique border of its own).
+  '&[data-covered]': { borderLeftWidth: '3px', borderLeftColor: 'accent' },
   '&:target': { borderColor: 'primary', boxShadow: 'cardHover' },
 })}`;
 const chipTop = css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' });
 const chipId = css({ fontFamily: 'mono', fontSize: '0.72rem', fontWeight: 600, color: 'primary' });
-const mappedBadge = tag({ tone: 'accent' });
+const mappedBadge = tag({ tone: 'primary' });
+const coveredBadge = tag({ tone: 'accent' });
 const chipName = css({ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontWeight: 600, fontSize: '0.9rem', color: 'text', lineHeight: 1.3, _hover: { color: 'primary' } });
 const chipParent = css({ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.78rem', fontWeight: 600, color: 'textMuted', mt: 'auto' });
 
@@ -134,12 +147,15 @@ const anchored = new Set<string>();
     <p role="status" aria-live="polite" class={css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.3rem 0.9rem', color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
       <span><span id="d3fend-count">{total}</span> techniques</span>
       <span aria-hidden="true">·</span>
-      <span class={css({ color: 'accent', fontWeight: 600 })}>{mappedCount} map to ATT&CK</span>
+      <span class={css({ color: 'accent', fontWeight: 600 })}>{coveredCount} covered in writeups</span>
+      <span aria-hidden="true">·</span>
+      <span>{mappedCount} map to ATT&CK</span>
       <span aria-hidden="true">·</span>
       <a href="https://d3fend.mitre.org/" target="_blank" rel="noopener" class={statLink}>D3FEND v{D3FEND_VERSION} <Icon name="external-link" size={12} /></a>
     </p>
     <div class={css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', ml: { sm: 'auto' } })}>
-      <FilterToggle id="d3fend-mapped-toggle" icon="crosshair" label="Maps to ATT&CK" tone="accent" />
+      <FilterToggle id="d3fend-covered-toggle" icon="check" label="Covered only" tone="accent" />
+      <FilterToggle id="d3fend-mapped-toggle" icon="crosshair" label="Maps to ATT&CK" tone="primary" />
       <CollapseAll target="[data-tactic-group]" />
     </div>
   </div>
@@ -150,6 +166,7 @@ const anchored = new Set<string>();
   {/* Legend */}
   <div class={legendRow}>
     <span class={legendItem}><span class={legendSwatch} aria-hidden="true"></span> maps to an ATT&CK technique</span>
+    <span class={legendItem}><Icon name="check" size={13} class={css({ color: 'accent' })} /> covered in a writeup</span>
     <span class={legendItem}><Icon name="arrow-right" size={13} class={css({ color: 'textMuted' })} /> opens the technique detail page</span>
   </div>
 
@@ -157,6 +174,7 @@ const anchored = new Set<string>();
     {
       tactics.map((tactic) => {
         const tacMapped = byTactic[tactic].filter((t) => t.counters.length).length;
+        const tacDefinition = tacticDefinitions.get(tactic);
         return (
           <details id={tagSlug(tactic)} data-tactic-group open class={groupDetails}>
             <summary class={groupSummary}>
@@ -167,6 +185,7 @@ const anchored = new Set<string>();
                 <span class={tacCount}>{byTactic[tactic].length}</span>
                 {tacMapped > 0 && <span class={tacMappedCount}>{tacMapped} mapped</span>}
               </h2>
+              {tacDefinition && <span class={tacDefinitionP}>{tacDefinition}</span>}
             </summary>
             <div class={`card-grid ${css({ mt: '1rem' })}`}>
               {byTactic[tactic].map((t) => {
@@ -174,6 +193,7 @@ const anchored = new Set<string>();
                 if (firstHere) anchored.add(t.id);
                 const parent = t.parentId ? d3fendById(t.parentId) : undefined;
                 const mapped = t.counters.length > 0;
+                const isCovered = covered.has(t.id);
                 return (
                   <div
                     id={firstHere ? t.id : undefined}
@@ -182,9 +202,11 @@ const anchored = new Set<string>();
                     data-tactic={tagSlug(tactic)}
                     data-d3fend-card={`${t.id} ${t.name} ${parent ? parent.name : ''}`.toLowerCase()}
                     {...(mapped ? { 'data-mapped': true } : {})}
+                    {...(isCovered ? { 'data-covered': true } : {})}
                   >
                     <div class={chipTop}>
                       <span class={chipId}>{t.id}</span>
+                      {isCovered && <span class={coveredBadge}>covered</span>}
                       {mapped && <span class={mappedBadge}>{t.counters.length} ATT&CK</span>}
                     </div>
                     <a href={`/d3fend/${t.id}/`} class={chipName}>
@@ -225,7 +247,11 @@ const anchored = new Set<string>();
       emptyId: 'd3fend-empty',
       dedupeAttr: 'data-d3fend-id',
       facetAttr: 'data-tactic',
-      toggles: [{ id: 'd3fend-mapped-toggle', attr: 'data-mapped' }],
+      toggles: [
+        { id: 'd3fend-covered-toggle', attr: 'data-covered' },
+        { id: 'd3fend-mapped-toggle', attr: 'data-mapped' },
+      ],
+      urlSync: { queryParam: 'q', facetParam: 'tactic' },
     }}
   />
 </BaseLayout>

@@ -175,6 +175,8 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
       <FilterToggle id="attack-covered-toggle" icon="check" label="Covered only" tone="accent" />
       <FilterToggle id="attack-gloss-toggle" icon="book-open" label="In glossary" tone="primary" />
       <FilterToggle id="attack-defense-toggle" icon="shield" label="Has defense" tone="primary" />
+      <FilterToggle id="attack-detection-toggle" icon="search" label="Has detection" tone="primary" />
+      <FilterToggle id="attack-mitigation-toggle" icon="wrench" label="Has mitigations" tone="primary" />
       <CollapseAll target="[data-tactic-group]" />
     </div>
   </div>
@@ -221,6 +223,8 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
                     {...(isCovered ? { 'data-covered': true } : {})}
                     {...(gloss ? { 'data-has-gloss': true } : {})}
                     {...(defended.has(t.id) ? { 'data-has-defense': true } : {})}
+                    {...((t.detection?.length ?? 0) > 0 ? { 'data-has-detection': true } : {})}
+                    {...((t.mitigations?.length ?? 0) > 0 ? { 'data-has-mitigation': true } : {})}
                   >
                     <div class={chipTop}>
                       <span class={chipId}>{t.id}</span>
@@ -274,7 +278,10 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
         { id: 'attack-covered-toggle', attr: 'data-covered' },
         { id: 'attack-gloss-toggle', attr: 'data-has-gloss' },
         { id: 'attack-defense-toggle', attr: 'data-has-defense' },
+        { id: 'attack-detection-toggle', attr: 'data-has-detection' },
+        { id: 'attack-mitigation-toggle', attr: 'data-has-mitigation' },
       ],
+      urlSync: { queryParam: 'q', facetParam: 'platform' },
     }}
   />
 </BaseLayout>

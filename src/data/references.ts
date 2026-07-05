@@ -1249,7 +1249,7 @@ export interface AttackTechnique {
   /** Total documented uses behind `examples`. */
   examplesTotal?: number;
   /** Mitigations with MITRE's technique-specific guidance. */
-  mitigations?: { name: string; text: string }[];
+  mitigations?: { name: string; text: string; url?: string }[];
   /** Curated: why it matters / how it's detected (DFIR framing). */
   significance?: string;
   /** Curated: a concrete "in practice" example. */
