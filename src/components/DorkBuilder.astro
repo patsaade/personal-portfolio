@@ -1,9 +1,14 @@
 ---
-// Interactive search-operator ("dork") query builder. Pick a search engine,
-// fill in a few plain-language fields, and watch the real query assemble live
-// — then copy it or open it directly on that engine. Genuinely requires JS
-// (there's no meaningful static form without it), so the panel stays hidden
-// until the script confirms it's running — same JS-armed, no-JS-safe
+// Interactive search-operator ("dork") query builder — a compact, Scratch-
+// inspired "workspace": a vertical stack of small operator "blocks" (each a
+// syntax badge + input, connected by a lit-up timeline rail as you fill them
+// in) on the left, and a persistent "stage" showing the live-assembled query
+// + actions on the right (sticky on wide viewports, so the result never
+// scrolls out of view while you work through the blocks) — the same spirit
+// as Scratch's block palette + stage split, restyled in this site's own
+// tokens/typography rather than Scratch's literal look. Genuinely requires
+// JS (there's no meaningful static form without it), so the workspace stays
+// hidden until the script confirms it's running — same JS-armed, no-JS-safe
 // philosophy as CollapseAll/ViewToggle. The recipe library is rendered by the
 // caller as an always-visible sibling (NOT nested in here) — it must stay
 // real, static, no-JS-safe content, and this component's `[data-dork-load]`
@@ -20,12 +25,55 @@ interface Props {
 }
 const { engines, operators } = Astro.props;
 
-const panel = css({
+// The literal syntax fragment shown on each block's badge — matches the
+// "Syntax" column on the Operator Reference table below, for consistency.
+const syntaxLabel = (op: DorkOperator) =>
+  op.kind === 'phrase' ? '"…"' : op.kind === 'exclude' ? '-term' : op.kind === 'or' ? 'OR' : (op.prefix ?? '');
+
+const workspaceOuter = css({
+  position: 'relative',
   display: 'none', // revealed by the script once armed
-  flexDirection: 'column',
-  gap: '1.25rem',
-  '&[data-ready]': { display: 'flex' },
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'lg',
+  p: { base: '1rem', md: '1.35rem' },
+  '&[data-ready]': { display: 'block' },
+  // Opposing corner brackets — a light HUD/targeting touch, not a full frame.
+  _before: {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    w: '22px',
+    h: '22px',
+    borderTop: '2px solid token(colors.primary)',
+    borderLeft: '2px solid token(colors.primary)',
+    borderTopLeftRadius: 'lg',
+    pointerEvents: 'none',
+  },
+  _after: {
+    content: '""',
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    w: '22px',
+    h: '22px',
+    borderBottom: '2px solid token(colors.primary)',
+    borderRight: '2px solid token(colors.primary)',
+    borderBottomRightRadius: 'lg',
+    pointerEvents: 'none',
+  },
 });
+const workspaceDots = css({
+  position: 'absolute',
+  inset: 0,
+  borderRadius: 'lg',
+  backgroundImage: 'radial-gradient(token(colors.border) 1px, transparent 1px)',
+  backgroundSize: '20px 20px',
+  opacity: 0.6,
+  pointerEvents: 'none',
+});
+const workspaceContent = css({ position: 'relative', display: 'flex', flexDirection: 'column', gap: '1.1rem' });
 const noJsNote = css({
   color: 'textMuted',
   fontSize: '0.88rem',
@@ -36,7 +84,7 @@ const noJsNote = css({
   '[data-dork-builder][data-ready] ~ &': { display: 'none' },
 });
 
-const engineRow = css({ display: 'inline-flex', gap: '0.15rem', p: '0.2rem', bg: 'bgSubtle', border: '1px solid token(colors.border)', borderRadius: 'md', alignSelf: 'flex-start' });
+const engineRow = css({ display: 'inline-flex', gap: '0.15rem', p: '0.2rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'md', alignSelf: 'flex-start' });
 const engineBtn = css({
   display: 'inline-flex',
   alignItems: 'center',
@@ -53,45 +101,88 @@ const engineBtn = css({
   cursor: 'pointer',
   transition: 'all 150ms ease',
   _hover: { color: 'text' },
-  '&[data-active]': { bg: 'bgCard', color: 'primary', borderColor: 'border', boxShadow: 'card' },
+  '&[data-active]': { bg: 'bgSubtle', color: 'primary', borderColor: 'border', boxShadow: 'card' },
 });
 
-const fieldsGrid = css({ display: 'grid', gridTemplateColumns: { base: '1fr', sm: 'repeat(2, 1fr)' }, gap: '0.9rem' });
-const field = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem' });
-const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.82rem', fontWeight: 600, color: 'text' });
-const fieldHint = css({ fontSize: '0.76rem', color: 'textMuted' });
-const fieldInput = css({
+const paneLabel = css({ fontFamily: 'sans', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'textMuted', mb: '0.6rem' });
+const workspaceGrid = css({ display: 'grid', gridTemplateColumns: { base: '1fr', lg: 'minmax(0, 1fr) 260px' }, gap: '1.5rem', alignItems: 'start' });
+
+// Vertical "timeline" of blocks — a rail with a dot per block that lights up
+// (primary) once that block has a value, so the stack visually shows which
+// pieces are currently contributing to the assembled query.
+const blockStack = css({ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderLeft: '2px solid token(colors.border)', ml: '0.4rem', pl: '1.1rem' });
+const blockRow = css({
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  py: '0.15rem',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    left: '-1.45rem',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    w: '8px',
+    h: '8px',
+    borderRadius: 'full',
+    bg: 'border',
+    transition: 'background 150ms ease',
+  },
+  '&[data-filled]::before': { bg: 'primary' },
+});
+const blockBadge = css({
+  flexShrink: 0,
+  minW: '4.6rem',
+  textAlign: 'right',
   fontFamily: 'mono',
-  fontSize: '0.88rem',
+  fontSize: '0.74rem',
+  fontWeight: 700,
+  color: 'primary',
+  whiteSpace: 'nowrap',
+});
+const blockInput = css({
+  flex: 1,
+  minW: 0,
+  fontFamily: 'mono',
+  fontSize: '0.84rem',
   color: 'text',
   bg: 'bgCard',
   border: '1px solid token(colors.border)',
   borderRadius: 'md',
-  px: '0.7rem',
-  py: '0.5rem',
+  px: '0.6rem',
+  py: '0.4rem',
   transition: 'border-color 150ms ease',
   _focus: { outline: 'none', borderColor: 'primary' },
   '&::placeholder': { color: 'textMuted', opacity: 0.7 },
 });
 
-const outputWrap = css({ display: 'flex', flexDirection: 'column', gap: '0.6rem' });
+const stage = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.6rem',
+  position: { lg: 'sticky' },
+  top: { lg: '90px' },
+});
 const outputBox = css({
   m: 0,
-  p: '0.85rem 1rem',
+  p: '0.75rem 0.9rem',
   fontFamily: 'mono',
-  fontSize: '0.95rem',
+  fontSize: '0.85rem',
   color: 'text',
-  bg: 'bgSubtle',
+  bg: 'bgCard',
   border: '1px solid token(colors.border)',
   borderRadius: 'md',
   overflowX: 'auto',
-  whiteSpace: 'pre',
-  minH: '2.6rem',
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+  minH: '4.5rem',
 });
-const actionRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' });
+const actionCol = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' });
 const actionBtn = css({
   display: 'inline-flex',
   alignItems: 'center',
+  justifyContent: 'center',
   gap: '0.4rem',
   fontSize: '0.85rem',
   fontFamily: 'sans',
@@ -114,41 +205,60 @@ const primaryBtn = css({
 });
 ---
 
-<div class={panel} data-dork-builder data-dork-engines={JSON.stringify(engines)}>
-  <div class={engineRow} role="radiogroup" aria-label="Search engine">
-    {
-      engines.map((e, i) => (
-        <button type="button" role="radio" aria-checked={i === 0 ? 'true' : 'false'} {...(i === 0 ? { 'data-active': true } : {})} data-engine-btn={e.id} data-sound="tick" class={engineBtn}>
-          {e.label}
-        </button>
-      ))
-    }
-  </div>
+<div class={workspaceOuter} data-dork-builder data-dork-engines={JSON.stringify(engines)}>
+  <div class={workspaceDots} aria-hidden="true"></div>
+  <div class={workspaceContent}>
+    <div class={engineRow} role="radiogroup" aria-label="Search engine">
+      {
+        engines.map((e, i) => (
+          <button type="button" role="radio" aria-checked={i === 0 ? 'true' : 'false'} {...(i === 0 ? { 'data-active': true } : {})} data-engine-btn={e.id} data-sound="tick" class={engineBtn}>
+            {e.label}
+          </button>
+        ))
+      }
+    </div>
 
-  <div class={fieldsGrid}>
-    {
-      operators.map((op) => (
-        <div class={field} data-dork-field-wrap data-engines={op.engines.join(' ')}>
-          <label class={fieldLabel} for={`dork-${op.id}`}>{op.label}</label>
-          <input id={`dork-${op.id}`} type="text" class={fieldInput} placeholder={op.placeholder} data-dork-field={op.id} data-kind={op.kind} data-prefix={op.prefix ?? ''} autocomplete="off" />
-          <span class={fieldHint}>{op.description}</span>
+    <div class={workspaceGrid}>
+      <div>
+        <p class={paneLabel}>Blocks</p>
+        <div class={blockStack}>
+          {
+            operators.map((op) => (
+              <div class={blockRow} data-dork-field-wrap data-engines={op.engines.join(' ')}>
+                <span class={blockBadge} aria-hidden="true">{syntaxLabel(op)}</span>
+                <input
+                  id={`dork-${op.id}`}
+                  type="text"
+                  class={blockInput}
+                  placeholder={op.placeholder}
+                  aria-label={op.label}
+                  title={op.description}
+                  data-dork-field={op.id}
+                  data-kind={op.kind}
+                  data-prefix={op.prefix ?? ''}
+                  autocomplete="off"
+                />
+              </div>
+            ))
+          }
         </div>
-      ))
-    }
-  </div>
+      </div>
 
-  <div class={outputWrap}>
-    <pre class={outputBox}><code data-dork-output>&nbsp;</code></pre>
-    <div class={actionRow}>
-      <button type="button" class={`${actionBtn} ${primaryBtn}`} data-dork-copy data-sound="copy">
-        <Icon name="copy" size={15} /> Copy query
-      </button>
-      <a class={actionBtn} data-dork-search href="#" target="_blank" rel="noopener" data-sound="tick">
-        <Icon name="search" size={15} /> Search on <span data-dork-engine-label>Google</span>
-      </a>
-      <button type="button" class={actionBtn} data-dork-clear data-sound="tick">
-        <Icon name="x" size={15} /> Clear
-      </button>
+      <div class={stage}>
+        <p class={paneLabel}>Query</p>
+        <pre class={outputBox}><code data-dork-output>&nbsp;</code></pre>
+        <div class={actionCol}>
+          <button type="button" class={`${actionBtn} ${primaryBtn}`} data-dork-copy data-sound="copy">
+            <Icon name="copy" size={15} /> Copy
+          </button>
+          <a class={actionBtn} data-dork-search href="#" target="_blank" rel="noopener" data-sound="tick">
+            <Icon name="search" size={15} /> Search <span data-dork-engine-label>Google</span>
+          </a>
+          <button type="button" class={actionBtn} data-dork-clear data-sound="tick">
+            <Icon name="x" size={15} /> Clear
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -222,6 +332,12 @@ const primaryBtn = css({
           var eng = engineById(currentEngine);
           searchLink.href = query ? eng.searchUrl + encodeURIComponent(query) : '#';
           engineLabel.textContent = eng.label;
+          // Light up each block's timeline dot once it has a value, so the
+          // stack visually shows which pieces are contributing right now.
+          fields.forEach(function (f) {
+            if (f.input.value.trim()) f.wrap.setAttribute('data-filled', '');
+            else f.wrap.removeAttribute('data-filled');
+          });
         }
 
         function setEngine(id) {
