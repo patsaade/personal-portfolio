@@ -258,6 +258,10 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
 
 /** The single best canonical reference for a specific term (by slug). */
 export const TERM_REFERENCES: Record<string, Reference> = {
+  "open-source-intelligence": {
+    "name": "SANS Institute — What Is Open Source Intelligence (OSINT)?",
+    "url": "https://www.sans.org/blog/what-is-open-source-intelligence"
+  },
   "order-of-volatility": {
     "name": "RFC 3227 §2.1 — Order of Volatility (Guidelines for Evidence Collection and Archiving)",
     "url": "https://www.rfc-editor.org/rfc/rfc3227.html"

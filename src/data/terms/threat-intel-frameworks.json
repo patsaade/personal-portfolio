@@ -331,5 +331,15 @@
     "significance": "Vague phrasing causes readers to misjudge risk; estimative language makes intelligence assessments comparable and honest about uncertainty, which is essential when a conclusion like attribution will drive consequential decisions.",
     "example": "Writing that an intrusion is 'likely the work of a named group, with moderate confidence' rather than stating it as plain fact.",
     "related": ["structured-analytic-techniques", "attribution", "analysis-of-competing-hypotheses"]
+  },
+  {
+    "term": "Open-Source Intelligence",
+    "slug": "open-source-intelligence",
+    "aka": ["OSINT"],
+    "short": "Intelligence produced by collecting and analyzing publicly available information.",
+    "definition": "Intelligence produced by collecting, evaluating, and analyzing publicly available information — search engines, DNS records, certificate transparency logs, code repositories, social media, and public records — to answer a specific intelligence question. Raw public data only becomes OSINT once it's evaluated and analyzed, not simply gathered.",
+    "significance": "The same techniques an attacker uses to scope a target double as a fast way for a defender to check their own (or an authorized client's) exposure — an indexed internal panel, an exposed backup file, or a forgotten subdomain. It's foundational to both offensive reconnaissance and defensive attack-surface assessment.",
+    "example": "Using search-engine operators and certificate transparency logs to discover a forgotten staging subdomain still pointing at production data.",
+    "related": ["threat-actor", "certificate-transparency", "indicator-of-compromise"]
   }
 ]

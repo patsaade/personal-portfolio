@@ -1,0 +1,414 @@
+---
+// Interactive search-operator ("dork") query builder — a compact, Scratch-
+// inspired "workspace": a vertical stack of small operator "blocks" (each a
+// syntax badge + input, connected by a lit-up timeline rail as you fill them
+// in) on the left, and a persistent "stage" showing the live-assembled query
+// + actions on the right (sticky on wide viewports, so the result never
+// scrolls out of view while you work through the blocks) — the same spirit
+// as Scratch's block palette + stage split, restyled in this site's own
+// tokens/typography rather than Scratch's literal look. Genuinely requires
+// JS (there's no meaningful static form without it), so the workspace stays
+// hidden until the script confirms it's running — same JS-armed, no-JS-safe
+// philosophy as CollapseAll/ViewToggle. The recipe library is rendered by the
+// caller as an always-visible sibling (NOT nested in here) — it must stay
+// real, static, no-JS-safe content, and this component's `[data-dork-load]`
+// wiring below deliberately queries the whole document rather than just its
+// own root so recipe "Load into builder" buttons elsewhere on the page still
+// work.
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+import type { SearchEngine, DorkOperator } from '../data/osint';
+
+interface Props {
+  engines: SearchEngine[];
+  operators: DorkOperator[];
+}
+const { engines, operators } = Astro.props;
+
+// The literal syntax fragment shown on each block's badge — matches the
+// "Syntax" column on the Operator Reference table below, for consistency.
+const syntaxLabel = (op: DorkOperator) =>
+  op.kind === 'phrase' ? '"…"' : op.kind === 'exclude' ? '-term' : op.kind === 'or' ? 'OR' : (op.prefix ?? '');
+
+const workspaceOuter = css({
+  position: 'relative',
+  display: 'none', // revealed by the script once armed
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'lg',
+  p: { base: '1rem', md: '1.35rem' },
+  '&[data-ready]': { display: 'block' },
+  // Opposing corner brackets — a light HUD/targeting touch, not a full frame.
+  _before: {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    w: '22px',
+    h: '22px',
+    borderTop: '2px solid token(colors.primary)',
+    borderLeft: '2px solid token(colors.primary)',
+    borderTopLeftRadius: 'lg',
+    pointerEvents: 'none',
+  },
+  _after: {
+    content: '""',
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    w: '22px',
+    h: '22px',
+    borderBottom: '2px solid token(colors.primary)',
+    borderRight: '2px solid token(colors.primary)',
+    borderBottomRightRadius: 'lg',
+    pointerEvents: 'none',
+  },
+});
+const workspaceDots = css({
+  position: 'absolute',
+  inset: 0,
+  borderRadius: 'lg',
+  backgroundImage: 'radial-gradient(token(colors.border) 1px, transparent 1px)',
+  backgroundSize: '20px 20px',
+  opacity: 0.6,
+  pointerEvents: 'none',
+});
+const workspaceContent = css({ position: 'relative', display: 'flex', flexDirection: 'column', gap: '1.1rem' });
+const noJsNote = css({
+  color: 'textMuted',
+  fontSize: '0.88rem',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  p: '0.85rem 1rem',
+  '[data-dork-builder][data-ready] ~ &': { display: 'none' },
+});
+
+const engineRow = css({ display: 'inline-flex', gap: '0.15rem', p: '0.2rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'md', alignSelf: 'flex-start' });
+const engineBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  px: '0.75rem',
+  py: '0.4rem',
+  fontFamily: 'sans',
+  fontSize: '0.85rem',
+  fontWeight: 600,
+  borderRadius: 'sm',
+  border: '1px solid transparent',
+  bg: 'transparent',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { color: 'text' },
+  '&[data-active]': { bg: 'bgSubtle', color: 'primary', borderColor: 'border', boxShadow: 'card' },
+});
+
+const paneLabel = css({ fontFamily: 'sans', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'textMuted', mb: '0.6rem' });
+const workspaceGrid = css({ display: 'grid', gridTemplateColumns: { base: '1fr', lg: 'minmax(0, 1fr) 260px' }, gap: '1.5rem', alignItems: 'start' });
+
+// Vertical "timeline" of blocks — a rail with a dot per block that lights up
+// (primary) once that block has a value, so the stack visually shows which
+// pieces are currently contributing to the assembled query.
+const blockStack = css({ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderLeft: '2px solid token(colors.border)', ml: '0.4rem', pl: '1.1rem' });
+const blockRow = css({
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  py: '0.15rem',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    left: '-1.45rem',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    w: '8px',
+    h: '8px',
+    borderRadius: 'full',
+    bg: 'border',
+    transition: 'background 150ms ease',
+  },
+  '&[data-filled]::before': { bg: 'primary' },
+});
+const blockBadge = css({
+  flexShrink: 0,
+  minW: '4.6rem',
+  textAlign: 'right',
+  fontFamily: 'mono',
+  fontSize: '0.74rem',
+  fontWeight: 700,
+  color: 'primary',
+  whiteSpace: 'nowrap',
+});
+const blockInput = css({
+  flex: 1,
+  minW: 0,
+  fontFamily: 'mono',
+  fontSize: '0.84rem',
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.6rem',
+  py: '0.4rem',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&::placeholder': { color: 'textMuted', opacity: 0.7 },
+});
+
+const stage = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.6rem',
+  position: { lg: 'sticky' },
+  top: { lg: '90px' },
+});
+const outputBox = css({
+  m: 0,
+  p: '0.75rem 0.9rem',
+  fontFamily: 'mono',
+  fontSize: '0.85rem',
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  overflowX: 'auto',
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+  minH: '4.5rem',
+});
+const actionCol = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' });
+const actionBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '0.4rem',
+  fontSize: '0.85rem',
+  fontFamily: 'sans',
+  fontWeight: 600,
+  px: '0.8rem',
+  py: '0.5rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  color: 'text',
+  cursor: 'pointer',
+  bg: 'bgCard',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+const primaryBtn = css({
+  bg: 'primary',
+  color: 'white',
+  borderColor: 'primary',
+  _hover: { opacity: 0.9, color: 'white' },
+});
+---
+
+<div class={workspaceOuter} data-dork-builder data-dork-engines={JSON.stringify(engines)}>
+  <div class={workspaceDots} aria-hidden="true"></div>
+  <div class={workspaceContent}>
+    <div class={engineRow} role="radiogroup" aria-label="Search engine">
+      {
+        engines.map((e, i) => (
+          <button type="button" role="radio" aria-checked={i === 0 ? 'true' : 'false'} {...(i === 0 ? { 'data-active': true } : {})} data-engine-btn={e.id} data-sound="tick" class={engineBtn}>
+            {e.label}
+          </button>
+        ))
+      }
+    </div>
+
+    <div class={workspaceGrid}>
+      <div>
+        <p class={paneLabel}>Blocks</p>
+        <div class={blockStack}>
+          {
+            operators.map((op) => (
+              <div class={blockRow} data-dork-field-wrap data-engines={op.engines.join(' ')}>
+                <span class={blockBadge} aria-hidden="true">{syntaxLabel(op)}</span>
+                <input
+                  id={`dork-${op.id}`}
+                  type="text"
+                  class={blockInput}
+                  placeholder={op.placeholder}
+                  aria-label={op.label}
+                  title={op.description}
+                  data-dork-field={op.id}
+                  data-kind={op.kind}
+                  data-prefix={op.prefix ?? ''}
+                  autocomplete="off"
+                />
+              </div>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class={stage}>
+        <p class={paneLabel}>Query</p>
+        <pre class={outputBox}><code data-dork-output>&nbsp;</code></pre>
+        <div class={actionCol}>
+          <button type="button" class={`${actionBtn} ${primaryBtn}`} data-dork-copy data-sound="copy">
+            <Icon name="copy" size={15} /> Copy
+          </button>
+          <a class={actionBtn} data-dork-search href="#" target="_blank" rel="noopener" data-sound="tick">
+            <Icon name="search" size={15} /> Search <span data-dork-engine-label>Google</span>
+          </a>
+          <button type="button" class={actionBtn} data-dork-clear data-sound="tick">
+            <Icon name="x" size={15} /> Clear
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class={noJsNote}>
+  The interactive builder needs JavaScript enabled. The recon recipes below still show each query in
+  full — copy it by hand.
+</p>
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  (function () {
+    function init() {
+      var roots = document.querySelectorAll('[data-dork-builder]:not([data-ready])');
+      Array.prototype.forEach.call(roots, function (root) {
+        var engineBtns = Array.prototype.slice.call(root.querySelectorAll('[data-engine-btn]'));
+        var fieldWraps = Array.prototype.slice.call(root.querySelectorAll('[data-dork-field-wrap]'));
+        var fields = fieldWraps.map(function (wrap) {
+          return {
+            wrap: wrap,
+            input: wrap.querySelector('[data-dork-field]'),
+            engines: (wrap.getAttribute('data-engines') || '').split(' ').filter(Boolean),
+          };
+        });
+        var output = root.querySelector('[data-dork-output]');
+        var copyBtn = root.querySelector('[data-dork-copy]');
+        var searchLink = root.querySelector('[data-dork-search]');
+        var engineLabel = root.querySelector('[data-dork-engine-label]');
+        var clearBtn = root.querySelector('[data-dork-clear]');
+        if (!output || !copyBtn || !searchLink || !engineLabel || !clearBtn) return;
+
+        var engines = [];
+        try { engines = JSON.parse(root.getAttribute('data-dork-engines') || '[]'); } catch (e) { engines = []; }
+        var currentEngine = (engines[0] && engines[0].id) || 'google';
+
+        function fragmentFor(f) {
+          var val = f.input.value.trim();
+          if (!val) return '';
+          var kind = f.input.getAttribute('data-kind');
+          var prefix = f.input.getAttribute('data-prefix') || '';
+          if (kind === 'phrase') return '"' + val + '"';
+          if (kind === 'exclude') {
+            return val.split(/\s+/).filter(Boolean).map(function (t) { return '-' + t; }).join(' ');
+          }
+          if (kind === 'or') {
+            return val.split(/\s+/).filter(Boolean).join(' OR ');
+          }
+          // A multi-word value on a prefix operator (intitle:, inurl:, etc.) must be
+          // quoted, or engines only apply the operator to the first word.
+          return prefix + (val.indexOf(' ') !== -1 ? '"' + val + '"' : val);
+        }
+
+        function buildQuery() {
+          var parts = [];
+          fields.forEach(function (f) {
+            if (f.engines.indexOf(currentEngine) === -1) return;
+            var frag = fragmentFor(f);
+            if (frag) parts.push(frag);
+          });
+          return parts.join(' ');
+        }
+
+        function engineById(id) {
+          for (var i = 0; i < engines.length; i++) if (engines[i].id === id) return engines[i];
+          return engines[0];
+        }
+
+        function render() {
+          var query = buildQuery();
+          output.textContent = query || ' ';
+          var eng = engineById(currentEngine);
+          searchLink.href = query ? eng.searchUrl + encodeURIComponent(query) : '#';
+          engineLabel.textContent = eng.label;
+          // Light up each block's timeline dot once it has a value, so the
+          // stack visually shows which pieces are contributing right now.
+          fields.forEach(function (f) {
+            if (f.input.value.trim()) f.wrap.setAttribute('data-filled', '');
+            else f.wrap.removeAttribute('data-filled');
+          });
+        }
+
+        function setEngine(id) {
+          currentEngine = id;
+          engineBtns.forEach(function (b) {
+            var active = b.getAttribute('data-engine-btn') === id;
+            if (active) b.setAttribute('data-active', '');
+            else b.removeAttribute('data-active');
+            b.setAttribute('aria-checked', String(active));
+          });
+          fieldWraps.forEach(function (wrap, i) {
+            var supported = fields[i].engines.indexOf(id) !== -1;
+            wrap.hidden = !supported;
+          });
+          render();
+        }
+
+        engineBtns.forEach(function (b) {
+          b.addEventListener('click', function () { setEngine(b.getAttribute('data-engine-btn')); });
+        });
+        fields.forEach(function (f) { f.input.addEventListener('input', render); });
+
+        var status = document.createElement('div');
+        status.setAttribute('role', 'status');
+        status.setAttribute('aria-live', 'polite');
+        status.style.cssText = 'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;';
+        document.body.appendChild(status);
+
+        copyBtn.addEventListener('click', function () {
+          var text = output.textContent || '';
+          if (!text.trim()) return;
+          navigator.clipboard.writeText(text).then(function () {
+            status.textContent = 'Query copied to clipboard';
+            setTimeout(function () { status.textContent = ''; }, 1600);
+          }).catch(function () {});
+        });
+
+        clearBtn.addEventListener('click', function () {
+          fields.forEach(function (f) { f.input.value = ''; });
+          render();
+        });
+
+        // Recipe "Load into builder" — the recipe library lives elsewhere on the
+        // page (a static, always-visible sibling, not nested in this JS-gated
+        // panel), so these buttons are queried document-wide rather than scoped
+        // to `root`. Loading always switches to Google (recipes are authored in
+        // Google's operator set) and hydrates matching fields.
+        var loadBtns = Array.prototype.slice.call(document.querySelectorAll('[data-dork-load]'));
+        loadBtns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var values;
+            try { values = JSON.parse(btn.getAttribute('data-dork-load') || '{}'); } catch (e) { values = {}; }
+            setEngine('google');
+            fields.forEach(function (f) {
+              var id = f.input.getAttribute('data-dork-field');
+              // Keep whatever the user already typed as their own target domain;
+              // every other field is reset so a previously loaded recipe can't
+              // silently blend into this one.
+              if (id === 'site') return;
+              f.input.value = Object.prototype.hasOwnProperty.call(values, id) ? values[id] : '';
+            });
+            render();
+            root.scrollIntoView({ block: 'start', behavior: 'smooth' });
+          });
+        });
+
+        setEngine(currentEngine);
+        root.setAttribute('data-ready', '');
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>

@@ -1,0 +1,234 @@
+---
+// OSINT Toolkit — a DFIR/attack-surface-discovery-focused open-source
+// intelligence reference: an interactive search-operator ("dork") builder
+// across Google/Bing/DuckDuckGo, a curated library of well-established recon
+// recipes, and a cross-link into the existing OSINT-tagged tools in the kit.
+// Framed for authorized/defensive use (assessing your own or a client's
+// exposure), matching this site's dual-use-tool guidance. Static page.
+// Section ids (#builder, #recipes, #operators) are anchor targets for the nav
+// "OSINT" dropdown (see consts.ts OSINT_LINKS) — the recipe library in
+// particular renders directly here (not inside <DorkBuilder>, which is
+// JS-gated) so it stays real, static, no-JS-safe content.
+export const prerender = true;
+import { css } from 'styled-system/css';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import Icon from '../components/Icon.astro';
+import DorkBuilder from '../components/DorkBuilder.astro';
+import { SEARCH_ENGINES, DORK_OPERATORS, DORK_RECIPES } from '../data/osint';
+import { TOOLS } from '../data/tools';
+
+const osintTools = TOOLS.filter((t) => t.fn === 'OSINT');
+
+const recipesByCategory: Record<string, typeof DORK_RECIPES> = {};
+for (const r of DORK_RECIPES) (recipesByCategory[r.category] ??= []).push(r);
+
+const sectionH2 = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  fontSize: '1.3rem',
+  fontWeight: 700,
+  mt: '2.5rem',
+  mb: '1rem',
+  pt: '1.5rem',
+  borderTop: '1px solid token(colors.border)',
+  scrollMarginTop: '90px', // clear the sticky header when linked to via #<id>
+});
+const opTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' });
+const opTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)' });
+const opTd = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text' });
+const opCode = css({ fontFamily: 'mono', color: 'primary' });
+const toolChipRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', mt: '0.75rem' });
+const toolChip = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.35rem',
+  fontFamily: 'sans',
+  fontSize: '0.85rem',
+  fontWeight: 600,
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.7rem',
+  py: '0.4rem',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+
+const recipeSection = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' });
+const recipeCatHead = css({ fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'primary', mt: '0.5rem' });
+const recipeGrid = css({ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))', gap: '0.6rem' });
+const recipeCard = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.4rem',
+  p: '0.7rem 0.85rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+});
+const recipeTitle = css({ fontFamily: 'sans', fontWeight: 700, fontSize: '0.9rem', color: 'text' });
+const recipeDesc = css({ fontSize: '0.82rem', color: 'textMuted', lineHeight: 1.5 });
+const recipeQuery = css({
+  m: 0,
+  p: '0.45rem 0.6rem',
+  fontFamily: 'mono',
+  fontSize: '0.76rem',
+  color: 'primary',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'sm',
+  overflowX: 'auto',
+  whiteSpace: 'pre',
+});
+const recipeLoadBtn = css({
+  alignSelf: 'flex-start',
+  fontSize: '0.78rem',
+  fontWeight: 600,
+  color: 'primary',
+  cursor: 'pointer',
+  bg: 'transparent',
+  border: 'none',
+  p: 0,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.3rem',
+  _hover: { textDecoration: 'underline' },
+});
+---
+
+<BaseLayout
+  title="OSINT Toolkit"
+  description="An interactive search-operator (dork) builder across Google, Bing, and DuckDuckGo, plus a curated library of attack-surface-discovery recipes and OSINT tools."
+>
+  <PageHeader
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'OSINT Toolkit' }]}
+    eyebrow="Recon & Discovery"
+    title="OSINT Toolkit"
+    description="Open-source intelligence for attack-surface discovery — build a search-engine query interactively, or start from a recipe below."
+  />
+
+  <aside
+    class={css({
+      bg: 'bgSubtle',
+      border: '1px solid token(colors.border)',
+      borderLeftWidth: '3px',
+      borderLeftColor: 'primary',
+      borderRadius: 'md',
+      p: '1rem 1.25rem',
+      mb: '1.5rem',
+    })}
+  >
+    <p class={css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', m: 0 })}>
+      <strong class={css({ color: 'text' })}>OSINT</strong> — <em>open-source intelligence</em> — is
+      information gathered from publicly available sources: search engines, DNS, certificate logs,
+      code repositories, social platforms. For a defender, the same techniques an attacker uses to
+      scope a target double as a fast way to check your own (or an authorized client's) exposure —
+      an exposed backup file, an internal admin panel indexed by a search engine, or a subdomain
+      nobody remembered still existed. Everything below is meant for assessing infrastructure you
+      own or are authorized to test.
+    </p>
+  </aside>
+
+  <h2 id="builder" class={css({ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.3rem', fontWeight: 700, mb: '1rem', scrollMarginTop: '90px' })}>
+    <Icon name="search" size={20} class={css({ color: 'primary' })} /> Search query builder
+  </h2>
+  <DorkBuilder engines={SEARCH_ENGINES} operators={DORK_OPERATORS} />
+
+  <h2 id="recipes" class={sectionH2}>
+    <Icon name="target" size={20} class={css({ color: 'primary' })} /> Recon recipes
+  </h2>
+  <p class={css({ color: 'textMuted', fontSize: '0.9rem', mb: '1rem' })}>
+    Well-established attack-surface-discovery patterns — copy a query directly, or load it straight
+    into the builder above (which switches to Google and fills in the matching fields).
+  </p>
+  <div class={recipeSection}>
+    {
+      Object.entries(recipesByCategory).map(([category, items]) => (
+        <>
+          <h3 class={recipeCatHead}>{category}</h3>
+          <div class={recipeGrid}>
+            {items.map((r) => (
+              <div class={recipeCard}>
+                <span class={recipeTitle}>{r.title}</span>
+                <p class={recipeDesc}>{r.desc}</p>
+                <pre class={recipeQuery}><code>{r.queryTemplate}</code></pre>
+                {r.values && (
+                  <button type="button" class={recipeLoadBtn} data-dork-load={JSON.stringify(r.values)} data-sound="tick">
+                    <Icon name="target" size={13} /> Load into builder
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
+      ))
+    }
+  </div>
+
+  <h2 id="operators" class={sectionH2}>
+    <Icon name="list" size={20} class={css({ color: 'primary' })} /> Operator reference
+  </h2>
+  <div class={css({ overflowX: 'auto' })}>
+    <table class={opTable}>
+      <thead>
+        <tr>
+          <th class={opTh}>Operator</th>
+          <th class={opTh}>Syntax</th>
+          <th class={opTh}>Works on</th>
+          <th class={opTh}>What it does</th>
+          <th class={opTh}>Cross-engine notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          DORK_OPERATORS.map((op) => (
+            <tr>
+              <td class={opTd}>{op.label}</td>
+              <td class={`${opTd} ${opCode}`}>{op.kind === 'phrase' ? '"…"' : op.kind === 'exclude' ? '-term' : op.prefix}</td>
+              <td class={opTd}>
+                {op.engines
+                  .map((e) => SEARCH_ENGINES.find((s) => s.id === e)?.label ?? e)
+                  .join(', ')}
+              </td>
+              <td class={opTd}>{op.description}</td>
+              <td class={`${opTd} ${css({ color: 'textMuted', fontSize: '0.78rem' })}`}>{op.note}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class={css({ color: 'textMuted', fontSize: '0.78rem', mt: '0.6rem' })}>
+    Several long-standing operators (intitle:, inurl:, intext:, OR) are no longer formally documented
+    by Google, though still widely reported as functional — the builder and notes above flag this
+    distinction rather than presenting undocumented and officially-guaranteed syntax as equivalent.
+    Google has fully deprecated several other once-common "dork" operators over the years
+    (cache:, related:, info:, the + prefix, the ~ synonym match) — they're intentionally left out.
+  </p>
+
+  <h2 id="tools-in-kit" class={sectionH2}>
+    <Icon name="wrench" size={20} class={css({ color: 'primary' })} /> OSINT tools in the kit
+  </h2>
+  <p class={css({ color: 'textMuted', fontSize: '0.9rem' })}>
+    Certificate transparency, IP reputation, internet-wide scan data, and more — the toolkit already
+    covers several free/open OSINT lookups.
+  </p>
+  <div class={toolChipRow}>
+    {
+      osintTools.map((t) => (
+        <a href={`/tools/${t.slug}/`} class={toolChip}>
+          {t.name}
+          <Icon name="link" size={13} class={css({ color: 'textMuted' })} />
+        </a>
+      ))
+    }
+  </div>
+  <p class={css({ mt: '0.85rem' })}>
+    <a href="/tools/?q=osint" class={css({ color: 'primary', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.9rem', _hover: { textDecoration: 'underline' } })}>
+      See all OSINT tools in the Tool Catalog <Icon name="link" size={13} />
+    </a>
+  </p>
+</BaseLayout>

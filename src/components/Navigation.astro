@@ -1,7 +1,7 @@
 ---
 // Sticky top nav — brand, links, theme picker, mode toggle, mobile menu.
 import { css } from 'styled-system/css';
-import { NAV_LINKS, ANALYST_LINKS, MORE_LINKS, SITE } from '../consts';
+import { NAV_LINKS, DFIR_GROUPS, MORE_LINKS, SITE } from '../consts';
 import ThemePicker from './ThemePicker.astro';
 import ModeToggle from './ModeToggle.astro';
 import SoundToggle from './SoundToggle.astro';
@@ -11,12 +11,15 @@ import Icon from './Icon.astro';
 const pathname = Astro.url.pathname;
 const isActive = (href: string) =>
   href === '/' ? pathname === '/' : pathname.startsWith(href);
-// Two grouped menus — desktop dropdowns, mobile collapsible <details>.
+// Two dropdowns — desktop menus, mobile collapsible <details>. Each is a list
+// of categories (a category's `label` renders as a small header inside the
+// menu; "More" has just one, unlabeled category so it stays a flat list).
 const dropdowns = [
-  { id: 'analyst', label: 'Analyst', links: ANALYST_LINKS },
-  { id: 'more', label: 'More', links: MORE_LINKS },
+  { id: 'dfir', label: 'DFIR', groups: DFIR_GROUPS },
+  { id: 'more', label: 'More', groups: [{ category: undefined, links: MORE_LINKS }] },
 ] as const;
-const isAnyActive = (links: readonly { href: string }[]) => links.some((l) => isActive(l.href));
+const isAnyActive = (groups: readonly { links: readonly { href: string }[] }[]) =>
+  groups.some((g) => g.links.some((l) => isActive(l.href)));
 
 // Desktop nav "More" dropdown (mirrors the footer's More column). Opens on
 // hover/focus via CSS (the `.nav-more` ancestor) and on click/tap via JS.
@@ -49,18 +52,30 @@ const moreMenuOuter = css({
   zIndex: 60,
 });
 const moreMenuInner = css({
-  minW: '190px',
+  minW: '210px',
   bg: 'bgCard',
   border: '1px solid token(colors.border)',
   borderRadius: 'lg',
   boxShadow: 'cardHover',
   p: '0.4rem',
-  m: 0,
-  listStyle: 'none',
   display: 'flex',
   flexDirection: 'column',
-  gap: '0.05rem',
+  gap: '0.15rem',
 });
+const menuGroup = css({ listStyle: 'none', m: 0, p: 0 });
+const menuGroupLabel = css({
+  fontFamily: 'sans',
+  fontSize: '0.68rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: 'primary',
+  px: '0.65rem',
+  pt: '0.5rem',
+  pb: '0.2rem',
+  '& + ul': { mt: 0 },
+});
+const menuGroupDivider = css({ borderTop: '1px solid token(colors.border)', my: '0.25rem' });
 const moreLink = css({
   display: 'block',
   px: '0.65rem',
@@ -80,7 +95,17 @@ const mobileLink = css({
   color: 'textMuted',
   '&[aria-current=page]': { color: 'primary', fontWeight: 600 },
 });
-// Mobile collapsible-section header (Analyst / More).
+const mobileGroupLabel = css({
+  fontFamily: 'sans',
+  fontSize: '0.65rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: 'primary',
+  mt: '0.5rem',
+  '&:first-child': { mt: 0 },
+});
+// Mobile collapsible-section header (DFIR / More).
 const mobileSummary = css({
   display: 'flex',
   alignItems: 'center',
@@ -205,21 +230,29 @@ const mobileSummary = css({
               aria-controls={`nav-${d.id}-menu`}
               aria-label={`${d.label} links`}
               data-sound="tick"
-              class={`nav-more-btn ${moreBtn} ${isAnyActive(d.links) ? moreBtnActive : ''}`}
+              class={`nav-more-btn ${moreBtn} ${isAnyActive(d.groups) ? moreBtnActive : ''}`}
             >
               {d.label}
               <Icon name="chevron-down" size={13} strokeWidth={2.5} class="nav-more-chev" />
             </button>
             <div id={`nav-${d.id}-menu`} class={`nav-more-menu ${moreMenuOuter}`}>
-              <ul class={moreMenuInner} aria-label={`${d.label} links`}>
-                {d.links.map((link) => (
-                  <li>
-                    <a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class={moreLink}>
-                      {link.label}
-                    </a>
-                  </li>
+              <div class={moreMenuInner}>
+                {d.groups.map((g, i) => (
+                  <>
+                    {i > 0 && <div class={menuGroupDivider} />}
+                    {g.category && <p class={menuGroupLabel}>{g.category}</p>}
+                    <ul class={menuGroup} aria-label={g.category ?? d.label}>
+                      {g.links.map((link) => (
+                        <li>
+                          <a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class={moreLink}>
+                            {link.label}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
                 ))}
-              </ul>
+              </div>
             </div>
           </li>
         ))}
@@ -351,10 +384,15 @@ const mobileSummary = css({
               <Icon name="chevron-down" size={15} class="mobile-section-chev" />
             </summary>
             <div class={css({ display: 'flex', flexDirection: 'column', pl: '0.5rem', pb: '0.3rem' })}>
-              {d.links.map((link) => (
-                <a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class={mobileLink}>
-                  {link.label}
-                </a>
+              {d.groups.map((g) => (
+                <>
+                  {g.category && <p class={mobileGroupLabel}>{g.category}</p>}
+                  {g.links.map((link) => (
+                    <a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class={mobileLink}>
+                      {link.label}
+                    </a>
+                  ))}
+                </>
               ))}
             </div>
           </details>
