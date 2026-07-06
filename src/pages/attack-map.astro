@@ -15,6 +15,8 @@ import TagCombobox from '../components/TagCombobox.astro';
 import FilterToggle from '../components/FilterToggle.astro';
 import ListFilter from '../components/ListFilter.astro';
 import TacticStepper from '../components/TacticStepper.astro';
+import ViewToggle from '../components/ViewToggle.astro';
+import TacticMatrix from '../components/TacticMatrix.astro';
 import { tag, card } from 'styled-system/recipes';
 import { getSortedPosts, getSortedLabs, tagSlug } from '../utils/posts';
 import { termBySlug } from '../data/securityTerms';
@@ -50,6 +52,21 @@ const stepperItems = tactics.map((name) => ({
   label: name,
   count: byTactic[name].length,
   highlight: byTactic[name].filter((t) => covered.has(t.id)).length,
+}));
+
+// Matrix view (ViewToggle/TacticMatrix): the same byTactic grouping, MITRE
+// Navigator-style — one column per tactic, sub-techniques indented, "covered"
+// as the accent highlight (matching the list view's left-border treatment).
+const matrixColumns = tactics.map((name) => ({
+  tactic: name,
+  id: tagSlug(name),
+  cells: byTactic[name].map((t) => ({
+    id: t.id,
+    name: `${t.id} ${t.name}`,
+    href: `/attack-map/${t.id}/`,
+    sub: t.id.includes('.'),
+    accent: covered.has(t.id),
+  })),
 }));
 
 // Platform facet for the search combobox — cross-cuts the tactic grouping, so you
@@ -178,6 +195,7 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
       <FilterToggle id="attack-detection-toggle" icon="search" label="Has detection" tone="primary" />
       <FilterToggle id="attack-mitigation-toggle" icon="wrench" label="Has mitigations" tone="primary" />
       <CollapseAll target="[data-tactic-group]" />
+      <ViewToggle listTarget="#attack-list-view" matrixTarget="#attack-matrix-view" storageKey="attack-map-view" />
     </div>
   </div>
 
@@ -191,7 +209,7 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
     <span class={legendItem}><Icon name="arrow-right" size={13} class={css({ color: 'textMuted' })} /> opens the technique detail page</span>
   </div>
 
-  <div class={css({ display: 'flex', flexDirection: 'column' })}>
+  <div id="attack-list-view" class={css({ display: 'flex', flexDirection: 'column' })}>
     {
       tactics.map((tactic) => {
         const tacCovered = byTactic[tactic].filter((t) => covered.has(t.id)).length;
@@ -252,6 +270,13 @@ const legendSwatch = css({ display: 'inline-block', w: '14px', h: '14px', bg: 'b
         );
       })
     }
+  </div>
+
+  <div id="attack-matrix-view" hidden>
+    <p class={css({ color: 'textMuted', fontSize: '0.82rem', mb: '0.75rem' })}>
+      MITRE Navigator-style layout — one column per tactic, sub-techniques indented. Search and filters above apply to the list view only.
+    </p>
+    <TacticMatrix columns={matrixColumns} ariaLabel="MITRE ATT&CK technique matrix" tone="primary" />
   </div>
 
   <p id="attack-empty" hidden role="status" aria-live="polite" class={css({ color: 'textMuted', textAlign: 'center', py: '3rem' })}>

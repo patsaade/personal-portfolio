@@ -1,0 +1,92 @@
+---
+// List / Matrix view switch for the ATT&CK Map and D3FEND Map. JS-armed: the
+// button pair stays hidden and the list view is the only visible content until
+// the script runs, so a no-JS reader gets the complete, already-functional list
+// view with no missing toggle and no broken half-state (same philosophy as
+// CollapseAll). The choice persists per page via localStorage.
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+
+interface Props {
+  listTarget: string;
+  matrixTarget: string;
+  storageKey: string;
+}
+const { listTarget, matrixTarget, storageKey } = Astro.props;
+
+const group = css({
+  display: 'none', // revealed by the script
+  gap: '0.3rem',
+  '&[data-ready]': { display: 'inline-flex' },
+});
+const btn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.35rem',
+  px: '0.6rem',
+  py: '0.35rem',
+  fontFamily: 'sans',
+  fontSize: '0.8rem',
+  fontWeight: 600,
+  color: 'textMuted',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  cursor: 'pointer',
+  transition: 'color 150ms ease, border-color 150ms ease, background 150ms ease',
+  _hover: { color: 'primary', borderColor: 'primary' },
+  '&[aria-pressed=true]': { color: 'primary', borderColor: 'primary', bg: 'color-mix(in srgb, token(colors.primary) 12%, transparent)' },
+});
+---
+
+<div
+  class={group}
+  data-view-toggle
+  data-list-target={listTarget}
+  data-matrix-target={matrixTarget}
+  data-storage-key={storageKey}
+>
+  <button type="button" data-view-btn="list" aria-pressed="true" data-sound="tick" class={btn}>
+    <Icon name="list" size={14} /> List
+  </button>
+  <button type="button" data-view-btn="matrix" aria-pressed="false" data-sound="tick" class={btn}>
+    <Icon name="grid" size={14} /> Matrix
+  </button>
+</div>
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  (function () {
+    function init() {
+      var groups = document.querySelectorAll('[data-view-toggle]:not([data-ready])');
+      Array.prototype.forEach.call(groups, function (group) {
+        var listEl = document.querySelector(group.getAttribute('data-list-target'));
+        var matrixEl = document.querySelector(group.getAttribute('data-matrix-target'));
+        var key = group.getAttribute('data-storage-key');
+        var listBtn = group.querySelector('[data-view-btn="list"]');
+        var matrixBtn = group.querySelector('[data-view-btn="matrix"]');
+        if (!listEl || !matrixEl || !listBtn || !matrixBtn) return;
+
+        function show(view) {
+          var wantMatrix = view === 'matrix';
+          if (wantMatrix) { listEl.hidden = true; matrixEl.hidden = false; }
+          else { matrixEl.hidden = true; listEl.hidden = false; }
+          listBtn.setAttribute('aria-pressed', String(!wantMatrix));
+          matrixBtn.setAttribute('aria-pressed', String(wantMatrix));
+          try { localStorage.setItem(key, view); } catch (e) {}
+        }
+
+        listBtn.addEventListener('click', function () { show('list'); });
+        matrixBtn.addEventListener('click', function () { show('matrix'); });
+
+        var saved = null;
+        try { saved = localStorage.getItem(key); } catch (e) {}
+        if (saved === 'matrix') show('matrix');
+
+        group.setAttribute('data-ready', '');
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>
