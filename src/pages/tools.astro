@@ -224,18 +224,26 @@ const spotlightChip = css({
 
   <div class={css({ display: 'flex', flexDirection: 'column' })}>
     {
-      platforms.map((p) => (
-        <details id={`plat-${p.id}`} data-tools-group open class={groupDetails}>
-          <summary class={groupSummary}>
-            <h2 class={groupHead}>
-              <Icon name="chevron-right" size={18} class={chevCls} />
-              <Icon name={p.icon} size={20} class={css({ color: 'primary', flexShrink: 0 })} />
-              <span class="tools-grp-title">{p.title}</span>
-              <span class={grpCount}>{p.tools.length}</span>
-            </h2>
-          </summary>
-          <p class={grpBlurb}>{p.blurb}</p>
-          <div class={`card-grid ${toolsGrid}`}>
+      platforms.map((p) => {
+        const coreHere = p.tools.filter((t) => t.core).length;
+        // A group with barely any starred tools can read as an oversight rather
+        // than what it is — real day-to-day use just doesn't concentrate there.
+        const sparseCore = p.tools.length > 3 && coreHere < 2;
+        return (
+          <details id={`plat-${p.id}`} data-tools-group open class={groupDetails}>
+            <summary class={groupSummary}>
+              <h2 class={groupHead}>
+                <Icon name="chevron-right" size={18} class={chevCls} />
+                <Icon name={p.icon} size={20} class={css({ color: 'primary', flexShrink: 0 })} />
+                <span class="tools-grp-title">{p.title}</span>
+                <span class={grpCount}>{p.tools.length}</span>
+              </h2>
+            </summary>
+            <p class={grpBlurb}>
+              {p.blurb}
+              {sparseCore && ' Fewer stars here reflect real day-to-day use, not incomplete curation.'}
+            </p>
+            <div class={`card-grid ${toolsGrid}`}>
             {p.tools.map((t) => (
               <a
                 href={`/tools/${t.slug}/`}
@@ -263,8 +271,9 @@ const spotlightChip = css({
               </a>
             ))}
           </div>
-        </details>
-      ))
+          </details>
+        );
+      })
     }
   </div>
 

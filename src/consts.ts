@@ -9,7 +9,10 @@ export const SITE = {
   tagline: 'Digital Forensics & Incident Response',
   description:
     'Hands-on DFIR — digital forensics & incident response: memory & host forensics, EDR investigation, timeline reconstruction, and public lab & CTF writeups.',
-  url: 'https://patricksaade.com',
+  // www is the canonical serving domain in production (the apex domain 307s
+  // here) — every absolute URL this site generates (canonical tags, sitemap,
+  // RSS, OG images, JSON-LD) should point straight at it, not through a redirect.
+  url: 'https://www.patricksaade.com',
   author: 'Patrick Saade',
 } as const;
 

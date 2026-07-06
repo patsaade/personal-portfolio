@@ -55,7 +55,8 @@ const segBtn = css({
   }
 </div>
 
-<script is:inline>
+<script>
+  // @ts-nocheck — vanilla DOM client script
   (function () {
     var root = document.querySelector('[data-mode-toggle]');
     if (!root || !window.__theme) return;

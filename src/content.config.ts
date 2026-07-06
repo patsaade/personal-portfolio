@@ -1,5 +1,6 @@
-import { defineCollection, z } from 'astro:content';
+import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
+import { z } from 'astro/zod';
 
 const blog = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/blog' }),
@@ -43,7 +44,7 @@ const labs = defineCollection({
     type: z.literal('lab').default('lab'),
     difficulty: z.enum(['Beginner', 'Intermediate', 'Advanced', 'Hard']),
     source: z.string(), // CyberDefenders, 13Cubed, Magnet, BTLO, Home Lab...
-    sourceUrl: z.string().url().optional(),
+    sourceUrl: z.url().optional(),
     timeSpent: z.string().optional(),
     excerpt: z.string(),
     tags: z.array(z.string()).default([]),

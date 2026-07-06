@@ -13,7 +13,8 @@
 // you switch apps" bug). Per the user's choice, there's no haptic/vibration.
 ---
 
-<script is:inline>
+<script>
+  // @ts-nocheck — vanilla DOM client script
   (function () {
     if (window.__sound) return;
     var KEY = 'sound';

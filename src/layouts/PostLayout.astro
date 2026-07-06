@@ -216,7 +216,8 @@ const crumbs = [{ label: 'Home', href: '/' }, section, { label: title }];
     <slot name="footer" />
   </article>
 
-  <script is:inline>
+  <script>
+    // @ts-nocheck — vanilla DOM client script
     (function () {
       // Reading-progress bar: scaleX with scroll through the article.
       var bar = document.getElementById('read-progress');

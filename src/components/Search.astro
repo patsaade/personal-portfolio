@@ -46,7 +46,8 @@ import Icon from './Icon.astro';
   </div>
 </div>
 
-<script is:inline>
+<script>
+  // @ts-nocheck — vanilla DOM client script
   (function () {
     // Show the platform-correct shortcut hint: ⌘K on macOS/iOS, Ctrl K elsewhere.
     try {

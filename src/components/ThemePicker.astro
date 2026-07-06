@@ -165,7 +165,8 @@ const itemClass = css({
   </div>
 </div>
 
-<script is:inline>
+<script>
+  // @ts-nocheck — vanilla DOM client script
   (function () {
     var wrap = document.querySelector('[data-theme-picker]');
     if (!wrap || !window.__theme) return;
@@ -196,6 +197,13 @@ const itemClass = css({
       syncUI();
       document.addEventListener('click', onDocClick, true);
       document.addEventListener('keydown', onKey);
+      // Move focus into the menu (APG menu pattern) — land on the selected
+      // item per group when possible, else the first item.
+      var target = paletteItems[0];
+      for (var i = 0; i < paletteItems.length; i++) {
+        if (paletteItems[i].hasAttribute('data-selected')) { target = paletteItems[i]; break; }
+      }
+      if (target) target.focus();
     }
     function close() {
       menu.setAttribute('hidden', '');
@@ -204,8 +212,20 @@ const itemClass = css({
       document.removeEventListener('keydown', onKey);
     }
     function onDocClick(e) { if (!wrap.contains(e.target)) close(); }
+    function moveFocus(delta) {
+      var idx = paletteItems.indexOf(document.activeElement);
+      if (idx === -1) idx = 0;
+      var next = (idx + delta + paletteItems.length) % paletteItems.length;
+      paletteItems[next].focus();
+    }
     function onKey(e) {
-      if (e.key === 'Escape') { close(); btn.focus(); }
+      if (e.key === 'Escape') { close(); btn.focus(); return; }
+      // Arrow-key + Home/End cycling, per the ARIA menuitemradio pattern these
+      // roles advertise to assistive tech.
+      if (e.key === 'ArrowDown') { e.preventDefault(); moveFocus(1); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); moveFocus(-1); return; }
+      if (e.key === 'Home') { e.preventDefault(); paletteItems[0].focus(); return; }
+      if (e.key === 'End') { e.preventDefault(); paletteItems[paletteItems.length - 1].focus(); return; }
     }
 
     btn.addEventListener('click', function () {

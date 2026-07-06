@@ -127,7 +127,7 @@ function cardTree({ title, eyebrow }) {
         ]),
         // url + tagline
         h('div', { display: 'flex', alignItems: 'center', justifyContent: 'space-between' }, [
-          h('div', { fontFamily: 'Fira Mono', fontSize: 26, color: C.muted }, 'patricksaade.com'),
+          h('div', { fontFamily: 'Fira Mono', fontSize: 26, color: C.muted }, 'www.patricksaade.com'),
           h('div', { fontFamily: 'Fira Mono', fontSize: 22, color: C.muted }, 'Digital Forensics & Incident Response'),
         ]),
       ],

@@ -313,5 +313,15 @@
     "significance": "It is a textbook example of why encryption alone is not enough and why authenticated encryption matters — distinguishable error responses or timing can fully break confidentiality. It has compromised real-world TLS and web frameworks.",
     "example": "An attacker recovering a session cookie's plaintext by submitting modified ciphertexts and watching which ones return a padding error.",
     "related": ["block-cipher-mode", "authenticated-encryption", "block-cipher"]
+  },
+  {
+    "term": "SHA-256",
+    "slug": "sha-256",
+    "aka": ["Secure Hash Algorithm 256"],
+    "short": "A 256-bit cryptographic hash function in the SHA-2 family.",
+    "definition": "SHA-256 is a member of the SHA-2 family of cryptographic hash functions, producing a fixed 256-bit digest from any input. It is collision-resistant in practice and is the de facto standard hash used for file integrity verification, digital signatures, and evidence hashing, having replaced MD5 and SHA-1 for security-sensitive use.",
+    "significance": "Forensic images and evidence files are routinely hashed with SHA-256 (often alongside MD5 for legacy tool compatibility) to prove the data hasn't changed since acquisition — a mismatch immediately signals tampering or corruption and can break the chain of custody.",
+    "example": "Comparing the SHA-256 hash of a forensic image against the value recorded at acquisition time confirms it hasn't been altered before analysis.",
+    "related": ["cryptographic-hash-function", "md5", "hash-collision"]
   }
 ]

@@ -106,18 +106,19 @@ const codeBlock = css({
     </>
   )}
 
-  {tool.install && (
-    <>
-      <h2 class={sectionH2}><Icon name="download" size={18} class={css({ color: 'primary' })} /> Install</h2>
-      <p class={css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem' })}>{tool.install}</p>
-    </>
-  )}
-
   {tool.syntax && (
     <>
       <h2 class={sectionH2}><Icon name="terminal" size={18} class={css({ color: 'primary' })} /> Usage</h2>
       <pre class={codeBlock}><code>{tool.syntax}</code></pre>
     </>
+  )}
+
+  {tool.install && (
+    <p class={css({ color: 'textMuted', fontSize: '0.92rem', mt: '0.75rem' })}>
+      <a href="/tools/cheatsheet/" class={css({ color: 'primary', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', _hover: { textDecoration: 'underline' } })}>
+        Install instructions <Icon name="arrow-right" size={13} />
+      </a>{' '}are on the DFIR Command Cheat Sheet.
+    </p>
   )}
 
   {tool.why && (

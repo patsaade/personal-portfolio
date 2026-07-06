@@ -55,14 +55,8 @@ export default defineConfig({
           sans: {
             value: 'Redaction, Georgia, "Times New Roman", "Iowan Old Style", serif',
           },
-          // Degraded grades for specific areas (ticker, hero, wordmark). Same
-          // metrics as grade 0, so they're hover-swappable with no reflow.
-          redaction20: {
-            value: '"Redaction 20", Georgia, "Times New Roman", serif',
-          },
-          redaction35: {
-            value: '"Redaction 35", Georgia, "Times New Roman", serif',
-          },
+          // Degraded grade for the wordmark. Same metrics as grade 0, so it's
+          // hover-swappable with no reflow.
           redaction50: {
             value: '"Redaction 50", Georgia, "Times New Roman", serif',
           },

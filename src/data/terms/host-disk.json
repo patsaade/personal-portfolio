@@ -388,5 +388,15 @@
     "significance": "It lets an actor cache tools or stolen data on a host while staying invisible to ordinary inspection, so examiners must deliberately scan slack, inter-partition gaps, and device-reserved areas rather than trusting the live file system to reveal everything.",
     "example": "Tooling that ignored the file system found an encrypted archive tucked into the gap between two partitions.",
     "related": ["file-slack", "partition-scheme-mbr-gpt", "unallocated-space"]
+  },
+  {
+    "term": "Live Response",
+    "slug": "live-response",
+    "aka": ["Triage Collection", "Live Triage"],
+    "short": "Collecting volatile evidence from a running system before it's shut down or imaged.",
+    "definition": "Live response (or live/triage collection) is the practice of gathering volatile evidence — running processes, network connections, memory, logged-in users — from a system while it's still powered on and running, before it's shut down for a full forensic image, since that evidence would otherwise be lost.",
+    "significance": "Order of volatility means the most fragile evidence (memory, network state) disappears the moment a machine is powered off, so live response is often the difference between capturing what an attacker was actually doing and only finding what they left behind on disk.",
+    "example": "Before pulling the network cable, a responder captures a memory image and the active connection list from a compromised host, preserving evidence a later disk image alone couldn't recover.",
+    "related": ["order-of-volatility", "memory-acquisition", "bit-for-bit-imaging"]
   }
 ]

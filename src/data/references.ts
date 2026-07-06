@@ -33,7 +33,7 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     },
     {
       "name": "SANS — Memory Forensics Cheat Sheet",
-      "url": "https://www.sans.org/posters/memory-forensics-cheat-sheet"
+      "url": "https://www.sans.org/posters/memory-forensics"
     },
   ],
   "Host & Disk Forensics": [
@@ -51,7 +51,7 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     },
     {
       "name": "NIST CFTT — Forensic File Carving Specifications",
-      "url": "https://www.nist.gov/itl/ssd/software-quality-group/computer-forensics-tool-testing-program-cftt/cftt-technical-0"
+      "url": "https://www.nist.gov/itl/csd/secure-systems-and-applications/computer-forensics-tool-testing-program-cftt/cftt-3"
     },
   ],
   "Malware Analysis & RE": [
@@ -233,7 +233,7 @@ export const CATEGORY_SOURCES: Record<string, Reference[]> = {
     },
     {
       "name": "RFC 5424 — The Syslog Protocol",
-      "url": "https://www.rfc-editor.org/rfc/rfc5424"
+      "url": "https://www.rfc-editor.org/info/rfc5424/"
     },
   ],
   "Linux, macOS & Mobile Forensics": [
@@ -556,7 +556,7 @@ export const TERM_REFERENCES: Record<string, Reference> = {
   },
   "identity-and-access-management": {
     "name": "NIST — Identity & Access Management",
-    "url": "https://www.nist.gov/identity-access-management"
+    "url": "https://www.nist.gov/identity-and-access-management"
   },
   "privileged-container": {
     "name": "MITRE ATT&CK T1611 — Escape to Host",
@@ -744,15 +744,15 @@ export const TERM_REFERENCES: Record<string, Reference> = {
   },
   "sender-policy-framework": {
     "name": "RFC 7208: Sender Policy Framework (SPF) for Authorizing Use of Domains in Email",
-    "url": "https://www.rfc-editor.org/rfc/rfc7208"
+    "url": "https://www.rfc-editor.org/info/rfc7208/"
   },
   "domainkeys-identified-mail": {
     "name": "RFC 6376: DomainKeys Identified Mail (DKIM) Signatures",
-    "url": "https://www.rfc-editor.org/rfc/rfc6376"
+    "url": "https://www.rfc-editor.org/info/rfc6376/"
   },
   "domain-based-message-authentication": {
     "name": "RFC 7489: Domain-based Message Authentication, Reporting, and Conformance (DMARC)",
-    "url": "https://www.rfc-editor.org/rfc/rfc7489"
+    "url": "https://www.rfc-editor.org/info/rfc7489/"
   },
   "thread-hijacking": {
     "name": "MITRE ATT&CK T1566 — Phishing",
@@ -796,11 +796,11 @@ export const TERM_REFERENCES: Record<string, Reference> = {
   },
   "json-web-token": {
     "name": "RFC 7519 — JSON Web Token (JWT)",
-    "url": "https://www.rfc-editor.org/rfc/rfc7519"
+    "url": "https://www.rfc-editor.org/info/rfc7519/"
   },
   "oauth": {
     "name": "RFC 6749: The OAuth 2.0 Authorization Framework",
-    "url": "https://www.rfc-editor.org/rfc/rfc6749"
+    "url": "https://www.rfc-editor.org/info/rfc6749/"
   },
   "api-security": {
     "name": "OWASP API Security Project (API Security Top 10)",
@@ -961,6 +961,270 @@ export const TERM_REFERENCES: Record<string, Reference> = {
   "inhibit-system-recovery": {
     "name": "MITRE ATT&CK T1490 — Inhibit System Recovery",
     "url": "https://attack.mitre.org/techniques/T1490/"
+  },
+  "siem": {
+    "name": "NIST CSRC Glossary — Security Information and Event Management",
+    "url": "https://csrc.nist.gov/glossary/term/security_information_and_event_management"
+  },
+  "edr": {
+    "name": "NIST CSRC Glossary — Endpoint Detection and Response",
+    "url": "https://csrc.nist.gov/glossary/term/endpoint_detection_and_response"
+  },
+  "false-positive": {
+    "name": "NIST CSRC Glossary — False Positive",
+    "url": "https://csrc.nist.gov/glossary/term/false_positive"
+  },
+  "false-negative": {
+    "name": "NIST CSRC Glossary — False Negative",
+    "url": "https://csrc.nist.gov/glossary/term/false_negative"
+  },
+  "triage": {
+    "name": "NIST SP 800-61 Rev. 3 — Incident Response Recommendations and Considerations (incident prioritization/triage, RS.MA)",
+    "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final"
+  },
+  "containment": {
+    "name": "NIST SP 800-61 Rev. 3 — Incident Response Recommendations and Considerations (RS.MI-01: Incidents are contained)",
+    "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final"
+  },
+  "eradication": {
+    "name": "NIST SP 800-61 Rev. 3 — Incident Response Recommendations and Considerations (RS.MI-02: Incidents are eradicated)",
+    "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final"
+  },
+  "recovery": {
+    "name": "NIST SP 800-61 Rev. 3 — Incident Response Recommendations and Considerations (RC: Recover)",
+    "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final"
+  },
+  "soar": {
+    "name": "NIST SP 800-215 — Guide to a Secure Enterprise Network Landscape (SOAR)",
+    "url": "https://csrc.nist.gov/pubs/sp/800/215/final"
+  },
+  "ueba": {
+    "name": "NIST SP 800-215 — Guide to a Secure Enterprise Network Landscape (UEBA)",
+    "url": "https://csrc.nist.gov/pubs/sp/800/215/final"
+  },
+  "symmetric-encryption": {
+    "name": "NIST CSRC Glossary — Symmetric Key",
+    "url": "https://csrc.nist.gov/glossary/term/symmetric_key"
+  },
+  "asymmetric-encryption": {
+    "name": "NIST CSRC Glossary — Public Key Cryptography",
+    "url": "https://csrc.nist.gov/glossary/term/public_key_cryptography"
+  },
+  "aes": {
+    "name": "NIST FIPS 197 — Advanced Encryption Standard (AES)",
+    "url": "https://csrc.nist.gov/pubs/fips/197/final"
+  },
+  "rsa": {
+    "name": "RFC 8017 — PKCS #1: RSA Cryptography Specifications Version 2.2",
+    "url": "https://www.rfc-editor.org/info/rfc8017/"
+  },
+  "elliptic-curve-cryptography": {
+    "name": "NIST CSRC Glossary — Elliptic Curve Cryptography",
+    "url": "https://csrc.nist.gov/glossary/term/elliptic_curve_cryptography"
+  },
+  "diffie-hellman": {
+    "name": "NIST CSRC Glossary — Diffie-Hellman",
+    "url": "https://csrc.nist.gov/glossary/term/diffie_hellman"
+  },
+  "cryptographic-hash-function": {
+    "name": "NIST CSRC Glossary — Hash Function",
+    "url": "https://csrc.nist.gov/glossary/term/hash_function"
+  },
+  "md5": {
+    "name": "NIST CSRC Glossary — MD5 (Message-Digest Algorithm 5)",
+    "url": "https://csrc.nist.gov/glossary/term/md5"
+  },
+  "hash-collision": {
+    "name": "NIST CSRC Glossary — Collision",
+    "url": "https://csrc.nist.gov/glossary/term/collision"
+  },
+  "hmac": {
+    "name": "RFC 2104 — HMAC: Keyed-Hashing for Message Authentication",
+    "url": "https://www.rfc-editor.org/info/rfc2104/"
+  },
+  "salting": {
+    "name": "NIST CSRC Glossary — Salt",
+    "url": "https://csrc.nist.gov/glossary/term/salt"
+  },
+  "key-derivation-function": {
+    "name": "NIST CSRC Glossary — Key Derivation Function",
+    "url": "https://csrc.nist.gov/glossary/term/key_derivation_function"
+  },
+  "nonce": {
+    "name": "NIST CSRC Glossary — Nonce",
+    "url": "https://csrc.nist.gov/glossary/term/nonce"
+  },
+  "block-cipher-mode": {
+    "name": "NIST CSRC Glossary — Mode of Operation",
+    "url": "https://csrc.nist.gov/glossary/term/mode_of_operation"
+  },
+  "authenticated-encryption": {
+    "name": "NIST CSRC Glossary — Authenticated Encryption",
+    "url": "https://csrc.nist.gov/glossary/term/authenticated_encryption"
+  },
+  "public-key-infrastructure": {
+    "name": "NIST CSRC Glossary — Public Key Infrastructure",
+    "url": "https://csrc.nist.gov/glossary/term/public_key_infrastructure"
+  },
+  "certificate-authority": {
+    "name": "NIST CSRC Glossary — Certification Authority",
+    "url": "https://csrc.nist.gov/glossary/term/certification_authority"
+  },
+  "certificate-pinning": {
+    "name": "OWASP — Certificate and Public Key Pinning",
+    "url": "https://owasp.org/www-community/controls/Certificate_and_Public_Key_Pinning"
+  },
+  "certificate-transparency": {
+    "name": "RFC 6962 — Certificate Transparency",
+    "url": "https://www.rfc-editor.org/info/rfc6962/"
+  },
+  "post-quantum-cryptography": {
+    "name": "NIST — Post-Quantum Cryptography Project",
+    "url": "https://csrc.nist.gov/projects/post-quantum-cryptography"
+  },
+  "man-in-the-middle": {
+    "name": "NIST CSRC Glossary — Man-in-the-Middle Attack",
+    "url": "https://csrc.nist.gov/glossary/term/man_in_the_middle_attack"
+  },
+  "intrusion-detection-system": {
+    "name": "NIST CSRC Glossary — Intrusion Detection System (IDS)",
+    "url": "https://csrc.nist.gov/glossary/term/intrusion_detection_system"
+  },
+  "intrusion-prevention-system": {
+    "name": "NIST CSRC Glossary — Intrusion Prevention System (IPS)",
+    "url": "https://csrc.nist.gov/glossary/term/intrusion_prevention_system"
+  },
+  "threat-actor": {
+    "name": "NIST CSRC Glossary — Threat Actor",
+    "url": "https://csrc.nist.gov/glossary/term/threat_actor"
+  },
+  "advanced-persistent-threat": {
+    "name": "NIST CSRC Glossary — Advanced Persistent Threat",
+    "url": "https://csrc.nist.gov/glossary/term/advanced_persistent_threat"
+  },
+  "tactics-techniques-and-procedures": {
+    "name": "NIST CSRC Glossary — Tactics, Techniques, and Procedures (TTP)",
+    "url": "https://csrc.nist.gov/glossary/term/tactics_techniques_and_procedures"
+  },
+  "stix": {
+    "name": "OASIS — Introduction to STIX (Structured Threat Information Expression)",
+    "url": "https://oasis-open.github.io/cti-documentation/stix/intro"
+  },
+  "taxii": {
+    "name": "OASIS — Introduction to TAXII (Trusted Automated Exchange of Intelligence Information)",
+    "url": "https://oasis-open.github.io/cti-documentation/taxii/intro"
+  },
+  "common-vulnerabilities-and-exposures": {
+    "name": "CVE Program — About the CVE Program",
+    "url": "https://www.cve.org/About/Overview"
+  },
+  "common-vulnerability-scoring-system": {
+    "name": "FIRST.org — Common Vulnerability Scoring System (CVSS)",
+    "url": "https://www.first.org/cvss/"
+  },
+  "common-weakness-enumeration": {
+    "name": "MITRE — About CWE (Common Weakness Enumeration)",
+    "url": "https://cwe.mitre.org/about/index.html"
+  },
+  "exploit-prediction-scoring-system": {
+    "name": "FIRST.org — Exploit Prediction Scoring System (EPSS)",
+    "url": "https://www.first.org/epss/"
+  },
+  "known-exploited-vulnerabilities": {
+    "name": "CISA — Known Exploited Vulnerabilities Catalog",
+    "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+  },
+  "mitre-d3fend": {
+    "name": "MITRE D3FEND — Matrix",
+    "url": "https://d3fend.mitre.org/"
+  },
+  "usn-journal": {
+    "name": "Microsoft Learn — fsutil usn (NTFS Update Sequence Number Change Journal)",
+    "url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/fsutil-usn"
+  },
+  "lnk-files": {
+    "name": "Microsoft Learn — Shell Links (Win32 apps)",
+    "url": "https://learn.microsoft.com/en-us/windows/win32/shell/links"
+  },
+  "suid-sgid-binaries": {
+    "name": "man7.org — execve(2) (set-user-ID and set-group-ID execution)",
+    "url": "https://man7.org/linux/man-pages/man2/execve.2.html"
+  },
+  "ld-preload-hijack": {
+    "name": "man7.org — ld.so(8): dynamic linker/loader (LD_PRELOAD)",
+    "url": "https://man7.org/linux/man-pages/man8/ld.so.8.html"
+  },
+  "fsevents": {
+    "name": "Apple Developer Documentation — File System Events",
+    "url": "https://developer.apple.com/documentation/coreservices/file_system_events"
+  },
+  "eprocess": {
+    "name": "Microsoft Learn — !process (WinDbg), the EPROCESS block",
+    "url": "https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/-process"
+  },
+  "handle-table": {
+    "name": "Microsoft Learn — Handles and Objects (Win32 apps)",
+    "url": "https://learn.microsoft.com/en-us/windows/win32/sysinfo/handles-and-objects"
+  },
+  "portable-executable-format": {
+    "name": "Microsoft Learn — PE Format",
+    "url": "https://learn.microsoft.com/en-us/windows/win32/debug/pe-format"
+  },
+  "masquerading": {
+    "name": "MITRE ATT&CK T1036 — Masquerading",
+    "url": "https://attack.mitre.org/techniques/T1036/"
+  },
+  "valid-accounts": {
+    "name": "MITRE ATT&CK T1078 — Valid Accounts",
+    "url": "https://attack.mitre.org/techniques/T1078/"
+  },
+  "watering-hole-attack": {
+    "name": "MITRE ATT&CK T1189 — Drive-by Compromise (watering hole delivery)",
+    "url": "https://attack.mitre.org/techniques/T1189/"
+  },
+  "drive-by-compromise": {
+    "name": "MITRE ATT&CK T1189 — Drive-by Compromise",
+    "url": "https://attack.mitre.org/techniques/T1189/"
+  },
+  "obfuscation": {
+    "name": "MITRE ATT&CK T1027 — Obfuscated Files or Information",
+    "url": "https://attack.mitre.org/techniques/T1027/"
+  },
+  "sandbox-evasion": {
+    "name": "MITRE ATT&CK T1497 — Virtualization/Sandbox Evasion",
+    "url": "https://attack.mitre.org/techniques/T1497/"
+  },
+  "scheduled-task-abuse": {
+    "name": "MITRE ATT&CK T1053 — Scheduled Task/Job",
+    "url": "https://attack.mitre.org/techniques/T1053/"
+  },
+  "signed-binary-proxy-execution": {
+    "name": "MITRE ATT&CK T1218 — System Binary Proxy Execution",
+    "url": "https://attack.mitre.org/techniques/T1218/"
+  },
+  "dll-search-order-hijacking": {
+    "name": "MITRE ATT&CK T1574.001 — Hijack Execution Flow: DLL Search Order Hijacking",
+    "url": "https://attack.mitre.org/techniques/T1574/001/"
+  },
+  "com-hijacking": {
+    "name": "MITRE ATT&CK T1546.015 — Event Triggered Execution: Component Object Model Hijacking",
+    "url": "https://attack.mitre.org/techniques/T1546/015/"
+  },
+  "bits-jobs": {
+    "name": "MITRE ATT&CK T1197 — BITS Jobs",
+    "url": "https://attack.mitre.org/techniques/T1197/"
+  },
+  "uac-bypass": {
+    "name": "MITRE ATT&CK T1548.002 — Abuse Elevation Control Mechanism: Bypass User Account Control",
+    "url": "https://attack.mitre.org/techniques/T1548/002/"
+  },
+  "exploitation-of-public-facing-application": {
+    "name": "MITRE ATT&CK T1190 — Exploit Public-Facing Application",
+    "url": "https://attack.mitre.org/techniques/T1190/"
+  },
+  "spearphishing": {
+    "name": "MITRE ATT&CK T1566 — Phishing",
+    "url": "https://attack.mitre.org/techniques/T1566/"
   }
 };
 
@@ -985,7 +1249,7 @@ export interface AttackTechnique {
   /** Total documented uses behind `examples`. */
   examplesTotal?: number;
   /** Mitigations with MITRE's technique-specific guidance. */
-  mitigations?: { name: string; text: string }[];
+  mitigations?: { name: string; text: string; url?: string }[];
   /** Curated: why it matters / how it's detected (DFIR framing). */
   significance?: string;
   /** Curated: a concrete "in practice" example. */

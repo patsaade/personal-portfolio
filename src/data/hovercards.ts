@@ -4,7 +4,7 @@
 // distinctive tools — wrapped wherever their name appears in page content.
 // Glossary TERMS are handled separately (manually, via <Term>, sourced from the
 // glossary bank). Keep tool aliases distinctive to avoid matching common words.
-export type EntityType = 'company' | 'cert' | 'tool';
+type EntityType = 'company' | 'cert' | 'tool';
 
 export interface HoverEntity {
   id: string;

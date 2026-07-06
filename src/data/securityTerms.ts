@@ -52,7 +52,7 @@ export const CATEGORIES = [
   'Linux, macOS & Mobile Forensics',
 ] as const;
 
-export type SecurityCategory = (typeof CATEGORIES)[number];
+type SecurityCategory = (typeof CATEGORIES)[number];
 
 export interface SecurityTerm {
   term: string;

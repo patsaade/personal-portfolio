@@ -93,4 +93,4 @@ User-agent: Amazonbot
 Disallow: /
 
 # Sitemap (global directive — applies regardless of user-agent).
-Sitemap: https://patricksaade.com/sitemap-index.xml
+Sitemap: https://www.patricksaade.com/sitemap-index.xml

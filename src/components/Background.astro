@@ -26,7 +26,8 @@ import { css } from 'styled-system/css';
   })}
 ></canvas>
 
-<script is:inline>
+<script>
+  // @ts-nocheck — vanilla DOM client script
   (function () {
     var canvas = document.getElementById('bg-field');
     if (!canvas) return;

@@ -148,7 +148,14 @@ const refLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.5rem
       <ul class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.6rem' })}>
         {tech.mitigations.map((mit) => (
           <li class={css({ color: 'textMuted', lineHeight: 1.6, fontSize: '0.95rem' })}>
-            <strong class={css({ color: 'text' })}>{mit.name}</strong>{mit.text ? ` — ${mit.text}` : ''}
+            {mit.url ? (
+              <a href={mit.url} target="_blank" rel="noopener" class={css({ color: 'text', fontWeight: 700, _hover: { color: 'primary', textDecoration: 'underline' } })}>
+                {mit.name} <Icon name="external-link" size={11} />
+              </a>
+            ) : (
+              <strong class={css({ color: 'text' })}>{mit.name}</strong>
+            )}
+            {mit.text ? ` — ${mit.text}` : ''}
           </li>
         ))}
       </ul>

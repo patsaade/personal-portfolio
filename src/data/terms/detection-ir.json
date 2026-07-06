@@ -379,5 +379,62 @@
     "significance": "Honeytokens are among the lowest-noise detections available because there is no benign reason to interact with them, making a fired token a strong indicator of compromise or insider activity that often catches attackers during reconnaissance.",
     "example": "Seeding a fake administrator credential in a password vault and alerting the instant anyone attempts to use it.",
     "related": ["behavioral-detection", "false-positive", "ueba"]
+  },
+  {
+    "term": "Red Team",
+    "slug": "red-team",
+    "aka": ["Red Teaming"],
+    "short": "An authorized team that emulates real adversary tactics to test detection and response.",
+    "definition": "A red team emulates a real adversary's tactics, techniques, and procedures against an organization's people, processes, and technology, under legal authorization, to see whether defenses actually detect and stop a realistic attack — not just to find exploitable vulnerabilities.",
+    "significance": "Unlike a penetration test scored on exploited vulnerabilities, a red team engagement is scored on detection and response, so it validates whether the SOC, its tooling, and its playbooks would actually catch a determined adversary — the truest test of a defense program.",
+    "example": "A red team quietly establishes persistence and moves laterally for two weeks; the retrospective shows which of those steps the SOC's detections caught and which went unnoticed.",
+    "related": ["purple-teaming", "detection-coverage", "threat-hunting"]
+  },
+  {
+    "term": "Tabletop Exercise",
+    "slug": "tabletop-exercise",
+    "short": "A discussion-based drill that walks a team through a simulated incident scenario.",
+    "definition": "A tabletop exercise is a facilitated, discussion-based simulation in which stakeholders talk through their roles and decisions during a hypothetical incident, without touching live systems, to validate the incident response plan and find gaps before a real one happens.",
+    "significance": "It's the cheapest way to test whether a written incident response plan actually works in practice — confused ownership, missing contacts, or unclear escalation paths surface in a conference room, not during an active breach.",
+    "example": "Walking through a simulated ransomware outbreak, the team realizes no one actually knows who has authority to take the file server offline.",
+    "related": ["post-incident-review", "incident-commander", "detection-coverage"]
+  },
+  {
+    "term": "Sigma Rule",
+    "slug": "sigma-rule",
+    "short": "A vendor-agnostic rule format for writing log-based detection logic.",
+    "definition": "Sigma is an open, generic signature format for describing detection logic against log events in a structured, YAML-based syntax, independent of any specific SIEM's query language. Rules are converted to a target platform's native query at deployment time.",
+    "significance": "It lets analysts write and share one detection once and translate it across many SIEMs, the same way YARA standardized malware-pattern matching for files — a shared community rule set (SigmaHQ) means defenders aren't reinventing detections their peers already published.",
+    "example": "A published Sigma rule for a new living-off-the-land technique gets converted to the house SIEM's query language and deployed the same day it's released.",
+    "related": ["detection-rule", "detection-as-code", "yara"]
+  },
+  {
+    "term": "Legal Hold",
+    "slug": "legal-hold",
+    "aka": ["Litigation Hold", "Evidence Preservation Notice"],
+    "short": "A directive to preserve data because it may be relevant to litigation or investigation.",
+    "definition": "A legal hold is a formal notice requiring an organization to preserve specific data — logs, emails, images, backups — and suspend routine deletion or retention schedules, because that data may be relevant to pending or reasonably anticipated litigation, regulatory action, or investigation.",
+    "significance": "Failing to preserve evidence under a legal hold (spoliation) can carry serious legal consequences regardless of intent, so responders must know what's under hold before running any process — like a retention policy or forensic wipe — that could destroy it.",
+    "example": "A legal hold notice pauses the normal 90-day log rotation so the relevant authentication logs survive until outside counsel finishes their review.",
+    "related": ["chain-of-custody", "post-incident-review"]
+  },
+  {
+    "term": "Insider Threat",
+    "slug": "insider-threat",
+    "short": "Risk of harm from someone with legitimate authorized access to systems or data.",
+    "definition": "An insider threat is the risk that a current or former employee, contractor, or partner with legitimate authorized access misuses that access — deliberately or negligently — to steal data, sabotage systems, or otherwise cause harm from inside the organization's normal trust boundary.",
+    "significance": "Insiders bypass most external-facing controls by design, since their access is legitimate, so detecting them relies on behavioral analytics and anomaly detection (UEBA) rather than perimeter defenses — a fundamentally different investigative posture than an external intrusion.",
+    "example": "UEBA flags an employee downloading an unusually large volume of customer records the week before their resignation takes effect.",
+    "related": ["ueba", "data-destruction", "detection-coverage"]
+  },
+  {
+    "term": "Honeypot",
+    "slug": "honeypot",
+    "aka": ["Deception Technology"],
+    "short": "A decoy system built to lure, detect, and study attacker activity.",
+    "definition": "A honeypot is a decoy system, service, or network segment deployed with no legitimate business purpose, so that any interaction with it is inherently suspicious. It exists to lure attackers, generate high-fidelity alerts, and let defenders observe adversary tooling and behavior in a controlled space.",
+    "significance": "Because a honeypot has no legitimate traffic, an alert from one carries very high confidence with almost no false-positive noise — a small, well-placed deception layer can catch lateral movement that blends in perfectly everywhere else.",
+    "example": "A fake file server with no real users sits on the internal network; any login attempt against it is treated as a near-certain compromise.",
+    "related": ["honeytoken", "detection-coverage"]
   }
 ]
