@@ -36,6 +36,7 @@ export const NAV_LINKS = [
 export const ANALYST_LINKS = [
   { href: '/tools/', label: 'Tools' },
   { href: '/tools/cheatsheet/', label: 'Command Cheat Sheet' },
+  { href: '/osint/', label: 'OSINT Toolkit' },
   { href: '/glossary/', label: 'Glossary' },
   { href: '/attack-map/', label: 'MITRE ATT&CK Coverage Map' },
   { href: '/d3fend/', label: 'MITRE D3FEND Map' },

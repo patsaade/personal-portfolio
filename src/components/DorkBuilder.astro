@@ -1,0 +1,362 @@
+---
+// Interactive search-operator ("dork") query builder. Pick a search engine,
+// fill in a few plain-language fields, and watch the real query assemble live
+// — then copy it or open it directly on that engine. Genuinely requires JS
+// (there's no meaningful static form without it), so the whole panel stays
+// hidden until the script confirms it's running — same JS-armed, no-JS-safe
+// philosophy as CollapseAll/ViewToggle. The page's own static recipe library
+// (rendered by the caller, not this component) remains the real no-JS-safe
+// content; this is the enhancement layered on top.
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+import type { SearchEngine, DorkOperator, DorkRecipe } from '../data/osint';
+
+interface Props {
+  engines: SearchEngine[];
+  operators: DorkOperator[];
+  recipes: DorkRecipe[];
+}
+const { engines, operators, recipes } = Astro.props;
+
+const recipesByCategory: Record<string, DorkRecipe[]> = {};
+for (const r of recipes) (recipesByCategory[r.category] ??= []).push(r);
+
+const panel = css({
+  display: 'none', // revealed by the script once armed
+  flexDirection: 'column',
+  gap: '1.25rem',
+  '&[data-ready]': { display: 'flex' },
+});
+const noJsNote = css({
+  color: 'textMuted',
+  fontSize: '0.88rem',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  p: '0.85rem 1rem',
+  '[data-dork-builder][data-ready] ~ &': { display: 'none' },
+});
+
+const engineRow = css({ display: 'inline-flex', gap: '0.15rem', p: '0.2rem', bg: 'bgSubtle', border: '1px solid token(colors.border)', borderRadius: 'md', alignSelf: 'flex-start' });
+const engineBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  px: '0.75rem',
+  py: '0.4rem',
+  fontFamily: 'sans',
+  fontSize: '0.85rem',
+  fontWeight: 600,
+  borderRadius: 'sm',
+  border: '1px solid transparent',
+  bg: 'transparent',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { color: 'text' },
+  '&[data-active]': { bg: 'bgCard', color: 'primary', borderColor: 'border', boxShadow: 'card' },
+});
+
+const fieldsGrid = css({ display: 'grid', gridTemplateColumns: { base: '1fr', sm: 'repeat(2, 1fr)' }, gap: '0.9rem' });
+const field = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem' });
+const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.82rem', fontWeight: 600, color: 'text' });
+const fieldHint = css({ fontSize: '0.76rem', color: 'textMuted' });
+const fieldInput = css({
+  fontFamily: 'mono',
+  fontSize: '0.88rem',
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.7rem',
+  py: '0.5rem',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&::placeholder': { color: 'textMuted', opacity: 0.7 },
+});
+
+const outputWrap = css({ display: 'flex', flexDirection: 'column', gap: '0.6rem' });
+const outputBox = css({
+  m: 0,
+  p: '0.85rem 1rem',
+  fontFamily: 'mono',
+  fontSize: '0.95rem',
+  color: 'text',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  overflowX: 'auto',
+  whiteSpace: 'pre',
+  minH: '2.6rem',
+});
+const actionRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' });
+const actionBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  fontSize: '0.85rem',
+  fontFamily: 'sans',
+  fontWeight: 600,
+  px: '0.8rem',
+  py: '0.5rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  color: 'text',
+  cursor: 'pointer',
+  bg: 'bgCard',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+const primaryBtn = css({
+  bg: 'primary',
+  color: 'white',
+  borderColor: 'primary',
+  _hover: { opacity: 0.9, color: 'white' },
+});
+
+const recipeSection = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' });
+const recipeCatHead = css({ fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'primary', mt: '0.5rem' });
+const recipeGrid = css({ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))', gap: '0.6rem' });
+const recipeCard = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.4rem',
+  p: '0.7rem 0.85rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+});
+const recipeTitle = css({ fontFamily: 'sans', fontWeight: 700, fontSize: '0.9rem', color: 'text' });
+const recipeDesc = css({ fontSize: '0.82rem', color: 'textMuted', lineHeight: 1.5 });
+const recipeQuery = css({
+  m: 0,
+  p: '0.45rem 0.6rem',
+  fontFamily: 'mono',
+  fontSize: '0.76rem',
+  color: 'primary',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'sm',
+  overflowX: 'auto',
+  whiteSpace: 'pre',
+});
+const recipeLoadBtn = css({
+  alignSelf: 'flex-start',
+  fontSize: '0.78rem',
+  fontWeight: 600,
+  color: 'primary',
+  cursor: 'pointer',
+  bg: 'transparent',
+  border: 'none',
+  p: 0,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.3rem',
+  _hover: { textDecoration: 'underline' },
+});
+---
+
+<div class={panel} data-dork-builder data-dork-engines={JSON.stringify(engines)}>
+  <div class={engineRow} role="radiogroup" aria-label="Search engine">
+    {
+      engines.map((e, i) => (
+        <button type="button" role="radio" aria-checked={i === 0 ? 'true' : 'false'} {...(i === 0 ? { 'data-active': true } : {})} data-engine-btn={e.id} data-sound="tick" class={engineBtn}>
+          {e.label}
+        </button>
+      ))
+    }
+  </div>
+
+  <div class={fieldsGrid}>
+    {
+      operators.map((op) => (
+        <div class={field} data-dork-field-wrap data-engines={op.engines.join(' ')}>
+          <label class={fieldLabel} for={`dork-${op.id}`}>{op.label}</label>
+          <input id={`dork-${op.id}`} type="text" class={fieldInput} placeholder={op.placeholder} data-dork-field={op.id} data-kind={op.kind} data-prefix={op.prefix ?? ''} autocomplete="off" />
+          <span class={fieldHint}>{op.description}</span>
+        </div>
+      ))
+    }
+  </div>
+
+  <div class={outputWrap}>
+    <pre class={outputBox}><code data-dork-output>&nbsp;</code></pre>
+    <div class={actionRow}>
+      <button type="button" class={`${actionBtn} ${primaryBtn}`} data-dork-copy data-sound="copy">
+        <Icon name="copy" size={15} /> Copy query
+      </button>
+      <a class={actionBtn} data-dork-search href="#" target="_blank" rel="noopener" data-sound="tick">
+        <Icon name="search" size={15} /> Search on <span data-dork-engine-label>Google</span>
+      </a>
+      <button type="button" class={actionBtn} data-dork-clear data-sound="tick">
+        <Icon name="x" size={15} /> Clear
+      </button>
+    </div>
+  </div>
+
+  {
+    Object.entries(recipesByCategory).length > 0 && (
+      <div class={recipeSection}>
+        {Object.entries(recipesByCategory).map(([category, items]) => (
+          <>
+            <h3 class={recipeCatHead}>{category}</h3>
+            <div class={recipeGrid}>
+              {items.map((r) => (
+                <div class={recipeCard}>
+                  <span class={recipeTitle}>{r.title}</span>
+                  <p class={recipeDesc}>{r.desc}</p>
+                  <pre class={recipeQuery}><code>{r.queryTemplate}</code></pre>
+                  {r.values && (
+                    <button type="button" class={recipeLoadBtn} data-dork-load={JSON.stringify(r.values)} data-sound="tick">
+                      <Icon name="target" size={13} /> Load into builder
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        ))}
+      </div>
+    )
+  }
+</div>
+
+<p class={noJsNote}>
+  The interactive builder needs JavaScript enabled. The recipe library below still shows each query in full — copy it by hand.
+</p>
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  (function () {
+    function init() {
+      var roots = document.querySelectorAll('[data-dork-builder]:not([data-ready])');
+      Array.prototype.forEach.call(roots, function (root) {
+        var engineBtns = Array.prototype.slice.call(root.querySelectorAll('[data-engine-btn]'));
+        var fieldWraps = Array.prototype.slice.call(root.querySelectorAll('[data-dork-field-wrap]'));
+        var fields = fieldWraps.map(function (wrap) {
+          return {
+            wrap: wrap,
+            input: wrap.querySelector('[data-dork-field]'),
+            engines: (wrap.getAttribute('data-engines') || '').split(' ').filter(Boolean),
+          };
+        });
+        var output = root.querySelector('[data-dork-output]');
+        var copyBtn = root.querySelector('[data-dork-copy]');
+        var searchLink = root.querySelector('[data-dork-search]');
+        var engineLabel = root.querySelector('[data-dork-engine-label]');
+        var clearBtn = root.querySelector('[data-dork-clear]');
+        if (!output || !copyBtn || !searchLink || !engineLabel || !clearBtn) return;
+
+        var engines = [];
+        try { engines = JSON.parse(root.getAttribute('data-dork-engines') || '[]'); } catch (e) { engines = []; }
+        var currentEngine = (engines[0] && engines[0].id) || 'google';
+
+        function fragmentFor(f) {
+          var val = f.input.value.trim();
+          if (!val) return '';
+          var kind = f.input.getAttribute('data-kind');
+          var prefix = f.input.getAttribute('data-prefix') || '';
+          if (kind === 'phrase') return '"' + val + '"';
+          if (kind === 'exclude') {
+            return val.split(/\s+/).filter(Boolean).map(function (t) { return '-' + t; }).join(' ');
+          }
+          if (kind === 'or') {
+            return val.split(/\s+/).filter(Boolean).join(' OR ');
+          }
+          // A multi-word value on a prefix operator (intitle:, inurl:, etc.) must be
+          // quoted, or engines only apply the operator to the first word.
+          return prefix + (val.indexOf(' ') !== -1 ? '"' + val + '"' : val);
+        }
+
+        function buildQuery() {
+          var parts = [];
+          fields.forEach(function (f) {
+            if (f.engines.indexOf(currentEngine) === -1) return;
+            var frag = fragmentFor(f);
+            if (frag) parts.push(frag);
+          });
+          return parts.join(' ');
+        }
+
+        function engineById(id) {
+          for (var i = 0; i < engines.length; i++) if (engines[i].id === id) return engines[i];
+          return engines[0];
+        }
+
+        function render() {
+          var query = buildQuery();
+          output.textContent = query || ' ';
+          var eng = engineById(currentEngine);
+          searchLink.href = query ? eng.searchUrl + encodeURIComponent(query) : '#';
+          engineLabel.textContent = eng.label;
+        }
+
+        function setEngine(id) {
+          currentEngine = id;
+          engineBtns.forEach(function (b) {
+            var active = b.getAttribute('data-engine-btn') === id;
+            if (active) b.setAttribute('data-active', '');
+            else b.removeAttribute('data-active');
+            b.setAttribute('aria-checked', String(active));
+          });
+          fieldWraps.forEach(function (wrap, i) {
+            var supported = fields[i].engines.indexOf(id) !== -1;
+            wrap.hidden = !supported;
+          });
+          render();
+        }
+
+        engineBtns.forEach(function (b) {
+          b.addEventListener('click', function () { setEngine(b.getAttribute('data-engine-btn')); });
+        });
+        fields.forEach(function (f) { f.input.addEventListener('input', render); });
+
+        var status = document.createElement('div');
+        status.setAttribute('role', 'status');
+        status.setAttribute('aria-live', 'polite');
+        status.style.cssText = 'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;';
+        document.body.appendChild(status);
+
+        copyBtn.addEventListener('click', function () {
+          var text = output.textContent || '';
+          if (!text.trim()) return;
+          navigator.clipboard.writeText(text).then(function () {
+            status.textContent = 'Query copied to clipboard';
+            setTimeout(function () { status.textContent = ''; }, 1600);
+          }).catch(function () {});
+        });
+
+        clearBtn.addEventListener('click', function () {
+          fields.forEach(function (f) { f.input.value = ''; });
+          render();
+        });
+
+        // Recipe "Load into builder" — always switches to Google (recipes are
+        // authored in Google's operator set) and hydrates matching fields.
+        var loadBtns = Array.prototype.slice.call(root.querySelectorAll('[data-dork-load]'));
+        loadBtns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var values;
+            try { values = JSON.parse(btn.getAttribute('data-dork-load') || '{}'); } catch (e) { values = {}; }
+            setEngine('google');
+            fields.forEach(function (f) {
+              var id = f.input.getAttribute('data-dork-field');
+              // Keep whatever the user already typed as their own target domain;
+              // every other field is reset so a previously loaded recipe can't
+              // silently blend into this one.
+              if (id === 'site') return;
+              f.input.value = Object.prototype.hasOwnProperty.call(values, id) ? values[id] : '';
+            });
+            render();
+            root.scrollIntoView({ block: 'start', behavior: 'smooth' });
+          });
+        });
+
+        setEngine(currentEngine);
+        root.setAttribute('data-ready', '');
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>
