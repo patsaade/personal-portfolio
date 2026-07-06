@@ -106,10 +106,17 @@ const codeBlock = css({
     </>
   )}
 
-  {tool.syntax && (
+  {tool.commands && tool.commands.length > 0 && (
     <>
       <h2 class={sectionH2}><Icon name="terminal" size={18} class={css({ color: 'primary' })} /> Usage</h2>
-      <pre class={codeBlock}><code>{tool.syntax}</code></pre>
+      <div class={css({ display: 'flex', flexDirection: 'column', gap: '0.9rem' })}>
+        {tool.commands.map((c) => (
+          <div>
+            <p class={css({ color: 'textMuted', fontSize: '0.85rem', mb: '0.35rem' })}>{c.desc}</p>
+            <pre class={codeBlock}><code>{c.cmd}</code></pre>
+          </div>
+        ))}
+      </div>
     </>
   )}
 
