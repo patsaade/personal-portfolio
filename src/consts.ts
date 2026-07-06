@@ -31,15 +31,24 @@ export const NAV_LINKS = [
   { href: '/about/', label: 'About' },
 ] as const;
 
-// Analyst toolkit — the working / reference resources, grouped under the nav
-// "Analyst" dropdown and a footer column.
-export const ANALYST_LINKS = [
-  { href: '/tools/', label: 'Tools' },
+// DFIR working / reference resources, grouped under the nav "DFIR Toolkit"
+// dropdown and a footer column.
+export const TOOLKIT_LINKS = [
+  { href: '/tools/', label: 'Tool Catalog' },
   { href: '/tools/cheatsheet/', label: 'Command Cheat Sheet' },
-  { href: '/osint/', label: 'OSINT Toolkit' },
   { href: '/glossary/', label: 'Glossary' },
   { href: '/attack-map/', label: 'MITRE ATT&CK Coverage Map' },
   { href: '/d3fend/', label: 'MITRE D3FEND Map' },
+] as const;
+
+// OSINT recon resources — its own nav "OSINT" dropdown and footer column,
+// split out from the DFIR Toolkit above. The last three anchor into distinct
+// sections of the single /osint/ page.
+export const OSINT_LINKS = [
+  { href: '/osint/', label: 'OSINT Toolkit' },
+  { href: '/osint/#builder', label: 'Dork Builder' },
+  { href: '/osint/#recipes', label: 'Recon Recipes' },
+  { href: '/osint/#operators', label: 'Operator Reference' },
 ] as const;
 
 // Secondary / meta links — surfaced in the nav "More" dropdown and footer column.

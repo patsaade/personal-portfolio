@@ -1,7 +1,7 @@
 ---
 // Sticky top nav — brand, links, theme picker, mode toggle, mobile menu.
 import { css } from 'styled-system/css';
-import { NAV_LINKS, ANALYST_LINKS, MORE_LINKS, SITE } from '../consts';
+import { NAV_LINKS, TOOLKIT_LINKS, OSINT_LINKS, MORE_LINKS, SITE } from '../consts';
 import ThemePicker from './ThemePicker.astro';
 import ModeToggle from './ModeToggle.astro';
 import SoundToggle from './SoundToggle.astro';
@@ -11,9 +11,10 @@ import Icon from './Icon.astro';
 const pathname = Astro.url.pathname;
 const isActive = (href: string) =>
   href === '/' ? pathname === '/' : pathname.startsWith(href);
-// Two grouped menus — desktop dropdowns, mobile collapsible <details>.
+// Three grouped menus — desktop dropdowns, mobile collapsible <details>.
 const dropdowns = [
-  { id: 'analyst', label: 'Analyst', links: ANALYST_LINKS },
+  { id: 'toolkit', label: 'DFIR Toolkit', links: TOOLKIT_LINKS },
+  { id: 'osint', label: 'OSINT', links: OSINT_LINKS },
   { id: 'more', label: 'More', links: MORE_LINKS },
 ] as const;
 const isAnyActive = (links: readonly { href: string }[]) => links.some((l) => isActive(l.href));

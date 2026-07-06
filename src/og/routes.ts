@@ -16,7 +16,7 @@ const STATIC_ENTRIES: OgEntry[] = [
   { slug: 'about', title: 'Patrick Saade', eyebrow: 'About' },
   { slug: 'blog', title: 'DFIR deep dives', eyebrow: 'Blog' },
   { slug: 'labs', title: 'Hands-on challenges, solved', eyebrow: 'Labs' },
-  { slug: 'tools', title: 'The DFIR toolkit', eyebrow: 'Tooling' },
+  { slug: 'tools', title: 'Tool Catalog', eyebrow: 'Tooling' },
   { slug: 'tools/cheatsheet', title: 'DFIR Command Cheat Sheet', eyebrow: 'Quick Reference' },
   { slug: 'osint', title: 'OSINT Toolkit', eyebrow: 'Recon & Discovery' },
   { slug: 'glossary', title: 'Cybersecurity glossary', eyebrow: 'Reference' },

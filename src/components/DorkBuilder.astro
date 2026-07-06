@@ -2,24 +2,23 @@
 // Interactive search-operator ("dork") query builder. Pick a search engine,
 // fill in a few plain-language fields, and watch the real query assemble live
 // — then copy it or open it directly on that engine. Genuinely requires JS
-// (there's no meaningful static form without it), so the whole panel stays
-// hidden until the script confirms it's running — same JS-armed, no-JS-safe
-// philosophy as CollapseAll/ViewToggle. The page's own static recipe library
-// (rendered by the caller, not this component) remains the real no-JS-safe
-// content; this is the enhancement layered on top.
+// (there's no meaningful static form without it), so the panel stays hidden
+// until the script confirms it's running — same JS-armed, no-JS-safe
+// philosophy as CollapseAll/ViewToggle. The recipe library is rendered by the
+// caller as an always-visible sibling (NOT nested in here) — it must stay
+// real, static, no-JS-safe content, and this component's `[data-dork-load]`
+// wiring below deliberately queries the whole document rather than just its
+// own root so recipe "Load into builder" buttons elsewhere on the page still
+// work.
 import { css } from 'styled-system/css';
 import Icon from './Icon.astro';
-import type { SearchEngine, DorkOperator, DorkRecipe } from '../data/osint';
+import type { SearchEngine, DorkOperator } from '../data/osint';
 
 interface Props {
   engines: SearchEngine[];
   operators: DorkOperator[];
-  recipes: DorkRecipe[];
 }
-const { engines, operators, recipes } = Astro.props;
-
-const recipesByCategory: Record<string, DorkRecipe[]> = {};
-for (const r of recipes) (recipesByCategory[r.category] ??= []).push(r);
+const { engines, operators } = Astro.props;
 
 const panel = css({
   display: 'none', // revealed by the script once armed
@@ -113,47 +112,6 @@ const primaryBtn = css({
   borderColor: 'primary',
   _hover: { opacity: 0.9, color: 'white' },
 });
-
-const recipeSection = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' });
-const recipeCatHead = css({ fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'primary', mt: '0.5rem' });
-const recipeGrid = css({ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))', gap: '0.6rem' });
-const recipeCard = css({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.4rem',
-  p: '0.7rem 0.85rem',
-  bg: 'bgCard',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'md',
-});
-const recipeTitle = css({ fontFamily: 'sans', fontWeight: 700, fontSize: '0.9rem', color: 'text' });
-const recipeDesc = css({ fontSize: '0.82rem', color: 'textMuted', lineHeight: 1.5 });
-const recipeQuery = css({
-  m: 0,
-  p: '0.45rem 0.6rem',
-  fontFamily: 'mono',
-  fontSize: '0.76rem',
-  color: 'primary',
-  bg: 'bgSubtle',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'sm',
-  overflowX: 'auto',
-  whiteSpace: 'pre',
-});
-const recipeLoadBtn = css({
-  alignSelf: 'flex-start',
-  fontSize: '0.78rem',
-  fontWeight: 600,
-  color: 'primary',
-  cursor: 'pointer',
-  bg: 'transparent',
-  border: 'none',
-  p: 0,
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '0.3rem',
-  _hover: { textDecoration: 'underline' },
-});
 ---
 
 <div class={panel} data-dork-builder data-dork-engines={JSON.stringify(engines)}>
@@ -193,36 +151,11 @@ const recipeLoadBtn = css({
       </button>
     </div>
   </div>
-
-  {
-    Object.entries(recipesByCategory).length > 0 && (
-      <div class={recipeSection}>
-        {Object.entries(recipesByCategory).map(([category, items]) => (
-          <>
-            <h3 class={recipeCatHead}>{category}</h3>
-            <div class={recipeGrid}>
-              {items.map((r) => (
-                <div class={recipeCard}>
-                  <span class={recipeTitle}>{r.title}</span>
-                  <p class={recipeDesc}>{r.desc}</p>
-                  <pre class={recipeQuery}><code>{r.queryTemplate}</code></pre>
-                  {r.values && (
-                    <button type="button" class={recipeLoadBtn} data-dork-load={JSON.stringify(r.values)} data-sound="tick">
-                      <Icon name="target" size={13} /> Load into builder
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </>
-        ))}
-      </div>
-    )
-  }
 </div>
 
 <p class={noJsNote}>
-  The interactive builder needs JavaScript enabled. The recipe library below still shows each query in full — copy it by hand.
+  The interactive builder needs JavaScript enabled. The recon recipes below still show each query in
+  full — copy it by hand.
 </p>
 
 <script>
@@ -285,7 +218,7 @@ const recipeLoadBtn = css({
 
         function render() {
           var query = buildQuery();
-          output.textContent = query || ' ';
+          output.textContent = query || ' ';
           var eng = engineById(currentEngine);
           searchLink.href = query ? eng.searchUrl + encodeURIComponent(query) : '#';
           engineLabel.textContent = eng.label;
@@ -331,9 +264,12 @@ const recipeLoadBtn = css({
           render();
         });
 
-        // Recipe "Load into builder" — always switches to Google (recipes are
-        // authored in Google's operator set) and hydrates matching fields.
-        var loadBtns = Array.prototype.slice.call(root.querySelectorAll('[data-dork-load]'));
+        // Recipe "Load into builder" — the recipe library lives elsewhere on the
+        // page (a static, always-visible sibling, not nested in this JS-gated
+        // panel), so these buttons are queried document-wide rather than scoped
+        // to `root`. Loading always switches to Google (recipes are authored in
+        // Google's operator set) and hydrates matching fields.
+        var loadBtns = Array.prototype.slice.call(document.querySelectorAll('[data-dork-load]'));
         loadBtns.forEach(function (btn) {
           btn.addEventListener('click', function () {
             var values;

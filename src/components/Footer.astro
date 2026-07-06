@@ -1,7 +1,7 @@
 ---
 // Site footer — brand + social, two link columns, and a version/commit line.
 import { css } from 'styled-system/css';
-import { SITE, SOCIALS, NAV_LINKS, ANALYST_LINKS, MORE_LINKS } from '../consts';
+import { SITE, SOCIALS, NAV_LINKS, TOOLKIT_LINKS, OSINT_LINKS, MORE_LINKS } from '../consts';
 import { VERSION, SHORT_COMMIT, COMMIT_URL } from '../utils/version';
 import PixelStar from './PixelStar.astro';
 import Icon from './Icon.astro';
@@ -37,7 +37,8 @@ const socialBtn = css({
   _hover: { color: 'primary', borderColor: 'primary', transform: 'translateY(-2px)' },
 });
 
-const analystLinks = ANALYST_LINKS;
+const toolkitLinks = TOOLKIT_LINKS;
+const osintLinks = OSINT_LINKS;
 const moreLinks = MORE_LINKS;
 ---
 
@@ -74,8 +75,8 @@ const moreLinks = MORE_LINKS;
       px: '1.25rem',
       py: '3rem',
       display: 'grid',
-      gridTemplateColumns: { base: '1fr', sm: '1.5fr 1fr 1.3fr 1fr' },
-      gap: { base: '2rem', sm: '2.5rem' },
+      gridTemplateColumns: { base: '1fr', sm: '1.3fr 0.75fr 1fr 0.9fr 0.75fr' },
+      gap: { base: '2rem', sm: '1.75rem' },
     })}
   >
     {/* Brand + social */}
@@ -104,10 +105,16 @@ const moreLinks = MORE_LINKS;
       {NAV_LINKS.map((l) => <a href={l.href} class={fLink}>{l.label}</a>)}
     </nav>
 
-    {/* Analyst */}
-    <nav aria-label="Footer — analyst resources">
-      <p class={colHead}>Analyst</p>
-      {analystLinks.map((l) => <a href={l.href} class={fLink}>{l.label}</a>)}
+    {/* DFIR Toolkit */}
+    <nav aria-label="Footer — DFIR toolkit">
+      <p class={colHead}>DFIR Toolkit</p>
+      {toolkitLinks.map((l) => <a href={l.href} class={fLink}>{l.label}</a>)}
+    </nav>
+
+    {/* OSINT */}
+    <nav aria-label="Footer — OSINT">
+      <p class={colHead}>OSINT</p>
+      {osintLinks.map((l) => <a href={l.href} class={fLink}>{l.label}</a>)}
     </nav>
 
     {/* More */}

@@ -14,8 +14,8 @@ export const prerender = true;
 // Stable, hand-listed destinations that aren't collection/term pages.
 const STATIC_PAGES = [
   { title: 'About', url: '/about/', kind: 'Page', desc: 'Patrick Saade — DFIR-focused security analyst.', keywords: 'about bio experience career work history' },
-  { title: 'The DFIR toolkit', url: '/tools/', kind: 'Page', desc: 'Free & open-source DFIR tools, grouped by platform.', keywords: 'tools toolkit volatility velociraptor autopsy' },
-  { title: 'DFIR Command Cheat Sheet', url: '/tools/cheatsheet/', kind: 'Page', desc: 'Install commands and CLI syntax for the toolkit, grouped by platform.', keywords: 'cheat sheet cheatsheet quick reference commands syntax install' },
+  { title: 'Tool Catalog', url: '/tools/', kind: 'Page', desc: 'Free & open-source DFIR tools, grouped by platform.', keywords: 'tools toolkit catalog volatility velociraptor autopsy' },
+  { title: 'DFIR Command Cheat Sheet', url: '/tools/cheatsheet/', kind: 'Page', desc: 'Genuinely useful, verified DFIR commands for the toolkit, grouped by platform.', keywords: 'cheat sheet cheatsheet quick reference commands syntax' },
   { title: 'OSINT Toolkit', url: '/osint/', kind: 'Page', desc: 'Interactive search-operator (dork) builder plus recon recipes and OSINT tools.', keywords: 'osint dork dorking google bing duckduckgo search operators recon attack surface open source intelligence' },
   { title: 'Certifications', url: '/certifications/', kind: 'Page', desc: 'Security certifications — CISSP, CompTIA, the GIAC forensics track.', keywords: 'certifications cissp giac gcfa comptia credly' },
   { title: 'Glossary', url: '/glossary/', kind: 'Page', desc: 'A cybersecurity & DFIR glossary.', keywords: 'glossary terms definitions reference' },
