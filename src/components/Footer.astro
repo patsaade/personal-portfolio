@@ -1,7 +1,7 @@
 ---
 // Site footer — brand + social, two link columns, and a version/commit line.
 import { css } from 'styled-system/css';
-import { SITE, SOCIALS, NAV_LINKS, TOOLKIT_LINKS, OSINT_LINKS, MORE_LINKS } from '../consts';
+import { SITE, SOCIALS, NAV_LINKS, DFIR_GROUPS, MORE_LINKS } from '../consts';
 import { VERSION, SHORT_COMMIT, COMMIT_URL } from '../utils/version';
 import PixelStar from './PixelStar.astro';
 import Icon from './Icon.astro';
@@ -37,9 +37,19 @@ const socialBtn = css({
   _hover: { color: 'primary', borderColor: 'primary', transform: 'translateY(-2px)' },
 });
 
-const toolkitLinks = TOOLKIT_LINKS;
-const osintLinks = OSINT_LINKS;
+const dfirGroups = DFIR_GROUPS;
 const moreLinks = MORE_LINKS;
+
+const subHead = css({
+  fontFamily: 'sans',
+  fontSize: '0.68rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: 'primary',
+  mt: '0.8rem',
+  '&:first-child': { mt: 0 },
+});
 ---
 
 <footer
@@ -75,8 +85,8 @@ const moreLinks = MORE_LINKS;
       px: '1.25rem',
       py: '3rem',
       display: 'grid',
-      gridTemplateColumns: { base: '1fr', sm: '1.3fr 0.75fr 1fr 0.9fr 0.75fr' },
-      gap: { base: '2rem', sm: '1.75rem' },
+      gridTemplateColumns: { base: '1fr', sm: '1.4fr 0.85fr 1.1fr 0.85fr' },
+      gap: { base: '2rem', sm: '2rem' },
     })}
   >
     {/* Brand + social */}
@@ -105,16 +115,15 @@ const moreLinks = MORE_LINKS;
       {NAV_LINKS.map((l) => <a href={l.href} class={fLink}>{l.label}</a>)}
     </nav>
 
-    {/* DFIR Toolkit */}
-    <nav aria-label="Footer — DFIR toolkit">
-      <p class={colHead}>DFIR Toolkit</p>
-      {toolkitLinks.map((l) => <a href={l.href} class={fLink}>{l.label}</a>)}
-    </nav>
-
-    {/* OSINT */}
-    <nav aria-label="Footer — OSINT">
-      <p class={colHead}>OSINT</p>
-      {osintLinks.map((l) => <a href={l.href} class={fLink}>{l.label}</a>)}
+    {/* DFIR */}
+    <nav aria-label="Footer — DFIR">
+      <p class={colHead}>DFIR</p>
+      {dfirGroups.map((g) => (
+        <>
+          <p class={subHead}>{g.category}</p>
+          {g.links.map((l) => <a href={l.href} class={fLink}>{l.label}</a>)}
+        </>
+      ))}
     </nav>
 
     {/* More */}

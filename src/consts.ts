@@ -31,8 +31,10 @@ export const NAV_LINKS = [
   { href: '/about/', label: 'About' },
 ] as const;
 
-// DFIR working / reference resources, grouped under the nav "DFIR Toolkit"
-// dropdown and a footer column.
+// DFIR working / reference resources, grouped under the single nav "DFIR"
+// dropdown (short enough to stay on one line) and a footer column. Split
+// into categories inside that one dropdown rather than two separate
+// top-level dropdowns.
 export const TOOLKIT_LINKS = [
   { href: '/tools/', label: 'Tool Catalog' },
   { href: '/tools/cheatsheet/', label: 'Command Cheat Sheet' },
@@ -41,14 +43,19 @@ export const TOOLKIT_LINKS = [
   { href: '/d3fend/', label: 'MITRE D3FEND Map' },
 ] as const;
 
-// OSINT recon resources — its own nav "OSINT" dropdown and footer column,
-// split out from the DFIR Toolkit above. The last three anchor into distinct
-// sections of the single /osint/ page.
+// OSINT recon resources — its own category inside the DFIR dropdown. The
+// last three anchor into distinct sections of the single /osint/ page.
 export const OSINT_LINKS = [
   { href: '/osint/', label: 'OSINT Toolkit' },
   { href: '/osint/#builder', label: 'Dork Builder' },
   { href: '/osint/#recipes', label: 'Recon Recipes' },
   { href: '/osint/#operators', label: 'Operator Reference' },
+] as const;
+
+// The DFIR dropdown's category groups, in display order.
+export const DFIR_GROUPS = [
+  { category: 'Toolkit', links: TOOLKIT_LINKS },
+  { category: 'OSINT', links: OSINT_LINKS },
 ] as const;
 
 // Secondary / meta links — surfaced in the nav "More" dropdown and footer column.
