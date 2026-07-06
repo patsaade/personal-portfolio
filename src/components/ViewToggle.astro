@@ -1,9 +1,14 @@
 ---
-// List / Matrix view switch for the ATT&CK Map and D3FEND Map. JS-armed: the
-// button pair stays hidden and the list view is the only visible content until
-// the script runs, so a no-JS reader gets the complete, already-functional list
-// view with no missing toggle and no broken half-state (same philosophy as
-// CollapseAll). The choice persists per page via localStorage.
+// List / Matrix view switch for the ATT&CK Map and D3FEND Map. A single
+// segmented-switch control — same visual language as ModeToggle's
+// light/dark/system switch (bordered track, active segment gets bgCard +
+// primary + shadow, inactive segments sit flat) — so it reads as ONE switch
+// with an obvious current position, not two independent buttons. JS-armed:
+// the switch stays hidden and the list view is the only visible content
+// until the script runs, so a no-JS reader gets the complete, already-
+// functional list view with no missing control and no broken half-state
+// (same philosophy as CollapseAll). The choice persists per page via
+// localStorage.
 import { css } from 'styled-system/css';
 import Icon from './Icon.astro';
 
@@ -14,42 +19,53 @@ interface Props {
 }
 const { listTarget, matrixTarget, storageKey } = Astro.props;
 
-const group = css({
+const track = css({
   display: 'none', // revealed by the script
-  gap: '0.3rem',
+  gap: '0.15rem',
+  p: '0.2rem',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
   '&[data-ready]': { display: 'inline-flex' },
 });
-const btn = css({
+const segBtn = css({
   display: 'inline-flex',
   alignItems: 'center',
   gap: '0.35rem',
   px: '0.6rem',
-  py: '0.35rem',
+  py: '0.3rem',
   fontFamily: 'sans',
   fontSize: '0.8rem',
   fontWeight: 600,
+  borderRadius: 'sm',
+  border: '1px solid transparent',
+  bg: 'transparent',
   color: 'textMuted',
-  bg: 'bgSubtle',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'md',
   cursor: 'pointer',
-  transition: 'color 150ms ease, border-color 150ms ease, background 150ms ease',
-  _hover: { color: 'primary', borderColor: 'primary' },
-  '&[aria-pressed=true]': { color: 'primary', borderColor: 'primary', bg: 'color-mix(in srgb, token(colors.primary) 12%, transparent)' },
+  transition: 'all 150ms ease',
+  _hover: { color: 'text', transform: 'translateY(-1px)' },
+  '&[data-active]': {
+    bg: 'bgCard',
+    color: 'primary',
+    borderColor: 'border',
+    boxShadow: 'card',
+  },
 });
 ---
 
 <div
-  class={group}
+  role="radiogroup"
+  aria-label="View"
+  class={track}
   data-view-toggle
   data-list-target={listTarget}
   data-matrix-target={matrixTarget}
   data-storage-key={storageKey}
 >
-  <button type="button" data-view-btn="list" aria-pressed="true" data-sound="tick" class={btn}>
+  <button type="button" role="radio" aria-checked="true" data-active data-view-btn="list" data-sound="tick" class={segBtn}>
     <Icon name="list" size={14} /> List
   </button>
-  <button type="button" data-view-btn="matrix" aria-pressed="false" data-sound="tick" class={btn}>
+  <button type="button" role="radio" aria-checked="false" data-view-btn="matrix" data-sound="tick" class={segBtn}>
     <Icon name="grid" size={14} /> Matrix
   </button>
 </div>
@@ -71,8 +87,15 @@ const btn = css({
           var wantMatrix = view === 'matrix';
           if (wantMatrix) { listEl.hidden = true; matrixEl.hidden = false; }
           else { matrixEl.hidden = true; listEl.hidden = false; }
-          listBtn.setAttribute('aria-pressed', String(!wantMatrix));
-          matrixBtn.setAttribute('aria-pressed', String(wantMatrix));
+          [
+            [listBtn, !wantMatrix],
+            [matrixBtn, wantMatrix],
+          ].forEach(function (pair) {
+            var btn = pair[0], active = pair[1];
+            if (active) btn.setAttribute('data-active', '');
+            else btn.removeAttribute('data-active');
+            btn.setAttribute('aria-checked', String(active));
+          });
           try { localStorage.setItem(key, view); } catch (e) {}
         }
 
