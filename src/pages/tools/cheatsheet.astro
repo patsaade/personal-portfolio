@@ -1,28 +1,35 @@
 ---
-// DFIR command cheat sheet — every tool's install + command-line syntax in one
-// scannable reference page, grouped by platform. Pure derived content: nothing
-// here is authored beyond what already lives in tools.ts (install/syntax fields),
-// so it stays accurate automatically as that data grows. Tools with neither field
+// DFIR command cheat sheet — genuinely useful operational commands (not install
+// steps) for every tool in the kit that has a real command-line/API surface,
+// grouped by platform, searchable by name or function. Pure derived content:
+// nothing here is authored beyond what already lives in tools.ts (`commands`),
+// so it stays accurate automatically as that data grows. Tools with no commands
 // (web/SaaS tools, GUI-only tools where a fabricated example would mislead) are
 // left out — this page is specifically a command reference, not a full tool list
-// (see /tools/ for that). Static page — prerendered to the CDN.
+// (see /tools/ for that, including install instructions). Static — prerendered.
 export const prerender = true;
 import { css } from 'styled-system/css';
 import { tag, card } from 'styled-system/recipes';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import Icon from '../../components/Icon.astro';
+import CollapseAll from '../../components/CollapseAll.astro';
+import TagCombobox from '../../components/TagCombobox.astro';
+import FilterToggle from '../../components/FilterToggle.astro';
+import ListFilter from '../../components/ListFilter.astro';
 import GroupOverview from '../../components/GroupOverview.astro';
+import { tagSlug } from '../../utils/posts';
 import { TOOL_PLATFORMS, costTone } from '../../data/tools';
 
-// Only tools that have at least one of install/syntax — a platform disappears
-// entirely from this page if none of its tools qualify.
+// Only tools with at least one real command — a platform disappears entirely
+// from this page if none of its tools qualify.
 const platforms = TOOL_PLATFORMS.map((p) => ({
   ...p,
-  tools: p.tools.filter((t) => t.install || t.syntax),
+  tools: p.tools.filter((t) => t.commands && t.commands.length > 0),
 })).filter((p) => p.tools.length > 0);
 
 const totalEntries = platforms.reduce((n, p) => n + p.tools.length, 0);
+const totalCommands = platforms.reduce((n, p) => n + p.tools.reduce((m, t) => m + (t.commands?.length ?? 0), 0), 0);
 
 const platformTiles = platforms.map((p) => ({
   id: `cheat-${p.id}`,
@@ -31,6 +38,14 @@ const platformTiles = platforms.map((p) => ({
   blurb: p.blurb,
   count: p.tools.length,
 }));
+
+// Function facet for the search combobox — same tags used on the Tools page,
+// scoped to just the tools that qualify for this page.
+const fnCounts: Record<string, number> = {};
+for (const p of platforms) for (const t of p.tools) fnCounts[t.fn] = (fnCounts[t.fn] ?? 0) + 1;
+const fnOptions = Object.keys(fnCounts)
+  .sort()
+  .map((fn) => ({ value: tagSlug(fn), label: fn, count: fnCounts[fn] }));
 
 const sectionH2 = css({
   display: 'flex',
@@ -47,8 +62,7 @@ const sectionH2 = css({
 const entryCard = `${card()} ${css({ gap: '0.5rem' })}`;
 const entryHead = css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' });
 const entryName = css({ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontFamily: 'sans', fontWeight: 700, fontSize: '0.98rem', color: 'text', transition: 'color 150ms ease', _hover: { color: 'primary' } });
-const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'textMuted' });
-const installLine = css({ fontSize: '0.88rem', color: 'text', lineHeight: 1.6 });
+const cmdDesc = css({ fontSize: '0.85rem', color: 'textMuted', mb: '0.3rem' });
 const codeBlock = css({
   m: 0,
   p: '0.6rem 0.85rem',
@@ -61,35 +75,78 @@ const codeBlock = css({
   overflowX: 'auto',
   whiteSpace: 'pre',
 });
+const commandList = css({ display: 'flex', flexDirection: 'column', gap: '0.65rem' });
+
+// Same collapsible-<details>-per-platform idiom as the Tools page.
+const groupDetails = css({ borderTop: '1px solid token(colors.border)', py: '1.25rem', scrollMarginTop: '90px' });
+const groupSummary = css({
+  cursor: 'pointer',
+  listStyle: 'none',
+  userSelect: 'none',
+  '&::-webkit-details-marker': { display: 'none' },
+  '&::marker': { display: 'none' },
+  _hover: { '& .cheat-grp-title': { color: 'primary' } },
+});
+const chevCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 200ms ease', 'details[open] &': { transform: 'rotate(90deg)' } });
+const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600, color: 'textMuted', bg: 'bgSubtle', border: '1px solid token(colors.border)', borderRadius: 'full', px: '0.5rem', py: '0.1rem' });
 ---
 
 <BaseLayout
   title="DFIR Command Cheat Sheet"
-  description="Install commands and command-line syntax for every tool in the toolkit that has one, grouped by platform — a quick-reference field guide."
+  description="Genuinely useful, verified DFIR commands for every tool in the kit that has a real command-line or API surface — searchable by tool or function, grouped by platform."
 >
   <PageHeader
     breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Tools', href: '/tools/' }, { label: 'Cheat Sheet' }]}
     eyebrow="Quick Reference"
     title="DFIR command cheat sheet"
-    description={`Install commands and command-line syntax for the ${totalEntries} tools in the kit that have one — a scannable field guide, not a full tool list (see the Tools page for that, including web/GUI-only tools). Every line comes straight from each tool's own detail page.`}
+    description={`${totalCommands} verified, real-world commands across the ${totalEntries} tools in the kit that have a genuine command-line or API surface — not a full tool list (see the Tools page for that, including install steps). Every line comes straight from each tool's own detail page.`}
   />
 
   <GroupOverview items={platformTiles} heading="Jump to platform" />
 
-  <p class={css({ color: 'textMuted', fontSize: '0.85rem', mb: '1.5rem' })}>
-    Use your browser's find-in-page (Ctrl/Cmd+F) to jump straight to a tool.
+  {/* Search + function filter (typeahead combobox) */}
+  <div class={css({ mb: '0.6rem' })}>
+    <TagCombobox
+      id="cheat-cb"
+      options={fnOptions}
+      placeholder={`Search ${totalEntries} tools, or type a function…`}
+      label="Search cheat sheet tools or filter by function"
+    />
+  </div>
+
+  <div class={css({ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', mb: '0.75rem' })}>
+    <p role="status" aria-live="polite" class={css({ color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
+      <span id="cheat-result-count">{totalEntries}</span> tools shown
+    </p>
+    <div class={css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', ml: { sm: 'auto' } })}>
+      <FilterToggle id="cheat-core-toggle" icon="star" label="In my kit" tone="accent" />
+      <CollapseAll target="[data-cheat-group]" />
+    </div>
+  </div>
+
+  <p id="cheat-empty" hidden role="status" aria-live="polite" class={css({ color: 'textMuted', textAlign: 'center', py: '3rem' })}>
+    No tools match your search.
   </p>
 
   {
     platforms.map((p) => (
-      <section id={`cheat-${p.id}`}>
-        <h2 class={sectionH2}>
-          <Icon name={p.icon} size={20} class={css({ color: 'primary', flexShrink: 0 })} />
-          {p.title}
-        </h2>
+      <details id={`cheat-${p.id}`} data-cheat-group open class={groupDetails}>
+        <summary class={groupSummary}>
+          <h2 class={sectionH2}>
+            <Icon name="chevron-right" size={17} class={chevCls} />
+            <Icon name={p.icon} size={20} class={css({ color: 'primary', flexShrink: 0 })} />
+            <span class="cheat-grp-title">{p.title}</span>
+            <span class={grpCount}>{p.tools.length}</span>
+          </h2>
+        </summary>
         <div class={css({ display: 'flex', flexDirection: 'column', gap: '0.75rem' })}>
           {p.tools.map((t) => (
-            <div class={entryCard}>
+            <div
+              class={entryCard}
+              data-fn={tagSlug(t.fn)}
+              data-cheat-card={`${t.name} ${t.use} ${t.fn} ${(t.commands ?? []).map((c) => c.desc).join(' ')}`.toLowerCase()}
+              {...(t.core ? { 'data-core': true } : {})}
+            >
               <div class={entryHead}>
                 <a href={`/tools/${t.slug}/`} class={entryName}>
                   {t.core && <Icon name="star" size={13} strokeWidth={0} class={css({ color: 'accent', fill: 'token(colors.accent)' })} label="In my kit" />}
@@ -98,21 +155,32 @@ const codeBlock = css({
                 </a>
                 <span class={tag({ tone: costTone(t.cost) })}>{t.cost}</span>
               </div>
-              {t.install && (
-                <p class={installLine}>
-                  <span class={fieldLabel}>Install</span> {t.install}
-                </p>
-              )}
-              {t.syntax && (
-                <div>
-                  <span class={fieldLabel}>Usage</span>
-                  <pre class={codeBlock}><code>{t.syntax}</code></pre>
-                </div>
-              )}
+              <div class={commandList}>
+                {t.commands!.map((c) => (
+                  <div>
+                    <p class={cmdDesc}>{c.desc}</p>
+                    <pre class={codeBlock}><code>{c.cmd}</code></pre>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
-      </section>
+      </details>
     ))
   }
+
+  <ListFilter
+    config={{
+      comboboxId: 'cheat-cb',
+      cardSelector: '[data-cheat-card]',
+      searchAttr: 'data-cheat-card',
+      groupSelector: '[data-cheat-group]',
+      countId: 'cheat-result-count',
+      emptyId: 'cheat-empty',
+      facetAttr: 'data-fn',
+      toggles: [{ id: 'cheat-core-toggle', attr: 'data-core' }],
+      urlSync: { queryParam: 'q', facetParam: 'fn' },
+    }}
+  />
 </BaseLayout>

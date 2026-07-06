@@ -15,6 +15,8 @@ import TagCombobox from '../../components/TagCombobox.astro';
 import FilterToggle from '../../components/FilterToggle.astro';
 import ListFilter from '../../components/ListFilter.astro';
 import TacticStepper from '../../components/TacticStepper.astro';
+import ViewToggle from '../../components/ViewToggle.astro';
+import TacticMatrix from '../../components/TacticMatrix.astro';
 import { tag, card } from 'styled-system/recipes';
 import { getSortedPosts, getSortedLabs, tagSlug } from '../../utils/posts';
 import { D3FEND_TECHNIQUES, D3FEND_TACTIC_ORDER, D3FEND_TACTICS, D3FEND_VERSION, d3fendById } from '../../data/d3fend';
@@ -45,6 +47,22 @@ const stepperItems = tactics.map((name) => ({
 
 // Tactic facet for the search combobox.
 const tacticOptions = tactics.map((name) => ({ value: tagSlug(name), label: name, count: byTactic[name].length }));
+
+// Matrix view (ViewToggle/TacticMatrix): the same byTactic grouping — each D3FEND
+// technique belongs to exactly one tactic, so no cross-column duplication needed
+// (unlike the ATT&CK Map). "Covered" drives the accent highlight, matching the
+// list view's left-border convention.
+const matrixColumns = tactics.map((name) => ({
+  tactic: name,
+  id: tagSlug(name),
+  cells: byTactic[name].map((t) => ({
+    id: t.id,
+    name: `${t.id} ${t.name}`,
+    href: `/d3fend/${t.id}/`,
+    sub: Boolean(t.parentId),
+    accent: covered.has(t.id),
+  })),
+}));
 
 // Each tactic is a collapsible <details>, matching the ATT&CK Map / Glossary pages.
 const groupDetails = css({ borderTop: '1px solid token(colors.border)', py: '1.25rem', scrollMarginTop: '90px' });
@@ -157,6 +175,7 @@ const anchored = new Set<string>();
       <FilterToggle id="d3fend-covered-toggle" icon="check" label="Covered only" tone="accent" />
       <FilterToggle id="d3fend-mapped-toggle" icon="crosshair" label="Maps to ATT&CK" tone="primary" />
       <CollapseAll target="[data-tactic-group]" />
+      <ViewToggle listTarget="#d3fend-list-view" matrixTarget="#d3fend-matrix-view" storageKey="d3fend-map-view" />
     </div>
   </div>
 
@@ -170,7 +189,7 @@ const anchored = new Set<string>();
     <span class={legendItem}><Icon name="arrow-right" size={13} class={css({ color: 'textMuted' })} /> opens the technique detail page</span>
   </div>
 
-  <div class={css({ display: 'flex', flexDirection: 'column' })}>
+  <div id="d3fend-list-view" class={css({ display: 'flex', flexDirection: 'column' })}>
     {
       tactics.map((tactic) => {
         const tacMapped = byTactic[tactic].filter((t) => t.counters.length).length;
@@ -226,6 +245,13 @@ const anchored = new Set<string>();
         );
       })
     }
+  </div>
+
+  <div id="d3fend-matrix-view" hidden>
+    <p class={css({ color: 'textMuted', fontSize: '0.82rem', mb: '0.75rem' })}>
+      MITRE Navigator-style layout — one column per tactic, sub-techniques indented. Search and filters above apply to the list view only.
+    </p>
+    <TacticMatrix columns={matrixColumns} ariaLabel="MITRE D3FEND technique matrix" tone="accent" />
   </div>
 
   <p id="d3fend-empty" hidden role="status" aria-live="polite" class={css({ color: 'textMuted', textAlign: 'center', py: '3rem' })}>

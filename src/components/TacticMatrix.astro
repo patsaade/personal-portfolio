@@ -1,0 +1,111 @@
+---
+// MITRE-Navigator-style matrix view: one column per tactic (in kill-chain/
+// lifecycle order), each a vertically-scrolling stack of technique cells —
+// the classic "whole landscape at a glance" layout, as an alternative to the
+// tactic-grouped list view already on the ATT&CK Map / D3FEND Map. A technique
+// that belongs to several tactics (ATT&CK) appears in every matching column,
+// same as the list view. Static and self-hosted: a CSS grid, no client
+// framework, matching this site's existing architecture — not an embed of
+// MITRE's own (Angular) Navigator app.
+import { css } from 'styled-system/css';
+
+export interface MatrixCell {
+  id: string;
+  name: string;
+  href: string;
+  /** Sub-technique — rendered smaller/indented under its parent's column position. */
+  sub?: boolean;
+  /** Primary highlight (e.g. "covered in a writeup" / "maps to ATT&CK"). */
+  accent?: boolean;
+}
+export interface MatrixColumn {
+  tactic: string;
+  /** Anchor-safe id — no leading '#'. */
+  id: string;
+  cells: MatrixCell[];
+}
+interface Props {
+  columns: MatrixColumn[];
+  ariaLabel: string;
+  tone?: 'primary' | 'accent';
+}
+const { columns, ariaLabel, tone = 'primary' } = Astro.props;
+
+const scroller = css({
+  display: 'flex',
+  alignItems: 'flex-start',
+  gap: '0.6rem',
+  overflowX: 'auto',
+  pb: '0.5rem',
+  WebkitOverflowScrolling: 'touch',
+});
+const column = css({
+  display: 'flex',
+  flexDirection: 'column',
+  flexShrink: 0,
+  w: '190px',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  overflow: 'hidden',
+});
+const colHead = css({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '0.4rem',
+  p: '0.55rem 0.65rem',
+  bg: 'bgSubtle',
+  borderBottom: '1px solid token(colors.border)',
+  position: 'sticky',
+  top: 0,
+});
+const colTitle = css({ fontFamily: 'sans', fontWeight: 700, fontSize: '0.74rem', lineHeight: 1.25, color: 'text' });
+const colCount = css({ fontFamily: 'sans', fontSize: '0.64rem', fontWeight: 600, color: 'textMuted', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'full', px: '0.4rem', py: '0.05rem', flexShrink: 0 });
+const colBody = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.3rem',
+  p: '0.4rem',
+  maxH: '70vh',
+  overflowY: 'auto',
+});
+const cellBase = css({
+  display: 'block',
+  p: '0.4rem 0.5rem',
+  fontSize: '0.74rem',
+  lineHeight: 1.3,
+  color: 'text',
+  bg: 'bg',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'sm',
+  transition: 'border-color 150ms ease, color 150ms ease, transform 150ms ease',
+  _hover: { borderColor: tone, color: tone, transform: 'translateX(2px)' },
+});
+const cellSub = css({ ml: '0.6rem', opacity: 0.82, fontSize: '0.7rem' });
+const cellAccent = css({ borderLeftWidth: '3px', borderLeftColor: tone });
+---
+
+<div class={scroller} role="group" aria-label={ariaLabel}>
+  {
+    columns.map((col) => (
+      <div class={column} id={`matrix-${col.id}`}>
+        <div class={colHead}>
+          <span class={colTitle}>{col.tactic}</span>
+          <span class={colCount}>{col.cells.length}</span>
+        </div>
+        <div class={colBody}>
+          {col.cells.map((cell) => (
+            <a
+              href={cell.href}
+              class={`${cellBase} ${cell.sub ? cellSub : ''} ${cell.accent ? cellAccent : ''}`}
+              title={cell.name}
+            >
+              {cell.name}
+            </a>
+          ))}
+        </div>
+      </div>
+    ))
+  }
+</div>
