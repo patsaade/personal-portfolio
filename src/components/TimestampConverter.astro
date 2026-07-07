@@ -7,8 +7,14 @@
 // looking at. Same "Scratch-inspired workspace" visual language as the OSINT
 // Crock Pot's DorkBuilder (corner brackets, dot-grid texture, a left-rail
 // timeline of blocks, a sticky "stage" — here showing the one instant every
-// field currently represents plus reference-timezone controls). Genuinely
-// requires JS (there's no meaningful static form for live N-way conversion),
+// field currently represents plus reference-timezone controls: quick UTC/
+// Local buttons, or any IANA timezone via the select, populated at runtime
+// from Intl.supportedValuesOf('timeZone') so it's never a hand-maintained
+// list. The reference zone governs local-time-only formats (FAT/DOS, RFC
+// 3164 syslog) and adds a second wall-clock line to the "Current instant"
+// display; the offset is re-resolved from the zone name on every render
+// (not cached), since DST-observing zones' offsets depend on the date.
+// Genuinely requires JS (there's no meaningful static form for live N-way conversion),
 // so the workspace stays hidden until the script confirms it's running —
 // same JS-armed, no-JS-safe philosophy as DorkBuilder/CollapseAll/ViewToggle.
 import { css } from 'styled-system/css';
@@ -207,6 +213,20 @@ const refBtn = css({
   _hover: { color: 'text' },
   '&[data-active]': { bg: 'bgSubtle', color: 'primary', borderColor: 'border', boxShadow: 'card' },
 });
+const refZoneSelect = css({
+  fontFamily: 'mono',
+  fontSize: '0.8rem',
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.6rem',
+  py: '0.4rem',
+  cursor: 'pointer',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&[data-active]': { borderColor: 'primary', color: 'primary' },
+});
 const actionCol = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' });
 const actionBtn = css({
   display: 'inline-flex',
@@ -291,11 +311,14 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
         <p class={paneLabel}>Current instant</p>
         <pre class={instantBox} data-ts-instant>&nbsp;</pre>
 
-        <p class={fieldLabel}>Reference (for local-time-only formats)</p>
+        <p class={fieldLabel}>Reference (for local-time-only formats + local wall-clock display)</p>
         <div class={refRow} role="radiogroup" aria-label="Reference timezone">
           <button type="button" role="radio" aria-checked="true" data-active data-ts-ref="utc" data-sound="tick" class={refBtn}>UTC</button>
           <button type="button" role="radio" aria-checked="false" data-ts-ref="local" data-sound="tick" class={refBtn}>Local</button>
         </div>
+        <select class={refZoneSelect} data-ts-ref-zone aria-label="Or choose any timezone">
+          <option value="">Or choose any timezone…</option>
+        </select>
 
         <div class={actionCol}>
           <button type="button" class={`${actionBtn} ${primaryBtn}`} data-ts-now data-sound="tick">
@@ -314,7 +337,7 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
 
 <script>
   // @ts-nocheck — vanilla DOM client script
-  import { formatById, detectFormat, DEFAULT_CONTEXT } from '../utils/timestamps';
+  import { formatById, detectFormat, offsetMinutesForZone, DEFAULT_CONTEXT } from '../utils/timestamps';
 
   (function () {
     function init() {
@@ -328,22 +351,59 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
         var detectResults = root.querySelector('[data-ts-detect-results]');
         var instantEl = root.querySelector('[data-ts-instant]');
         var refBtns = Array.prototype.slice.call(root.querySelectorAll('[data-ts-ref]'));
+        var refZoneSelect = root.querySelector('[data-ts-ref-zone]');
         var nowBtn = root.querySelector('[data-ts-now]');
         var copyAllBtn = root.querySelector('[data-ts-copy-all]');
         if (!instantEl || !nowBtn) return;
 
         var ctx = { refOffsetMinutes: 0, refYear: DEFAULT_CONTEXT.refYear };
         var current = null; // canonical ns (bigint) | null
+        var activeRef = 'utc'; // 'utc' | 'local' | an IANA zone name (e.g. 'America/New_York')
 
-        function localOffsetMinutesFor(ns) {
-          // JS's getTimezoneOffset() is UTC-minus-local in minutes for the CALLING
-          // system clock, not for an arbitrary instant's own historical DST state —
-          // close enough for a "your browser's local time" convenience option.
-          var ms = Number(ns / 1000000n);
-          return new Date(ms).getTimezoneOffset();
+        function browserZoneName() {
+          try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) { return 'UTC'; }
+        }
+
+        // Populate the "any timezone" select from the runtime's own IANA zone
+        // list, grouped by region. Intl.supportedValuesOf is newer (Safari 15.4+,
+        // Chrome/Firefox ~2022+) — on runtimes without it the select just stays
+        // empty and the UTC/Local quick buttons still cover the common cases.
+        if (refZoneSelect && typeof Intl.supportedValuesOf === 'function') {
+          try {
+            var zones = Intl.supportedValuesOf('timeZone').filter(function (z) { return z !== 'UTC'; });
+            var groups = {};
+            zones.forEach(function (z) {
+              var slash = z.indexOf('/');
+              var region = slash !== -1 ? z.slice(0, slash) : 'Other';
+              (groups[region] = groups[region] || []).push(z);
+            });
+            Object.keys(groups).sort().forEach(function (region) {
+              var optgroup = document.createElement('optgroup');
+              optgroup.label = region;
+              groups[region].forEach(function (z) {
+                var opt = document.createElement('option');
+                opt.value = z;
+                opt.textContent = z.slice(z.indexOf('/') + 1).replace(/_/g, ' ');
+                optgroup.appendChild(opt);
+              });
+              refZoneSelect.appendChild(optgroup);
+            });
+          } catch (e) {}
+        }
+
+        // Recomputed on every render (not cached) since a DST-observing zone's
+        // offset depends on the DATE, not just the zone name — editing a field
+        // to a different date must re-resolve it, not keep a stale offset.
+        function recomputeOffset() {
+          if (current === null) { ctx.refOffsetMinutes = 0; return; }
+          if (activeRef === 'utc') { ctx.refOffsetMinutes = 0; return; }
+          var zoneName = activeRef === 'local' ? browserZoneName() : activeRef;
+          var offset = offsetMinutesForZone(current, zoneName);
+          ctx.refOffsetMinutes = offset === null ? 0 : offset;
         }
 
         function render(skipId) {
+          recomputeOffset();
           fields.forEach(function (f) {
             if (f.id === skipId) return;
             var fmt = formatById(f.id);
@@ -355,9 +415,15 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
           });
           if (current === null) {
             instantEl.textContent = ' ';
+            return;
+          }
+          var isoUtc = formatById('iso8601').format(current, { refOffsetMinutes: 0, refYear: ctx.refYear });
+          if (ctx.refOffsetMinutes === 0) {
+            instantEl.textContent = isoUtc;
           } else {
-            var iso = formatById('iso8601').format(current, { refOffsetMinutes: 0, refYear: ctx.refYear });
-            instantEl.textContent = iso;
+            var isoLocal = formatById('iso8601').format(current, ctx);
+            var zoneLabel = activeRef === 'local' ? browserZoneName() + ' (local)' : activeRef;
+            instantEl.textContent = isoUtc + '\n' + isoLocal + '  — ' + zoneLabel;
           }
         }
 
@@ -387,24 +453,40 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
           f.input.addEventListener('input', function () { setFromField(f.id); });
         });
 
+        function setActiveRefButton(mode) {
+          refBtns.forEach(function (o) {
+            var active = o.getAttribute('data-ts-ref') === mode;
+            if (active) o.setAttribute('data-active', ''); else o.removeAttribute('data-active');
+            o.setAttribute('aria-checked', String(active));
+          });
+        }
+
         refBtns.forEach(function (b) {
           b.addEventListener('click', function () {
-            refBtns.forEach(function (o) {
-              var active = o === b;
-              if (active) o.setAttribute('data-active', ''); else o.removeAttribute('data-active');
-              o.setAttribute('aria-checked', String(active));
-            });
-            var mode = b.getAttribute('data-ts-ref');
-            ctx.refOffsetMinutes = mode === 'local' && current !== null ? localOffsetMinutesFor(current) : 0;
+            activeRef = b.getAttribute('data-ts-ref');
+            setActiveRefButton(activeRef);
+            if (refZoneSelect) { refZoneSelect.value = ''; refZoneSelect.removeAttribute('data-active'); }
             render(null);
           });
         });
 
+        if (refZoneSelect) {
+          refZoneSelect.addEventListener('change', function () {
+            if (!refZoneSelect.value) {
+              activeRef = 'utc';
+              setActiveRefButton('utc');
+              refZoneSelect.removeAttribute('data-active');
+            } else {
+              activeRef = refZoneSelect.value;
+              setActiveRefButton(''); // a custom zone is active — neither quick button is
+              refZoneSelect.setAttribute('data-active', '');
+            }
+            render(null);
+          });
+        }
+
         nowBtn.addEventListener('click', function () {
           current = BigInt(Date.now()) * 1000000n;
-          if (refBtns.some(function (b) { return b.getAttribute('data-ts-ref') === 'local' && b.hasAttribute('data-active'); })) {
-            ctx.refOffsetMinutes = localOffsetMinutesFor(current);
-          }
           render(null);
         });
 

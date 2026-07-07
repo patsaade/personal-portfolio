@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatById, detectFormat, DEFAULT_CONTEXT, type ConvertContext } from '../src/utils/timestamps';
+import { formatById, detectFormat, offsetMinutesForZone, DEFAULT_CONTEXT, type ConvertContext } from '../src/utils/timestamps';
 
 // Every worked example below is either lifted directly from the tool's own
 // independently fact-checked research (adversarially verified against
@@ -167,6 +167,42 @@ describe('text/calendar formats', () => {
     expect(formatById('syslog-3164')!.format(formatById('iso8601')!.parse('2026-08-07T10:03:22Z', ctx)!, ctx)).toBe(
       'Aug  7 10:03:22',
     );
+  });
+});
+
+describe('offsetMinutesForZone', () => {
+  it('Asia/Kolkata has no DST: always +330 (UTC+5:30)', () => {
+    const jan = formatById('iso8601')!.parse('2024-01-15T12:00:00Z', UTC)!;
+    const jul = formatById('iso8601')!.parse('2024-07-15T12:00:00Z', UTC)!;
+    expect(offsetMinutesForZone(jan, 'Asia/Kolkata')).toBe(330);
+    expect(offsetMinutesForZone(jul, 'Asia/Kolkata')).toBe(330);
+  });
+
+  it('America/New_York is -300 (EST) in January and -240 (EDT) in July', () => {
+    const jan = formatById('iso8601')!.parse('2024-01-15T12:00:00Z', UTC)!;
+    const jul = formatById('iso8601')!.parse('2024-07-15T12:00:00Z', UTC)!;
+    expect(offsetMinutesForZone(jan, 'America/New_York')).toBe(-300);
+    expect(offsetMinutesForZone(jul, 'America/New_York')).toBe(-240);
+  });
+
+  it('sign convention matches ISO 8601 offset parsing (positive = ahead of UTC)', () => {
+    // "+02:00" parses to offsetMinutes=+120 in civilToNs/nsToCivil (see the ISO 8601
+    // test above) — a zone that reads ahead of UTC must resolve the same sign here.
+    const ns = formatById('iso8601')!.parse('2024-06-01T00:00:00Z', UTC)!;
+    expect(offsetMinutesForZone(ns, 'Europe/Berlin')).toBe(120); // CEST, UTC+2 in June
+  });
+
+  it('returns null for an unrecognized time zone name', () => {
+    const ns = formatById('unix-s')!.parse('1700000000', UTC)!;
+    expect(offsetMinutesForZone(ns, 'Not/A_Real_Zone')).toBeNull();
+  });
+
+  it('feeding the resolved offset back into iso8601.format renders the correct local wall clock', () => {
+    // 2024-07-15T12:00:00Z in America/New_York (EDT, -240) should read 08:00 local.
+    const ns = formatById('iso8601')!.parse('2024-07-15T12:00:00Z', UTC)!;
+    const offset = offsetMinutesForZone(ns, 'America/New_York')!;
+    const local = formatById('iso8601')!.format(ns, { refOffsetMinutes: offset, refYear: 2024 });
+    expect(local).toBe('2024-07-15T08:00:00-04:00');
   });
 });
 

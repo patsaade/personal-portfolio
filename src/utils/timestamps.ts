@@ -460,3 +460,37 @@ export function detectFormat(raw: string): { format: TimestampFormat; ns: bigint
   }
   return results;
 }
+
+/**
+ * The UTC offset (in minutes, same sign convention as ConvertContext.refOffsetMinutes
+ * — positive when the zone's local clock reads AHEAD of UTC, e.g. +330 for
+ * Asia/Kolkata) for a given IANA time zone name at a given instant. DST-aware:
+ * asks Intl to format the actual instant in that zone rather than using a
+ * static lookup, so the same zone name correctly resolves to a different
+ * offset in January vs. July where DST applies. Returns null if the runtime's
+ * ICU data doesn't recognize the zone name.
+ */
+export function offsetMinutesForZone(ns: bigint, timeZone: string): number | null {
+  const [totalSec] = floorDivMod(ns, SEC);
+  const ms = Number(totalSec) * 1000;
+  if (!Number.isFinite(ms)) return null;
+  let parts: Intl.DateTimeFormatPart[];
+  try {
+    parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hourCycle: 'h23',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }).formatToParts(new Date(ms));
+  } catch {
+    return null;
+  }
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? NaN);
+  const asUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
+  if (!Number.isFinite(asUtc)) return null;
+  return Math.round((asUtc - ms) / 60_000);
+}
