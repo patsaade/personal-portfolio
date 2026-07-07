@@ -18,6 +18,8 @@ const STATIC_ENTRIES: OgEntry[] = [
   { slug: 'labs', title: 'Hands-on challenges, solved', eyebrow: 'Labs' },
   { slug: 'tools', title: 'Tool Catalog', eyebrow: 'Tooling' },
   { slug: 'tools/cheatsheet', title: 'DFIR Command Cheat Sheet', eyebrow: 'Quick Reference' },
+  { slug: 'tools/timestamp-converter', title: 'Timestamp Decoder', eyebrow: 'Time & Correlation' },
+  { slug: 'tools/ioc-extractor', title: 'IOC Extractor', eyebrow: 'Triage & Correlation' },
   { slug: 'osint', title: 'OSINT Toolkit', eyebrow: 'Recon & Discovery' },
   { slug: 'glossary', title: 'Cybersecurity glossary', eyebrow: 'Reference' },
   { slug: 'attack-map', title: 'MITRE ATT&CK Coverage Map', eyebrow: 'Coverage' },

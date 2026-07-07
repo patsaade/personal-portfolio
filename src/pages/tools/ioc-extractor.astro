@@ -1,0 +1,119 @@
+---
+// IOC Extractor & Defanger — paste raw text (a log, an alert, a phishing
+// email, a report) and get every indicator of compromise it contains,
+// extracted and deduped by type, with a defang/refang toggle for safely
+// sharing indicators in a write-up vs. actually using them. Same page shape
+// as the OSINT Crock Pot / Timestamp Decoder (intro aside -> interactive
+// tool -> reference notes). Static page — prerender to HTML served from the CDN.
+export const prerender = true;
+import { css } from 'styled-system/css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import Icon from '../../components/Icon.astro';
+import IocExtractor from '../../components/IocExtractor.astro';
+import { IOC_CATEGORIES } from '../../utils/iocs';
+
+const sectionH2 = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  fontSize: '1.3rem',
+  fontWeight: 700,
+  mt: '2.5rem',
+  mb: '1rem',
+  pt: '1.5rem',
+  borderTop: '1px solid token(colors.border)',
+  scrollMarginTop: '90px',
+});
+const refTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' });
+const refTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)' });
+const refTd = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text', verticalAlign: 'top' });
+const refTdMuted = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'textMuted', fontSize: '0.8rem', verticalAlign: 'top' });
+const refCode = css({ fontFamily: 'mono', fontSize: '0.78rem', color: 'primary' });
+
+// Short, factual notes on each category's known false-positive risk / matching
+// scope — shown in the reference table so an analyst knows what to double-check.
+const CATEGORY_NOTES: Record<string, string> = {
+  ipv4: 'Bounded 0-255 per octet; won’t match version-number-shaped strings with an out-of-range octet.',
+  ipv6: 'Covers full, compressed ("::"), and mixed forms. Link-local/interface suffixes ("%eth0") aren’t matched.',
+  url: 'http(s) only. Stops at whitespace or common wrapping punctuation/brackets/quotes.',
+  domain: 'Best-effort — requires a 2+ letter final label, but ordinary dotted text can still false-positive. Review before acting.',
+  email: 'Standard local-part@domain shape; doesn’t validate deliverability.',
+  md5: 'Exact 32 hex chars, bounded — won’t match a substring of a longer hash.',
+  sha1: 'Exact 40 hex chars, bounded.',
+  sha256: 'Exact 64 hex chars, bounded.',
+  sha512: 'Exact 128 hex chars, bounded.',
+  cve: 'Case-insensitive CVE-YYYY-NNNN(N+) shape; doesn’t verify the CVE actually exists.',
+  attack: 'Uppercase T + 4 digits, optional .NNN sub-technique — can false-positive on unrelated "T####" strings; verify against the ATT&CK map.',
+  btc: 'Legacy (1.../3...) and Bech32 (bc1...) address shapes — doesn’t validate the checksum.',
+};
+---
+
+<BaseLayout
+  title="IOC Extractor"
+  description="Paste a log, alert, or report and extract every IOC it contains — IPs, domains, URLs, emails, file hashes, CVE IDs, MITRE ATT&CK IDs, and Bitcoin addresses — with a defang/refang toggle for safe sharing."
+>
+  <PageHeader
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Tool Catalog', href: '/tools/' }, { label: 'IOC Extractor' }]}
+    eyebrow="Triage & Correlation"
+    title="IOC Extractor"
+    description="Paste raw text — a log, an alert, a phishing email, a report — and every indicator it contains gets pulled out, deduped, and grouped by type."
+  />
+
+  <aside
+    class={css({
+      bg: 'bgSubtle',
+      border: '1px solid token(colors.border)',
+      borderLeftWidth: '3px',
+      borderLeftColor: 'primary',
+      borderRadius: 'md',
+      p: '1rem 1.25rem',
+      mb: '1.5rem',
+    })}
+  >
+    <p class={css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', m: 0 })}>
+      Pulling IPs, hashes, and domains out of a wall of log lines or a pasted email by hand is slow and
+      error-prone. This runs entirely in your browser —{' '}
+      <strong class={css({ color: 'text' })}>nothing you paste here is sent anywhere</strong> — and extracts
+      every indicator it recognizes in one pass, deduplicated per category. Toggle{' '}
+      <strong class={css({ color: 'text' })}>Defanged</strong> before dropping indicators into a report or
+      ticket (<code class={refCode}>http</code> → <code class={refCode}>hxxp</code>,{' '}
+      <code class={refCode}>.</code> → <code class={refCode}>[.]</code>) so they don't render as live
+      links or get auto-blocked by mail/chat filters. Extraction is best-effort pattern matching, not a
+      threat-intel lookup — review results before acting on them.
+    </p>
+  </aside>
+
+  <h2 id="extractor" class={css({ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.3rem', fontWeight: 700, mb: '1rem', scrollMarginTop: '90px' })}>
+    <Icon name="search" size={20} class={css({ color: 'primary' })} /> Extractor
+  </h2>
+  <IocExtractor />
+
+  <h2 id="reference" class={sectionH2}>
+    <Icon name="list" size={20} class={css({ color: 'primary' })} /> Category reference
+  </h2>
+  <div class={css({ overflowX: 'auto' })}>
+    <table class={refTable}>
+      <thead>
+        <tr>
+          <th class={refTh}>Category</th>
+          <th class={refTh}>Example</th>
+          <th class={refTh}>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          IOC_CATEGORIES.map((cat) => (
+            <tr>
+              <td class={refTd}>
+                <strong class={css({ color: 'text' })}>{cat.label}</strong>
+              </td>
+              <td class={`${refTd} ${refCode}`}>{cat.placeholder}</td>
+              <td class={refTdMuted}>{CATEGORY_NOTES[cat.id] ?? ''}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+</BaseLayout>

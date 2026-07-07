@@ -8,7 +8,9 @@
 
    What lives WHERE (so this stays the single home for charm motion):
    - Charm animations (THIS file): the heading "declassify" decode (hero +
-     section/post titles), scroll-reveal, pixel-star twinkle, copy-button pop.
+     section/post titles), scroll-reveal, pixel-star twinkle, copy-button pop
+     (and its reusable [data-copy-pop] opt-in), the fragment-timeline hero
+     illustration settle-in, dynamically-populated result-card drop-in.
    - Structural/base styles (global.css): focus rings, theme-preload, the
      hover-card underline, and the functional Term-of-the-Day ticker marquee.
    - Token-integrated keyframes (panda.config.ts): e.g. `fadeIn` for <main>.
@@ -34,6 +36,18 @@
   .prose.reveal-ready > * {
     opacity: 1 !important;
     transform: none !important;
+  }
+  .ft-fragment,
+  .ft-tracer {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .ft-node {
+    animation: none !important;
+    opacity: var(--ft-end-opacity, 1) !important;
+  }
+  [data-ioc-category] {
+    animation: none !important;
   }
   /* Belt-and-suspenders: JS already skips the theme wipe under reduced motion. */
   ::view-transition-old(root),
@@ -115,8 +129,12 @@
 }
 
 /* ── 4. Copy-button pop ───────────────────────────────────────────────────────
-   A quick confirming pop when a code block is copied (pairs with the `copy`
-   sound cue). The button's resting appearance lives in markdown.css. */
+   A quick confirming pop when something is copied (pairs with the `copy`
+   sound cue). `.prose pre .copy-btn` is the original (blog code blocks,
+   resting appearance in markdown.css); `[data-copy-pop]` is the same effect
+   as a reusable opt-in — any element that copies something to the clipboard
+   can add that attribute and toggle `data-copied` on click (see DorkBuilder/
+   TimestampConverter/IocExtractor's copy buttons and per-item copy). */
 @keyframes copyPop {
   0% {
     transform: scale(1);
@@ -128,11 +146,77 @@
     transform: scale(1);
   }
 }
-.prose pre .copy-btn[data-copied] {
+.prose pre .copy-btn[data-copied],
+[data-copy-pop][data-copied] {
   animation: copyPop 220ms ease;
 }
 
-/* ── 5. Theme wipe — circular reveal on light/dark + palette switches ──────────
+/* ── 5. Fragment timeline settle — hero illustration (FragmentTimeline.astro) ──
+   Evidence fragments fade in, tracers draw down to the axis, then the event
+   nodes pop in — one time on load, staggered per-element via inline
+   animation-delay (same technique as the pixel-star twinkle above). Purely
+   decorative/aria-hidden, so settling instantly under reduced motion (the
+   block up top) loses nothing. */
+@keyframes ftFragmentIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.ft-fragment {
+  opacity: 0;
+  animation: ftFragmentIn 420ms ease-out both;
+}
+@keyframes ftTracerIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0.35;
+  }
+}
+.ft-tracer {
+  opacity: 0;
+  animation: ftTracerIn 420ms ease-out both;
+}
+@keyframes ftNodeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: var(--ft-end-opacity, 1);
+  }
+}
+.ft-node {
+  opacity: 0;
+  animation: ftNodeIn 380ms ease-out both;
+}
+
+/* ── 6. Result-card drop-in — dynamically-populated cards (IocExtractor) ───────
+   A category card switches from `display:none` to visible the moment it gets
+   a match (data-has-matches, toggled in IocExtractor's script) — this animates
+   that reveal with a quick fade + downward settle instead of an instant snap.
+   The base display:none -> display:flex switch and the animation both apply
+   from the same attribute selector, which is how the "instant display switch,
+   animate the fade/slide on top" pattern works in plain CSS (no JS-driven
+   animation needed here, unlike the fragment timeline above). */
+@keyframes resultCardIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+[data-ioc-category][data-has-matches] {
+  animation: resultCardIn 260ms ease-out both;
+}
+
+/* ── 7. Theme wipe — circular reveal on light/dark + palette switches ──────────
    User-initiated theme changes (BaseHead's applyAnimated) run through the View
    Transitions API. The wipe itself is animated in JS (root.animate on the
    ::view-transition-new(root) snapshot) so the circle radiates accurately from the

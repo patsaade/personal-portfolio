@@ -1,187 +1,316 @@
 ---
-// Home page — hero, headline stats, featured/latest posts, and CTA.
+// Home page — masthead, hero, headline stats, certifications strip, featured/
+// latest posts, and a closing CTA. "Field Report" visual redesign, kept
+// deliberately light on prose per Patrick's direction (pure-visual, relaxed —
+// a title is enough, no descriptive paragraphs): a kicker + oversized
+// headline hero sits beside a decorative fragments-to-timeline illustration,
+// a rule-bounded numerals stat rail (icon/numeral + short label only, no
+// caption sentences) replaces the old icon-card grid, a small real-data
+// certifications progress ring gets its own strip, and the blog section
+// becomes a cover story + secondary list with excerpts hidden — all bounded
+// by a repeating hairline-rule motif (masthead -> stat rail -> cert strip ->
+// divider -> post list -> closing CTA). The stat captions/excerpt text this
+// removed (Red Canary, "In pursuit of GCFA/GCFE/GCIH", etc.) still live in
+// full on the About/Certifications pages and in post listings — this is a
+// display-density decision for the home page specifically, not a fact drop.
 // Static page — prerender to HTML served from the CDN (output: 'server' is on-demand by default).
 export const prerender = true;
 import { css } from 'styled-system/css';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BlogCard from '../components/BlogCard.astro';
 import Icon from '../components/Icon.astro';
+import FragmentTimeline from '../components/FragmentTimeline.astro';
 import { getSortedPosts, estimateReadTime } from '../utils/posts';
 import { STATS, SOCIALS } from '../consts';
+import { CERTIFICATIONS, EARNED_CERTS } from '../data/certifications';
 
 const posts = await getSortedPosts();
 const featured = posts.filter((p) => p.data.featured).slice(0, 3);
 const latest = (featured.length ? featured : posts).slice(0, 3);
+const [cover, ...secondary] = latest;
+
+const year = new Date().getFullYear();
+
+// Certifications progress ring — real counts from src/data/certifications.ts (see
+// that file's own content-accuracy note); nothing here is invented.
+const CERT_RING_R = 22;
+const certRingCircumference = 2 * Math.PI * CERT_RING_R;
+const certRingOffset = certRingCircumference * (1 - EARNED_CERTS.length / CERTIFICATIONS.length);
 ---
 
 <BaseLayout>
+  {/* Masthead strip */}
+  <div
+    class={css({
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: '0.5rem',
+      py: '0.6rem',
+      mb: { base: '1.5rem', md: '2rem' },
+      borderBottom: '1px solid token(colors.border)',
+      fontFamily: 'mono',
+      fontSize: '0.7rem',
+      letterSpacing: '0.08em',
+      textTransform: 'uppercase',
+      color: 'textMuted',
+    })}
+  >
+    <span>DFIR Field Notes · SOC &amp; Incident Response</span>
+    <span>Vol. {year}</span>
+  </div>
+
   {/* Hero */}
   <section
     class={css({
-      py: { base: '2rem', md: '3rem' },
-      borderBottom: '1px solid token(colors.border)',
+      display: 'grid',
+      gridTemplateColumns: { base: '1fr', lg: '1.3fr 1fr' },
+      gap: { base: '1.5rem', lg: '3rem' },
+      alignItems: { lg: 'end' },
+      pb: { base: '2rem', md: '3rem' },
       mb: '3rem',
+      borderBottom: '1px solid token(colors.border)',
     })}
   >
-    <h1
-      class={`declassify-hero ${css({
-        fontSize: { base: '2.4rem', md: '3.5rem' },
-        fontWeight: 700,
-        lineHeight: 1.1,
-        letterSpacing: '-0.03em',
-        mb: '1.25rem',
-      })}`}
-    >
-      DFIR-focused.<br />
-      <span class={css({ color: 'primary' })}>SOC & Incident Response @ First American.</span><br />
-      Pursuing GCFA, GCFE & GCIH.
-    </h1>
-    <p
-      class={css({
-        fontSize: '1.15rem',
-        color: 'textMuted',
-        maxW: '640px',
-        lineHeight: 1.7,
-        mb: '2rem',
-      })}
-    >
-      I dig into the layer most alerts stop at — what actually executed, when, and how you'd
-      prove it. Day to day that's detection and response; here it's the forensic craft underneath:
-      memory analysis, host & EDR artifact deep dives, timeline reconstruction, and full lab
-      writeups.
-    </p>
-    <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' })}>
-      <a
-        href="/blog/"
+    <div>
+      <p
         class={css({
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          bg: 'primary',
-          color: 'onPrimary',
-          fontWeight: 600,
-          px: '1.25rem',
-          py: '0.7rem',
-          borderRadius: 'md',
-          transition: 'background 200ms ease, transform 200ms ease',
-          _hover: { bg: 'primaryHover', transform: 'translateY(-1px)' },
+          fontFamily: 'mono',
+          fontSize: '0.78rem',
+          fontWeight: 700,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: 'primary',
+          mb: '0.75rem',
         })}
       >
-        Read the latest posts <Icon name="arrow-right" size={17} />
-      </a>
-      <a
-        href="/labs/"
-        class={css({
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          border: '1px solid token(colors.border)',
-          color: 'text',
-          fontWeight: 600,
-          px: '1.25rem',
-          py: '0.7rem',
-          borderRadius: 'md',
-          transition: 'border-color 200ms ease',
-          _hover: { borderColor: 'primary' },
-        })}
+        Field Report
+      </p>
+      <h1
+        class={`declassify-hero ${css({
+          fontSize: { base: '2.6rem', md: '4.25rem', lg: '4.75rem' },
+          fontWeight: 700,
+          lineHeight: 1.05,
+          letterSpacing: '-0.04em',
+          maxW: '15ch',
+          mb: '1.5rem',
+        })}`}
       >
-        <Icon name="flask" size={17} /> Browse lab writeups
-      </a>
+        DFIR-focused.<br />
+        <span class={css({ color: 'primary' })}>SOC & Incident Response @ First American.</span><br />
+        Pursuing GCFA, GCFE & GCIH.
+      </h1>
+      <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', mt: '2rem' })}>
+        <a
+          href="/blog/"
+          class={css({
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            bg: 'primary',
+            color: 'onPrimary',
+            fontWeight: 600,
+            px: '1.25rem',
+            py: '0.7rem',
+            borderRadius: 'md',
+            transition: 'background 200ms ease, transform 200ms ease',
+            _hover: { bg: 'primaryHover', transform: 'translateY(-1px)' },
+          })}
+        >
+          Read the latest posts <Icon name="arrow-right" size={17} />
+        </a>
+        <a
+          href="/labs/"
+          class={css({
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            border: '1px solid token(colors.border)',
+            color: 'text',
+            fontWeight: 600,
+            px: '1.25rem',
+            py: '0.7rem',
+            borderRadius: 'md',
+            transition: 'border-color 200ms ease',
+            _hover: { borderColor: 'primary' },
+          })}
+        >
+          <Icon name="flask" size={17} /> Browse lab writeups
+        </a>
+      </div>
     </div>
+
+    <FragmentTimeline class={css({ display: { base: 'none', lg: 'block' }, w: '100%', maxW: '420px', h: 'auto' })} />
   </section>
 
-  {/* Highlights */}
+  {/* Stat rail */}
   <section
     class={css({
       display: 'grid',
-      gridTemplateColumns: { base: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
-      gap: '1rem',
-      mb: '3.5rem',
+      gridTemplateColumns: { base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+      gap: { base: '1.5rem', md: 0 },
+      borderTop: '1px solid token(colors.border)',
+      borderBottom: '1px solid token(colors.border)',
+      py: { base: '2rem', md: '2.5rem' },
+      mb: '2rem',
     })}
   >
     {
-      STATS.map((s) => (
+      STATS.map((s, i) => (
         <div
           class={css({
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '0.85rem',
-            p: '1.1rem 1.25rem',
-            bg: 'bgCard',
-            border: '1px solid token(colors.border)',
-            borderRadius: 'lg',
-            transition: 'border-color 200ms ease, transform 200ms ease',
-            _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
+            px: { base: 0, md: '1.25rem' },
+            borderInlineStart: { base: 'none', md: i > 0 ? '1px solid token(colors.border)' : 'none' },
           })}
         >
-          <span
-            class={css({
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              w: '2.25rem',
-              h: '2.25rem',
-              borderRadius: 'md',
-              bg: 'color-mix(in srgb, token(colors.primary) 13%, transparent)',
-              color: 'primary',
-            })}
-            aria-hidden="true"
+          {i === 1 ? (
+            <div
+              class={css({
+                fontSize: { base: '2.5rem', md: '3.5rem' },
+                fontWeight: 700,
+                color: 'primary',
+                lineHeight: 1,
+                mb: '0.5rem',
+              })}
+            >
+              3+
+            </div>
+          ) : (
+            <Icon name={s.icon} size={20} class={css({ color: 'primary', mb: '0.6rem' })} />
+          )}
+          <div
+            title={s.desc}
+            class={css({ fontWeight: 700, fontSize: '0.95rem', color: 'text', lineHeight: 1.3, textWrap: 'balance' })}
           >
-            <Icon name={s.icon} size={18} />
-          </span>
-          <div class={css({ minW: 0 })}>
-            <div class={css({ fontWeight: 700, fontSize: '0.98rem', color: 'text', lineHeight: 1.3, textWrap: 'balance' })}>
-              {s.title}
-            </div>
-            <div class={css({ fontSize: '0.82rem', color: 'textMuted', mt: '0.2rem', lineHeight: 1.45, textWrap: 'pretty' })}>
-              {s.desc}
-            </div>
+            {s.title}
           </div>
         </div>
       ))
     }
   </section>
 
-  {/* Featured / latest posts */}
-  <section>
-    <div
+  {/* Certifications strip — real counts from src/data/certifications.ts */}
+  <a
+    href="/certifications/"
+    class={css({
+      display: 'flex',
+      alignItems: 'center',
+      gap: '1rem',
+      py: '1.25rem',
+      borderBottom: '1px solid token(colors.border)',
+      mb: '2rem',
+      transition: 'opacity 200ms ease',
+      _hover: { opacity: 0.85 },
+    })}
+  >
+    <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true" class={css({ flexShrink: 0 })}>
+      <circle cx="28" cy="28" r={CERT_RING_R} fill="none" style="stroke: var(--colors-border)" stroke-width="4" />
+      <circle
+        cx="28"
+        cy="28"
+        r={CERT_RING_R}
+        fill="none"
+        style="stroke: var(--colors-primary)"
+        stroke-width="4"
+        stroke-linecap="round"
+        stroke-dasharray={certRingCircumference}
+        stroke-dashoffset={certRingOffset}
+        transform="rotate(-90 28 28)"
+      />
+    </svg>
+    <p class={css({ fontFamily: 'mono', fontSize: '0.9rem', color: 'text', fontWeight: 600 })}>
+      CISSP certified · GCFA / GCFE / GCIH in pursuit
+    </p>
+  </a>
+
+  {/* Divider */}
+  <div class={css({ position: 'relative', borderTop: '1px solid token(colors.border)', mb: '2.5rem' })}>
+    <span
+      aria-hidden="true"
       class={css({
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'baseline',
-        mb: '1.5rem',
+        position: 'absolute',
+        top: '-0.65rem',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        bg: 'bg',
+        color: 'textMuted',
+        px: '0.75rem',
+        fontSize: '0.9rem',
+        lineHeight: 1,
       })}
     >
-      <h2 class={css({ fontSize: '1.5rem', fontWeight: 700 })}>
+      •
+    </span>
+  </div>
+
+  {/* Featured / latest posts */}
+  <section>
+    <div class={css({ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: '1.5rem' })}>
+      <h2 class={css({ fontSize: '1.75rem', fontWeight: 700 })}>
         {featured.length ? 'Featured writeups' : 'Latest posts'}
       </h2>
-      <a href="/blog/" class={css({ fontSize: '0.9rem', color: 'primary', _hover: { textDecoration: 'underline' } })}>
-        View all →
-      </a>
+      {
+        secondary.length === 0 && (
+          <a href="/blog/" class={css({ fontSize: '0.9rem', color: 'primary', _hover: { textDecoration: 'underline' } })}>
+            View all →
+          </a>
+        )
+      }
     </div>
 
     {
-      latest.length > 0 ? (
+      cover ? (
         <div
           class={css({
             display: 'grid',
-            gridTemplateColumns: { base: '1fr', md: 'repeat(3, 1fr)' },
-            gap: '1.25rem',
+            gridTemplateColumns: secondary.length ? { base: '1fr', lg: '1.6fr 1fr' } : '1fr',
+            gap: { base: '1.5rem', lg: '2rem' },
           })}
         >
-          {latest.map((p) => (
-            <BlogCard
-              href={`/blog/${p.id}/`}
-              title={p.data.title}
-              excerpt={p.data.excerpt}
-              category={p.data.category}
-              date={p.data.date}
-              readTime={estimateReadTime(p.body, p.data.readTime)}
-              difficulty={p.data.difficulty}
-              tags={p.data.tags}
-            />
-          ))}
+          <BlogCard
+            size="lg"
+            hideExcerpt
+            href={`/blog/${cover.id}/`}
+            title={cover.data.title}
+            excerpt={cover.data.excerpt}
+            category={cover.data.category}
+            date={cover.data.date}
+            readTime={estimateReadTime(cover.body, cover.data.readTime)}
+            difficulty={cover.data.difficulty}
+            tags={cover.data.tags}
+            featured={cover.data.featured}
+          />
+          {
+            secondary.length > 0 && (
+              <div class={css({ display: 'flex', flexDirection: 'column' })}>
+                {secondary.map((p) => (
+                  <BlogCard
+                    size="sm"
+                    href={`/blog/${p.id}/`}
+                    title={p.data.title}
+                    excerpt={p.data.excerpt}
+                    category={p.data.category}
+                    date={p.data.date}
+                    readTime={estimateReadTime(p.body, p.data.readTime)}
+                    difficulty={p.data.difficulty}
+                  />
+                ))}
+                <a
+                  href="/blog/"
+                  class={css({
+                    mt: '1rem',
+                    alignSelf: 'flex-end',
+                    fontSize: '0.9rem',
+                    color: 'primary',
+                    _hover: { textDecoration: 'underline' },
+                  })}
+                >
+                  View all →
+                </a>
+              </div>
+            )
+          }
         </div>
       ) : (
         <p class={css({ color: 'textMuted' })}>First posts publishing soon.</p>
@@ -193,24 +322,20 @@ const latest = (featured.length ? featured : posts).slice(0, 3);
   <section
     class={css({
       mt: '3.5rem',
-      p: '2rem',
-      bg: 'bgSubtle',
-      border: '1px solid token(colors.border)',
-      borderRadius: 'xl',
+      pt: '3rem',
+      borderTop: '1px solid token(colors.border)',
       textAlign: 'center',
     })}
   >
-    <h2 class={css({ fontSize: '1.3rem', fontWeight: 700, mb: '0.5rem' })}>
-      Pursuing GCFA / GCFE / GCIH too?
-    </h2>
-    <p class={css({ color: 'textMuted', mb: '1.25rem', maxW: '520px', mx: 'auto' })}>
-      Follow along for exam-prep notes, tool comparisons, and home-lab builds — or connect
-      with me directly.
-    </p>
+    <h2 class={css({ fontSize: '1.75rem', fontWeight: 700, mb: '1.25rem' })}>Pursuing GCFA / GCFE / GCIH too?</h2>
     <div class={css({ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' })}>
-      <a href={SOCIALS.linkedin} target="_blank" rel="noopener" class={css({ color: 'primary', fontWeight: 600, _hover: { textDecoration: 'underline' } })}>LinkedIn</a>
+      <a href={SOCIALS.linkedin} target="_blank" rel="noopener" class={css({ color: 'primary', fontWeight: 600, _hover: { textDecoration: 'underline' } })}>
+        LinkedIn
+      </a>
       <span class={css({ color: 'border' })}>·</span>
-      <a href={SOCIALS.github} target="_blank" rel="noopener" class={css({ color: 'primary', fontWeight: 600, _hover: { textDecoration: 'underline' } })}>GitHub</a>
+      <a href={SOCIALS.github} target="_blank" rel="noopener" class={css({ color: 'primary', fontWeight: 600, _hover: { textDecoration: 'underline' } })}>
+        GitHub
+      </a>
     </div>
   </section>
 </BaseLayout>

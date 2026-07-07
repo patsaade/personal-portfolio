@@ -33,26 +33,36 @@ export const NAV_LINKS = [
 
 // DFIR working / reference resources, grouped under the single nav "DFIR"
 // dropdown (short enough to stay on one line) and a footer column. Split
-// into categories inside that one dropdown rather than two separate
-// top-level dropdowns.
-export const TOOLKIT_LINKS = [
+// into categories by *purpose* rather than lumping everything into one
+// "Toolkit" bucket — browse-and-look-things-up resources, the two paired
+// MITRE framework maps, and the interactive converter/builder tools each
+// get their own labeled group.
+export const REFERENCE_LINKS = [
   { href: '/tools/', label: 'Tool Catalog' },
   { href: '/tools/cheatsheet/', label: 'Command Cheat Sheet' },
   { href: '/glossary/', label: 'Glossary' },
+] as const;
+
+// The two MITRE framework maps — kept together since they're explicit
+// offensive/defensive counterparts, cross-linked throughout the site.
+export const FRAMEWORK_LINKS = [
   { href: '/attack-map/', label: 'MITRE ATT&CK Coverage Map' },
   { href: '/d3fend/', label: 'MITRE D3FEND Map' },
 ] as const;
 
-// OSINT recon resources — its own category inside the DFIR dropdown. Just
-// the one destination; the page itself (with in-page nav to its builder/
-// recipes/operator sections) doesn't need to be fragmented across separate
-// nav entries too.
-export const OSINT_LINKS = [{ href: '/osint/', label: 'OSINT Toolkit' }] as const;
+// Tools you *do* something with (convert, build a query) rather than browse —
+// as opposed to the static reference pages above.
+export const INTERACTIVE_TOOL_LINKS = [
+  { href: '/tools/timestamp-converter/', label: 'Timestamp Decoder' },
+  { href: '/tools/ioc-extractor/', label: 'IOC Extractor' },
+  { href: '/osint/', label: 'OSINT Toolkit' },
+] as const;
 
 // The DFIR dropdown's category groups, in display order.
 export const DFIR_GROUPS = [
-  { category: 'Toolkit', links: TOOLKIT_LINKS },
-  { category: 'OSINT', links: OSINT_LINKS },
+  { category: 'Reference', links: REFERENCE_LINKS },
+  { category: 'Frameworks', links: FRAMEWORK_LINKS },
+  { category: 'Interactive Tools', links: INTERACTIVE_TOOL_LINKS },
 ] as const;
 
 // Secondary / meta links — surfaced in the nav "More" dropdown and footer column.
