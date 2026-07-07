@@ -22,6 +22,8 @@ interface Props {
   featured?: boolean;
   /** 'default' (the original bordered card, unchanged) | 'lg' (cover/lead card) | 'sm' (compact list row, no card chrome). */
   size?: 'lg' | 'default' | 'sm';
+  /** Skip rendering the excerpt paragraph — for pure-visual contexts (the home page) that want title + meta only. */
+  hideExcerpt?: boolean;
 }
 
 const {
@@ -35,6 +37,7 @@ const {
   tags = [],
   featured = false,
   size = 'default',
+  hideExcerpt = false,
 } = Astro.props;
 ---
 
@@ -106,7 +109,11 @@ const {
         >
       </h3>
 
-      <p class={css({ color: 'textMuted', fontSize: size === 'lg' ? '1.02rem' : '0.95rem', lineHeight: 1.6, flex: 1 })}>{excerpt}</p>
+      {
+        !hideExcerpt && (
+          <p class={css({ color: 'textMuted', fontSize: size === 'lg' ? '1.02rem' : '0.95rem', lineHeight: 1.6, flex: 1 })}>{excerpt}</p>
+        )
+      }
 
       <PostMeta date={date} readTime={readTime} difficulty={difficulty} />
 

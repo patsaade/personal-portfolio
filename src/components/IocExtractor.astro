@@ -1,0 +1,344 @@
+---
+// IOC Extractor & Defanger — paste raw text (a log, an alert, a report, an
+// email header) and every indicator category (IPv4/IPv6, URLs, domains,
+// emails, MD5/SHA1/SHA256/SHA512 hashes, CVE IDs, MITRE ATT&CK IDs, Bitcoin
+// addresses) is extracted, deduped, and listed live as you type
+// (src/utils/iocs.ts) — with a defang/refang toggle for safe sharing in a
+// report vs. actually using the indicator. Same "Scratch-inspired workspace"
+// visual language as the Timestamp Decoder / OSINT Crock Pot (corner
+// brackets, dot-grid texture). Genuinely requires JS (extraction has no
+// meaningful static fallback), so the workspace stays hidden until the
+// script confirms it's running — same JS-armed, no-JS-safe philosophy as
+// the site's other builder tools.
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+import { IOC_CATEGORIES } from '../utils/iocs';
+
+const workspaceOuter = css({
+  position: 'relative',
+  display: 'none',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'lg',
+  p: { base: '1rem', md: '1.35rem' },
+  '&[data-ready]': { display: 'block' },
+  _before: {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    w: '22px',
+    h: '22px',
+    borderTop: '2px solid token(colors.primary)',
+    borderLeft: '2px solid token(colors.primary)',
+    borderTopLeftRadius: 'lg',
+    pointerEvents: 'none',
+  },
+  _after: {
+    content: '""',
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    w: '22px',
+    h: '22px',
+    borderBottom: '2px solid token(colors.primary)',
+    borderRight: '2px solid token(colors.primary)',
+    borderBottomRightRadius: 'lg',
+    pointerEvents: 'none',
+  },
+});
+const workspaceDots = css({
+  position: 'absolute',
+  inset: 0,
+  borderRadius: 'lg',
+  backgroundImage: 'radial-gradient(token(colors.border) 1px, transparent 1px)',
+  backgroundSize: '20px 20px',
+  opacity: 0.6,
+  pointerEvents: 'none',
+});
+const workspaceContent = css({ position: 'relative', display: 'flex', flexDirection: 'column', gap: '1rem' });
+const noJsNote = css({
+  color: 'textMuted',
+  fontSize: '0.88rem',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  p: '0.85rem 1rem',
+  '[data-ioc-extractor][data-ready] ~ &': { display: 'none' },
+});
+
+const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted', mb: '0.3rem', display: 'block' });
+const textarea = css({
+  width: '100%',
+  minH: '9rem',
+  fontFamily: 'mono',
+  fontSize: '0.85rem',
+  lineHeight: 1.5,
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.75rem',
+  py: '0.6rem',
+  resize: 'vertical',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&::placeholder': { color: 'textMuted', opacity: 0.7 },
+});
+
+const controlsRow = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' });
+const fangRow = css({ display: 'inline-flex', gap: '0.15rem', p: '0.2rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'md' });
+const fangBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  px: '0.7rem',
+  py: '0.35rem',
+  fontFamily: 'sans',
+  fontSize: '0.78rem',
+  fontWeight: 600,
+  borderRadius: 'sm',
+  border: '1px solid transparent',
+  bg: 'transparent',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { color: 'text' },
+  '&[data-active]': { bg: 'bgSubtle', color: 'primary', borderColor: 'border', boxShadow: 'card' },
+});
+const actionRow = css({ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' });
+const actionBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  fontSize: '0.82rem',
+  fontFamily: 'sans',
+  fontWeight: 600,
+  px: '0.7rem',
+  py: '0.4rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  color: 'text',
+  cursor: 'pointer',
+  bg: 'bgCard',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', _hover: { opacity: 0.9, color: 'white' } });
+
+const summary = css({ color: 'textMuted', fontSize: '0.85rem', m: 0 });
+const categoriesGrid = css({ display: 'grid', gridTemplateColumns: { base: '1fr', md: 'repeat(2, 1fr)' }, gap: '0.85rem' });
+const categoryCard = css({
+  display: 'none',
+  flexDirection: 'column',
+  gap: '0.5rem',
+  p: '0.75rem 0.85rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  '&[data-has-matches]': { display: 'flex' },
+});
+const categoryHead = css({ display: 'flex', alignItems: 'center', gap: '0.5rem' });
+const categoryLabel = css({ fontFamily: 'sans', fontSize: '0.82rem', fontWeight: 700, color: 'text' });
+const categoryCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600, color: 'primary', bg: 'color-mix(in srgb, token(colors.primary) 12%, transparent)', border: '1px solid color-mix(in srgb, token(colors.primary) 30%, transparent)', borderRadius: 'full', px: '0.45rem', py: '0.05rem' });
+const categoryCopyBtn = css({
+  ml: 'auto',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '1.75rem',
+  h: '1.75rem',
+  borderRadius: 'sm',
+  border: '1px solid token(colors.border)',
+  bg: 'transparent',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+const categoryList = css({
+  listStyle: 'none',
+  m: 0,
+  p: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.2rem',
+  maxH: '9rem',
+  overflowY: 'auto',
+  fontFamily: 'mono',
+  fontSize: '0.76rem',
+  color: 'textMuted',
+});
+const categoryItem = css({ wordBreak: 'break-all', py: '0.1rem' });
+---
+
+<div class={workspaceOuter} data-ioc-extractor>
+  <div class={workspaceDots} aria-hidden="true"></div>
+  <div class={workspaceContent}>
+    <div>
+      <label class={fieldLabel} for="ioc-input">Paste text — a log, an alert, a report, an email header</label>
+      <textarea
+        id="ioc-input"
+        class={textarea}
+        rows={8}
+        placeholder="Paste raw text here — indicators are extracted live as you type."
+        spellcheck="false"
+        data-ioc-input
+      ></textarea>
+    </div>
+
+    <div class={controlsRow}>
+      <div class={fangRow} role="radiogroup" aria-label="Defang indicators">
+        <button type="button" role="radio" aria-checked="true" data-active data-ioc-fang="normal" data-sound="tick" class={fangBtn}>As found</button>
+        <button type="button" role="radio" aria-checked="false" data-ioc-fang="defang" data-sound="tick" class={fangBtn}>Defanged</button>
+      </div>
+      <div class={actionRow}>
+        <button type="button" class={`${actionBtn} ${primaryBtn}`} data-ioc-copy-all data-sound="copy">
+          <Icon name="copy" size={14} /> Copy all as JSON
+        </button>
+        <button type="button" class={actionBtn} data-ioc-clear data-sound="tick">
+          <Icon name="x" size={14} /> Clear
+        </button>
+      </div>
+    </div>
+
+    <p class={summary} data-ioc-summary role="status" aria-live="polite">Paste something above to extract indicators.</p>
+
+    <div class={categoriesGrid}>
+      {
+        IOC_CATEGORIES.map((cat) => (
+          <div class={categoryCard} data-ioc-category={cat.id}>
+            <div class={categoryHead}>
+              <span class={categoryLabel}>{cat.label}</span>
+              <span class={categoryCount} data-ioc-count>0</span>
+              <button type="button" class={categoryCopyBtn} data-ioc-copy-cat={cat.id} data-sound="copy" aria-label={`Copy all ${cat.label}`} title="Copy all">
+                <Icon name="copy" size={12} />
+              </button>
+            </div>
+            <ul class={categoryList} data-ioc-list />
+          </div>
+        ))
+      }
+    </div>
+    {/* Cloned per extracted value — keeps the client script free of Panda class-name strings. */}
+    <template data-ioc-item-template>
+      <li class={categoryItem}></li>
+    </template>
+  </div>
+</div>
+
+<p class={noJsNote}>The interactive IOC extractor needs JavaScript enabled.</p>
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  import { IOC_CATEGORIES, extractIocs, defangValue } from '../utils/iocs';
+
+  (function () {
+    function init() {
+      var roots = document.querySelectorAll('[data-ioc-extractor]:not([data-ready])');
+      Array.prototype.forEach.call(roots, function (root) {
+        var input = root.querySelector('[data-ioc-input]');
+        var summaryEl = root.querySelector('[data-ioc-summary]');
+        var fangBtns = Array.prototype.slice.call(root.querySelectorAll('[data-ioc-fang]'));
+        var copyAllBtn = root.querySelector('[data-ioc-copy-all]');
+        var clearBtn = root.querySelector('[data-ioc-clear]');
+        var itemTemplate = root.querySelector('[data-ioc-item-template]');
+        if (!input || !summaryEl || !itemTemplate) return;
+
+        var cards = IOC_CATEGORIES.map(function (cat) {
+          var card = root.querySelector('[data-ioc-category="' + cat.id + '"]');
+          return {
+            id: cat.id,
+            card: card,
+            countEl: card ? card.querySelector('[data-ioc-count]') : null,
+            listEl: card ? card.querySelector('[data-ioc-list]') : null,
+          };
+        });
+
+        var defang = false;
+        var lastResult = {};
+
+        function renderList(c, values) {
+          if (!c.listEl) return;
+          c.listEl.innerHTML = '';
+          values.forEach(function (v) {
+            var li = itemTemplate.content.firstElementChild.cloneNode(true);
+            li.textContent = defang ? defangValue(v, c.id) : v;
+            c.listEl.appendChild(li);
+          });
+        }
+
+        function run() {
+          var text = input.value;
+          lastResult = extractIocs(text);
+          var total = 0;
+          cards.forEach(function (c) {
+            var values = lastResult[c.id] || [];
+            total += values.length;
+            if (c.countEl) c.countEl.textContent = String(values.length);
+            if (values.length) c.card.setAttribute('data-has-matches', '');
+            else c.card.removeAttribute('data-has-matches');
+            renderList(c, values);
+          });
+          if (!text.trim()) {
+            summaryEl.textContent = 'Paste something above to extract indicators.';
+          } else if (total === 0) {
+            summaryEl.textContent = 'No indicators found in the pasted text.';
+          } else {
+            summaryEl.textContent = total + ' indicator' + (total === 1 ? '' : 's') + ' found across ' +
+              cards.filter(function (c) { return (lastResult[c.id] || []).length > 0; }).length + ' categories.';
+          }
+        }
+
+        input.addEventListener('input', run);
+
+        fangBtns.forEach(function (b) {
+          b.addEventListener('click', function () {
+            fangBtns.forEach(function (o) {
+              var active = o === b;
+              if (active) o.setAttribute('data-active', ''); else o.removeAttribute('data-active');
+              o.setAttribute('aria-checked', String(active));
+            });
+            defang = b.getAttribute('data-ioc-fang') === 'defang';
+            cards.forEach(function (c) { renderList(c, lastResult[c.id] || []); });
+          });
+        });
+
+        cards.forEach(function (c) {
+          if (!c.card) return;
+          var btn = c.card.querySelector('[data-ioc-copy-cat]');
+          if (!btn) return;
+          btn.addEventListener('click', function () {
+            var values = lastResult[c.id] || [];
+            if (!values.length) return;
+            var text = values.map(function (v) { return defang ? defangValue(v, c.id) : v; }).join('\n');
+            navigator.clipboard.writeText(text).catch(function () {});
+          });
+        });
+
+        if (copyAllBtn) {
+          copyAllBtn.addEventListener('click', function () {
+            var out = {};
+            cards.forEach(function (c) {
+              var values = lastResult[c.id] || [];
+              out[c.id] = defang ? values.map(function (v) { return defangValue(v, c.id); }) : values;
+            });
+            navigator.clipboard.writeText(JSON.stringify(out, null, 2)).catch(function () {});
+          });
+        }
+
+        if (clearBtn) {
+          clearBtn.addEventListener('click', function () {
+            input.value = '';
+            run();
+            input.focus();
+          });
+        }
+
+        run();
+        root.setAttribute('data-ready', '');
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>

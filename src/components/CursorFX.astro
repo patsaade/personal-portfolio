@@ -139,12 +139,41 @@
       'input[type="text"],input[type="search"],input[type="email"],input[type="password"],input[type="url"],' +
       'input[type="tel"],input[type="number"],textarea,[contenteditable="true"],p,li,blockquote,code,pre,dd,dt,figcaption,td,th';
 
-    function stateFor(t) {
+    // closest(TEXT) only tells us the pointer is SOMEWHERE inside a text-bearing
+    // element (p/li/td/...) — that includes its padding/blank space, not just its
+    // rendered glyphs. Confirm the pointer is actually over painted text before
+    // switching to the I-beam, so empty space inside a paragraph/cell stays the
+    // normal pointer instead of falsely reading as "text here."
+    function isOverGlyph(x, y) {
+      var range = null;
+      if (document.caretRangeFromPoint) {
+        range = document.caretRangeFromPoint(x, y);
+      } else if (document.caretPositionFromPoint) {
+        var pos = document.caretPositionFromPoint(x, y);
+        if (pos && pos.offsetNode) {
+          range = document.createRange();
+          range.setStart(pos.offsetNode, pos.offset);
+          range.collapse(true);
+        }
+      }
+      var node = range && range.startContainer;
+      if (!node || node.nodeType !== Node.TEXT_NODE || !node.nodeValue || !node.nodeValue.trim()) return false;
+      var testRange = document.createRange();
+      testRange.selectNodeContents(node);
+      var rects = testRange.getClientRects();
+      for (var i = 0; i < rects.length; i++) {
+        var r = rects[i];
+        if (x >= r.left - 1 && x <= r.right + 1 && y >= r.top - 1 && y <= r.bottom + 1) return true;
+      }
+      return false;
+    }
+
+    function stateFor(t, x, y) {
       if (!t || !t.closest) return 'idle';
       if (t.closest(DISABLED)) return 'disabled';
       if (t.closest(HELP)) return 'help';
       if (t.closest(POINTER)) return 'pointer';
-      if (t.closest(TEXT)) return 'text';
+      if (t.closest(TEXT) && isOverGlyph(x, y)) return 'text';
       return 'idle';
     }
 
@@ -178,7 +207,7 @@
         shown = true;
         el.style.opacity = '1';
       }
-      el.setAttribute('data-state', stateFor(e.target));
+      el.setAttribute('data-state', stateFor(e.target, e.clientX, e.clientY));
       kick();
     }
 
@@ -187,7 +216,7 @@
       'pointerover',
       function (e) {
         if (e.pointerType && e.pointerType !== 'mouse') return;
-        el.setAttribute('data-state', stateFor(e.target));
+        el.setAttribute('data-state', stateFor(e.target, e.clientX, e.clientY));
       },
       { passive: true },
     );

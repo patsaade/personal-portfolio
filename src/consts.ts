@@ -54,6 +54,7 @@ export const FRAMEWORK_LINKS = [
 // as opposed to the static reference pages above.
 export const INTERACTIVE_TOOL_LINKS = [
   { href: '/tools/timestamp-converter/', label: 'Timestamp Decoder' },
+  { href: '/tools/ioc-extractor/', label: 'IOC Extractor' },
   { href: '/osint/', label: 'OSINT Toolkit' },
 ] as const;
 
