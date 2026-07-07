@@ -25,12 +25,25 @@ html {
 }
 
 /* Nav "More" dropdown (Navigation.astro): open on hover/focus (desktop) or when JS
-   sets data-open (touch tap); rotate the chevron while open. Plain CSS here because
-   these are cross-element ancestor selectors Panda's css() types reject. */
+   sets data-open (touch tap); slides down + fades in, rotates the chevron while
+   open. Plain CSS here because these are cross-element ancestor selectors Panda's
+   css() types reject. The panel stays laid out (position: absolute, so no layout
+   shift) but invisible/non-interactive at rest — visibility flips to hidden only
+   after the fade/slide-out finishes (transition-delay), so it stays visible while
+   closing instead of vanishing mid-animation; opening flips it back instantly. */
+.nav-more-menu {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity 160ms ease, transform 160ms ease, visibility 0s linear 160ms;
+}
 .nav-more:hover .nav-more-menu,
 .nav-more:focus-within .nav-more-menu,
 .nav-more-menu[data-open] {
-  display: block;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: opacity 160ms ease, transform 160ms ease, visibility 0s linear 0s;
 }
 .nav-more:hover .nav-more-chev,
 .nav-more-btn[aria-expanded='true'] .nav-more-chev {

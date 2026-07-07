@@ -8,11 +8,16 @@
 
    What lives WHERE (so this stays the single home for charm motion):
    - Charm animations (THIS file): the heading "declassify" decode (hero +
-     section/post titles), scroll-reveal, pixel-star twinkle, copy-button pop
-     (and its reusable [data-copy-pop] opt-in), the fragment-timeline hero
-     illustration settle-in, dynamically-populated result-card drop-in.
+     section/post titles), scroll-reveal (`.reveal-ready` — a generic opt-in,
+     not just blog-post prose; see section 2), the fragment-timeline hero
+     illustration settle-in + its post-settle idle pulse, the home page's
+     certifications-ring scroll-triggered draw-in, pixel-star twinkle,
+     copy-button pop (and its reusable [data-copy-pop] opt-in),
+     dynamically-populated result-card drop-in.
    - Structural/base styles (global.css): focus rings, theme-preload, the
-     hover-card underline, and the functional Term-of-the-Day ticker marquee.
+     hover-card underline, the nav dropdown's slide/fade transition (cross-
+     element hover/focus-within selectors Panda's css() can't express), and
+     the functional Term-of-the-Day ticker marquee.
    - Token-integrated keyframes (panda.config.ts): e.g. `fadeIn` for <main>.
 
    Conventions (see CLAUDE.md → "Motion & sound"):
@@ -33,7 +38,7 @@
   .pixel-star.twinkle .px {
     animation: none !important;
   }
-  .prose.reveal-ready > * {
+  .reveal-ready > * {
     opacity: 1 !important;
     transform: none !important;
   }
@@ -42,12 +47,20 @@
     animation: none !important;
     opacity: 1 !important;
   }
-  .ft-node {
+  .ft-node,
+  .ft-idle .ft-node {
     animation: none !important;
     opacity: var(--ft-end-opacity, 1) !important;
   }
   [data-ioc-category] {
     animation: none !important;
+  }
+  .nav-more-menu {
+    transition: none !important;
+  }
+  .cert-ring-fill {
+    stroke-dashoffset: var(--cert-final-offset) !important;
+    transition: none !important;
   }
   /* Belt-and-suspenders: JS already skips the theme wipe under reduced motion. */
   ::view-transition-old(root),
@@ -98,18 +111,41 @@
 }
 
 /* ── 2. Scroll-reveal ─────────────────────────────────────────────────────────
-   Top-level prose blocks fade/rise as they enter view. The hidden start state is
-   only armed by JS (.reveal-ready, added in PostLayout when IntersectionObserver
-   is supported AND motion is allowed); .is-revealed is toggled per block as it
-   intersects. No-JS / reduced-motion readers never get the hidden state. */
-.prose.reveal-ready > * {
+   Direct children of a `.reveal-ready` container fade/rise as they individually
+   enter view. The hidden start state is only armed by JS (`.reveal-ready` is
+   added by the observing script — PostLayout's prose blocks, and the home
+   page's stat rail / cert strip / post section / closing CTA — only when
+   IntersectionObserver is supported AND motion is allowed); `.is-revealed` is
+   toggled per child as it intersects, each child observed independently. A
+   caller wanting a left-to-right/top-to-bottom stagger sets an inline
+   `transition-delay` per child (same per-element technique PixelStar/
+   FragmentTimeline use below). No-JS / reduced-motion readers never get the
+   hidden state — the class is simply never added, so content stays visible. */
+.reveal-ready > * {
   opacity: 0;
   transform: translateY(12px);
   transition: opacity 0.5s ease, transform 0.5s ease;
 }
-.prose.reveal-ready > .is-revealed {
+.reveal-ready > .is-revealed {
   opacity: 1;
   transform: none;
+}
+
+/* Certifications-strip progress ring: a bonus effect layered on the same
+   reveal — since the ring <svg> is itself one of the observed children above,
+   it already fades/rises with the rest; here it ALSO draws its stroke in from
+   empty to the real earned/total value once revealed. The real value never
+   depends on this: the SVG's own `stroke-dashoffset` attribute (set from real
+   data in index.astro's frontmatter) is the unconditional ground truth, and
+   this rule only overrides it while `.reveal-ready` scopes it (i.e. only once
+   JS has armed the reveal) — without JS/CSS support here, the ring simply
+   renders at its correct, final position, never stuck empty. */
+.reveal-ready .cert-ring-fill {
+  stroke-dashoffset: var(--cert-empty-offset);
+  transition: stroke-dashoffset 0.9s ease-out 0.15s;
+}
+.reveal-ready > .is-revealed .cert-ring-fill {
+  stroke-dashoffset: var(--cert-final-offset);
 }
 
 /* ── 3. Pixel-star twinkle ────────────────────────────────────────────────────
@@ -192,6 +228,26 @@
 .ft-node {
   opacity: 0;
   animation: ftNodeIn 380ms ease-out both;
+}
+
+/* Idle pulse — once the settle-in above fully finishes, a slow continuous
+   opacity breathe on the timeline nodes keeps the illustration from going
+   visually inert (armed by FragmentTimeline's own script, only after the
+   settle-in's last delay + duration has elapsed and motion is allowed — so it
+   picks up exactly where ftNodeIn left off, no visible jump). Same infinite-
+   loop-with-reduced-motion-off-switch shape as the pixel-star twinkle above,
+   just gated behind `.ft-idle` so it never fights the settle-in it follows. */
+@keyframes ftNodePulse {
+  0%,
+  100% {
+    opacity: var(--ft-end-opacity, 1);
+  }
+  50% {
+    opacity: calc(var(--ft-end-opacity, 1) * 0.7);
+  }
+}
+.ft-idle .ft-node {
+  animation: ftNodePulse 3.4s ease-in-out infinite;
 }
 
 /* ── 6. Result-card drop-in — dynamically-populated cards (IocExtractor) ───────
