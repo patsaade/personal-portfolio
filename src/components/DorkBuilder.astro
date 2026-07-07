@@ -1,29 +1,27 @@
 ---
-// Interactive search-operator ("dork") query builder — a compact, Scratch-
-// inspired "workspace": a vertical stack of small operator "blocks" (each a
-// syntax badge + input, connected by a lit-up timeline rail as you fill them
-// in) on the left, and a persistent "stage" showing the live-assembled query
-// + actions on the right (sticky on wide viewports, so the result never
-// scrolls out of view while you work through the blocks) — the same spirit
-// as Scratch's block palette + stage split, restyled in this site's own
-// tokens/typography rather than Scratch's literal look. Genuinely requires
-// JS (there's no meaningful static form without it), so the workspace stays
-// hidden until the script confirms it's running — same JS-armed, no-JS-safe
-// philosophy as CollapseAll/ViewToggle. The recipe library is rendered by the
-// caller as an always-visible sibling (NOT nested in here) — it must stay
-// real, static, no-JS-safe content, and this component's `[data-dork-load]`
-// wiring below deliberately queries the whole document rather than just its
-// own root so recipe "Load into builder" buttons elsewhere on the page still
-// work.
+// Interactive search-operator ("dork") query builder, framed as a recipe: a
+// Focus dropdown (the "cuisine style" — what you're trying to find) both
+// highlights which Ingredients matter and offers a few named Presets; picking
+// a Preset fills those ingredients, and the live-assembled Recipe (the final
+// query) appears in the persistent "stage" alongside copy/search/clear —
+// sticky on wide viewports, so the result never scrolls out of view while you
+// work through the ingredients. A compact, Scratch-inspired "workspace": the
+// ingredients render as a vertical timeline of small blocks (a syntax badge +
+// input, connected by a rail whose dot lights up once filled), evoking
+// Scratch's block palette + stage split restyled in this site's own tokens.
+// Genuinely requires JS (there's no meaningful static form without it), so
+// the workspace stays hidden until the script confirms it's running — same
+// JS-armed, no-JS-safe philosophy as CollapseAll/ViewToggle.
 import { css } from 'styled-system/css';
 import Icon from './Icon.astro';
-import type { SearchEngine, DorkOperator } from '../data/osint';
+import type { SearchEngine, DorkOperator, DorkFocus } from '../data/osint';
 
 interface Props {
   engines: SearchEngine[];
   operators: DorkOperator[];
+  focuses: DorkFocus[];
 }
-const { engines, operators } = Astro.props;
+const { engines, operators, focuses } = Astro.props;
 
 // The literal syntax fragment shown on each block's badge — matches the
 // "Syntax" column on the Operator Reference table below, for consistency.
@@ -73,7 +71,7 @@ const workspaceDots = css({
   opacity: 0.6,
   pointerEvents: 'none',
 });
-const workspaceContent = css({ position: 'relative', display: 'flex', flexDirection: 'column', gap: '1.1rem' });
+const workspaceContent = css({ position: 'relative', display: 'flex', flexDirection: 'column', gap: '1rem' });
 const noJsNote = css({
   color: 'textMuted',
   fontSize: '0.88rem',
@@ -84,6 +82,7 @@ const noJsNote = css({
   '[data-dork-builder][data-ready] ~ &': { display: 'none' },
 });
 
+const topRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-end' });
 const engineRow = css({ display: 'inline-flex', gap: '0.15rem', p: '0.2rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'md', alignSelf: 'flex-start' });
 const engineBtn = css({
   display: 'inline-flex',
@@ -104,12 +103,32 @@ const engineBtn = css({
   '&[data-active]': { bg: 'bgSubtle', color: 'primary', borderColor: 'border', boxShadow: 'card' },
 });
 
+const selectorField = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: '1 1 200px', minW: '160px' });
+const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted' });
+const selectInput = css({
+  fontFamily: 'sans',
+  fontSize: '0.85rem',
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.6rem',
+  py: '0.45rem',
+  cursor: 'pointer',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&:disabled': { opacity: 0.5, cursor: 'not-allowed' },
+});
+const captionBox = css({ display: 'flex', flexDirection: 'column', gap: '0.15rem' });
+const caption = css({ fontSize: '0.8rem', color: 'textMuted', lineHeight: 1.5, m: 0, minH: '1.2em' });
+const tipCaption = css({ fontSize: '0.76rem', color: 'accent', lineHeight: 1.5, m: 0 });
+
 const paneLabel = css({ fontFamily: 'sans', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'textMuted', mb: '0.6rem' });
 const workspaceGrid = css({ display: 'grid', gridTemplateColumns: { base: '1fr', lg: 'minmax(0, 1fr) 260px' }, gap: '1.5rem', alignItems: 'start' });
 
-// Vertical "timeline" of blocks — a rail with a dot per block that lights up
-// (primary) once that block has a value, so the stack visually shows which
-// pieces are currently contributing to the assembled query.
+// Vertical "timeline" of ingredient blocks — a rail with a dot per block that
+// lights up (primary) once it has a value, and the block itself gets a subtle
+// accent tint when the active Focus says it's relevant.
 const blockStack = css({ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderLeft: '2px solid token(colors.border)', ml: '0.4rem', pl: '1.1rem' });
 const blockRow = css({
   position: 'relative',
@@ -117,10 +136,13 @@ const blockRow = css({
   alignItems: 'center',
   gap: '0.6rem',
   py: '0.15rem',
+  px: '0.3rem',
+  borderRadius: 'sm',
+  transition: 'background 150ms ease',
   '&::before': {
     content: '""',
     position: 'absolute',
-    left: '-1.45rem',
+    left: '-1.5rem',
     top: '50%',
     transform: 'translateY(-50%)',
     w: '8px',
@@ -130,6 +152,7 @@ const blockRow = css({
     transition: 'background 150ms ease',
   },
   '&[data-filled]::before': { bg: 'primary' },
+  '&[data-highlighted]': { bg: 'color-mix(in srgb, token(colors.accent) 9%, transparent)' },
 });
 const blockBadge = css({
   flexShrink: 0,
@@ -205,22 +228,49 @@ const primaryBtn = css({
 });
 ---
 
-<div class={workspaceOuter} data-dork-builder data-dork-engines={JSON.stringify(engines)}>
+<div
+  class={workspaceOuter}
+  data-dork-builder
+  data-dork-engines={JSON.stringify(engines)}
+  data-dork-focuses={JSON.stringify(focuses)}
+>
   <div class={workspaceDots} aria-hidden="true"></div>
   <div class={workspaceContent}>
-    <div class={engineRow} role="radiogroup" aria-label="Search engine">
-      {
-        engines.map((e, i) => (
-          <button type="button" role="radio" aria-checked={i === 0 ? 'true' : 'false'} {...(i === 0 ? { 'data-active': true } : {})} data-engine-btn={e.id} data-sound="tick" class={engineBtn}>
-            {e.label}
-          </button>
-        ))
-      }
+    <div class={topRow}>
+      <div class={engineRow} role="radiogroup" aria-label="Search engine">
+        {
+          engines.map((e, i) => (
+            <button type="button" role="radio" aria-checked={i === 0 ? 'true' : 'false'} {...(i === 0 ? { 'data-active': true } : {})} data-engine-btn={e.id} data-sound="tick" class={engineBtn}>
+              {e.label}
+            </button>
+          ))
+        }
+      </div>
+
+      <div class={selectorField}>
+        <label class={fieldLabel} for="dork-focus">Focus</label>
+        <select id="dork-focus" class={selectInput} data-dork-focus>
+          <option value="">— Manual (no focus) —</option>
+          {focuses.map((f) => <option value={f.id}>{f.label}</option>)}
+        </select>
+      </div>
+
+      <div class={selectorField}>
+        <label class={fieldLabel} for="dork-preset">Preset</label>
+        <select id="dork-preset" class={selectInput} data-dork-preset disabled>
+          <option value="">— Pick a focus first —</option>
+        </select>
+      </div>
+    </div>
+
+    <div class={captionBox}>
+      <p class={caption} data-dork-caption role="status" aria-live="polite"></p>
+      <p class={tipCaption} data-dork-tip hidden></p>
     </div>
 
     <div class={workspaceGrid}>
       <div>
-        <p class={paneLabel}>Blocks</p>
+        <p class={paneLabel}>Ingredients</p>
         <div class={blockStack}>
           {
             operators.map((op) => (
@@ -245,7 +295,7 @@ const primaryBtn = css({
       </div>
 
       <div class={stage}>
-        <p class={paneLabel}>Query</p>
+        <p class={paneLabel}>Recipe</p>
         <pre class={outputBox}><code data-dork-output>&nbsp;</code></pre>
         <div class={actionCol}>
           <button type="button" class={`${actionBtn} ${primaryBtn}`} data-dork-copy data-sound="copy">
@@ -263,10 +313,7 @@ const primaryBtn = css({
   </div>
 </div>
 
-<p class={noJsNote}>
-  The interactive builder needs JavaScript enabled. The recon recipes below still show each query in
-  full — copy it by hand.
-</p>
+<p class={noJsNote}>The interactive recipe builder needs JavaScript enabled.</p>
 
 <script>
   // @ts-nocheck — vanilla DOM client script
@@ -288,11 +335,22 @@ const primaryBtn = css({
         var searchLink = root.querySelector('[data-dork-search]');
         var engineLabel = root.querySelector('[data-dork-engine-label]');
         var clearBtn = root.querySelector('[data-dork-clear]');
-        if (!output || !copyBtn || !searchLink || !engineLabel || !clearBtn) return;
+        var focusSelect = root.querySelector('[data-dork-focus]');
+        var presetSelect = root.querySelector('[data-dork-preset]');
+        var captionEl = root.querySelector('[data-dork-caption]');
+        var tipEl = root.querySelector('[data-dork-tip]');
+        if (!output || !copyBtn || !searchLink || !engineLabel || !clearBtn || !focusSelect || !presetSelect) return;
 
         var engines = [];
         try { engines = JSON.parse(root.getAttribute('data-dork-engines') || '[]'); } catch (e) { engines = []; }
+        var focuses = [];
+        try { focuses = JSON.parse(root.getAttribute('data-dork-focuses') || '[]'); } catch (e) { focuses = []; }
         var currentEngine = (engines[0] && engines[0].id) || 'google';
+
+        function getFocus(id) {
+          for (var i = 0; i < focuses.length; i++) if (focuses[i].id === id) return focuses[i];
+          return null;
+        }
 
         function fragmentFor(f) {
           var val = f.input.value.trim();
@@ -306,9 +364,17 @@ const primaryBtn = css({
           if (kind === 'or') {
             return val.split(/\s+/).filter(Boolean).join(' OR ');
           }
-          // A multi-word value on a prefix operator (intitle:, inurl:, etc.) must be
-          // quoted, or engines only apply the operator to the first word.
-          return prefix + (val.indexOf(' ') !== -1 ? '"' + val + '"' : val);
+          // Prefix-kind fields (site:, filetype:, intitle:, ...) accept one or
+          // several alternatives written as "termA OR termB" — expand that into
+          // the correctly parenthesized, per-term-prefixed syntax; a single
+          // multi-word value still just gets quoted so the operator applies to
+          // the whole phrase rather than only its first word.
+          var alts = val.split(/\s+OR\s+/i).map(function (t) { return t.trim(); }).filter(Boolean);
+          function quoteIfMultiWord(t) { return t.indexOf(' ') !== -1 ? '"' + t + '"' : t; }
+          if (alts.length > 1) {
+            return '(' + alts.map(function (t) { return prefix + quoteIfMultiWord(t); }).join(' OR ') + ')';
+          }
+          return prefix + quoteIfMultiWord(val);
         }
 
         function buildQuery() {
@@ -333,7 +399,7 @@ const primaryBtn = css({
           searchLink.href = query ? eng.searchUrl + encodeURIComponent(query) : '#';
           engineLabel.textContent = eng.label;
           // Light up each block's timeline dot once it has a value, so the
-          // stack visually shows which pieces are contributing right now.
+          // stack visually shows which ingredients are contributing right now.
           fields.forEach(function (f) {
             if (f.input.value.trim()) f.wrap.setAttribute('data-filled', '');
             else f.wrap.removeAttribute('data-filled');
@@ -355,6 +421,74 @@ const primaryBtn = css({
           render();
         }
 
+        function applyHighlight(focus) {
+          var set = focus ? focus.highlight : [];
+          fields.forEach(function (f) {
+            var id = f.input.getAttribute('data-dork-field');
+            if (set.indexOf(id) !== -1) f.wrap.setAttribute('data-highlighted', '');
+            else f.wrap.removeAttribute('data-highlighted');
+          });
+        }
+
+        function updateCaption() {
+          var focus = getFocus(focusSelect.value);
+          if (!focus) {
+            if (captionEl) captionEl.textContent = '';
+            if (tipEl) tipEl.hidden = true;
+            return;
+          }
+          var preset = presetSelect.value !== '' ? focus.presets[Number(presetSelect.value)] : null;
+          if (captionEl) captionEl.textContent = preset ? preset.desc : focus.desc;
+          if (tipEl) {
+            if (!preset && focus.tip) { tipEl.textContent = focus.tip; tipEl.hidden = false; }
+            else tipEl.hidden = true;
+          }
+        }
+
+        function populatePresets(focus) {
+          presetSelect.innerHTML = '';
+          var placeholder = document.createElement('option');
+          placeholder.value = '';
+          placeholder.textContent = focus ? '— Choose a preset —' : '— Pick a focus first —';
+          presetSelect.appendChild(placeholder);
+          (focus ? focus.presets : []).forEach(function (p, i) {
+            var opt = document.createElement('option');
+            opt.value = String(i);
+            opt.textContent = p.title;
+            presetSelect.appendChild(opt);
+          });
+          presetSelect.disabled = !focus;
+        }
+
+        focusSelect.addEventListener('change', function () {
+          var focus = getFocus(focusSelect.value);
+          populatePresets(focus);
+          applyHighlight(focus);
+          updateCaption();
+        });
+
+        presetSelect.addEventListener('change', function () {
+          var focus = getFocus(focusSelect.value);
+          updateCaption();
+          if (!focus || presetSelect.value === '') return;
+          var preset = focus.presets[Number(presetSelect.value)];
+          if (!preset) return;
+          setEngine('google');
+          fields.forEach(function (f) {
+            var id = f.input.getAttribute('data-dork-field');
+            if (Object.prototype.hasOwnProperty.call(preset.values, id)) {
+              f.input.value = preset.values[id];
+            } else if (id !== 'site') {
+              // Reset every non-domain field not supplied by this preset, so a
+              // previously loaded preset can't silently blend into this one.
+              f.input.value = '';
+            }
+            // A field named 'site' that the preset does NOT specify keeps
+            // whatever the user already typed as their own target domain.
+          });
+          render();
+        });
+
         engineBtns.forEach(function (b) {
           b.addEventListener('click', function () { setEngine(b.getAttribute('data-engine-btn')); });
         });
@@ -370,7 +504,7 @@ const primaryBtn = css({
           var text = output.textContent || '';
           if (!text.trim()) return;
           navigator.clipboard.writeText(text).then(function () {
-            status.textContent = 'Query copied to clipboard';
+            status.textContent = 'Recipe copied to clipboard';
             setTimeout(function () { status.textContent = ''; }, 1600);
           }).catch(function () {});
         });
@@ -378,30 +512,6 @@ const primaryBtn = css({
         clearBtn.addEventListener('click', function () {
           fields.forEach(function (f) { f.input.value = ''; });
           render();
-        });
-
-        // Recipe "Load into builder" — the recipe library lives elsewhere on the
-        // page (a static, always-visible sibling, not nested in this JS-gated
-        // panel), so these buttons are queried document-wide rather than scoped
-        // to `root`. Loading always switches to Google (recipes are authored in
-        // Google's operator set) and hydrates matching fields.
-        var loadBtns = Array.prototype.slice.call(document.querySelectorAll('[data-dork-load]'));
-        loadBtns.forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            var values;
-            try { values = JSON.parse(btn.getAttribute('data-dork-load') || '{}'); } catch (e) { values = {}; }
-            setEngine('google');
-            fields.forEach(function (f) {
-              var id = f.input.getAttribute('data-dork-field');
-              // Keep whatever the user already typed as their own target domain;
-              // every other field is reset so a previously loaded recipe can't
-              // silently blend into this one.
-              if (id === 'site') return;
-              f.input.value = Object.prototype.hasOwnProperty.call(values, id) ? values[id] : '';
-            });
-            render();
-            root.scrollIntoView({ block: 'start', behavior: 'smooth' });
-          });
         });
 
         setEngine(currentEngine);
