@@ -38,6 +38,7 @@ export const NAV_LINKS = [
 export const TOOLKIT_LINKS = [
   { href: '/tools/', label: 'Tool Catalog' },
   { href: '/tools/cheatsheet/', label: 'Command Cheat Sheet' },
+  { href: '/tools/timestamp-converter/', label: 'Timestamp Decoder' },
   { href: '/glossary/', label: 'Glossary' },
   { href: '/attack-map/', label: 'MITRE ATT&CK Coverage Map' },
   { href: '/d3fend/', label: 'MITRE D3FEND Map' },

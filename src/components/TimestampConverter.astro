@@ -1,0 +1,463 @@
+---
+// Comprehensive, bidirectional timestamp converter — every field is both an
+// input and an output: edit any one of the 19 formats and every other field
+// updates live from the same underlying instant (src/utils/timestamps.ts).
+// A "Detect" box up top runs the raw pasted value through every format and
+// offers plausible matches, for when you don't already know what you're
+// looking at. Same "Scratch-inspired workspace" visual language as the OSINT
+// Crock Pot's DorkBuilder (corner brackets, dot-grid texture, a left-rail
+// timeline of blocks, a sticky "stage" — here showing the one instant every
+// field currently represents plus reference-timezone controls). Genuinely
+// requires JS (there's no meaningful static form for live N-way conversion),
+// so the workspace stays hidden until the script confirms it's running —
+// same JS-armed, no-JS-safe philosophy as DorkBuilder/CollapseAll/ViewToggle.
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+import { TIMESTAMP_FORMATS } from '../utils/timestamps';
+
+const GROUPS: { label: string; ids: string[] }[] = [
+  { label: 'Unix / epoch', ids: ['unix-s', 'unix-ms', 'unix-us', 'unix-ns'] },
+  { label: 'Windows', ids: ['filetime', 'webkit', 'net-ticks', 'ole-date'] },
+  { label: 'Apple / macOS', ids: ['mac-absolute', 'hfsplus'] },
+  { label: 'Other epochs', ids: ['uuid-v1', 'gps', 'tai64', 'fat-dos'] },
+  { label: 'Text formats', ids: ['iso8601', 'rfc2822', 'http-date', 'syslog-3164', 'clf'] },
+];
+const byId = new Map(TIMESTAMP_FORMATS.map((f) => [f.id, f]));
+
+const workspaceOuter = css({
+  position: 'relative',
+  display: 'none',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'lg',
+  p: { base: '1rem', md: '1.35rem' },
+  '&[data-ready]': { display: 'block' },
+  _before: {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    w: '22px',
+    h: '22px',
+    borderTop: '2px solid token(colors.primary)',
+    borderLeft: '2px solid token(colors.primary)',
+    borderTopLeftRadius: 'lg',
+    pointerEvents: 'none',
+  },
+  _after: {
+    content: '""',
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    w: '22px',
+    h: '22px',
+    borderBottom: '2px solid token(colors.primary)',
+    borderRight: '2px solid token(colors.primary)',
+    borderBottomRightRadius: 'lg',
+    pointerEvents: 'none',
+  },
+});
+const workspaceDots = css({
+  position: 'absolute',
+  inset: 0,
+  borderRadius: 'lg',
+  backgroundImage: 'radial-gradient(token(colors.border) 1px, transparent 1px)',
+  backgroundSize: '20px 20px',
+  opacity: 0.6,
+  pointerEvents: 'none',
+});
+const workspaceContent = css({ position: 'relative', display: 'flex', flexDirection: 'column', gap: '1rem' });
+const noJsNote = css({
+  color: 'textMuted',
+  fontSize: '0.88rem',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  p: '0.85rem 1rem',
+  '[data-ts-converter][data-ready] ~ &': { display: 'none' },
+});
+
+const detectRow = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem' });
+const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted' });
+const detectInput = css({
+  fontFamily: 'mono',
+  fontSize: '0.9rem',
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.7rem',
+  py: '0.5rem',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&::placeholder': { color: 'textMuted', opacity: 0.7 },
+});
+const detectResults = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem', minH: '1.4em' });
+const detectChip = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '0.5rem',
+  fontFamily: 'mono',
+  fontSize: '0.78rem',
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'sm',
+  px: '0.6rem',
+  py: '0.35rem',
+  cursor: 'pointer',
+  transition: 'border-color 150ms ease, color 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+
+const paneLabel = css({ fontFamily: 'sans', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'textMuted', mb: '0.6rem' });
+const workspaceGrid = css({ display: 'grid', gridTemplateColumns: { base: '1fr', lg: 'minmax(0, 1fr) 280px' }, gap: '1.5rem', alignItems: 'start' });
+
+const groupLabel = css({ fontFamily: 'sans', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'primary', mt: '0.9rem', '&:first-child': { mt: 0 } });
+const blockStack = css({ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderLeft: '2px solid token(colors.border)', ml: '0.4rem', pl: '1.1rem' });
+const blockRow = css({
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  py: '0.15rem',
+  px: '0.3rem',
+  borderRadius: 'sm',
+  transition: 'background 150ms ease',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    left: '-1.5rem',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    w: '8px',
+    h: '8px',
+    borderRadius: 'full',
+    bg: 'border',
+    transition: 'background 150ms ease',
+  },
+  '&[data-filled]::before': { bg: 'primary' },
+  '&[data-invalid]': { bg: 'color-mix(in srgb, red 8%, transparent)' },
+});
+const blockBadge = css({ flexShrink: 0, w: '9.5rem', fontFamily: 'sans', fontSize: '0.75rem', fontWeight: 600, color: 'text', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' });
+const blockInput = css({
+  flex: 1,
+  minW: 0,
+  fontFamily: 'mono',
+  fontSize: '0.84rem',
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.6rem',
+  py: '0.4rem',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&::placeholder': { color: 'textMuted', opacity: 0.7 },
+});
+const rowCopyBtn = css({
+  flexShrink: 0,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '2rem',
+  h: '2rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  bg: 'bgCard',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+
+const stage = css({ display: 'flex', flexDirection: 'column', gap: '0.9rem', position: { lg: 'sticky' }, top: { lg: '90px' } });
+const instantBox = css({
+  m: 0,
+  p: '0.85rem 0.9rem',
+  fontFamily: 'mono',
+  fontSize: '0.98rem',
+  fontWeight: 700,
+  color: 'primary',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  overflowX: 'auto',
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+});
+const refRow = css({ display: 'inline-flex', gap: '0.15rem', p: '0.2rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'md' });
+const refBtn = css({
+  flex: 1,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  px: '0.6rem',
+  py: '0.35rem',
+  fontFamily: 'sans',
+  fontSize: '0.78rem',
+  fontWeight: 600,
+  borderRadius: 'sm',
+  border: '1px solid transparent',
+  bg: 'transparent',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { color: 'text' },
+  '&[data-active]': { bg: 'bgSubtle', color: 'primary', borderColor: 'border', boxShadow: 'card' },
+});
+const actionCol = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' });
+const actionBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '0.4rem',
+  fontSize: '0.85rem',
+  fontFamily: 'sans',
+  fontWeight: 600,
+  px: '0.8rem',
+  py: '0.5rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  color: 'text',
+  cursor: 'pointer',
+  bg: 'bgCard',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', _hover: { opacity: 0.9, color: 'white' } });
+---
+
+<div class={workspaceOuter} data-ts-converter>
+  <div class={workspaceDots} aria-hidden="true"></div>
+  <div class={workspaceContent}>
+    <div class={detectRow}>
+      <label class={fieldLabel} for="ts-detect">Paste any timestamp — auto-detect</label>
+      <input
+        id="ts-detect"
+        type="text"
+        class={detectInput}
+        placeholder="e.g. 132587904000000000, 2024-03-05T13:22:07+02:00, Sun, 06 Nov 1994 08:49:37 GMT…"
+        autocomplete="off"
+        data-ts-detect
+      />
+      <div class={detectResults} data-ts-detect-results role="status" aria-live="polite"></div>
+      {/* Cloned per detected match — keeps the client script free of Panda class-name strings. */}
+      <template data-ts-detect-chip-template>
+        <button type="button" class={detectChip}>
+          <span data-detect-label></span>
+          <Icon name="arrow-right" size={12} />
+        </button>
+      </template>
+    </div>
+
+    <div class={workspaceGrid}>
+      <div>
+        <p class={paneLabel}>Formats</p>
+        {
+          GROUPS.map((g) => (
+            <>
+              <p class={groupLabel}>{g.label}</p>
+              <div class={blockStack}>
+                {g.ids.map((id) => {
+                  const f = byId.get(id)!;
+                  return (
+                    <div class={blockRow} data-ts-row data-ts-id={f.id}>
+                      <span class={blockBadge} title={f.label}>{f.label}</span>
+                      <input
+                        id={`ts-${f.id}`}
+                        type="text"
+                        class={blockInput}
+                        placeholder={f.placeholder}
+                        aria-label={f.label}
+                        data-ts-field={f.id}
+                        autocomplete="off"
+                        spellcheck="false"
+                      />
+                      <button type="button" class={rowCopyBtn} data-ts-row-copy={f.id} data-sound="copy" aria-label={`Copy ${f.label}`} title="Copy">
+                        <Icon name="copy" size={13} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ))
+        }
+      </div>
+
+      <div class={stage}>
+        <p class={paneLabel}>Current instant</p>
+        <pre class={instantBox} data-ts-instant>&nbsp;</pre>
+
+        <p class={fieldLabel}>Reference (for local-time-only formats)</p>
+        <div class={refRow} role="radiogroup" aria-label="Reference timezone">
+          <button type="button" role="radio" aria-checked="true" data-active data-ts-ref="utc" data-sound="tick" class={refBtn}>UTC</button>
+          <button type="button" role="radio" aria-checked="false" data-ts-ref="local" data-sound="tick" class={refBtn}>Local</button>
+        </div>
+
+        <div class={actionCol}>
+          <button type="button" class={`${actionBtn} ${primaryBtn}`} data-ts-now data-sound="tick">
+            <Icon name="clock" size={15} /> Use current time
+          </button>
+          <button type="button" class={actionBtn} data-ts-copy-all data-sound="copy">
+            <Icon name="copy" size={15} /> Copy all as JSON
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class={noJsNote}>The interactive timestamp converter needs JavaScript enabled.</p>
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  import { formatById, detectFormat, DEFAULT_CONTEXT } from '../utils/timestamps';
+
+  (function () {
+    function init() {
+      var roots = document.querySelectorAll('[data-ts-converter]:not([data-ready])');
+      Array.prototype.forEach.call(roots, function (root) {
+        var rows = Array.prototype.slice.call(root.querySelectorAll('[data-ts-row]'));
+        var fields = rows.map(function (row) {
+          return { row: row, id: row.getAttribute('data-ts-id'), input: row.querySelector('[data-ts-field]') };
+        });
+        var detectInput = root.querySelector('[data-ts-detect]');
+        var detectResults = root.querySelector('[data-ts-detect-results]');
+        var instantEl = root.querySelector('[data-ts-instant]');
+        var refBtns = Array.prototype.slice.call(root.querySelectorAll('[data-ts-ref]'));
+        var nowBtn = root.querySelector('[data-ts-now]');
+        var copyAllBtn = root.querySelector('[data-ts-copy-all]');
+        if (!instantEl || !nowBtn) return;
+
+        var ctx = { refOffsetMinutes: 0, refYear: DEFAULT_CONTEXT.refYear };
+        var current = null; // canonical ns (bigint) | null
+
+        function localOffsetMinutesFor(ns) {
+          // JS's getTimezoneOffset() is UTC-minus-local in minutes for the CALLING
+          // system clock, not for an arbitrary instant's own historical DST state —
+          // close enough for a "your browser's local time" convenience option.
+          var ms = Number(ns / 1000000n);
+          return new Date(ms).getTimezoneOffset();
+        }
+
+        function render(skipId) {
+          fields.forEach(function (f) {
+            if (f.id === skipId) return;
+            var fmt = formatById(f.id);
+            var text = current === null ? '' : fmt.format(current, ctx);
+            f.input.value = text;
+            if (text) f.row.setAttribute('data-filled', '');
+            else f.row.removeAttribute('data-filled');
+            f.row.removeAttribute('data-invalid');
+          });
+          if (current === null) {
+            instantEl.textContent = ' ';
+          } else {
+            var iso = formatById('iso8601').format(current, { refOffsetMinutes: 0, refYear: ctx.refYear });
+            instantEl.textContent = iso;
+          }
+        }
+
+        function setFromField(id) {
+          var f = fields.filter(function (x) { return x.id === id; })[0];
+          if (!f) return;
+          var fmt = formatById(id);
+          var raw = f.input.value;
+          if (!raw.trim()) {
+            f.row.removeAttribute('data-filled');
+            f.row.removeAttribute('data-invalid');
+            return;
+          }
+          var ns = fmt.parse(raw, ctx);
+          if (ns === null) {
+            f.row.removeAttribute('data-filled');
+            f.row.setAttribute('data-invalid', '');
+            return;
+          }
+          current = ns;
+          f.row.setAttribute('data-filled', '');
+          f.row.removeAttribute('data-invalid');
+          render(id);
+        }
+
+        fields.forEach(function (f) {
+          f.input.addEventListener('input', function () { setFromField(f.id); });
+        });
+
+        refBtns.forEach(function (b) {
+          b.addEventListener('click', function () {
+            refBtns.forEach(function (o) {
+              var active = o === b;
+              if (active) o.setAttribute('data-active', ''); else o.removeAttribute('data-active');
+              o.setAttribute('aria-checked', String(active));
+            });
+            var mode = b.getAttribute('data-ts-ref');
+            ctx.refOffsetMinutes = mode === 'local' && current !== null ? localOffsetMinutesFor(current) : 0;
+            render(null);
+          });
+        });
+
+        nowBtn.addEventListener('click', function () {
+          current = BigInt(Date.now()) * 1000000n;
+          if (refBtns.some(function (b) { return b.getAttribute('data-ts-ref') === 'local' && b.hasAttribute('data-active'); })) {
+            ctx.refOffsetMinutes = localOffsetMinutesFor(current);
+          }
+          render(null);
+        });
+
+        // Row copy buttons
+        Array.prototype.forEach.call(root.querySelectorAll('[data-ts-row-copy]'), function (btn) {
+          btn.addEventListener('click', function () {
+            var id = btn.getAttribute('data-ts-row-copy');
+            var f = fields.filter(function (x) { return x.id === id; })[0];
+            if (!f || !f.input.value) return;
+            navigator.clipboard.writeText(f.input.value).catch(function () {});
+            if (window.__sound) window.__sound.play('copy');
+          });
+        });
+
+        if (copyAllBtn) {
+          copyAllBtn.addEventListener('click', function () {
+            if (current === null) return;
+            var out = {};
+            fields.forEach(function (f) { out[f.id] = formatById(f.id).format(current, ctx); });
+            navigator.clipboard.writeText(JSON.stringify(out, null, 2)).catch(function () {});
+          });
+        }
+
+        // Auto-detect quick-paste box — chips are cloned from a <template> so
+        // their styling comes from the Panda class baked into that markup,
+        // not a class-name string reconstructed here.
+        var chipTemplate = root.querySelector('[data-ts-detect-chip-template]');
+        if (detectInput && detectResults && chipTemplate) {
+          detectInput.addEventListener('input', function () {
+            var raw = detectInput.value;
+            detectResults.innerHTML = '';
+            if (!raw.trim()) return;
+            var matches = detectFormat(raw);
+            matches.slice(0, 6).forEach(function (m) {
+              var chip = chipTemplate.content.firstElementChild.cloneNode(true);
+              chip.querySelector('[data-detect-label]').textContent = m.format.label + ' — click to load';
+              chip.addEventListener('click', function () {
+                current = m.ns;
+                render(null);
+              });
+              detectResults.appendChild(chip);
+            });
+          });
+        }
+
+        // Seed with the current time on load.
+        current = BigInt(Date.now()) * 1000000n;
+        render(null);
+
+        root.setAttribute('data-ready', '');
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>

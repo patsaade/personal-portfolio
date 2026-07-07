@@ -1,0 +1,116 @@
+---
+// Timestamp Decoder — a comprehensive, bidirectional converter across every
+// timestamp/epoch format an analyst is likely to meet in DFIR work (Unix,
+// Windows FILETIME, WebKit/Chrome, Mac Absolute Time, .NET Ticks, UUID v1,
+// GPS, TAI64, and the common text/log formats), plus a reference table
+// covering formats the live converter doesn't have its own field for (same
+// "recipe builder + operator reference" page shape as the OSINT Crock Pot).
+// Static page — prerender to HTML served from the CDN.
+export const prerender = true;
+import { css } from 'styled-system/css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import Icon from '../../components/Icon.astro';
+import TimestampConverter from '../../components/TimestampConverter.astro';
+import { TIMESTAMP_FORMAT_REFERENCE } from '../../data/timestampFormats';
+
+const sectionH2 = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  fontSize: '1.3rem',
+  fontWeight: 700,
+  mt: '2.5rem',
+  mb: '1rem',
+  pt: '1.5rem',
+  borderTop: '1px solid token(colors.border)',
+  scrollMarginTop: '90px',
+});
+const refTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' });
+const refTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)' });
+const refTd = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text', verticalAlign: 'top' });
+const refTdMuted = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'textMuted', fontSize: '0.8rem', verticalAlign: 'top' });
+const refCode = css({ fontFamily: 'mono', fontSize: '0.78rem', color: 'primary' });
+---
+
+<BaseLayout
+  title="Timestamp Decoder"
+  description="A comprehensive, bidirectional timestamp/epoch converter for DFIR — Unix, Windows FILETIME, WebKit, Mac Absolute Time, .NET Ticks, UUID v1, GPS, TAI64, and common text/log date formats, all synced live."
+>
+  <PageHeader
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Tool Catalog', href: '/tools/' }, { label: 'Timestamp Decoder' }]}
+    eyebrow="Time & Correlation"
+    title="Timestamp Decoder"
+    description="Every timestamp format an analyst actually runs into, kept in sync — edit any field and every other format updates from the same instant."
+  />
+
+  <aside
+    class={css({
+      bg: 'bgSubtle',
+      border: '1px solid token(colors.border)',
+      borderLeftWidth: '3px',
+      borderLeftColor: 'primary',
+      borderRadius: 'md',
+      p: '1rem 1.25rem',
+      mb: '1.5rem',
+    })}
+  >
+    <p class={css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', m: 0 })}>
+      Different artifacts encode time completely differently — NTFS and the registry use{' '}
+      <strong class={css({ color: 'text' })}>Windows FILETIME</strong>, Chrome's history DB uses a{' '}
+      <strong class={css({ color: 'text' })}>WebKit timestamp</strong>, Safari/iOS use{' '}
+      <strong class={css({ color: 'text' })}>Mac Absolute Time</strong>, and log lines show up in half a dozen
+      text formats with or without a year, offset, or timezone at all. Getting the epoch/unit wrong silently
+      shifts a timeline by hours, years, or centuries. Every constant below was independently researched and
+      adversarially fact-checked against authoritative sources (Microsoft Learn, the relevant RFCs, Apple and
+      forensic documentation) — see the reference table for citations and caveats. Two format families (FAT/
+      DOS packed date-time and legacy BSD syslog) have no timezone or year field of their own; the converter's
+      "Reference" toggle resolves those against UTC or your browser's local time.
+    </p>
+  </aside>
+
+  <h2 id="converter" class={css({ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.3rem', fontWeight: 700, mb: '1rem', scrollMarginTop: '90px' })}>
+    <Icon name="clock" size={20} class={css({ color: 'primary' })} /> Converter
+  </h2>
+  <TimestampConverter />
+
+  <h2 id="reference" class={sectionH2}>
+    <Icon name="list" size={20} class={css({ color: 'primary' })} /> Format reference
+  </h2>
+  <p class={css({ color: 'textMuted', fontSize: '0.85rem', mb: '1rem' })}>
+    Every format the research covered — formats marked "live field above" are wired into the converter;
+    the rest are either numerically identical to one that is, or too artifact-specific (bit-packed, split
+    across multiple fields) for a practical single input.
+  </p>
+  <div class={css({ overflowX: 'auto' })}>
+    <table class={refTable}>
+      <thead>
+        <tr>
+          <th class={refTh}>Format</th>
+          <th class={refTh}>Epoch</th>
+          <th class={refTh}>Unit</th>
+          <th class={refTh}>Seen in DFIR</th>
+          <th class={refTh}>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          TIMESTAMP_FORMAT_REFERENCE.map((f) => (
+            <tr>
+              <td class={refTd}>
+                <strong class={css({ color: 'text' })}>{f.name}</strong>
+                {f.linkedFormatId && (
+                  <div class={css({ fontSize: '0.72rem', color: 'accent', mt: '0.15rem' })}>live field above</div>
+                )}
+              </td>
+              <td class={`${refTd} ${refCode}`}>{f.epochOrigin}</td>
+              <td class={refTdMuted}>{f.unit}</td>
+              <td class={refTdMuted}>{f.whereSeenInDFIR}</td>
+              <td class={refTdMuted}>{f.note ?? ''}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+</BaseLayout>

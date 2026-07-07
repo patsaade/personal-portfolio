@@ -1,8 +1,13 @@
 ---
-// Post preview card used in listings and the home grid.
+// Post preview card used in listings and the home grid. Three sizes: the
+// original `default` card (unchanged, used everywhere except the redesigned
+// home page), `lg` (a bigger "cover story" lead card), and `sm` (a compact
+// list row, no card chrome) — both new sizes added for the home page's
+// cover-card + secondary-list layout without touching any other call site.
 import { css } from 'styled-system/css';
 import Badge from './Badge.astro';
 import PostMeta from './PostMeta.astro';
+import Icon from './Icon.astro';
 import { categoryIcon } from '../consts';
 
 interface Props {
@@ -15,6 +20,8 @@ interface Props {
   difficulty?: string;
   tags?: string[];
   featured?: boolean;
+  /** 'default' (the original bordered card, unchanged) | 'lg' (cover/lead card) | 'sm' (compact list row, no card chrome). */
+  size?: 'lg' | 'default' | 'sm';
 }
 
 const {
@@ -27,55 +34,91 @@ const {
   difficulty,
   tags = [],
   featured = false,
+  size = 'default',
 } = Astro.props;
 ---
 
-<article
-  class={css({
-    position: 'relative',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.75rem',
-    p: { base: '1.25rem', md: '1.5rem' },
-    bg: 'bgCard',
-    border: '1px solid token(colors.border)',
-    borderRadius: 'lg',
-    boxShadow: 'card',
-    transition: 'transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease',
-    height: '100%',
-    _hover: {
-      transform: 'translateY(-3px)',
-      boxShadow: 'cardHover',
-      borderColor: 'primary',
-    },
-  })}
->
-  <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' })}>
-    <Badge variant="primary" icon={categoryIcon(category)}>{category}</Badge>
-    {featured && <Badge variant="accent">Featured</Badge>}
-  </div>
-
-  <h3 class={css({ fontSize: '1.2rem', fontWeight: 700, lineHeight: 1.3 })}>
-    <a
-      href={href}
+{
+  size === 'sm' ? (
+    <article
       class={css({
-        _before: { content: '""', position: 'absolute', inset: 0 },
-        _hover: { color: 'primary' },
-      })}>{title}</a
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '0.75rem',
+        py: '0.9rem',
+        borderTop: '1px solid token(colors.border)',
+        '&:first-child': { borderTop: 'none', pt: 0 },
+      })}
     >
-  </h3>
-
-  <p class={css({ color: 'textMuted', fontSize: '0.95rem', flex: 1 })}>{excerpt}</p>
-
-  <PostMeta date={date} readTime={readTime} difficulty={difficulty} />
-
-  {
-    tags.length > 0 && (
-      <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' })}>
-        {tags.slice(0, 4).map((t) => (
-          <Badge>#{t}</Badge>
-        ))}
+      <Icon
+        name={categoryIcon(category)}
+        size={15}
+        class={css({ color: 'textMuted', flexShrink: 0, mt: '0.25rem' })}
+      />
+      <div class={css({ minW: 0 })}>
+        <h3 class={css({ fontSize: '1.05rem', fontWeight: 600, lineHeight: 1.35 })}>
+          <a
+            href={href}
+            class={css({ _before: { content: '""', position: 'absolute', inset: 0 }, _hover: { color: 'primary' } })}
+          >
+            {title}
+          </a>
+        </h3>
+        <PostMeta date={date} readTime={readTime} difficulty={difficulty} />
       </div>
-    )
-  }
-</article>
+    </article>
+  ) : (
+    <article
+      class={css({
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.75rem',
+        p: size === 'lg' ? { base: '1.5rem', md: '2rem' } : { base: '1.25rem', md: '1.5rem' },
+        bg: 'bgCard',
+        border: '1px solid token(colors.border)',
+        borderTopWidth: size === 'lg' ? '3px' : '1px',
+        borderTopColor: size === 'lg' ? 'primary' : 'border',
+        borderRadius: 'lg',
+        boxShadow: 'card',
+        transition: 'transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease',
+        height: '100%',
+        _hover: {
+          transform: 'translateY(-3px)',
+          boxShadow: 'cardHover',
+          borderColor: size === 'lg' ? undefined : 'primary',
+        },
+      })}
+    >
+      <div class={css({ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' })}>
+        <Badge variant="primary" icon={categoryIcon(category)}>{category}</Badge>
+        {featured && <Badge variant="accent">Featured</Badge>}
+      </div>
+
+      <h3 class={css({ fontSize: size === 'lg' ? { base: '1.6rem', md: '2.1rem' } : '1.2rem', fontWeight: 700, lineHeight: 1.3 })}>
+        <a
+          href={href}
+          class={css({
+            _before: { content: '""', position: 'absolute', inset: 0 },
+            _hover: { color: 'primary' },
+          })}>{title}</a
+        >
+      </h3>
+
+      <p class={css({ color: 'textMuted', fontSize: size === 'lg' ? '1.02rem' : '0.95rem', lineHeight: 1.6, flex: 1 })}>{excerpt}</p>
+
+      <PostMeta date={date} readTime={readTime} difficulty={difficulty} />
+
+      {
+        tags.length > 0 && (
+          <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' })}>
+            {tags.slice(0, 4).map((t) => (
+              <Badge>#{t}</Badge>
+            ))}
+          </div>
+        )
+      }
+    </article>
+  )
+}

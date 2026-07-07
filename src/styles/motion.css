@@ -8,7 +8,8 @@
 
    What lives WHERE (so this stays the single home for charm motion):
    - Charm animations (THIS file): the heading "declassify" decode (hero +
-     section/post titles), scroll-reveal, pixel-star twinkle, copy-button pop.
+     section/post titles), scroll-reveal, pixel-star twinkle, copy-button pop,
+     the fragment-timeline hero illustration settle-in.
    - Structural/base styles (global.css): focus rings, theme-preload, the
      hover-card underline, and the functional Term-of-the-Day ticker marquee.
    - Token-integrated keyframes (panda.config.ts): e.g. `fadeIn` for <main>.
@@ -34,6 +35,15 @@
   .prose.reveal-ready > * {
     opacity: 1 !important;
     transform: none !important;
+  }
+  .ft-fragment,
+  .ft-tracer {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .ft-node {
+    animation: none !important;
+    opacity: var(--ft-end-opacity, 1) !important;
   }
   /* Belt-and-suspenders: JS already skips the theme wipe under reduced motion. */
   ::view-transition-old(root),
@@ -132,7 +142,50 @@
   animation: copyPop 220ms ease;
 }
 
-/* ── 5. Theme wipe — circular reveal on light/dark + palette switches ──────────
+/* ── 5. Fragment timeline settle — hero illustration (FragmentTimeline.astro) ──
+   Evidence fragments fade in, tracers draw down to the axis, then the event
+   nodes pop in — one time on load, staggered per-element via inline
+   animation-delay (same technique as the pixel-star twinkle above). Purely
+   decorative/aria-hidden, so settling instantly under reduced motion (the
+   block up top) loses nothing. */
+@keyframes ftFragmentIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.ft-fragment {
+  opacity: 0;
+  animation: ftFragmentIn 420ms ease-out both;
+}
+@keyframes ftTracerIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0.35;
+  }
+}
+.ft-tracer {
+  opacity: 0;
+  animation: ftTracerIn 420ms ease-out both;
+}
+@keyframes ftNodeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: var(--ft-end-opacity, 1);
+  }
+}
+.ft-node {
+  opacity: 0;
+  animation: ftNodeIn 380ms ease-out both;
+}
+
+/* ── 6. Theme wipe — circular reveal on light/dark + palette switches ──────────
    User-initiated theme changes (BaseHead's applyAnimated) run through the View
    Transitions API. The wipe itself is animated in JS (root.animate on the
    ::view-transition-new(root) snapshot) so the circle radiates accurately from the
