@@ -43,14 +43,11 @@ export const TOOLKIT_LINKS = [
   { href: '/d3fend/', label: 'MITRE D3FEND Map' },
 ] as const;
 
-// OSINT recon resources — its own category inside the DFIR dropdown. The
-// last three anchor into distinct sections of the single /osint/ page.
-export const OSINT_LINKS = [
-  { href: '/osint/', label: 'OSINT Toolkit' },
-  { href: '/osint/#builder', label: 'Dork Builder' },
-  { href: '/osint/#recipes', label: 'Recon Recipes' },
-  { href: '/osint/#operators', label: 'Operator Reference' },
-] as const;
+// OSINT recon resources — its own category inside the DFIR dropdown. Just
+// the one destination; the page itself (with in-page nav to its builder/
+// recipes/operator sections) doesn't need to be fragmented across separate
+// nav entries too.
+export const OSINT_LINKS = [{ href: '/osint/', label: 'OSINT Toolkit' }] as const;
 
 // The DFIR dropdown's category groups, in display order.
 export const DFIR_GROUPS = [

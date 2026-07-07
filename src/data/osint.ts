@@ -1,24 +1,26 @@
 // OSINT / search-engine "dorking" data for the interactive Dork Builder
-// (/osint/). Every operator's syntax and support status is verified against
-// each engine's own current help documentation — Google has both formally
-// deprecated several classic "dork" operators over the years (cache:,
-// related:, info:, the + prefix, the ~ synonym operator — all excluded here)
-// AND quietly stopped *documenting* several others that are still
-// long-standing and functional (intitle:, inurl:, intext:, OR, before:/
-// after:) without retiring them; `note` flags that distinction per operator
-// rather than presenting undocumented-but-working and officially-documented
-// syntax as equivalent. Recipes are well-established attack-surface-discovery
-// patterns, framed for authorized/defensive use (assessing your own or a
-// client's exposure) — consistent with this site's dual-use-tool guidance.
-// `queryTemplate` always shows the full, literal, verified query (a
-// `<domain>` placeholder, matching this site's tools.ts convention) so the
-// recipe library stays useful without JS; `values` is present only when the
-// query maps cleanly onto the builder's one-value-per-operator model — many
-// of the richer recipes use a parenthesized OR across several values of the
-// *same* operator (e.g. `(filetype:pdf OR filetype:docx)`), which the
-// builder's simple field model can't represent, so those are left
-// static-reference-only rather than force-fit into a misleading "Load"
-// button.
+// (/osint/) — modeled as a recipe: a Focus (culinary "style") highlights
+// which Ingredients (operator fields) matter and offers a few named Presets;
+// picking a Preset fills those ingredients, and the live-assembled Recipe is
+// the final query. Every operator's syntax and support status is verified
+// against each engine's own current help documentation — Google has both
+// formally deprecated several classic "dork" operators over the years
+// (cache:, related:, info:, the + prefix, the ~ synonym operator — all
+// excluded here) AND quietly stopped *documenting* several others that are
+// still long-standing and functional (intitle:, inurl:, intext:, OR,
+// before:/after:) without retiring them; `note` flags that distinction per
+// operator rather than presenting undocumented-but-working and officially-
+// documented syntax as equivalent. Focuses/presets are well-established
+// OSINT patterns, framed for authorized/defensive use (assessing your own
+// exposure, or an authorized investigation) — consistent with this site's
+// dual-use-tool guidance. A preset's `values` can put multiple alternatives
+// on a single prefix-kind ingredient as "termA OR termB" (the builder expands
+// this into the correct parenthesized `(filetype:termA OR filetype:termB)`
+// syntax) — see DorkBuilder.astro's fragmentFor(). `values.site`, when
+// present, deliberately overrides the domain field (e.g. a preset that's
+// inherently about a third-party host like an S3 bucket, not the user's own
+// site) — the builder only preserves the user's typed domain when a preset
+// does NOT specify one.
 
 export type EngineId = 'google' | 'bing' | 'duckduckgo';
 
@@ -57,7 +59,7 @@ export const DORK_OPERATORS: DorkOperator[] = [
     id: 'site',
     label: 'Site / domain',
     placeholder: 'example.com',
-    description: 'Restrict results to one domain (or subdomain).',
+    description: 'Restrict results to one domain (or several, as "a.com OR b.com").',
     kind: 'prefix',
     prefix: 'site:',
     engines: ['google', 'bing', 'duckduckgo'],
@@ -67,7 +69,7 @@ export const DORK_OPERATORS: DorkOperator[] = [
     id: 'filetype',
     label: 'File type',
     placeholder: 'pdf',
-    description: 'Only return files of this extension.',
+    description: 'Only files of this extension (or several, as "pdf OR docx").',
     kind: 'prefix',
     prefix: 'filetype:',
     engines: ['google', 'bing', 'duckduckgo'],
@@ -87,7 +89,7 @@ export const DORK_OPERATORS: DorkOperator[] = [
     id: 'inurl',
     label: 'URL contains',
     placeholder: 'admin',
-    description: 'Only pages with this text in the URL path.',
+    description: 'Only pages with this text in the URL path (or several, as "login OR admin").',
     kind: 'prefix',
     prefix: 'inurl:',
     engines: ['google', 'duckduckgo'],
@@ -152,160 +154,223 @@ export const DORK_OPERATORS: DorkOperator[] = [
   },
 ];
 
-export interface DorkRecipe {
-  category: string;
+export interface DorkPreset {
   title: string;
   desc: string;
-  /** The full, literal, verified query — a `<domain>` placeholder shown as-is. */
+  /** The full, literal, verified query — a `<domain>`/`<name>` placeholder shown as a reference caption. */
   queryTemplate: string;
-  /**
-   * operator id -> value to hydrate the builder ("Load into builder"). Present
-   * only when the query maps cleanly onto the one-value-per-operator model —
-   * omitted (not force-fit) for recipes using a composite OR across multiple
-   * values of the same operator, or a fixed non-domain site: target.
-   */
-  values?: Record<string, string>;
-  tags: string[];
+  /** operator id -> value to hydrate the ingredients when this preset is picked. */
+  values: Record<string, string>;
 }
 
-export const DORK_RECIPES: DorkRecipe[] = [
+export interface DorkFocus {
+  id: string;
+  label: string;
+  desc: string;
+  /** Ingredient (operator) ids to visually highlight while this focus is active. */
+  highlight: string[];
+  presets: DorkPreset[];
+  /** A technique worth knowing that doesn't map cleanly onto a single preset. */
+  tip?: string;
+}
+
+export const DORK_FOCUSES: DorkFocus[] = [
   {
-    category: 'Exposed Directory Listings',
-    title: 'Open directory index',
-    desc: "Finds pages where a web server's directory-listing feature was left enabled, exposing the raw file/folder structure instead of a proper index page — a classic misconfiguration that can leak internal files, old backups, or unlinked assets never meant to be browsed directly.",
-    queryTemplate: 'site:<domain> intitle:"index of /"',
-    values: { intitle: 'index of /' },
-    tags: ['misconfiguration', 'directory-listing', 'recon'],
+    id: 'files',
+    label: 'Exposed Files & Documents',
+    desc: 'Publicly indexed files that may have been published by mistake — reports, contracts, or logs never meant for a public page.',
+    highlight: ['site', 'filetype', 'intext'],
+    presets: [
+      {
+        title: 'Indexed PDFs & office docs',
+        desc: 'Surfaces publicly indexed PDF, Word, and Excel files under a domain — useful for checking whether internal reports, HR documents, or contracts were accidentally published or linked from a public page.',
+        queryTemplate: 'site:<domain> (filetype:pdf OR filetype:docx OR filetype:xlsx)',
+        values: { filetype: 'pdf OR docx OR xlsx' },
+      },
+      {
+        title: 'Documents with sensitive markings',
+        desc: 'Combines a filetype filter with body-text matching to find files marked confidential/internal that still got indexed — a common sign a document was uploaded to a public-facing path by mistake.',
+        queryTemplate: 'site:<domain> filetype:pdf intext:confidential',
+        values: { filetype: 'pdf', intext: 'confidential' },
+      },
+      {
+        title: 'Log files with secrets',
+        desc: 'Finds indexed .log files and filters for common secret-bearing terms — useful for catching error/debug logs that leaked stack traces, passwords, or internal hostnames.',
+        queryTemplate: 'site:<domain> filetype:log intext:password',
+        values: { filetype: 'log', intext: 'password' },
+      },
+    ],
   },
   {
-    category: 'Exposed Directory Listings',
-    title: 'Parent-directory browsing on a subpath',
-    desc: 'Narrows the open-directory search to a specific path (e.g. /backup) — useful for confirming whether a particular known folder on your own infrastructure is inadvertently browsable.',
-    queryTemplate: 'site:<domain> intitle:"index of" inurl:backup',
-    values: { intitle: 'index of', inurl: 'backup' },
-    tags: ['misconfiguration', 'directory-listing', 'backup'],
+    id: 'directories',
+    label: 'Directory Listings',
+    desc: "A web server's directory-listing feature left enabled, exposing the raw file/folder structure instead of a proper index page.",
+    highlight: ['site', 'intitle', 'inurl'],
+    presets: [
+      {
+        title: 'Open directory index',
+        desc: 'A classic misconfiguration that can leak internal files, old backups, or unlinked assets never meant to be browsed directly.',
+        queryTemplate: 'site:<domain> intitle:"index of /"',
+        values: { intitle: 'index of /' },
+      },
+      {
+        title: 'Backup folder browsing',
+        desc: 'Narrows the open-directory search to a specific path — useful for confirming whether a particular known folder on your own infrastructure is inadvertently browsable.',
+        queryTemplate: 'site:<domain> intitle:"index of" inurl:backup',
+        values: { intitle: 'index of', inurl: 'backup' },
+      },
+    ],
   },
   {
-    category: 'Exposed Documents & Files',
-    title: 'Indexed PDFs and office documents',
-    desc: 'Surfaces publicly indexed PDF, Word, and Excel files under a domain. Useful for checking whether internal reports, HR documents, or contracts were accidentally published or linked from a public page.',
-    queryTemplate: 'site:<domain> (filetype:pdf OR filetype:docx OR filetype:xlsx)',
-    tags: ['document-exposure', 'sensitive-data', 'recon'],
+    id: 'panels',
+    label: 'Login & Admin Panels',
+    desc: 'Administrative or database-management interfaces that are internet-facing and discoverable when they should be restricted to a VPN or internal network.',
+    highlight: ['site', 'intitle', 'inurl'],
+    presets: [
+      {
+        title: 'Admin login pages',
+        desc: 'Finds indexed administrative login pages on a domain.',
+        queryTemplate: 'site:<domain> intitle:admin (inurl:login OR inurl:admin)',
+        values: { intitle: 'admin', inurl: 'login OR admin' },
+      },
+      {
+        title: 'Common CMS/dashboard paths',
+        desc: 'Looks for well-known admin/dashboard URL patterns (wp-admin, /manager, /dashboard) that got indexed.',
+        queryTemplate: 'site:<domain> (inurl:wp-admin OR inurl:dashboard OR inurl:manager)',
+        values: { inurl: 'wp-admin OR dashboard OR manager' },
+      },
+      {
+        title: 'Internet-facing phpMyAdmin',
+        desc: 'Finds indexed phpMyAdmin login interfaces — a widely deployed MySQL admin tool that should never be reachable from the open internet; indexing implies it is publicly routable.',
+        queryTemplate: 'site:<domain> intitle:phpMyAdmin inurl:phpmyadmin',
+        values: { intitle: 'phpMyAdmin', inurl: 'phpmyadmin' },
+      },
+      {
+        title: 'Other exposed DB admin UIs',
+        desc: 'Looks for indexed pages from common database web-management tools (Adminer, pgAdmin).',
+        queryTemplate: 'site:<domain> (intitle:Adminer OR intitle:pgAdmin)',
+        values: { intitle: 'Adminer OR pgAdmin' },
+      },
+    ],
   },
   {
-    category: 'Exposed Documents & Files',
-    title: 'Documents mentioning sensitive markings',
-    desc: 'Combines a filetype filter with body-text matching to find files marked confidential/internal that still got indexed — a common sign a document was uploaded to a public-facing path by mistake.',
-    queryTemplate: 'site:<domain> filetype:pdf intext:confidential',
-    values: { filetype: 'pdf', intext: 'confidential' },
-    tags: ['document-exposure', 'data-leak', 'recon'],
+    id: 'credentials',
+    label: 'Credentials & Backups',
+    desc: 'Config, backup, and dump files that frequently contain database credentials, API keys, and secret tokens.',
+    highlight: ['site', 'filetype'],
+    presets: [
+      {
+        title: 'Environment & config files',
+        desc: 'Targets .env, .ini, and .conf files, which frequently contain database credentials, API keys, and secret tokens for web frameworks when accidentally deployed to a public web root.',
+        queryTemplate: 'site:<domain> (filetype:env OR filetype:ini OR filetype:conf)',
+        values: { filetype: 'env OR ini OR conf' },
+      },
+      {
+        title: 'Database dumps & archives',
+        desc: 'Finds SQL dumps and generic backup/archive files that may have been left in a web-accessible path — a high-severity finding since these can contain full table exports including user data.',
+        queryTemplate: 'site:<domain> (filetype:sql OR filetype:bak OR filetype:zip) intext:backup',
+        values: { filetype: 'sql OR bak OR zip', intext: 'backup' },
+      },
+    ],
   },
   {
-    category: 'Exposed Login/Admin Panels',
-    title: 'Admin login pages',
-    desc: 'Finds indexed administrative login pages on a domain. On an authorized assessment this flags admin interfaces that are internet-facing and discoverable when they should be restricted to a VPN, allowlist, or internal network.',
-    queryTemplate: 'site:<domain> intitle:admin (inurl:login OR inurl:admin)',
-    tags: ['admin-panel', 'exposure', 'attack-surface'],
+    id: 'cloud',
+    label: 'Cloud Storage',
+    desc: "Publicly readable cloud storage buckets tied to an organization's name — a very common real-world misconfiguration.",
+    highlight: ['site', 'phrase'],
+    presets: [
+      {
+        title: 'Public bucket exposure (S3 / Azure / GCS)',
+        desc: "Checks the three major cloud-storage hostnames for indexed content mentioning your organization's name — a publicly readable bucket can expose files, backups, or logs that should be private. Type your company or domain name into the phrase field below.",
+        queryTemplate: '(site:s3.amazonaws.com OR site:blob.core.windows.net OR site:storage.googleapis.com) "<company name>"',
+        values: { site: 's3.amazonaws.com OR blob.core.windows.net OR storage.googleapis.com' },
+      },
+    ],
   },
   {
-    category: 'Exposed Login/Admin Panels',
-    title: 'Common CMS/dashboard login paths',
-    desc: 'Looks for well-known admin/dashboard URL patterns (wp-admin, /manager, /dashboard) that got indexed, helping confirm whether known management interfaces are reachable from the open internet.',
-    queryTemplate: 'site:<domain> (inurl:wp-admin OR inurl:dashboard OR inurl:manager)',
-    tags: ['admin-panel', 'cms', 'attack-surface'],
+    id: 'assets',
+    label: 'Subdomains, Assets & Source Code',
+    desc: 'External asset inventory — forgotten staging hosts, default install pages, and source code or credentials leaked to public repos.',
+    highlight: ['site', 'inurl', 'intitle'],
+    presets: [
+      {
+        title: 'Non-production hosts',
+        desc: 'Filters indexed subdomains for common pre-production naming patterns (dev/staging/test/uat), which are frequently less hardened than production and a common source of accidental exposure.',
+        queryTemplate: 'site:<domain> (inurl:dev OR inurl:staging OR inurl:test OR inurl:uat)',
+        values: { inurl: 'dev OR staging OR test OR uat' },
+      },
+      {
+        title: 'Default install/setup pages',
+        desc: 'Finds leftover default installation, setup, or "it works" pages for common web software, which reveal the underlying stack and sometimes still allow completing setup if never locked down.',
+        queryTemplate: 'site:<domain> intitle:"welcome to" ("nginx" OR "apache" OR "IIS")',
+        values: { intitle: 'welcome to', or: 'nginx apache IIS' },
+      },
+      {
+        title: 'Exposed .git directories',
+        desc: "Finds indexed .git metadata paths, which indicate a deployed application's source-controlled directory (including history and possibly credentials in old commits) is reachable over HTTP.",
+        queryTemplate: 'site:<domain> inurl:.git intitle:"index of"',
+        values: { inurl: '.git', intitle: 'index of' },
+      },
+      {
+        title: 'Code or credentials on GitHub',
+        desc: "Searches GitHub for references to your domain alongside common secret-bearing terms, which can reveal internal scripts, hardcoded credentials, or infrastructure notes committed to a public repo by mistake. Type your domain into the phrase field below.",
+        queryTemplate: 'site:github.com "<domain>" (password OR secret OR api_key)',
+        values: { site: 'github.com', or: 'password secret api_key' },
+      },
+    ],
+    tip: 'To enumerate every indexed subdomain at once (excluding just the main www host), try site:*.<domain> -site:www.<domain> directly — it doesn\'t map onto a single ingredient, so it isn\'t a preset above, but it\'s a genuinely useful pattern to type in by hand.',
   },
   {
-    category: 'Exposed Config/Backup/Credential Files',
-    title: 'Environment and config files',
-    desc: 'Targets .env, .ini, and .conf files, which frequently contain database credentials, API keys, and secret tokens for web frameworks when accidentally deployed to a public web root.',
-    queryTemplate: 'site:<domain> (filetype:env OR filetype:ini OR filetype:conf)',
-    tags: ['credential-exposure', 'config-file', 'secrets'],
+    id: 'person',
+    label: 'Find a Person',
+    desc: 'Cross-reference a name against professional, social, and document sources — verifying a claimed identity, vetting a candidate or vendor, or confirming the registrant behind a suspicious contact during an authorized investigation. Type the name into the phrase field below.',
+    highlight: ['phrase', 'site'],
+    presets: [
+      {
+        title: 'Professional profile lookup',
+        desc: "Finds a person's LinkedIn profile page directly — the well-established recruiter/OSINT \"X-ray search\" technique for bypassing LinkedIn's own limited on-site search. A standard first step for verifying a claimed employer/title on a resume or a threat actor's claimed professional identity.",
+        queryTemplate: 'site:linkedin.com/in "<name>"',
+        values: { site: 'linkedin.com/in' },
+      },
+      {
+        title: 'Cross-platform social footprint',
+        desc: 'Searches multiple major social platforms at once for the same name, surfacing accounts that may not be linked to each other — used to build an authorized subject profile or confirm which public accounts actually belong to a person under investigation, rather than a same-named individual.',
+        queryTemplate: '"<name>" (site:facebook.com OR site:twitter.com OR site:instagram.com)',
+        values: { site: 'facebook.com OR twitter.com OR instagram.com' },
+      },
+      {
+        title: 'Resume or CV discovery',
+        desc: 'Finds resumes/CVs a person has published or had indexed as PDF/Word/Excel/PowerPoint files, often surfacing employment history, a phone number, or an email not shown on a locked-down social profile.',
+        queryTemplate: '"<name>" (filetype:pdf OR filetype:docx OR filetype:xlsx OR filetype:pptx) intext:resume',
+        values: { filetype: 'pdf OR docx OR xlsx OR pptx', intext: 'resume' },
+      },
+    ],
+    tip: 'To rule out a same-named person, pair the name with a known employer or city as two separate exact phrases: "<name>" "<employer-or-location>". That needs two phrase clauses at once, which doesn\'t map onto a single ingredient — worth typing in by hand.',
   },
   {
-    category: 'Exposed Config/Backup/Credential Files',
-    title: 'Database dumps and backup archives',
-    desc: 'Finds SQL dumps and generic backup/archive files that may have been left in a web-accessible path — a high-severity finding since these can contain full table exports including user data.',
-    queryTemplate: 'site:<domain> (filetype:sql OR filetype:bak OR filetype:zip) intext:backup',
-    tags: ['credential-exposure', 'backup', 'database-dump'],
-  },
-  {
-    category: 'Exposed Config/Backup/Credential Files',
-    title: 'Log files with sensitive strings',
-    desc: 'Finds indexed .log files and filters for common secret-bearing terms — useful for catching error/debug logs that leaked stack traces, passwords, or internal hostnames.',
-    queryTemplate: 'site:<domain> filetype:log intext:password',
-    values: { filetype: 'log', intext: 'password' },
-    tags: ['credential-exposure', 'log-file', 'secrets'],
-  },
-  {
-    category: 'Cloud Storage Exposure',
-    title: 'Indexed AWS S3 bucket content',
-    desc: "Looks for indexed pages served directly from an organization's S3 bucket, which can reveal a publicly readable bucket containing files that should be private — a very common real-world misconfiguration.",
-    queryTemplate: 'site:s3.amazonaws.com "<domain>"',
-    tags: ['cloud-storage', 's3', 'misconfiguration'],
-  },
-  {
-    category: 'Cloud Storage Exposure',
-    title: 'Indexed Azure Blob Storage content',
-    desc: "Same idea applied to Azure's blob storage hostname — surfaces publicly readable blob containers tied to the organization's name, which may expose uploaded files, backups, or logs.",
-    queryTemplate: 'site:blob.core.windows.net "<domain>"',
-    tags: ['cloud-storage', 'azure', 'misconfiguration'],
-  },
-  {
-    category: 'Cloud Storage Exposure',
-    title: 'Indexed Google Cloud Storage content',
-    desc: "Checks whether content from a Google Cloud Storage bucket associated with the organization has been indexed, indicating public read access on a bucket that may hold sensitive assets.",
-    queryTemplate: 'site:storage.googleapis.com "<domain>"',
-    tags: ['cloud-storage', 'gcs', 'misconfiguration'],
-  },
-  {
-    category: 'Subdomain & Asset Enumeration',
-    title: 'All indexed subdomains',
-    desc: 'Lists indexed hosts under the domain, helping build an inventory of externally visible subdomains — including forgotten staging, dev, or legacy hosts that may not be tracked in current asset records.',
-    queryTemplate: 'site:*.<domain> -site:www.<domain>',
-    tags: ['subdomain-enum', 'asset-inventory', 'recon'],
-  },
-  {
-    category: 'Subdomain & Asset Enumeration',
-    title: 'Non-production environment hosts',
-    desc: 'Filters indexed subdomains for common pre-production naming patterns (dev/staging/test/uat), which are frequently less hardened than production and a common source of accidental exposure.',
-    queryTemplate: 'site:<domain> (inurl:dev OR inurl:staging OR inurl:test OR inurl:uat)',
-    tags: ['subdomain-enum', 'staging', 'attack-surface'],
-  },
-  {
-    category: 'Technology/Version Fingerprinting',
-    title: 'Default install/setup pages',
-    desc: 'Finds leftover default installation, setup, or "it works" pages for common web software, which reveal the underlying stack and sometimes still allow completing setup if never locked down.',
-    queryTemplate: 'site:<domain> intitle:"welcome to" ("nginx" OR "apache" OR "IIS")',
-    tags: ['fingerprinting', 'default-install', 'misconfiguration'],
-  },
-  {
-    category: 'Exposed Source Code/Repos',
-    title: 'Exposed .git directories',
-    desc: "Finds indexed .git metadata paths, which indicate a deployed application's source-controlled directory (including history and possibly credentials in old commits) is reachable over HTTP.",
-    queryTemplate: 'site:<domain> inurl:.git intitle:"index of"',
-    values: { inurl: '.git', intitle: 'index of' },
-    tags: ['source-code-exposure', 'git', 'misconfiguration'],
-  },
-  {
-    category: 'Exposed Source Code/Repos',
-    title: 'Internal code or credentials on public code-hosting sites',
-    desc: "Searches public code repositories for references to the organization's domain, which can reveal internal scripts, hardcoded credentials, or infrastructure notes committed to a public repo by mistake.",
-    queryTemplate: 'site:github.com "<domain>" (password OR secret OR api_key)',
-    tags: ['source-code-exposure', 'github', 'credential-exposure'],
-  },
-  {
-    category: 'Exposed Database Interfaces',
-    title: 'Internet-facing phpMyAdmin instances',
-    desc: 'Finds indexed phpMyAdmin login interfaces — a widely deployed MySQL administration tool that should never be reachable from the open internet without additional access controls; indexing implies it is publicly routable.',
-    queryTemplate: 'site:<domain> intitle:phpMyAdmin inurl:phpmyadmin',
-    values: { intitle: 'phpMyAdmin', inurl: 'phpmyadmin' },
-    tags: ['database-exposure', 'phpmyadmin', 'attack-surface'],
-  },
-  {
-    category: 'Exposed Database Interfaces',
-    title: 'Other exposed DB admin/management UIs',
-    desc: 'Looks for indexed pages from common database web-management tools (Adminer, pgAdmin) whose presence in the public index confirms an admin console is exposed rather than confined to an internal network.',
-    queryTemplate: 'site:<domain> (intitle:Adminer OR intitle:pgAdmin)',
-    tags: ['database-exposure', 'admin-panel', 'attack-surface'],
+    id: 'business',
+    label: 'Find a Business',
+    desc: "Verify a company's public footprint for vendor risk assessments, threat-actor attribution, or confirming the organization behind a suspicious domain or claimed employer. Type the company name into the phrase field below.",
+    highlight: ['phrase', 'site', 'filetype'],
+    presets: [
+      {
+        title: 'Corporate LinkedIn presence',
+        desc: "Confirms a company's official LinkedIn footprint and lets you cross-check claimed employees/executives against it — a standard first step in vendor and candidate due diligence.",
+        queryTemplate: 'site:linkedin.com/company "<company name>"',
+        values: { site: 'linkedin.com/company' },
+      },
+      {
+        title: 'Public reports & documents',
+        desc: 'Surfaces publicly indexed PDFs (annual reports, whitepapers, filings) a company has published or accidentally exposed on its own domain — useful for financial/vendor-risk review.',
+        queryTemplate: 'site:<domain> filetype:pdf intext:"annual report"',
+        values: { filetype: 'pdf', intext: 'annual report' },
+      },
+      {
+        title: 'Press & news wire coverage',
+        desc: "Searches the two major newswire services for a company's official press releases and third-party coverage — corroborates claims made by or about the organization (acquisitions, leadership changes, incidents) against independently published material.",
+        queryTemplate: '(site:businesswire.com OR site:prnewswire.com) "<company name>"',
+        values: { site: 'businesswire.com OR prnewswire.com' },
+      },
+    ],
   },
 ];

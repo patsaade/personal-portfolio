@@ -1,27 +1,23 @@
 ---
-// OSINT Toolkit — a DFIR/attack-surface-discovery-focused open-source
-// intelligence reference: an interactive search-operator ("dork") builder
-// across Google/Bing/DuckDuckGo, a curated library of well-established recon
-// recipes, and a cross-link into the existing OSINT-tagged tools in the kit.
-// Framed for authorized/defensive use (assessing your own or a client's
-// exposure), matching this site's dual-use-tool guidance. Static page.
-// Section ids (#builder, #recipes, #operators) are anchor targets for the nav
-// "OSINT" dropdown (see consts.ts OSINT_LINKS) — the recipe library in
-// particular renders directly here (not inside <DorkBuilder>, which is
-// JS-gated) so it stays real, static, no-JS-safe content.
+// OSINT Toolkit — a recipe-framed search-operator ("dork") builder across
+// Google/Bing/DuckDuckGo: pick a Focus (the "cuisine style" — what you're
+// trying to find), which highlights relevant Ingredients and offers a few
+// named Presets; picking a Preset fills those ingredients, producing the
+// live Recipe (the final query) in the builder's own sticky stage. All of
+// it lives inside <DorkBuilder> — there's no separate recipe-browsing
+// section on this page. Framed for authorized/defensive use (assessing your
+// own or a client's exposure, or an authorized investigation), matching this
+// site's dual-use-tool guidance. Static page.
 export const prerender = true;
 import { css } from 'styled-system/css';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
 import Icon from '../components/Icon.astro';
 import DorkBuilder from '../components/DorkBuilder.astro';
-import { SEARCH_ENGINES, DORK_OPERATORS, DORK_RECIPES } from '../data/osint';
+import { SEARCH_ENGINES, DORK_OPERATORS, DORK_FOCUSES } from '../data/osint';
 import { TOOLS } from '../data/tools';
 
 const osintTools = TOOLS.filter((t) => t.fn === 'OSINT');
-
-const recipesByCategory: Record<string, typeof DORK_RECIPES> = {};
-for (const r of DORK_RECIPES) (recipesByCategory[r.category] ??= []).push(r);
 
 const sectionH2 = css({
   display: 'flex',
@@ -56,58 +52,17 @@ const toolChip = css({
   transition: 'all 150ms ease',
   _hover: { borderColor: 'primary', color: 'primary' },
 });
-
-const recipeSection = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' });
-const recipeCatHead = css({ fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'primary', mt: '0.5rem' });
-const recipeGrid = css({ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))', gap: '0.6rem' });
-const recipeCard = css({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.4rem',
-  p: '0.7rem 0.85rem',
-  bg: 'bgCard',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'md',
-});
-const recipeTitle = css({ fontFamily: 'sans', fontWeight: 700, fontSize: '0.9rem', color: 'text' });
-const recipeDesc = css({ fontSize: '0.82rem', color: 'textMuted', lineHeight: 1.5 });
-const recipeQuery = css({
-  m: 0,
-  p: '0.45rem 0.6rem',
-  fontFamily: 'mono',
-  fontSize: '0.76rem',
-  color: 'primary',
-  bg: 'bgSubtle',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'sm',
-  overflowX: 'auto',
-  whiteSpace: 'pre',
-});
-const recipeLoadBtn = css({
-  alignSelf: 'flex-start',
-  fontSize: '0.78rem',
-  fontWeight: 600,
-  color: 'primary',
-  cursor: 'pointer',
-  bg: 'transparent',
-  border: 'none',
-  p: 0,
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '0.3rem',
-  _hover: { textDecoration: 'underline' },
-});
 ---
 
 <BaseLayout
   title="OSINT Toolkit"
-  description="An interactive search-operator (dork) builder across Google, Bing, and DuckDuckGo, plus a curated library of attack-surface-discovery recipes and OSINT tools."
+  description="An interactive search-operator (dork) recipe builder across Google, Bing, and DuckDuckGo — pick a focus, load a preset, and get a ready-to-run query."
 >
   <PageHeader
     breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'OSINT Toolkit' }]}
     eyebrow="Recon & Discovery"
     title="OSINT Toolkit"
-    description="Open-source intelligence for attack-surface discovery — build a search-engine query interactively, or start from a recipe below."
+    description="Open-source intelligence, built like a recipe: pick a Focus, fill in the Ingredients, get your Recipe — a ready-to-run search-engine query."
   />
 
   <aside
@@ -125,48 +80,17 @@ const recipeLoadBtn = css({
       <strong class={css({ color: 'text' })}>OSINT</strong> — <em>open-source intelligence</em> — is
       information gathered from publicly available sources: search engines, DNS, certificate logs,
       code repositories, social platforms. For a defender, the same techniques an attacker uses to
-      scope a target double as a fast way to check your own (or an authorized client's) exposure —
-      an exposed backup file, an internal admin panel indexed by a search engine, or a subdomain
-      nobody remembered still existed. Everything below is meant for assessing infrastructure you
-      own or are authorized to test.
+      scope a target double as a fast way to check your own (or an authorized client's) exposure, or
+      to verify a claimed identity during an authorized investigation. Everything below is meant for
+      infrastructure you own or are authorized to test, and people/organizations you have a
+      legitimate reason to research.
     </p>
   </aside>
 
   <h2 id="builder" class={css({ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.3rem', fontWeight: 700, mb: '1rem', scrollMarginTop: '90px' })}>
-    <Icon name="search" size={20} class={css({ color: 'primary' })} /> Search query builder
+    <Icon name="search" size={20} class={css({ color: 'primary' })} /> Recipe builder
   </h2>
-  <DorkBuilder engines={SEARCH_ENGINES} operators={DORK_OPERATORS} />
-
-  <h2 id="recipes" class={sectionH2}>
-    <Icon name="target" size={20} class={css({ color: 'primary' })} /> Recon recipes
-  </h2>
-  <p class={css({ color: 'textMuted', fontSize: '0.9rem', mb: '1rem' })}>
-    Well-established attack-surface-discovery patterns — copy a query directly, or load it straight
-    into the builder above (which switches to Google and fills in the matching fields).
-  </p>
-  <div class={recipeSection}>
-    {
-      Object.entries(recipesByCategory).map(([category, items]) => (
-        <>
-          <h3 class={recipeCatHead}>{category}</h3>
-          <div class={recipeGrid}>
-            {items.map((r) => (
-              <div class={recipeCard}>
-                <span class={recipeTitle}>{r.title}</span>
-                <p class={recipeDesc}>{r.desc}</p>
-                <pre class={recipeQuery}><code>{r.queryTemplate}</code></pre>
-                {r.values && (
-                  <button type="button" class={recipeLoadBtn} data-dork-load={JSON.stringify(r.values)} data-sound="tick">
-                    <Icon name="target" size={13} /> Load into builder
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </>
-      ))
-    }
-  </div>
+  <DorkBuilder engines={SEARCH_ENGINES} operators={DORK_OPERATORS} focuses={DORK_FOCUSES} />
 
   <h2 id="operators" class={sectionH2}>
     <Icon name="list" size={20} class={css({ color: 'primary' })} /> Operator reference
