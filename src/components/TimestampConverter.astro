@@ -295,7 +295,7 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
                         autocomplete="off"
                         spellcheck="false"
                       />
-                      <button type="button" class={rowCopyBtn} data-ts-row-copy={f.id} data-sound="copy" aria-label={`Copy ${f.label}`} title="Copy">
+                      <button type="button" class={rowCopyBtn} data-ts-row-copy={f.id} data-copy-pop data-sound="copy" aria-label={`Copy ${f.label}`} title="Copy">
                         <Icon name="copy" size={13} />
                       </button>
                     </div>
@@ -324,7 +324,7 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
           <button type="button" class={`${actionBtn} ${primaryBtn}`} data-ts-now data-sound="tick">
             <Icon name="clock" size={15} /> Use current time
           </button>
-          <button type="button" class={actionBtn} data-ts-copy-all data-sound="copy">
+          <button type="button" class={actionBtn} data-ts-copy-all data-copy-pop data-sound="copy">
             <Icon name="copy" size={15} /> Copy all as JSON
           </button>
         </div>
@@ -490,14 +490,20 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
           render(null);
         });
 
+        // Shared copy-confirm pop (see motion.css's [data-copy-pop] rule) — same
+        // attribute-toggle convention as the blog code-block copy button.
+        function pop(btn) {
+          btn.setAttribute('data-copied', '');
+          setTimeout(function () { btn.removeAttribute('data-copied'); }, 1600);
+        }
+
         // Row copy buttons
         Array.prototype.forEach.call(root.querySelectorAll('[data-ts-row-copy]'), function (btn) {
           btn.addEventListener('click', function () {
             var id = btn.getAttribute('data-ts-row-copy');
             var f = fields.filter(function (x) { return x.id === id; })[0];
             if (!f || !f.input.value) return;
-            navigator.clipboard.writeText(f.input.value).catch(function () {});
-            if (window.__sound) window.__sound.play('copy');
+            navigator.clipboard.writeText(f.input.value).then(function () { pop(btn); }).catch(function () {});
           });
         });
 
@@ -506,7 +512,7 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
             if (current === null) return;
             var out = {};
             fields.forEach(function (f) { out[f.id] = formatById(f.id).format(current, ctx); });
-            navigator.clipboard.writeText(JSON.stringify(out, null, 2)).catch(function () {});
+            navigator.clipboard.writeText(JSON.stringify(out, null, 2)).then(function () { pop(copyAllBtn); }).catch(function () {});
           });
         }
 
