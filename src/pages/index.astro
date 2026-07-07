@@ -2,23 +2,25 @@
 // Home page — masthead, hero, headline stats, certifications strip, featured/
 // latest posts, and a closing CTA. "Field Report" visual redesign, kept
 // deliberately light on prose per Patrick's direction (pure-visual, relaxed —
-// a title is enough, no descriptive paragraphs): a kicker + oversized
-// headline hero sits beside a decorative fragments-to-timeline illustration,
-// a rule-bounded numerals stat rail (icon/numeral + short label only, no
-// caption sentences) replaces the old icon-card grid, a small real-data
-// certifications progress ring gets its own strip, and the blog section
-// becomes a cover story + secondary list with excerpts hidden — all bounded
-// by a repeating hairline-rule motif (masthead -> stat rail -> cert strip ->
-// divider -> post list -> closing CTA). The stat captions/excerpt text this
-// removed (Red Canary, "In pursuit of GCFA/GCFE/GCIH", etc.) still live in
-// full on the About/Certifications pages and in post listings — this is a
-// display-density decision for the home page specifically, not a fact drop.
+// a title is enough, no descriptive paragraphs) and, on top of that, made
+// more dynamic/less static: below-the-fold sections were previously fully
+// inert once the hero's one-shot load animations finished — everything here
+// now scroll-reveals into place (`data-reveal`, armed by this page's own
+// script; see motion.css section 2), the stat rail's numeral counts up, the
+// certifications ring draws itself in, and the hero illustration gains a
+// subtle post-settle idle pulse — instead of the page just sitting static
+// once painted. The stat captions/excerpt text this removed (Red Canary, "In
+// pursuit of GCFA/GCFE/GCIH", etc.) still live in full on the About/
+// Certifications pages and in post listings — this is a display-density
+// decision for the home page specifically, not a fact drop.
 // Static page — prerender to HTML served from the CDN (output: 'server' is on-demand by default).
 export const prerender = true;
 import { css } from 'styled-system/css';
+import { tag } from 'styled-system/recipes';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BlogCard from '../components/BlogCard.astro';
 import Icon from '../components/Icon.astro';
+import PixelStar from '../components/PixelStar.astro';
 import FragmentTimeline from '../components/FragmentTimeline.astro';
 import { getSortedPosts, estimateReadTime } from '../utils/posts';
 import { STATS, SOCIALS } from '../consts';
@@ -98,8 +100,7 @@ const certRingOffset = certRingCircumference * (1 - EARNED_CERTS.length / CERTIF
         })}`}
       >
         DFIR-focused.<br />
-        <span class={css({ color: 'primary' })}>SOC & Incident Response @ First American.</span><br />
-        Pursuing GCFA, GCFE & GCIH.
+        <span class={css({ color: 'primary' })}>SOC & Incident Response @ First American.</span>
       </h1>
       <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', mt: '2rem' })}>
         <a
@@ -118,7 +119,7 @@ const certRingOffset = certRingCircumference * (1 - EARNED_CERTS.length / CERTIF
             _hover: { bg: 'primaryHover', transform: 'translateY(-1px)' },
           })}
         >
-          Read the latest posts <Icon name="arrow-right" size={17} />
+          Latest posts <Icon name="arrow-right" size={17} />
         </a>
         <a
           href="/labs/"
@@ -136,7 +137,7 @@ const certRingOffset = certRingCircumference * (1 - EARNED_CERTS.length / CERTIF
             _hover: { borderColor: 'primary' },
           })}
         >
-          <Icon name="flask" size={17} /> Browse lab writeups
+          <Icon name="flask" size={17} /> Lab writeups
         </a>
       </div>
     </div>
@@ -144,8 +145,12 @@ const certRingOffset = certRingCircumference * (1 - EARNED_CERTS.length / CERTIF
     <FragmentTimeline class={css({ display: { base: 'none', lg: 'block' }, w: '100%', maxW: '420px', h: 'auto' })} />
   </section>
 
-  {/* Stat rail */}
+  {/* Stat rail — scroll-reveals with a per-item stagger (data-reveal, armed
+      by this page's script); the numeral counts up from 0 the moment it
+      enters view (motion.css / index.astro script), always landing on and
+      matching the real static "3+" a no-JS/reduced-motion reader sees immediately. */}
   <section
+    data-reveal
     class={css({
       display: 'grid',
       gridTemplateColumns: { base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
@@ -159,6 +164,7 @@ const certRingOffset = certRingCircumference * (1 - EARNED_CERTS.length / CERTIF
     {
       STATS.map((s, i) => (
         <div
+          style={`transition-delay:${i * 90}ms`}
           class={css({
             px: { base: 0, md: '1.25rem' },
             borderInlineStart: { base: 'none', md: i > 0 ? '1px solid token(colors.border)' : 'none' },
@@ -166,6 +172,7 @@ const certRingOffset = certRingCircumference * (1 - EARNED_CERTS.length / CERTIF
         >
           {i === 1 ? (
             <div
+              data-count-target="3"
               class={css({
                 fontSize: { base: '2.5rem', md: '3.5rem' },
                 fontWeight: 700,
@@ -190,9 +197,14 @@ const certRingOffset = certRingCircumference * (1 - EARNED_CERTS.length / CERTIF
     }
   </section>
 
-  {/* Certifications strip — real counts from src/data/certifications.ts */}
+  {/* Certifications strip — real counts from src/data/certifications.ts. The
+      ring draws itself in (empty -> real earned/total offset) the moment it
+      scroll-reveals (data-reveal, cert-ring-fill — see motion.css); its
+      unconditional stroke-dashoffset attribute below is the always-correct
+      ground truth for no-JS/reduced-motion readers. */}
   <a
     href="/certifications/"
+    data-reveal
     class={css({
       display: 'flex',
       alignItems: 'center',
@@ -211,7 +223,8 @@ const certRingOffset = certRingCircumference * (1 - EARNED_CERTS.length / CERTIF
         cy="28"
         r={CERT_RING_R}
         fill="none"
-        style="stroke: var(--colors-primary)"
+        class="cert-ring-fill"
+        style={`stroke: var(--colors-primary); --cert-empty-offset: ${certRingCircumference}; --cert-final-offset: ${certRingOffset};`}
         stroke-width="4"
         stroke-linecap="round"
         stroke-dasharray={certRingCircumference}
@@ -219,9 +232,14 @@ const certRingOffset = certRingCircumference * (1 - EARNED_CERTS.length / CERTIF
         transform="rotate(-90 28 28)"
       />
     </svg>
-    <p class={css({ fontFamily: 'mono', fontSize: '0.9rem', color: 'text', fontWeight: 600 })}>
-      CISSP certified · GCFA / GCFE / GCIH in pursuit
-    </p>
+    <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' })}>
+      <span class={tag({ tone: 'muted' })}>
+        <Icon name="award" size={12} /> CISSP
+      </span>
+      <span class={tag({ tone: 'accent' })}>
+        <Icon name="clock" size={12} /> GCFA · GCFE · GCIH
+      </span>
+    </div>
   </a>
 
   {/* Divider */}
@@ -244,8 +262,9 @@ const certRingOffset = certRingCircumference * (1 - EARNED_CERTS.length / CERTIF
     </span>
   </div>
 
-  {/* Featured / latest posts */}
-  <section>
+  {/* Featured / latest posts — scroll-reveals (header, then the cover+list
+      block); the secondary list also reveals each row with its own stagger. */}
+  <section data-reveal>
     <div class={css({ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: '1.5rem' })}>
       <h2 class={css({ fontSize: '1.75rem', fontWeight: 700 })}>
         {featured.length ? 'Featured writeups' : 'Latest posts'}
@@ -283,18 +302,20 @@ const certRingOffset = certRingCircumference * (1 - EARNED_CERTS.length / CERTIF
           />
           {
             secondary.length > 0 && (
-              <div class={css({ display: 'flex', flexDirection: 'column' })}>
-                {secondary.map((p) => (
-                  <BlogCard
-                    size="sm"
-                    href={`/blog/${p.id}/`}
-                    title={p.data.title}
-                    excerpt={p.data.excerpt}
-                    category={p.data.category}
-                    date={p.data.date}
-                    readTime={estimateReadTime(p.body, p.data.readTime)}
-                    difficulty={p.data.difficulty}
-                  />
+              <div data-reveal class={css({ display: 'flex', flexDirection: 'column' })}>
+                {secondary.map((p, i) => (
+                  <div style={`transition-delay:${i * 100}ms`}>
+                    <BlogCard
+                      size="sm"
+                      href={`/blog/${p.id}/`}
+                      title={p.data.title}
+                      excerpt={p.data.excerpt}
+                      category={p.data.category}
+                      date={p.data.date}
+                      readTime={estimateReadTime(p.body, p.data.readTime)}
+                      difficulty={p.data.difficulty}
+                    />
+                  </div>
                 ))}
                 <a
                   href="/blog/"
@@ -318,8 +339,12 @@ const certRingOffset = certRingCircumference * (1 - EARNED_CERTS.length / CERTIF
     }
   </section>
 
-  {/* CTA strip */}
+  {/* Closing sign-off — a wordless mark instead of a repeated rhetorical
+      question (the cert-pursuit fact already lives once, above, in the
+      certifications strip); the star's twinkle keeps a small ambient motion
+      going after the page's other one-shot entrances settle. */}
   <section
+    data-reveal
     class={css({
       mt: '3.5rem',
       pt: '3rem',
@@ -327,7 +352,9 @@ const certRingOffset = certRingCircumference * (1 - EARNED_CERTS.length / CERTIF
       textAlign: 'center',
     })}
   >
-    <h2 class={css({ fontSize: '1.75rem', fontWeight: 700, mb: '1.25rem' })}>Pursuing GCFA / GCFE / GCIH too?</h2>
+    <div class={css({ display: 'flex', justifyContent: 'center', mb: '1.25rem' })}>
+      <PixelStar size={26} />
+    </div>
     <div class={css({ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' })}>
       <a href={SOCIALS.linkedin} target="_blank" rel="noopener" class={css({ color: 'primary', fontWeight: 600, _hover: { textDecoration: 'underline' } })}>
         LinkedIn
@@ -339,3 +366,68 @@ const certRingOffset = certRingCircumference * (1 - EARNED_CERTS.length / CERTIF
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  // @ts-nocheck — vanilla DOM script
+  (function () {
+    var motionOk = !window.matchMedia || !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!motionOk || !('IntersectionObserver' in window)) return;
+
+    // Scroll-reveal: each [data-reveal] container's direct children fade/rise
+    // in independently as they cross into view (see motion.css section 2 for
+    // the `.reveal-ready`/`.is-revealed` CSS this drives — the same mechanism
+    // PostLayout uses for blog-post prose, generalized to any container here).
+    // The class is only ever added here, never server-rendered, so a no-JS or
+    // reduced-motion reader always sees every section fully visible already.
+    var containers = document.querySelectorAll('[data-reveal]');
+    if (containers.length) {
+      var io = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-revealed');
+              io.unobserve(entry.target);
+            }
+          });
+        },
+        { rootMargin: '0px 0px -8% 0px', threshold: 0.05 },
+      );
+      containers.forEach(function (container) {
+        container.classList.add('reveal-ready');
+        Array.prototype.forEach.call(container.children, function (el) {
+          io.observe(el);
+        });
+      });
+    }
+
+    // Stat rail numeral: counts up from 0 the moment it enters view, landing
+    // on the exact same real value ("3+") a no-JS/reduced-motion reader
+    // already sees statically. Plain rAF, not motion/mini's animate() — that
+    // drives the Web Animations API on real CSS/DOM properties and has no
+    // per-frame JS callback to rewrite textContent with.
+    var counter = document.querySelector('[data-count-target]');
+    if (counter) {
+      var target = parseInt(counter.getAttribute('data-count-target'), 10);
+      var counterIo = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            counterIo.unobserve(entry.target);
+            var start = null;
+            var duration = 700;
+            function tick(ts) {
+              if (start === null) start = ts;
+              var progress = Math.min((ts - start) / duration, 1);
+              var eased = 1 - Math.pow(1 - progress, 3);
+              counter.textContent = Math.round(eased * target) + '+';
+              if (progress < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+          });
+        },
+        { threshold: 0.4 },
+      );
+      counterIo.observe(counter);
+    }
+  })();
+</script>

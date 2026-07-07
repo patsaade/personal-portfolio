@@ -82,3 +82,21 @@ const AXIS_Y = 340;
     ))
   }
 </svg>
+
+<script>
+  // @ts-nocheck — vanilla DOM script
+  (function () {
+    var motionOk = !window.matchMedia || !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!motionOk) return;
+    var svgs = document.querySelectorAll('.ft-svg');
+    if (!svgs.length) return;
+    // Hand off to the idle pulse (motion.css) only once the settle-in above has
+    // fully finished — last node's animation-delay (760ms) + its own 380ms
+    // duration — so there's no visible jump between the two animations.
+    setTimeout(function () {
+      svgs.forEach(function (svg) {
+        svg.classList.add('ft-idle');
+      });
+    }, 1300);
+  })();
+</script>
