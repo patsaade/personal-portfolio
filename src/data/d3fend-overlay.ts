@@ -2,7 +2,7 @@
 // (significance / example), mirroring attack-overlay.ts. Hand-maintained; merged
 // onto the generated MITRE data in d3fend.ts. Add an entry to enrich a technique's
 // detail page with a "Why it matters" / "In practice" section — same pattern the
-// ATT&CK Map already uses for its 34 curated techniques.
+// ATT&CK Map already uses for its 33 curated techniques.
 //
 // Empty on purpose: this is plumbing, not content. Populating it is genuine DFIR
 // analyst authorship (the site's own voice, not generic/AI-invented text) — see

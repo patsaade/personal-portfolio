@@ -17,10 +17,11 @@
    - Structural/base styles (global.css): focus rings, theme-preload, the
      hover-card underline, the nav dropdown's slide/fade transition (cross-
      element hover/focus-within selectors Panda's css() can't express), and
-     the functional Term-of-the-Day ticker marquee. The tool-switcher
-     sidebar's slide (ToolSidebar.astro, `.tool-sidebar-slide`) is a plain
-     Panda `css()` transition instead, since it has no cross-element selector
-     need — its reduced-motion off-switch still lives here for consistency.
+     the functional Term-of-the-Day ticker marquee. The DFIR sidebar's slide
+     and hide/show handle (ToolSidebar.astro, `.tool-sidebar-slide` and
+     `.tool-sidebar-handle`) are plain Panda `css()` transitions instead,
+     since neither has a cross-element selector need — their reduced-motion
+     off-switches still live here for consistency.
    - Token-integrated keyframes (panda.config.ts): e.g. `fadeIn` for <main>.
 
    Conventions (see CLAUDE.md → "Motion & sound"):
@@ -62,7 +63,8 @@
     transition: none !important;
   }
   .tool-sidebar-slide,
-  .tool-sidebar-slide .tool-sidebar-chev {
+  .tool-sidebar-handle,
+  .tool-sidebar-handle .tool-sidebar-chev {
     transition: none !important;
   }
   .cert-ring-fill {

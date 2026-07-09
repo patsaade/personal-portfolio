@@ -18,6 +18,7 @@ const PAGES = [
   { name: 'Certifications', path: 'src/pages/certifications.astro' },
   { name: 'ATT&CK map', path: 'src/pages/attack-map.astro' },
   { name: 'D3FEND map', path: 'src/pages/d3fend/index.astro' },
+  { name: 'Event ID Reference', path: 'src/pages/event-ids.astro' },
 ];
 
 describe('card-grid size consistency', () => {

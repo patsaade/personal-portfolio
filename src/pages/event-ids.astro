@@ -69,7 +69,17 @@ const evtHead = css({ display: 'flex', alignItems: 'center', justifyContent: 'sp
 const evtIdBadge = css({ fontFamily: 'mono', fontWeight: 700, fontSize: '0.95rem', color: 'primary', flexShrink: 0 });
 const evtName = css({ flex: 1, minW: 0, fontFamily: 'sans', fontWeight: 700, fontSize: '0.88rem', color: 'text', lineHeight: 1.3 });
 const goCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 200ms ease, color 200ms ease' });
-const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto', pt: '0.15rem' });
+const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto', pt: '0.15rem', minW: 0 });
+// The category is often a longer descriptive grouping (not a short taxonomy
+// label like other tag() usages), so it's truncated with an ellipsis on one
+// line — not wrapped — so it can never grow this card taller than its
+// neighbors in the same .card-grid row (see STYLE_GUIDE.md's card-size rule:
+// a CSS grid row stretches every cell to match its tallest one, so a card
+// that grows from wrapped content drags the whole row's white space with
+// it). The full value is still available via the native tooltip and on the
+// entry's own detail page, so nothing is actually lost, just not previewed
+// in full on the card.
+const categoryTag = `${tag({ tone: 'muted' })} ${css({ minW: 0, flexShrink: 1, maxW: '100%', overflow: 'hidden', textOverflow: 'ellipsis' })}`;
 
 const filterRow = css({ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', mb: '0.75rem' });
 ---
@@ -134,7 +144,7 @@ const filterRow = css({ display: 'flex', alignItems: 'center', gap: '1rem', flex
                   </span>
                   <span class={evtName}>{e.name}</span>
                   <span class={tagRow}>
-                    <span class={tag({ tone: 'muted' })}>{e.category}</span>
+                    <span class={categoryTag} title={e.category}>{e.category}</span>
                     {e.attackTechniques.length > 0 && <span class={tag({ tone: 'accent' })}>ATT&amp;CK</span>}
                   </span>
                 </a>
@@ -160,7 +170,7 @@ const filterRow = css({ display: 'flex', alignItems: 'center', gap: '1rem', flex
       emptyId: 'evt-empty',
       facetAttr: 'data-cat',
       toggles: [{ id: 'evt-attack-toggle', attr: 'data-attack-mapped' }],
-      urlSync: { queryParam: 'q' },
+      urlSync: { queryParam: 'q', facetParam: 'category' },
     }}
   />
 </BaseLayout>
