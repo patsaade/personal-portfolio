@@ -1,0 +1,26 @@
+---
+// Mounted once (BaseLayout): injects a sliding "thumb" behind the active
+// segment of every role="radiogroup" segmented switch site-wide (ModeToggle,
+// ViewToggle, HashCalculator's Input source switch — more to come, see
+// src/scripts/animatedSwitch.ts's header for the retrofit contract). See
+// that file for the behaviour and its guardrails (reduced-motion no-op,
+// hidden-group resync via ResizeObserver, live theme-color resync).
+//
+// Retrofitting a new switch onto this: give its track (the role="radiogroup"
+// element) `position: 'relative', zIndex: 0` in its own css() — that's the
+// only change required. This script finds every `[role="radiogroup"]` on the
+// page automatically; the thumb, its positioning, and its coloring are all
+// handled generically from the group's own child buttons and their existing
+// `[data-active]` styling.
+---
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  import { animateSwitch } from '../scripts/animatedSwitch';
+
+  function init() {
+    Array.prototype.forEach.call(document.querySelectorAll('[role="radiogroup"]'), animateSwitch);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+</script>

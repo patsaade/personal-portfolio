@@ -17,6 +17,7 @@ import CollapseAll from '../components/CollapseAll.astro';
 import TagCombobox from '../components/TagCombobox.astro';
 import FilterToggle from '../components/FilterToggle.astro';
 import ListFilter from '../components/ListFilter.astro';
+import GroupOverview from '../components/GroupOverview.astro';
 import { EVENT_IDS } from '../data/eventIds';
 
 const GROUPS = [
@@ -25,6 +26,10 @@ const GROUPS = [
 ];
 const bySource = (id: string) => EVENT_IDS.filter((e) => e.source === id).sort((a, b) => Number(a.id) - Number(b.id));
 const totalCount = EVENT_IDS.length;
+const attackMappedCount = EVENT_IDS.filter((e) => e.attackTechniques.length > 0).length;
+
+// "Browse by log" overview tiles, mirroring the Tools/Glossary jump-to strip.
+const groupTiles = GROUPS.map((g) => ({ id: `evt-${g.id}`, icon: g.icon, title: g.title, blurb: g.blurb, count: bySource(g.id).length }));
 
 // Category facet for the search combobox — pooled across both logs.
 const catCounts: Record<string, number> = {};
@@ -69,7 +74,17 @@ const evtHead = css({ display: 'flex', alignItems: 'center', justifyContent: 'sp
 const evtIdBadge = css({ fontFamily: 'mono', fontWeight: 700, fontSize: '0.95rem', color: 'primary', flexShrink: 0 });
 const evtName = css({ flex: 1, minW: 0, fontFamily: 'sans', fontWeight: 700, fontSize: '0.88rem', color: 'text', lineHeight: 1.3 });
 const goCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 200ms ease, color 200ms ease' });
-const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto', pt: '0.15rem', minW: 0 });
+// flexWrap MUST stay 'nowrap' here (do not change back to 'wrap'): this row
+// can hold two chips — categoryTag (variable-length) and the ATT&CK badge
+// (fixed-width) — and with wrap enabled, the wrap algorithm decides line
+// breaks using each item's un-shrunk hypothetical width, so a long category
+// pushed the ATT&CK badge onto a second line *before* categoryTag's own
+// truncation got a chance to make room for it. That grew the card taller
+// than its card-grid neighbors — the truncation fix alone wasn't enough;
+// this is what actually re-broke it. With nowrap, categoryTag (flexShrink:1)
+// absorbs 100% of the shrinking and the ATT&CK badge (flexShrink:0) never
+// moves, so the row always fits on one line, full stop.
+const tagRow = css({ display: 'flex', flexWrap: 'nowrap', gap: '0.3rem', mt: 'auto', pt: '0.15rem', minW: 0 });
 // The category is often a longer descriptive grouping (not a short taxonomy
 // label like other tag() usages), so it's truncated with an ellipsis on one
 // line — not wrapped — so it can never grow this card taller than its
@@ -80,6 +95,9 @@ const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto
 // entry's own detail page, so nothing is actually lost, just not previewed
 // in full on the card.
 const categoryTag = `${tag({ tone: 'muted' })} ${css({ minW: 0, flexShrink: 1, maxW: '100%', overflow: 'hidden', textOverflow: 'ellipsis' })}`;
+// Fixed-width sibling in the same nowrap row — flexShrink: 0 so categoryTag
+// (not this) absorbs all the squeezing; see tagRow's comment.
+const attackBadge = `${tag({ tone: 'accent' })} ${css({ flexShrink: 0 })}`;
 
 const filterRow = css({ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', mb: '0.75rem' });
 ---
@@ -95,6 +113,9 @@ const filterRow = css({ display: 'flex', alignItems: 'center', gap: '1rem', flex
     description={`${totalCount} Windows Security auditing + Sysmon event IDs, each with what it records, why it matters for DFIR, common triggers, and MITRE ATT&CK cross-links where a mapping is well-established.`}
   />
 
+  {/* ── Browse by log (jump-to overview strip) ── */}
+  <GroupOverview items={groupTiles} heading="Browse by log" />
+
   <div class={css({ mb: '0.6rem' })}>
     <TagCombobox
       id="evt-cb"
@@ -107,6 +128,8 @@ const filterRow = css({ display: 'flex', alignItems: 'center', gap: '1rem', flex
   <div class={filterRow}>
     <p role="status" aria-live="polite" class={css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.3rem 0.6rem', color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
       <span><span id="evt-result-count">{totalCount}</span> event IDs across {GROUPS.length} logs</span>
+      <span aria-hidden="true">·</span>
+      <span>{attackMappedCount} mapped to ATT&amp;CK</span>
     </p>
     <div class={css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', ml: { sm: 'auto' } })}>
       <FilterToggle id="evt-attack-toggle" icon="target" label="Maps to ATT&CK" tone="primary" />
@@ -145,7 +168,7 @@ const filterRow = css({ display: 'flex', alignItems: 'center', gap: '1rem', flex
                   <span class={evtName}>{e.name}</span>
                   <span class={tagRow}>
                     <span class={categoryTag} title={e.category}>{e.category}</span>
-                    {e.attackTechniques.length > 0 && <span class={tag({ tone: 'accent' })}>ATT&amp;CK</span>}
+                    {e.attackTechniques.length > 0 && <span class={attackBadge}>ATT&amp;CK</span>}
                   </span>
                 </a>
               ))}

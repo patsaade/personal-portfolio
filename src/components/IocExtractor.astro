@@ -3,9 +3,12 @@
 // email header) and every indicator category (IPv4/IPv6, URLs, domains,
 // emails, MD5/SHA1/SHA256/SHA512 hashes, CVE IDs, MITRE ATT&CK IDs, Bitcoin
 // addresses) is extracted, deduped, and listed live as you type
-// (src/utils/iocs.ts) — with a defang/refang toggle for safe sharing in a
-// report vs. actually using the indicator. Each extracted value is its own
-// button: click one to copy just that indicator (not the whole category) —
+// (src/utils/iocs.ts) — with a 3-way As found/Defang/Refang display switch:
+// "As found" mirrors how each indicator genuinely appeared in the pasted
+// text (defanged if it was pasted defanged, live otherwise — extractIocs()
+// tracks this per match via IocMatch.viaRefang), "Defang" always renders the
+// safe-for-sharing form, "Refang" always renders the live/usable form. Each
+// extracted value is its own button: click one to copy just that indicator (not the whole category) —
 // a shared copy-confirm pop (motion.css's [data-copy-pop]) fires on every
 // copy action in this tool (per-item, per-category, and copy-all). A
 // category card animates in (motion.css's result-card drop-in) the moment
@@ -42,7 +45,7 @@ const textarea = css({
 });
 
 const controlsRow = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' });
-const fangRow = css({ display: 'inline-flex', gap: '0.15rem', p: '0.2rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'md' });
+const fangRow = css({ display: 'inline-flex', position: 'relative', zIndex: 0, gap: '0.15rem', p: '0.2rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'md' });
 const fangBtn = css({
   display: 'inline-flex',
   alignItems: 'center',
@@ -59,9 +62,22 @@ const fangBtn = css({
   transition: 'all 150ms ease',
   _hover: { color: 'text' },
   '&[data-active]': { bg: 'bgSubtle', color: 'primary', borderColor: 'border', boxShadow: 'card' },
+  // Once AnimatedSwitch arms a sliding thumb underneath (see
+  // animatedSwitch.ts / CLAUDE.md invariant 12), suppress this button's own
+  // bg/border/shadow so the two don't animate against each other on
+  // separate clocks. No-JS/reduced-motion visitors never get
+  // data-switch-armed, so their indicator is untouched.
+  '[data-switch-armed] &': {
+    '&[data-active]': { bg: 'transparent', borderColor: 'transparent', boxShadow: 'none' },
+  },
 });
 const actionRow = css({ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' });
-const actionBtn = css({
+// Kept as plain objects (not pre-atomized css() calls) so the primary variant
+// below can css(actionBtnBase, primaryBtnBase) — a deep object merge that
+// deterministically overrides actionBtnBase's own _hover.color, unlike
+// concatenating two independently-atomized class strings (see STYLE_GUIDE.md
+// "Buttons" for why that pattern silently broke a hover state elsewhere).
+const actionBtnBase = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: '0.4rem',
@@ -77,8 +93,10 @@ const actionBtn = css({
   bg: 'bgCard',
   transition: 'all 150ms ease',
   _hover: { borderColor: 'primary', color: 'primary' },
-});
-const primaryBtn = css({ bg: 'primary', color: 'onPrimary', borderColor: 'primary', _hover: { opacity: 0.9, color: 'onPrimary' } });
+} as const;
+const primaryBtnBase = { bg: 'primary', color: 'onPrimary', borderColor: 'primary', _hover: { opacity: 0.9, color: 'onPrimary' } } as const;
+const actionBtn = css(actionBtnBase);
+const primaryActionBtn = css(actionBtnBase, primaryBtnBase);
 
 const summary = css({ color: 'textMuted', fontSize: '0.85rem', m: 0 });
 const categoriesGrid = css({ display: 'grid', gridTemplateColumns: { base: '1fr', md: 'repeat(2, 1fr)' }, gap: '0.85rem' });
@@ -157,12 +175,13 @@ const categoryItemBtn = css({
     </div>
 
     <div class={controlsRow}>
-      <div class={fangRow} role="radiogroup" aria-label="Defang indicators">
+      <div class={fangRow} role="radiogroup" aria-label="Indicator display">
         <button type="button" role="radio" aria-checked="true" data-active data-ioc-fang="normal" data-sound="tick" class={fangBtn}>As found</button>
-        <button type="button" role="radio" aria-checked="false" data-ioc-fang="defang" data-sound="tick" class={fangBtn}>Defanged</button>
+        <button type="button" role="radio" aria-checked="false" data-ioc-fang="defang" data-sound="tick" class={fangBtn}>Defang</button>
+        <button type="button" role="radio" aria-checked="false" data-ioc-fang="refang" data-sound="tick" class={fangBtn}>Refang</button>
       </div>
       <div class={actionRow}>
-        <button type="button" class={`${actionBtn} ${primaryBtn}`} data-ioc-copy-all data-copy-pop data-sound="copy">
+        <button type="button" class={primaryActionBtn} data-ioc-copy-all data-copy-pop data-sound="copy">
           <Icon name="copy" size={14} /> Copy all as JSON
         </button>
         <button type="button" class={actionBtn} data-ioc-clear data-sound="tick">
@@ -200,7 +219,7 @@ const categoryItemBtn = css({
 
 <script>
   // @ts-nocheck — vanilla DOM client script
-  import { IOC_CATEGORIES, extractIocs, defangValue, containsDefanged } from '../utils/iocs';
+  import { IOC_CATEGORIES, extractIocs, defangValue, refangValue, containsDefanged } from '../utils/iocs';
   import { pop } from '../scripts/copyPop';
 
   (function () {
@@ -225,21 +244,40 @@ const categoryItemBtn = css({
           };
         });
 
-        var defang = false;
+        var fangMode = 'normal'; // 'normal' (as found) | 'defang' | 'refang'
         var lastResult = {};
+
+        // Renders one match per the active fang mode:
+        // - refang: the fully live value — match.value already is (extractIocs
+        //   only ever records the live form, see iocs.ts), but routed through
+        //   refangValue() explicitly so "Refang" always guarantees a live
+        //   value even if that assumption ever changes upstream.
+        // - defang: always defangValue applied to the canonical value,
+        //   regardless of how it was originally pasted.
+        // - normal (as found): defanged only if that's genuinely how it
+        //   appeared in the pasted text (match.viaRefang), otherwise the
+        //   live value untouched. Deliberate best-effort simplification —
+        //   this doesn't try to preserve the user's exact original defang
+        //   style (hxxp vs [.] vs (dot) etc.), just renders via the same
+        //   canonical defangValue output used everywhere else in the tool.
+        function displayValue(match, catId) {
+          if (fangMode === 'refang') return refangValue(match.value, catId);
+          if (fangMode === 'defang') return defangValue(match.value, catId);
+          return match.viaRefang ? defangValue(match.value, catId) : match.value;
+        }
 
         function copyText(btn, text) {
           if (!text) return;
           navigator.clipboard.writeText(text).then(function () { pop(btn); }).catch(function () {});
         }
 
-        function renderList(c, values) {
+        function renderList(c, matches) {
           if (!c.listEl) return;
           c.listEl.innerHTML = '';
-          values.forEach(function (v) {
+          matches.forEach(function (match) {
             var li = itemTemplate.content.firstElementChild.cloneNode(true);
             var btn = li.querySelector('[data-ioc-item-btn]');
-            var text = defang ? defangValue(v, c.id) : v;
+            var text = displayValue(match, c.id);
             btn.textContent = text;
             btn.addEventListener('click', function () { copyText(btn, text); });
             c.listEl.appendChild(li);
@@ -251,12 +289,12 @@ const categoryItemBtn = css({
           lastResult = extractIocs(text);
           var total = 0;
           cards.forEach(function (c) {
-            var values = lastResult[c.id] || [];
-            total += values.length;
-            if (c.countEl) c.countEl.textContent = String(values.length);
-            if (values.length) c.card.setAttribute('data-has-matches', '');
+            var matches = lastResult[c.id] || [];
+            total += matches.length;
+            if (c.countEl) c.countEl.textContent = String(matches.length);
+            if (matches.length) c.card.setAttribute('data-has-matches', '');
             else c.card.removeAttribute('data-has-matches');
-            renderList(c, values);
+            renderList(c, matches);
           });
           var defangedNote = containsDefanged(text) ? ' Defanged indicators detected in your input and recognized.' : '';
           if (!text.trim()) {
@@ -278,7 +316,7 @@ const categoryItemBtn = css({
               if (active) o.setAttribute('data-active', ''); else o.removeAttribute('data-active');
               o.setAttribute('aria-checked', String(active));
             });
-            defang = b.getAttribute('data-ioc-fang') === 'defang';
+            fangMode = b.getAttribute('data-ioc-fang');
             cards.forEach(function (c) { renderList(c, lastResult[c.id] || []); });
           });
         });
@@ -288,9 +326,9 @@ const categoryItemBtn = css({
           var btn = c.card.querySelector('[data-ioc-copy-cat]');
           if (!btn) return;
           btn.addEventListener('click', function () {
-            var values = lastResult[c.id] || [];
-            if (!values.length) return;
-            var text = values.map(function (v) { return defang ? defangValue(v, c.id) : v; }).join('\n');
+            var matches = lastResult[c.id] || [];
+            if (!matches.length) return;
+            var text = matches.map(function (match) { return displayValue(match, c.id); }).join('\n');
             copyText(btn, text);
           });
         });
@@ -299,8 +337,8 @@ const categoryItemBtn = css({
           copyAllBtn.addEventListener('click', function () {
             var out = {};
             cards.forEach(function (c) {
-              var values = lastResult[c.id] || [];
-              out[c.id] = defang ? values.map(function (v) { return defangValue(v, c.id); }) : values;
+              var matches = lastResult[c.id] || [];
+              out[c.id] = matches.map(function (match) { return displayValue(match, c.id); });
             });
             copyText(copyAllBtn, JSON.stringify(out, null, 2));
           });

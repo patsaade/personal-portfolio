@@ -10,6 +10,14 @@
 // This is inherently best-effort: domain/ATT&CK-ID matching in particular can
 // have false positives on ordinary text that happens to look like an
 // indicator — an analyst reviews the results, this doesn't replace judgment.
+//
+// extractIocs() also scans a refanged shadow copy of the pasted text (see
+// refangText() below) so a paste containing already-defanged indicators
+// (e.g. copied straight out of a threat report) is recognized too. Each
+// returned IocMatch flags whether its value was ONLY recoverable that way
+// (viaRefang) — never present, in any form, in the raw pasted text — which is
+// what lets the UI's "As found" mode show a genuinely-defanged paste back
+// defanged instead of silently upgrading it to the live form.
 
 export interface IocCategory {
   id: string;
@@ -93,18 +101,34 @@ export function containsDefanged(text: string): boolean {
   return refangText(text) !== text;
 }
 
-export function extractIocs(text: string): Record<string, string[]> {
+export interface IocMatch {
+  /** The fully live/canonical form of the extracted value. */
+  value: string;
+  /** True if this value was ONLY found by scanning the refanged shadow copy
+   *  — i.e. it never appeared, in any form, in the raw pasted text (the user
+   *  pasted it already defanged). False if it appeared live in the raw text
+   *  at all (including when it *also* showed up defanged elsewhere). */
+  viaRefang: boolean;
+}
+
+export function extractIocs(text: string): Record<string, IocMatch[]> {
   const refanged = refangText(text);
   // Run extraction on the raw text AND (when it actually differs) the
   // refanged version, unioning results per category — this is what lets a
   // paste containing already-defanged indicators (or a mix of live and
   // defanged) get recognized the same as fully-live text, since the matched
-  // value always ends up in its live form either way.
+  // value always ends up in its live form either way. The raw-text pass is
+  // tracked in its own seen-set so callers can tell which values were only
+  // recoverable via the refanged shadow copy (see IocMatch.viaRefang).
   const sources = refanged === text ? [text] : [text, refanged];
-  const result: Record<string, string[]> = {};
+  const result: Record<string, IocMatch[]> = {};
   for (const cat of IOC_CATEGORIES) {
-    const seen = new Set<string>();
-    for (const source of sources) {
+    const rawSeen = new Set<string>();
+    const order: string[] = [];
+    const allSeen = new Set<string>();
+    for (let i = 0; i < sources.length; i++) {
+      const source = sources[i];
+      const isRawSource = i === 0; // sources[0] is always the raw pasted text
       // Reuse the category's own compiled pattern (reset to scan from the
       // start) rather than re-compiling a fresh RegExp from its source/flags
       // on every call — this runs on every keystroke, so avoiding needless
@@ -114,11 +138,17 @@ export function extractIocs(text: string): Record<string, string[]> {
       let m: RegExpExecArray | null;
       while ((m = cat.pattern.exec(source))) {
         const value = cat.id === 'url' ? trimTrailingPunctuation(m[0]) : m[0];
-        if (value) seen.add(value);
+        if (value) {
+          if (isRawSource) rawSeen.add(value);
+          if (!allSeen.has(value)) {
+            allSeen.add(value);
+            order.push(value);
+          }
+        }
         if (m.index === cat.pattern.lastIndex) cat.pattern.lastIndex += 1; // guard a zero-width match from looping forever
       }
     }
-    result[cat.id] = Array.from(seen);
+    result[cat.id] = order.map((value) => ({ value, viaRefang: !rawSeen.has(value) }));
   }
   return result;
 }

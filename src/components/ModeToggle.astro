@@ -30,6 +30,16 @@ const segBtn = css({
     borderColor: 'border',
     boxShadow: 'card',
   },
+  // Once AnimatedSwitch arms a sliding thumb underneath (see
+  // animatedSwitch.ts), that thumb takes over rendering the bg/border/shadow
+  // — suppress this button's own copy so the two don't animate against each
+  // other on separate clocks. The active *color* stays: a plain, non-moving
+  // text/icon tint layered on top of the thumb is fine. No-JS/reduced-motion
+  // visitors never get data-switch-armed, so they keep the original,
+  // unsuppressed indicator untouched.
+  '[data-switch-armed] &': {
+    '&[data-active]': { bg: 'transparent', borderColor: 'transparent', boxShadow: 'none' },
+  },
 });
 ---
 
@@ -38,6 +48,8 @@ const segBtn = css({
   aria-label="Color mode"
   data-mode-toggle
   class={css({
+    position: 'relative', // containing block + stacking context for the animated switch thumb (see AnimatedSwitch)
+    zIndex: 0,
     display: 'inline-flex',
     gap: '0.15rem',
     p: '0.2rem',

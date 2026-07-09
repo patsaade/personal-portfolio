@@ -14,6 +14,7 @@ import { toolChip } from '../../components/RelatedTools.astro';
 import { TOOLS, costTone } from '../../data/tools';
 import { termBySlug } from '../../data/securityTerms';
 import { getSortedPosts, getSortedLabs } from '../../utils/posts';
+import { SITE } from '../../consts';
 
 export async function getStaticPaths() {
   // Reverse-link writeups whose `tools` frontmatter lists this tool (by name).
@@ -65,9 +66,20 @@ const codeBlock = css({
   whiteSpace: 'pre-wrap',
   wordBreak: 'break-word',
 });
+
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'DefinedTerm',
+  name: tool.name,
+  description: tool.what ?? tool.use,
+  inDefinedTermSet: `${SITE.url}/tools/`,
+  termCode: tool.slug,
+  url: `${SITE.url}/tools/${tool.slug}/`,
+  sameAs: tool.url,
+}).replace(/</g, '\\u003c'); // escape `<` so it can't break out of the <script> tag
 ---
 
-<BaseLayout title={`${tool.name} — DFIR tool`} description={tool.what ?? tool.use}>
+<BaseLayout title={`${tool.name} — DFIR Tool`} description={tool.what ?? tool.use}>
   <Breadcrumbs
     items={[{ label: 'Home', href: '/' }, { label: 'Tool Catalog', href: '/tools/' }, { label: tool.name }]}
   />
@@ -226,4 +238,6 @@ const codeBlock = css({
     prev={prev ? { href: `/tools/${prev.slug}/`, label: prev.name } : null}
     next={next ? { href: `/tools/${next.slug}/`, label: next.name } : null}
   />
+
+  <script type="application/ld+json" is:inline set:html={jsonLd} />
 </BaseLayout>

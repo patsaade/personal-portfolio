@@ -21,8 +21,46 @@
 // inherently about a third-party host like an S3 bucket, not the user's own
 // site) — the builder only preserves the user's typed domain when a preset
 // does NOT specify one.
+//
+// Engine roster (verified 2026, see each id's DORK_OPERATORS notes for the
+// per-operator breakdown): Google, Bing, and DuckDuckGo as before, plus
+// **Brave** — Brave Search now runs a fully independent, self-built crawler
+// and index (its own docs: search.brave.com/help/brave-search-crawler; Brave
+// has publicly described ending its prior fallback calls to Bing), so it's a
+// genuine coverage-gap filler, not a re-skin of an engine already listed.
+// Brave's own operator documentation (search.brave.com/help/operators) uses
+// the *same literal* site:/filetype:/intitle:/""/-/OR syntax already modeled
+// below, so it slots into the existing single-`prefix`-per-operator schema
+// cleanly — it's deliberately NOT added to inurl:/intext:/before:/after:
+// (see those operators' notes: Brave has no URL-substring or date operator,
+// and its body-text operator is a differently-named inbody:, not intext:).
+// Two other engines were researched and deliberately left out:
+//   - **Startpage** — still a privacy-preserving *proxy in front of Google's
+//     own index* (confirmed current as of this review), not an independently
+//     crawled index. Per this file's own crawler-independence rule, that
+//     makes it a redundant duplicate of the Google entry already here, not a
+//     coverage-gap filler.
+//   - **Yandex** — genuinely independently crawled, with real strength in
+//     Russian/CIS-language coverage relevant to some threat-intel OSINT work.
+//     Rejected anyway: its own official docs (yandex.com/support/search)
+//     show its operator syntax diverges too far from the Google-style syntax
+//     this schema assumes for a single shared `prefix` string — `mime:` not
+//     `filetype:`, `|` not `OR`, `date:>YYYYMMDD`/`date:<YYYYMMDD` (or a
+//     `date:YYYYMMDD..YYYYMMDD` range) not `before:`/`after:`, and a literal-
+//     address `url:`/`host:`/`domain:` family rather than a substring
+//     `inurl:`. Wiring Yandex in without a per-engine syntax layer (a real
+//     but out-of-scope refactor) would silently emit incorrect queries for
+//     most of the presets below, so it's excluded rather than guessed at.
+//   - (Also researched: **Mojeek**, a genuinely independent UK-based crawler.
+//     Its own operator docs — mojeek.com/support/search-operators.html — are
+//     an explicit, exhaustive list: site:/intitle:/inurl:/intext:/before:/
+//     since:, and nothing else. No filetype:, no OR, no documented exact-
+//     phrase or minus-exclude syntax, and its date keyword is `since:` not
+//     `after:`. Too little verified, literally-matching overlap with the
+//     operators below to support correctly — left out for the same reason
+//     as Yandex, not because its index isn't independent.)
 
-export type EngineId = 'google' | 'bing' | 'duckduckgo';
+export type EngineId = 'google' | 'bing' | 'duckduckgo' | 'brave';
 
 export interface SearchEngine {
   id: EngineId;
@@ -35,6 +73,7 @@ export const SEARCH_ENGINES: SearchEngine[] = [
   { id: 'google', label: 'Google', searchUrl: 'https://www.google.com/search?q=' },
   { id: 'bing', label: 'Bing', searchUrl: 'https://www.bing.com/search?q=' },
   { id: 'duckduckgo', label: 'DuckDuckGo', searchUrl: 'https://duckduckgo.com/?q=' },
+  { id: 'brave', label: 'Brave', searchUrl: 'https://search.brave.com/search?q=' },
 ];
 
 export type DorkOperatorKind = 'prefix' | 'phrase' | 'exclude' | 'or';
@@ -62,8 +101,8 @@ export const DORK_OPERATORS: DorkOperator[] = [
     description: 'Restrict results to one domain (or several, as "a.com OR b.com").',
     kind: 'prefix',
     prefix: 'site:',
-    engines: ['google', 'bing', 'duckduckgo'],
-    note: 'Officially documented on all three engines. Google\'s own docs note it "doesn\'t necessarily return all indexed URLs" under a domain — treat it as a search convenience, not a guaranteed asset inventory.',
+    engines: ['google', 'bing', 'duckduckgo', 'brave'],
+    note: 'Officially documented on all four engines (Brave: search.brave.com/help/operators). Google\'s own docs note it "doesn\'t necessarily return all indexed URLs" under a domain — treat it as a search convenience, not a guaranteed asset inventory.',
   },
   {
     id: 'filetype',
@@ -72,8 +111,8 @@ export const DORK_OPERATORS: DorkOperator[] = [
     description: 'Only files of this extension (or several, as "pdf OR docx").',
     kind: 'prefix',
     prefix: 'filetype:',
-    engines: ['google', 'bing', 'duckduckgo'],
-    note: 'Officially documented on all three. DuckDuckGo supports a narrower, explicitly listed set of extensions (pdf, doc(x), xls(x), ppt(x), html) than Google/Bing.',
+    engines: ['google', 'bing', 'duckduckgo', 'brave'],
+    note: 'Officially documented on all four engines (Brave also aliases it as ext:). DuckDuckGo supports a narrower, explicitly listed set of extensions (pdf, doc(x), xls(x), ppt(x), html) than Google/Bing/Brave. Brave\'s own docs flag its whole operator set as "experimental and in the early stage of development."',
   },
   {
     id: 'intitle',
@@ -82,8 +121,8 @@ export const DORK_OPERATORS: DorkOperator[] = [
     description: 'Only pages with this text in the page title.',
     kind: 'prefix',
     prefix: 'intitle:',
-    engines: ['google', 'bing', 'duckduckgo'],
-    note: 'Officially documented on Bing and DuckDuckGo. Long-standing and still functional on Google, but Google\'s current public docs no longer formally list it.',
+    engines: ['google', 'bing', 'duckduckgo', 'brave'],
+    note: 'Officially documented on Bing, DuckDuckGo, and Brave. Long-standing and still functional on Google, but Google\'s current public docs no longer formally list it.',
   },
   {
     id: 'inurl',
@@ -93,7 +132,7 @@ export const DORK_OPERATORS: DorkOperator[] = [
     kind: 'prefix',
     prefix: 'inurl:',
     engines: ['google', 'duckduckgo'],
-    note: 'Officially documented on DuckDuckGo. Still functional on Google (undocumented). Bing suspended inurl: around 2007 to curb data-mining abuse and never restored it.',
+    note: 'Officially documented on DuckDuckGo. Still functional on Google (undocumented). Bing suspended inurl: around 2007 to curb data-mining abuse and never restored it. Brave has no equivalent — its own operator docs list inbody:/inpage: (body/title text) but no URL-substring operator, so it\'s deliberately left out here rather than mapped onto a prefix Brave wouldn\'t recognize.',
   },
   {
     id: 'intext',
@@ -103,7 +142,7 @@ export const DORK_OPERATORS: DorkOperator[] = [
     kind: 'prefix',
     prefix: 'intext:',
     engines: ['google'],
-    note: 'Still functional on Google, but undocumented by Google today. Bing/DuckDuckGo have no direct equivalent operator.',
+    note: 'Still functional on Google, but undocumented by Google today. Bing/DuckDuckGo have no direct equivalent operator. Brave has a same-purpose inbody: operator, but under a different literal keyword than intext: — not wired in here, since this schema shares one literal prefix string per operator across engines and inbody: would need its own.',
   },
   {
     id: 'phrase',
@@ -111,8 +150,8 @@ export const DORK_OPERATORS: DorkOperator[] = [
     placeholder: 'internal use only',
     description: 'Match this exact phrase, wrapped in quotes.',
     kind: 'phrase',
-    engines: ['google', 'bing', 'duckduckgo'],
-    note: 'Officially documented, identical behavior, on all three engines.',
+    engines: ['google', 'bing', 'duckduckgo', 'brave'],
+    note: 'Officially documented, identical behavior, on all four engines.',
   },
   {
     id: 'exclude',
@@ -120,8 +159,8 @@ export const DORK_OPERATORS: DorkOperator[] = [
     placeholder: 'jobs careers',
     description: 'Drop results containing any of these words.',
     kind: 'exclude',
-    engines: ['google', 'bing', 'duckduckgo'],
-    note: 'Officially documented on all three. Bing requires the alternate NOT keyword to be capitalized if used instead of "-".',
+    engines: ['google', 'bing', 'duckduckgo', 'brave'],
+    note: 'Officially documented on all four. Bing requires the alternate NOT keyword to be capitalized if used instead of "-". Brave documents the same "-" syntax alongside its logical AND/OR/NOT keywords.',
   },
   {
     id: 'or',
@@ -129,8 +168,8 @@ export const DORK_OPERATORS: DorkOperator[] = [
     placeholder: 'login signin',
     description: 'Match any one of these words (space-separated) instead of all of them.',
     kind: 'or',
-    engines: ['google', 'bing'],
-    note: 'Officially documented on Bing (capital OR, or "|"). Still functional on Google (undocumented). DuckDuckGo has no explicit OR keyword — space-separated terms already match loosely by default there.',
+    engines: ['google', 'bing', 'brave'],
+    note: 'Officially documented on Bing (capital OR, or "|") and Brave (capital OR, alongside AND/NOT as logical operators). Still functional on Google (undocumented). DuckDuckGo has no explicit OR keyword — space-separated terms already match loosely by default there.',
   },
   {
     id: 'before',
@@ -140,7 +179,7 @@ export const DORK_OPERATORS: DorkOperator[] = [
     kind: 'prefix',
     prefix: 'before:',
     engines: ['google'],
-    note: 'Officially documented on Google only. Bing and DuckDuckGo expose date filtering solely as a results-page UI control, not a query operator.',
+    note: 'Officially documented on Google only. Bing and DuckDuckGo expose date filtering solely as a results-page UI control, not a query operator. Brave\'s own operator docs list no date operator at all.',
   },
   {
     id: 'after',
@@ -150,7 +189,7 @@ export const DORK_OPERATORS: DorkOperator[] = [
     kind: 'prefix',
     prefix: 'after:',
     engines: ['google'],
-    note: 'Officially documented on Google only — combine with "before" for a range.',
+    note: 'Officially documented on Google only — combine with "before" for a range. Brave\'s own operator docs list no date operator at all.',
   },
 ];
 
@@ -372,5 +411,47 @@ export const DORK_FOCUSES: DorkFocus[] = [
         values: { site: 'businesswire.com OR prnewswire.com' },
       },
     ],
+  },
+  {
+    id: 'breach',
+    label: 'Paste Sites & Breach Exposure',
+    desc: "Indexed mentions of your organization on public paste sites, or paired with breach/leak vocabulary anywhere on the web — the same low-effort first move a threat actor makes after a suspected compromise, useful defensively to catch exposure early. Type your company name or domain into the phrase field below.",
+    highlight: ['site', 'phrase', 'or'],
+    presets: [
+      {
+        title: 'Org name on major paste sites',
+        desc: 'Searches the two most-indexed public paste/markdown-paste services for mentions of your organization — a common place stolen credentials, internal notes, or source-code snippets end up, whether pasted unintentionally by an employee or deliberately by an attacker advertising a breach.',
+        queryTemplate: '(site:pastebin.com OR site:rentry.co) "<company name>"',
+        values: { site: 'pastebin.com OR rentry.co' },
+      },
+      {
+        title: 'Domain paired with breach/leak terminology',
+        desc: 'Pairs your domain or organization name with common breach/leak vocabulary — a fast way to check whether it is being discussed anywhere indexed in a breach or leak context, not limited to one specific paste site.',
+        queryTemplate: '"<company name>" (breach OR leak OR dump OR compromised OR exposed)',
+        values: { or: 'breach leak dump compromised exposed' },
+      },
+    ],
+    tip: 'Search-engine indexing of paste sites can lag by hours to days, so this is a periodic spot-check, not real-time monitoring — a dedicated paste/leak-monitoring feed complements rather than replaces it for time-sensitive credential-leak detection.',
+  },
+  {
+    id: 'executive',
+    label: 'Executive & VIP Exposure',
+    desc: "Assesses a named executive or public figure's protective-intelligence exposure — publicly aggregated personal data and predictable public appearances — distinct from the Find a Person focus above, which is about verifying a claimed identity rather than assessing exposure risk for someone already known. Type the individual's full name into the phrase field below.",
+    highlight: ['phrase', 'site', 'intitle'],
+    presets: [
+      {
+        title: 'Data-broker / people-search exposure',
+        desc: "Checks the highest-traffic U.S. people-search and data-broker sites for a named individual — these aggregate home addresses, phone numbers, relatives, and property records from public records, and are the standard starting point for a protective-intelligence exposure review or a pre-opt-out audit.",
+        queryTemplate: '"<name>" (site:whitepages.com OR site:spokeo.com OR site:truepeoplesearch.com)',
+        values: { site: 'whitepages.com OR spokeo.com OR truepeoplesearch.com' },
+      },
+      {
+        title: 'Public appearance & speaking-schedule exposure',
+        desc: "Finds conference, panel, or event pages publishing an individual's name alongside a schedule or agenda — a published keynote listing effectively hands anyone watching that person's location, date, and time, which is exactly the predictable-appearance exposure protective-intelligence teams screen for ahead of travel.",
+        queryTemplate: '"<name>" (intitle:speaker OR intitle:agenda OR intitle:schedule)',
+        values: { intitle: 'speaker OR agenda OR schedule' },
+      },
+    ],
+    tip: "To narrow a common name to the specific individual, pair it with a known employer or city as a second exact phrase — the same two-phrase-clause technique noted under Find a Person above.",
   },
 ];

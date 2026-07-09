@@ -17,6 +17,7 @@ import { d3fendCountering } from '../../data/d3fend';
 import { toolsByGlossarySlug } from '../../data/tools';
 import { getSortedPosts, getSortedLabs } from '../../utils/posts';
 import { tag } from 'styled-system/recipes';
+import { SITE } from '../../consts';
 
 export async function getStaticPaths() {
   // Invert the posts' `attack` frontmatter so each technique knows which writeups cover it.
@@ -47,6 +48,19 @@ const subTechniques = ATTACK_TECHNIQUES.filter((t) => t.id.startsWith(`${tech.id
 const siblings = parentId ? ATTACK_TECHNIQUES.filter((t) => t.id.startsWith(`${parentId}.`) && t.id !== tech.id) : [];
 // D3FEND defensive techniques that counter this technique (reverse cross-link).
 const defenses = d3fendCountering(tech.id);
+
+// Same DefinedTerm shape as the Glossary/Event ID detail pages — a technique is
+// just as well-defined and individually addressable as a glossary term.
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'DefinedTerm',
+  name: `${tech.id} ${tech.name}`,
+  description: tech.description || tech.summary,
+  inDefinedTermSet: `${SITE.url}/attack-map/`,
+  termCode: tech.id,
+  url: `${SITE.url}/attack-map/${tech.id}/`,
+  sameAs: tech.url,
+}).replace(/</g, '\\u003c'); // escape `<` so it can't break out of the <script> tag
 
 const sectionH2 = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', fontWeight: 700, mt: '2.5rem', mb: '0.75rem' });
 const para = css({ color: 'text', lineHeight: 1.8, fontSize: '1.02rem' });
@@ -274,4 +288,6 @@ const refLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.5rem
     prev={prev ? { href: `/attack-map/${prev.id}/`, label: `${prev.id} ${prev.name}` } : null}
     next={next ? { href: `/attack-map/${next.id}/`, label: `${next.id} ${next.name}` } : null}
   />
+
+  <script type="application/ld+json" is:inline set:html={jsonLd} />
 </BaseLayout>

@@ -44,21 +44,44 @@ const byId = new Map(TIMESTAMP_FORMATS.map((f) => [f.id, f]));
 // script on demand. UTC itself isn't listed here since it already has its own
 // quick button above.
 const COMMON_ZONES: { id: string; label: string }[] = [
+  // Americas
   { id: 'America/New_York', label: 'New York' },
   { id: 'America/Chicago', label: 'Chicago' },
   { id: 'America/Denver', label: 'Denver' },
   { id: 'America/Los_Angeles', label: 'Los Angeles' },
+  { id: 'America/Anchorage', label: 'Anchorage' },
+  { id: 'America/Toronto', label: 'Toronto' },
+  { id: 'America/Mexico_City', label: 'Mexico City' },
+  { id: 'America/Bogota', label: 'Bogota' },
   { id: 'America/Sao_Paulo', label: 'São Paulo' },
+  { id: 'America/Argentina/Buenos_Aires', label: 'Buenos Aires' },
+  // Europe
+  { id: 'Atlantic/Reykjavik', label: 'Reykjavik' },
   { id: 'Europe/London', label: 'London' },
   { id: 'Europe/Paris', label: 'Paris' },
   { id: 'Europe/Berlin', label: 'Berlin' },
+  { id: 'Europe/Istanbul', label: 'Istanbul' },
   { id: 'Europe/Moscow', label: 'Moscow' },
+  // Africa
   { id: 'Africa/Cairo', label: 'Cairo' },
+  { id: 'Africa/Johannesburg', label: 'Johannesburg' },
+  { id: 'Africa/Lagos', label: 'Lagos' },
+  // Middle East / South Asia
   { id: 'Asia/Dubai', label: 'Dubai' },
+  { id: 'Asia/Tehran', label: 'Tehran' },
+  { id: 'Asia/Karachi', label: 'Karachi' },
   { id: 'Asia/Kolkata', label: 'Mumbai / Kolkata' },
+  // Southeast / East Asia
   { id: 'Asia/Bangkok', label: 'Bangkok' },
+  { id: 'Asia/Jakarta', label: 'Jakarta' },
+  { id: 'Asia/Singapore', label: 'Singapore' },
+  { id: 'Asia/Hong_Kong', label: 'Hong Kong' },
   { id: 'Asia/Shanghai', label: 'Shanghai' },
+  { id: 'Asia/Manila', label: 'Manila' },
+  { id: 'Asia/Seoul', label: 'Seoul' },
   { id: 'Asia/Tokyo', label: 'Tokyo' },
+  // Oceania
+  { id: 'Australia/Perth', label: 'Perth' },
   { id: 'Australia/Sydney', label: 'Sydney' },
   { id: 'Pacific/Auckland', label: 'Auckland' },
 ];
@@ -282,7 +305,12 @@ const zoneOptionOffset = css({
 });
 const zoneEmpty = css({ px: '0.65rem', py: '0.5rem', color: 'textMuted', fontSize: '0.85rem', textAlign: 'center' });
 const actionCol = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' });
-const actionBtn = css({
+// Kept as plain objects (not pre-atomized css() calls) so the primary variant
+// below can css(actionBtnBase, primaryBtnBase) — a deep object merge that
+// deterministically overrides actionBtnBase's own _hover.color, unlike
+// concatenating two independently-atomized class strings (see STYLE_GUIDE.md
+// "Buttons" for why that broke this exact button's hover state).
+const actionBtnBase = {
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -299,8 +327,10 @@ const actionBtn = css({
   bg: 'bgCard',
   transition: 'all 150ms ease',
   _hover: { borderColor: 'primary', color: 'primary' },
-});
-const primaryBtn = css({ bg: 'primary', color: 'onPrimary', borderColor: 'primary', _hover: { opacity: 0.9, color: 'onPrimary' } });
+} as const;
+const primaryBtnBase = { bg: 'primary', color: 'onPrimary', borderColor: 'primary', _hover: { opacity: 0.9, color: 'onPrimary' } } as const;
+const actionBtn = css(actionBtnBase);
+const primaryActionBtn = css(actionBtnBase, primaryBtnBase);
 ---
 
 <WorkspaceShell hook="data-ts-converter" noJsMessage="The interactive timestamp converter needs JavaScript enabled.">
@@ -431,7 +461,7 @@ const primaryBtn = css({ bg: 'primary', color: 'onPrimary', borderColor: 'primar
         </div>
 
         <div class={actionCol}>
-          <button type="button" class={`${actionBtn} ${primaryBtn}`} data-ts-now data-sound="tick">
+          <button type="button" class={primaryActionBtn} data-ts-now data-sound="tick">
             <Icon name="clock" size={15} /> Use current time
           </button>
           <button type="button" class={actionBtn} data-ts-copy-all data-copy-pop data-sound="copy">
@@ -501,7 +531,21 @@ const primaryBtn = css({ bg: 'primary', color: 'onPrimary', borderColor: 'primar
           if (typeof Intl.supportedValuesOf !== 'function') return;
           try {
             var commonIds = {};
-            commonZoneOptions.forEach(function (o) { commonIds[o.getAttribute('data-zone-id')] = true; });
+            commonZoneOptions.forEach(function (o) {
+              var id = o.getAttribute('data-zone-id');
+              commonIds[id] = true;
+              // A handful of zones canonicalize to a different spelling under
+              // the runtime's own ICU data than the identifier written here
+              // (e.g. Asia/Kolkata vs. Asia/Calcutta, America/Argentina/
+              // Buenos_Aires vs. America/Buenos_Aires — both are the same
+              // real zone). Resolve through Intl so either spelling is
+              // excluded and a Common-list zone never reappears as an
+              // apparent duplicate entry in the search results below.
+              try {
+                var canonical = new Intl.DateTimeFormat('en-US', { timeZone: id }).resolvedOptions().timeZone;
+                commonIds[canonical] = true;
+              } catch (e2) {}
+            });
             allZoneIds = Intl.supportedValuesOf('timeZone').filter(function (z) { return z !== 'UTC' && !commonIds[z]; });
           } catch (e) {}
         }
@@ -630,6 +674,32 @@ const primaryBtn = css({ bg: 'primary', color: 'onPrimary', borderColor: 'primar
           ctx.refOffsetMinutes = offset === null ? 0 : offset;
         }
 
+        // Whether a zone is currently observing daylight saving or standard
+        // time, for the instant being displayed — genuinely useful DFIR
+        // context when correlating logs across a DST transition. Standard
+        // technique: compare the zone's offset on a January 1 and a July 1
+        // of the same year. Equal offsets means the zone doesn't observe DST
+        // at all (most of Asia, UTC, Arizona) — no label. Different offsets
+        // means whichever of the two matches the instant's own offset tells
+        // you DST vs. standard; the DST offset is always the larger of the
+        // two (DST always shifts the clock forward relative to standard,
+        // regardless of hemisphere or which calendar month that falls in).
+        // Deliberately never fabricates a US-style abbreviation (EDT/EST) —
+        // wrong for most of the ~400 IANA zones this tool covers.
+        function dstLabelForZone(ns, zoneName) {
+          if (ns === null || !zoneName) return '';
+          var year = new Date(Number(ns / 1000000n)).getUTCFullYear();
+          var janOffset = offsetMinutesForZone(BigInt(Date.UTC(year, 0, 1, 12, 0, 0)) * 1000000n, zoneName);
+          var julOffset = offsetMinutesForZone(BigInt(Date.UTC(year, 6, 1, 12, 0, 0)) * 1000000n, zoneName);
+          var curOffset = offsetMinutesForZone(ns, zoneName);
+          if (janOffset === null || julOffset === null || curOffset === null || janOffset === julOffset) return '';
+          var dstOffset = Math.max(janOffset, julOffset);
+          var stdOffset = Math.min(janOffset, julOffset);
+          if (curOffset === dstOffset) return 'Daylight Saving Time';
+          if (curOffset === stdOffset) return 'Standard Time';
+          return '';
+        }
+
         function render(skipId) {
           // Computed once per render and reused below for the Local box, rather
           // than calling browserZoneName() a second time for the same value.
@@ -660,14 +730,16 @@ const primaryBtn = css({ bg: 'primary', color: 'onPrimary', borderColor: 'primar
           var localOffset = offsetMinutesForZone(current, localZone);
           var localCtx = { refOffsetMinutes: localOffset === null ? 0 : localOffset, refYear: ctx.refYear };
           instantLocalEl.textContent = formatById('iso8601').format(current, localCtx);
-          instantLocalLabelEl.textContent = 'Local (' + localZone + ')';
+          var localDst = dstLabelForZone(current, localZone);
+          instantLocalLabelEl.textContent = 'Local (' + localZone + ')' + (localDst ? ' — ' + localDst : '');
 
           if (pickedZone) {
             var convertedOffset = offsetMinutesForZone(current, pickedZone);
             var convertedCtx = { refOffsetMinutes: convertedOffset === null ? 0 : convertedOffset, refYear: ctx.refYear };
             instantConvertedEl.textContent = formatById('iso8601').format(current, convertedCtx);
             instantConvertedEl.removeAttribute('data-empty');
-            instantConvertedLabelEl.textContent = 'Converted (' + zoneDisplayLabel(pickedZone) + ')';
+            var convertedDst = dstLabelForZone(current, pickedZone);
+            instantConvertedLabelEl.textContent = 'Converted (' + zoneDisplayLabel(pickedZone) + ')' + (convertedDst ? ' — ' + convertedDst : '');
           } else {
             instantConvertedEl.textContent = 'Pick a timezone below…';
             instantConvertedEl.setAttribute('data-empty', '');
@@ -705,6 +777,10 @@ const primaryBtn = css({ bg: 'primary', color: 'onPrimary', borderColor: 'primar
         nowBtn.addEventListener('click', function () {
           current = BigInt(Date.now()) * 1000000n;
           render(null);
+          // Populate the auto-detect box at the top too, so the user visibly
+          // sees what "now" resolved to right where they'd expect to paste
+          // something — otherwise it's left stale/untouched by this action.
+          if (detectInput) detectInput.value = formatById('unix-s').format(current, ctx);
         });
 
         // Shared copy-confirm pop (see motion.css's [data-copy-pop] rule) — same

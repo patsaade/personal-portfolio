@@ -13,7 +13,16 @@
      illustration settle-in + its post-settle idle pulse, the home page's
      certifications-ring scroll-triggered draw-in, pixel-star twinkle,
      copy-button pop (and its reusable [data-copy-pop] opt-in),
-     dynamically-populated result-card drop-in.
+     dynamically-populated result-card drop-in. `declassify` itself now also
+     drives two REPEAT-TRIGGERABLE reveals elsewhere, not just the once-per-
+     load heading decode: the nav dropdown's link/category-label text
+     (global.css's `.nav-declassify`, retriggered on every hover/open via a
+     `animation: none` ↔ `declassify-hero` state-selector toggle) and every
+     sitewide collapsible group's `<summary>` heading (animatedDetails.ts,
+     retriggered on every expand via remove-reflow-readd) — see each file's
+     own comment for the retrigger mechanics, which necessarily differ (pure
+     CSS state selector vs. JS class mutation) since one is CSS-only and the
+     other is already JS-driven for its height animation.
    - Structural/base styles (global.css): focus rings, theme-preload, the
      hover-card underline, the nav dropdown's slide/fade transition (cross-
      element hover/focus-within selectors Panda's css() can't express), and
@@ -30,7 +39,10 @@
    2. JS-armed effects (scroll-reveal) must no-op without JS and under reduced
       motion, so the server-rendered content is always fully visible — the
       hidden start state is only "armed" by script.
-   3. Keep it subtle. This is accent, not spectacle.
+   3. Keep it subtle — this is accent, not spectacle — EXCEPT the nav
+      dropdown and sitewide collapsible-group reveals, which are a deliberate
+      exception: ~1–1.5s and openly "dramatic" by explicit design direction,
+      not an oversight. Don't casually round them back down to a quick snap.
    ============================================================================ */
 
 /* ── Reduced motion: settle every charm animation to its final state ───────── */
@@ -62,9 +74,19 @@
   .nav-more-menu {
     transition: none !important;
   }
+  .nav-declassify {
+    animation: none !important;
+  }
   .tool-sidebar-slide,
   .tool-sidebar-handle,
   .tool-sidebar-handle .tool-sidebar-chev {
+    transition: none !important;
+  }
+  /* Belt-and-suspenders: animatedSwitch.ts already returns before ever
+     injecting a .switch-thumb under reduced motion, so nothing plays this in
+     practice — kept for any future code path that adds the class outside
+     that guard. */
+  .switch-thumb {
     transition: none !important;
   }
   .cert-ring-fill {

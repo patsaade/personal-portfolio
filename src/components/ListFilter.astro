@@ -117,6 +117,9 @@ const { config } = Astro.props;
       for (var i = 0; i < toggles.length; i++) if (toggles[i].on) return true;
       return false;
     }
+    // Page-scoped key so two different DFIR pages (both using ListFilter)
+    // never clobber each other's remembered search/filter state.
+    var STORAGE_KEY = 'listfilter:' + location.pathname;
     function syncURL() {
       if (!cfg.urlSync) return;
       var params = new URLSearchParams();
@@ -125,6 +128,19 @@ const { config } = Astro.props;
       if (chipCfg && chipValue !== chipAll) params.set(cfg.urlSync.chipParam || 'chip', chipValue);
       var qs = params.toString();
       try { history.replaceState(null, '', qs ? '?' + qs : location.pathname); } catch (e) {}
+      // The URL alone only "session resumes" via the browser's own back
+      // button (or a shared link) — a fresh click on a plain nav/sidebar
+      // link starts a clean URL with no query string. Persist the same
+      // state to localStorage too so returning to this page any other way
+      // still resumes it, matching the pattern the DFIR sidebar and
+      // ViewToggle already use for their own state.
+      try {
+        if (query || facets.length || (chipCfg && chipValue !== chipAll)) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ q: query, f: facets, c: chipCfg && chipValue !== chipAll ? chipValue : null }));
+        } else {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      } catch (e) {}
     }
     function apply() {
       var q = query.toLowerCase();
@@ -190,16 +206,38 @@ const { config } = Astro.props;
     if (qParam || fParam || cParam) {
       try {
         var p = new URLSearchParams(location.search);
-        // Only accept a chip value that matches a real, rendered chip (mirrors how
-        // TagCombobox.setSelected whitelists against its own known options) — an
-        // unrecognized/stale ?chip= must not silently zero out every card with no
-        // chip shown as active.
-        if (cParam && chipCfg && p.get(cParam)) {
-          var cv = p.get(cParam);
-          if (chips.some(function (c) { return c.getAttribute('data-filter') === cv; })) chipValue = cv;
-        }
+        var cv = cParam && p.get(cParam);
         var qv = qParam && p.get(qParam);
         var fv = fParam && p.get(fParam);
+
+        // No explicit URL state at all (a plain link click, not a shared/
+        // bookmarked URL or the browser back button) — fall back to this
+        // page's last remembered filter state instead of resetting to
+        // empty. An explicit URL always wins: it represents deliberate
+        // incoming intent (a shared link, the tool-tag cross-links
+        // elsewhere on the site), so it must not be silently overridden by
+        // a stale stored session. Only `urlSync` pages get this fallback —
+        // `hydrateQueryParam`-only configs are a one-way, read-only
+        // incoming link, not a page that tracks its own session.
+        if (cfg.urlSync && !cv && !qv && !fv) {
+          try {
+            var saved = localStorage.getItem('listfilter:' + location.pathname);
+            if (saved) {
+              var parsed = JSON.parse(saved);
+              if (parsed.c) cv = parsed.c;
+              if (parsed.q) qv = parsed.q;
+              if (parsed.f && parsed.f.length) fv = parsed.f.join(',');
+            }
+          } catch (e) {}
+        }
+
+        // Only accept a chip value that matches a real, rendered chip (mirrors how
+        // TagCombobox.setSelected whitelists against its own known options) — an
+        // unrecognized/stale chip value must not silently zero out every card with
+        // no chip shown as active.
+        if (cv && chipCfg && chips.some(function (c) { return c.getAttribute('data-filter') === cv; })) {
+          chipValue = cv;
+        }
         if (qv || fv) {
           var setDisplay = function () {
             if (!combobox || !combobox.__combobox) return;

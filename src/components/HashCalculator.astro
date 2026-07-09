@@ -32,7 +32,16 @@ const paneLabel = css({
 });
 const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted' });
 
-const modeRow = css({ display: 'inline-flex', gap: '0.15rem', p: '0.2rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'md' });
+const modeRow = css({
+  position: 'relative', // containing block + stacking context for the animated switch thumb (see AnimatedSwitch)
+  zIndex: 0,
+  display: 'inline-flex',
+  gap: '0.15rem',
+  p: '0.2rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+});
 const modeBtn = css({
   display: 'inline-flex',
   alignItems: 'center',
@@ -50,6 +59,14 @@ const modeBtn = css({
   transition: 'all 150ms ease',
   _hover: { color: 'text' },
   '&[data-active]': { bg: 'bgSubtle', color: 'primary', borderColor: 'border', boxShadow: 'card' },
+  // See ModeToggle.astro's identical rule for why: once AnimatedSwitch arms
+  // a sliding thumb underneath, suppress this button's own bg/border/shadow
+  // so the two don't animate against each other on separate clocks. No-JS/
+  // reduced-motion visitors never get data-switch-armed, so their indicator
+  // is untouched.
+  '[data-switch-armed] &': {
+    '&[data-active]': { bg: 'transparent', borderColor: 'transparent', boxShadow: 'none' },
+  },
 });
 
 const textarea = css({
