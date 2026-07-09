@@ -1,0 +1,93 @@
+---
+// Shared "Scratch-inspired workspace" shell used by every interactive builder
+// tool (Hash Calculator, IOC Extractor, Timestamp Decoder, OSINT Dork
+// Builder): the outer panel with opposing corner brackets + dot-grid
+// backdrop, hidden until the tool's own script confirms it's running, plus
+// the no-JS fallback note shown only *without* JS. Each consumer keeps its
+// own markup/script for the actual tool; this only factors out the visual
+// shell that was previously copy-pasted identically across all four
+// components.
+//
+// `hook` is the boolean data-attribute the tool's own client script already
+// uses to find its root via querySelectorAll (e.g. "data-hash-calc") and
+// sets data-ready on once armed — this component just renders it onto the
+// shell div so the tool script's existing logic is unaffected. `attrs` is an
+// optional bag of additional attributes for that same root element (e.g.
+// DorkBuilder's server-rendered `data-dork-engines`/`data-dork-focuses` JSON
+// payloads its script reads on init).
+// `data-workspace-shell` (fixed, not parameterized) is what actually drives
+// the no-JS note's sibling-selector CSS below, so that rule stays static
+// regardless of which tool consumes this component.
+import { css } from 'styled-system/css';
+
+interface Props {
+  hook: string;
+  noJsMessage: string;
+  gap?: '1rem' | '1.25rem';
+  attrs?: Record<string, string>;
+}
+const { hook, noJsMessage, gap = '1rem', attrs = {} } = Astro.props;
+
+const workspaceOuter = css({
+  position: 'relative',
+  display: 'none',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'lg',
+  p: { base: '1rem', md: '1.35rem' },
+  '&[data-ready]': { display: 'block' },
+  _before: {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    w: '22px',
+    h: '22px',
+    borderTop: '2px solid token(colors.primary)',
+    borderLeft: '2px solid token(colors.primary)',
+    borderTopLeftRadius: 'lg',
+    pointerEvents: 'none',
+  },
+  _after: {
+    content: '""',
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    w: '22px',
+    h: '22px',
+    borderBottom: '2px solid token(colors.primary)',
+    borderRight: '2px solid token(colors.primary)',
+    borderBottomRightRadius: 'lg',
+    pointerEvents: 'none',
+  },
+});
+const workspaceDots = css({
+  position: 'absolute',
+  inset: 0,
+  borderRadius: 'lg',
+  backgroundImage: 'radial-gradient(token(colors.border) 1px, transparent 1px)',
+  backgroundSize: '20px 20px',
+  opacity: 0.6,
+  pointerEvents: 'none',
+});
+const workspaceContentTight = css({ position: 'relative', display: 'flex', flexDirection: 'column', gap: '1rem' });
+const workspaceContentCozy = css({ position: 'relative', display: 'flex', flexDirection: 'column', gap: '1.25rem' });
+const noJsNote = css({
+  color: 'textMuted',
+  fontSize: '0.88rem',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  p: '0.85rem 1rem',
+  '[data-workspace-shell][data-ready] ~ &': { display: 'none' },
+});
+---
+
+<div class={workspaceOuter} data-workspace-shell {...{ [hook]: true }} {...attrs}>
+  <div class={workspaceDots} aria-hidden="true"></div>
+  <div class={gap === '1.25rem' ? workspaceContentCozy : workspaceContentTight}>
+    <slot />
+  </div>
+</div>
+
+<p class={noJsNote}>{noJsMessage}</p>

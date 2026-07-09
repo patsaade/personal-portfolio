@@ -1274,3 +1274,31 @@ export const ATTACK_TECHNIQUES: AttackTechnique[] = ATTACK_GENERATED.map((t) => 
   const o = ATTACK_OVERLAY[t.id];
   return o ? { ...t, ...o, summary: o.summary ?? t.summary } : t;
 });
+
+/**
+ * O(1) technique lookup, built once at module load — shared by every page
+ * that needs to resolve an ATT&CK id against our own dataset (attack-map.astro,
+ * d3fend/[id].astro, event-ids/[slug].astro) instead of each rebuilding the
+ * same id -> technique map locally.
+ */
+export const ATTACK_TECHNIQUE_BY_ID: Map<string, AttackTechnique> = new Map(ATTACK_TECHNIQUES.map((t) => [t.id, t]));
+
+export interface AttackLink {
+  id: string;
+  name: string;
+  href: string;
+  onSite: boolean;
+}
+
+/**
+ * Resolve an ATT&CK technique id to a link: on-site (our own detail page) if
+ * we have the technique, otherwise straight to the authoritative MITRE page.
+ * Shared by d3fend/[id].astro's "Counters" and event-ids/[slug].astro's
+ * "MITRE ATT&CK" cross-links, which previously each duplicated this branch.
+ */
+export function resolveAttackLink(id: string): AttackLink {
+  const a = ATTACK_TECHNIQUE_BY_ID.get(id);
+  if (a) return { id, name: a.name, href: `/attack-map/${id}/`, onSite: true };
+  const [base, sub] = id.split('.');
+  return { id, name: id, href: `https://attack.mitre.org/techniques/${base}/${sub ? `${sub}/` : ''}`, onSite: false };
+}

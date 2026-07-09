@@ -1,0 +1,166 @@
+---
+// Windows Event ID / Sysmon Reference — a comprehensive, fully-cited lookup
+// for the Windows Security auditing log + Sysinternals Sysmon operational
+// log event IDs that actually matter for DFIR (src/data/eventIds.ts). Same
+// "grouped, searchable list" shape as the Tool Catalog: two collapsible
+// groups (Windows Security Log, Sysmon), search across id/name/category,
+// and a quick toggle for entries with a documented MITRE ATT&CK mapping.
+// Each card links to its own detail page (/event-ids/[slug]/).
+// Static page — prerender to HTML served from the CDN.
+export const prerender = true;
+import { css } from 'styled-system/css';
+import { tag, card } from 'styled-system/recipes';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import Icon from '../components/Icon.astro';
+import CollapseAll from '../components/CollapseAll.astro';
+import TagCombobox from '../components/TagCombobox.astro';
+import FilterToggle from '../components/FilterToggle.astro';
+import ListFilter from '../components/ListFilter.astro';
+import { EVENT_IDS } from '../data/eventIds';
+
+const GROUPS = [
+  { id: 'security', title: 'Windows Security Log', icon: 'shield' as const, blurb: 'Auditing events written to the Security event log — logons, account/group management, process and object access, privilege use, and policy changes.' },
+  { id: 'sysmon', title: 'Sysmon', icon: 'activity' as const, blurb: 'Sysinternals Sysmon’s own operational log — deeper, opt-in telemetry (process creation with full command lines, network connections, image/driver loads, process injection, and more) once installed and configured.' },
+];
+const bySource = (id: string) => EVENT_IDS.filter((e) => e.source === id).sort((a, b) => Number(a.id) - Number(b.id));
+const totalCount = EVENT_IDS.length;
+
+// Category facet for the search combobox — pooled across both logs.
+const catCounts: Record<string, number> = {};
+for (const e of EVENT_IDS) catCounts[e.category] = (catCounts[e.category] ?? 0) + 1;
+const catSlug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const catOptions = Object.keys(catCounts).sort().map((c) => ({ value: catSlug(c), label: c, count: catCounts[c] }));
+
+const groupDetails = css({ borderTop: '1px solid token(colors.border)', py: '1.25rem', scrollMarginTop: '90px' });
+const groupSummary = css({
+  cursor: 'pointer',
+  listStyle: 'none',
+  userSelect: 'none',
+  '&::-webkit-details-marker': { display: 'none' },
+  '&::marker': { display: 'none' },
+  _hover: { '& .evt-grp-title': { color: 'primary' } },
+});
+const groupHead = css({ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', m: 0, fontSize: '1.25rem', fontWeight: 700 });
+const chevCls = css({
+  color: 'textMuted',
+  flexShrink: 0,
+  transition: 'transform 200ms ease',
+  'details[open] &': { transform: 'rotate(90deg)' },
+});
+const grpCount = css({
+  fontFamily: 'sans',
+  fontSize: '0.68rem',
+  fontWeight: 600,
+  color: 'textMuted',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'full',
+  px: '0.5rem',
+  py: '0.1rem',
+});
+const grpBlurb = css({ color: 'textMuted', fontSize: '0.85rem', mt: '0.5rem', mb: 0 });
+const evtGrid = css({ mt: '1rem' });
+const evtCard = `${card()} ${css({
+  transition: 'border-color 200ms ease, transform 200ms ease, box-shadow 200ms ease',
+  _hover: { boxShadow: 'card', '& .evt-go': { transform: 'translateX(2px)', color: 'primary' } },
+})}`;
+const evtHead = css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' });
+const evtIdBadge = css({ fontFamily: 'mono', fontWeight: 700, fontSize: '0.95rem', color: 'primary', flexShrink: 0 });
+const evtName = css({ flex: 1, minW: 0, fontFamily: 'sans', fontWeight: 700, fontSize: '0.88rem', color: 'text', lineHeight: 1.3 });
+const goCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 200ms ease, color 200ms ease' });
+const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto', pt: '0.15rem' });
+
+const filterRow = css({ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', mb: '0.75rem' });
+---
+
+<BaseLayout
+  title="Windows Event ID / Sysmon Reference"
+  description="A comprehensive, fully-cited reference for Windows Security auditing log and Sysmon event IDs that matter for DFIR — what each records, why it matters, common triggers, and MITRE ATT&CK cross-links."
+>
+  <PageHeader
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Event ID Reference' }]}
+    eyebrow="Reference"
+    title="Windows Event ID / Sysmon Reference"
+    description={`${totalCount} Windows Security auditing + Sysmon event IDs, each with what it records, why it matters for DFIR, common triggers, and MITRE ATT&CK cross-links where a mapping is well-established.`}
+  />
+
+  <div class={css({ mb: '0.6rem' })}>
+    <TagCombobox
+      id="evt-cb"
+      options={catOptions}
+      placeholder={`Search ${totalCount} event IDs, or type a category…`}
+      label="Search event IDs or filter by category"
+    />
+  </div>
+
+  <div class={filterRow}>
+    <p role="status" aria-live="polite" class={css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.3rem 0.6rem', color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
+      <span><span id="evt-result-count">{totalCount}</span> event IDs across {GROUPS.length} logs</span>
+    </p>
+    <div class={css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', ml: { sm: 'auto' } })}>
+      <FilterToggle id="evt-attack-toggle" icon="target" label="Maps to ATT&CK" tone="primary" />
+      <CollapseAll target="[data-evt-group]" />
+    </div>
+  </div>
+
+  <div class={css({ display: 'flex', flexDirection: 'column' })}>
+    {
+      GROUPS.map((g) => {
+        const items = bySource(g.id);
+        return (
+          <details id={`evt-${g.id}`} data-evt-group open class={groupDetails}>
+            <summary class={groupSummary}>
+              <h2 class={groupHead}>
+                <Icon name="chevron-right" size={18} class={chevCls} />
+                <Icon name={g.icon} size={20} class={css({ color: 'primary', flexShrink: 0 })} />
+                <span class="evt-grp-title">{g.title}</span>
+                <span class={grpCount}>{items.length}</span>
+              </h2>
+            </summary>
+            <p class={grpBlurb}>{g.blurb}</p>
+            <div class={`card-grid ${evtGrid}`}>
+              {items.map((e) => (
+                <a
+                  href={`/event-ids/${e.slug}/`}
+                  class={evtCard}
+                  data-evt-card={`${e.id} ${e.name} ${e.category} ${e.channel}`.toLowerCase()}
+                  data-cat={catSlug(e.category)}
+                  {...(e.attackTechniques.length > 0 ? { 'data-attack-mapped': true } : {})}
+                >
+                  <span class={evtHead}>
+                    <span class={evtIdBadge}>{e.id}</span>
+                    <Icon name="arrow-right" size={14} class={`evt-go ${goCls}`} />
+                  </span>
+                  <span class={evtName}>{e.name}</span>
+                  <span class={tagRow}>
+                    <span class={tag({ tone: 'muted' })}>{e.category}</span>
+                    {e.attackTechniques.length > 0 && <span class={tag({ tone: 'accent' })}>ATT&amp;CK</span>}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </details>
+        );
+      })
+    }
+  </div>
+
+  <p id="evt-empty" hidden role="status" aria-live="polite" class={css({ color: 'textMuted', textAlign: 'center', py: '3rem' })}>
+    No event IDs match your search.
+  </p>
+
+  <ListFilter
+    config={{
+      comboboxId: 'evt-cb',
+      cardSelector: '[data-evt-card]',
+      searchAttr: 'data-evt-card',
+      groupSelector: '[data-evt-group]',
+      countId: 'evt-result-count',
+      emptyId: 'evt-empty',
+      facetAttr: 'data-cat',
+      toggles: [{ id: 'evt-attack-toggle', attr: 'data-attack-mapped' }],
+      urlSync: { queryParam: 'q' },
+    }}
+  />
+</BaseLayout>

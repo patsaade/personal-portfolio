@@ -16,7 +16,7 @@ import {
   termBySlug,
 } from '../../data/securityTerms';
 import { CATEGORY_SOURCES, TERM_REFERENCES, ATTACK_TECHNIQUES } from '../../data/references';
-import { TOOLS } from '../../data/tools';
+import { toolsByGlossarySlug } from '../../data/tools';
 import { getSortedPosts, getSortedLabs, termSlugsInBody } from '../../utils/posts';
 
 export async function getStaticPaths() {
@@ -52,7 +52,7 @@ const techniques = ATTACK_TECHNIQUES.filter((t) => t.glossarySlug === term.slug)
 const detectionSources = Array.from(new Set(techniques.flatMap((t) => t.detection ?? [])));
 const realWorldExamples = Array.from(new Set(techniques.flatMap((t) => t.examples ?? [])));
 // Tools that directly implement this concept (curated, factual subset — see tools.ts).
-const matchingTools = TOOLS.filter((t) => (t.glossarySlugs ?? []).includes(term.slug));
+const matchingTools = toolsByGlossarySlug(term.slug);
 
 const jsonLd = JSON.stringify({
   '@context': 'https://schema.org',

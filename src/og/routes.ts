@@ -20,8 +20,10 @@ const STATIC_ENTRIES: OgEntry[] = [
   { slug: 'tools/cheatsheet', title: 'DFIR Command Cheat Sheet', eyebrow: 'Quick Reference' },
   { slug: 'tools/timestamp-converter', title: 'Timestamp Decoder', eyebrow: 'Time & Correlation' },
   { slug: 'tools/ioc-extractor', title: 'IOC Extractor', eyebrow: 'Triage & Correlation' },
+  { slug: 'tools/hash-calculator', title: 'Hash Calculator & Verifier', eyebrow: 'Triage & Correlation' },
   { slug: 'osint', title: 'OSINT Toolkit', eyebrow: 'Recon & Discovery' },
   { slug: 'glossary', title: 'Cybersecurity glossary', eyebrow: 'Reference' },
+  { slug: 'event-ids', title: 'Windows Event ID / Sysmon Reference', eyebrow: 'Reference' },
   { slug: 'attack-map', title: 'MITRE ATT&CK Coverage Map', eyebrow: 'Coverage' },
   { slug: 'd3fend', title: 'MITRE D3FEND Map', eyebrow: 'Countermeasures' },
   { slug: 'certifications', title: 'Certifications', eyebrow: 'Credentials' },
@@ -58,11 +60,15 @@ export async function getOgEntries(): Promise<OgEntry[]> {
 export function ogSlugForPath(pathname: string): string {
   const s = pathname.replace(/^\/+|\/+$/g, '');
   if (s === '') return 'index';
-  if (s === 'glossary' || s.startsWith('glossary/')) return 'glossary';
+  // The bare 'glossary'/'event-ids'/'attack-map'/'d3fend' slugs are each already
+  // in STATIC_SLUGS and fall through to that check below with the same result —
+  // only their sub-path prefixes need handling here.
+  if (s.startsWith('glossary/')) return 'glossary';
   if (s === 'word-of-the-day' || s === 'term-of-the-day') return 'glossary';
+  if (s.startsWith('event-ids/')) return 'event-ids';
   // Every technique detail page shares its map's one card, same as glossary terms.
-  if (s === 'attack-map' || s.startsWith('attack-map/')) return 'attack-map';
-  if (s === 'd3fend' || s.startsWith('d3fend/')) return 'd3fend';
+  if (s.startsWith('attack-map/')) return 'attack-map';
+  if (s.startsWith('d3fend/')) return 'd3fend';
   if (STATIC_SLUGS.has(s)) return s;
   if (s.startsWith('blog/') || s.startsWith('labs/')) return s;
   return 'index';

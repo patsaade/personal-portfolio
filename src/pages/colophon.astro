@@ -6,10 +6,11 @@ import { css } from 'styled-system/css';
 import { tag } from 'styled-system/recipes';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
+import { prosePara, proseH2, proseLink } from '../styles/prose';
 
-const para = css({ color: 'textMuted', lineHeight: 1.8, mb: '1rem' });
-const h2 = css({ fontSize: '1.3rem', fontWeight: 700, mt: '2.25rem', mb: '0.75rem' });
-const link = css({ color: 'primary', textDecoration: 'underline', _hover: { color: 'primaryHover' } });
+const para = prosePara;
+const h2 = proseH2;
+const link = proseLink;
 const term = css({ color: 'text', fontWeight: 600 });
 
 // The stack, as a small bordered record — same row-list idiom as the condensed
@@ -46,6 +47,20 @@ const STACK = [
     policy</a>). It's semantic, keyboard-friendly, and it respects reduced motion.
   </p>
 
+  <h2 class={h2}>Why this exists</h2>
+  <p class={para}>
+    DFIR work means bouncing between a dozen disconnected tools — a hash calculator on one
+    site, a timestamp converter on another, an event ID lookup buried in a PDF cheat sheet
+    somewhere else. I wanted one place that actually has it all: reference material (the
+    glossary, tool catalog, event ID lookup, and the ATT&amp;CK/D3FEND maps) sitting next to
+    small tools that do real work (extract IOCs, decode timestamps, compute and identify
+    hashes, build OSINT search-operator queries) — free, and the ones that process what you
+    give them do it entirely client-side, so nothing you paste, type, or upload ever leaves
+    your browser. That's also why the toolkit is reachable at{' '}
+    <span class={term}>cyberkit.win</span>, independent of <span class={term}>patricksaade.com</span> —
+    the tools stand on their own, whether or not you're here for the portfolio side of the site.
+  </p>
+
   <h2 class={h2}>What's actually here</h2>
   <p class={para}>
     There's more to this site than the posts, and it's built to be a working reference for
@@ -70,7 +85,8 @@ const STACK = [
     independently so switching modes never forgets your color pick; a field of drifting,
     connected nodes behind everything; and a hand-drawn cursor for anyone browsing with a mouse.
     Search lives on <span class={term}>⌘K</span>, sound is opt-in from the nav, and the whole
-    thing installs like an app and stays readable offline.
+    thing installs like an app and stays readable offline. Each interactive tool page also gets a
+    compact pop-out rail for hot-swapping between the others without a trip back through the nav.
   </p>
 
   <h2 class={h2}>Built with</h2>

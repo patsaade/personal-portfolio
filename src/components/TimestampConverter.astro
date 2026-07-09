@@ -7,23 +7,26 @@
 // looking at. Same "Scratch-inspired workspace" visual language as the OSINT
 // Crock Pot's DorkBuilder (corner brackets, dot-grid texture, a left-rail
 // timeline of blocks, a sticky "stage" — here showing the one instant every
-// field currently represents, split into two independently copyable boxes
-// (Original/UTC and Translated/reference-zone — was one combined <pre>
-// with no copy affordance) plus reference-timezone controls: quick UTC/
-// Local buttons, or a searchable zone picker (a small always-visible
-// "Common" list plus type-to-search over every IANA zone from
-// Intl.supportedValuesOf('timeZone'), each option live-annotated with its
-// current UTC offset) — replaces the old single `<select>` with ~400 flat
-// alphabetical `<option>`s, which had no search and buried e.g. Tokyo three
-// scroll-screens deep under "Asia". The reference zone governs local-time-
-// only formats (FAT/DOS, RFC 3164 syslog) and the translated instant box;
-// the offset is re-resolved from the zone name on every render (not
-// cached), since DST-observing zones' offsets depend on the date.
-// Genuinely requires JS (there's no meaningful static form for live N-way conversion),
-// so the workspace stays hidden until the script confirms it's running —
-// same JS-armed, no-JS-safe philosophy as DorkBuilder/CollapseAll/ViewToggle.
+// field currently represents as three permanent, independently copyable
+// boxes: UTC (always), Local (always, the browser's own zone), and
+// Converted (a specific other timezone, picked via the searchable zone
+// picker below — a small always-visible "Common" list plus type-to-search
+// over every IANA zone from Intl.supportedValuesOf('timeZone'), each option
+// live-annotated with its current UTC offset; replaces the old single
+// `<select>` with ~400 flat alphabetical `<option>`s, which had no search
+// and buried e.g. Tokyo three scroll-screens deep under "Asia"). Converted
+// shows a muted placeholder until a zone is picked — no separate UTC/Local
+// switch is needed since both are always visible as their own boxes. The
+// picked zone (or Local, if none is picked) governs the local-time-only
+// formats below (FAT/DOS, RFC 3164 syslog); the offset is re-resolved from
+// the zone name on every render (not cached), since DST-observing zones'
+// offsets depend on the date. Genuinely requires JS (there's no meaningful
+// static form for live N-way conversion), so the workspace stays hidden
+// until the script confirms it's running — same JS-armed, no-JS-safe
+// philosophy as DorkBuilder/CollapseAll/ViewToggle.
 import { css } from 'styled-system/css';
 import Icon from './Icon.astro';
+import WorkspaceShell from './WorkspaceShell.astro';
 import { TIMESTAMP_FORMATS } from '../utils/timestamps';
 
 const GROUPS: { label: string; ids: string[] }[] = [
@@ -59,59 +62,6 @@ const COMMON_ZONES: { id: string; label: string }[] = [
   { id: 'Australia/Sydney', label: 'Sydney' },
   { id: 'Pacific/Auckland', label: 'Auckland' },
 ];
-
-const workspaceOuter = css({
-  position: 'relative',
-  display: 'none',
-  bg: 'bgSubtle',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'lg',
-  p: { base: '1rem', md: '1.35rem' },
-  '&[data-ready]': { display: 'block' },
-  _before: {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    w: '22px',
-    h: '22px',
-    borderTop: '2px solid token(colors.primary)',
-    borderLeft: '2px solid token(colors.primary)',
-    borderTopLeftRadius: 'lg',
-    pointerEvents: 'none',
-  },
-  _after: {
-    content: '""',
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    w: '22px',
-    h: '22px',
-    borderBottom: '2px solid token(colors.primary)',
-    borderRight: '2px solid token(colors.primary)',
-    borderBottomRightRadius: 'lg',
-    pointerEvents: 'none',
-  },
-});
-const workspaceDots = css({
-  position: 'absolute',
-  inset: 0,
-  borderRadius: 'lg',
-  backgroundImage: 'radial-gradient(token(colors.border) 1px, transparent 1px)',
-  backgroundSize: '20px 20px',
-  opacity: 0.6,
-  pointerEvents: 'none',
-});
-const workspaceContent = css({ position: 'relative', display: 'flex', flexDirection: 'column', gap: '1rem' });
-const noJsNote = css({
-  color: 'textMuted',
-  fontSize: '0.88rem',
-  bg: 'bgSubtle',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'md',
-  p: '0.85rem 1rem',
-  '[data-ts-converter][data-ready] ~ &': { display: 'none' },
-});
 
 const detectRow = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem' });
 const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted' });
@@ -155,7 +105,7 @@ const blockStack = css({ display: 'flex', flexDirection: 'column', gap: '0.4rem'
 const blockRow = css({
   position: 'relative',
   display: 'flex',
-  alignItems: 'center',
+  alignItems: 'flex-start',
   gap: '0.6rem',
   py: '0.15rem',
   px: '0.3rem',
@@ -165,8 +115,7 @@ const blockRow = css({
     content: '""',
     position: 'absolute',
     left: '-1.5rem',
-    top: '50%',
-    transform: 'translateY(-50%)',
+    top: '0.65rem',
     w: '8px',
     h: '8px',
     borderRadius: 'full',
@@ -176,7 +125,20 @@ const blockRow = css({
   '&[data-filled]::before': { bg: 'primary' },
   '&[data-invalid]': { bg: 'color-mix(in srgb, red 8%, transparent)' },
 });
-const blockBadge = css({ flexShrink: 0, w: '9.5rem', fontFamily: 'sans', fontSize: '0.75rem', fontWeight: 600, color: 'text', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' });
+// No truncation — a label that doesn't fit wraps onto a second line rather
+// than losing text to an ellipsis; the fixed width means this never eats
+// into the value input's space next to it.
+const blockBadge = css({
+  flexShrink: 0,
+  w: '9.5rem',
+  pt: '0.4rem',
+  fontFamily: 'sans',
+  fontSize: '0.75rem',
+  fontWeight: 600,
+  color: 'text',
+  lineHeight: 1.3,
+  overflowWrap: 'break-word',
+});
 const blockInput = css({
   flex: 1,
   minW: 0,
@@ -225,29 +187,12 @@ const instantBox = css({
   bg: 'bgCard',
   border: '1px solid token(colors.border)',
   borderRadius: 'md',
-  overflowX: 'auto',
+  overflowX: 'hidden',
   whiteSpace: 'pre-wrap',
   wordBreak: 'break-word',
-});
-const refRow = css({ display: 'inline-flex', gap: '0.15rem', p: '0.2rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'md' });
-const refBtn = css({
-  flex: 1,
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  px: '0.6rem',
-  py: '0.35rem',
-  fontFamily: 'sans',
-  fontSize: '0.78rem',
-  fontWeight: 600,
-  borderRadius: 'sm',
-  border: '1px solid transparent',
-  bg: 'transparent',
-  color: 'textMuted',
-  cursor: 'pointer',
-  transition: 'all 150ms ease',
-  _hover: { color: 'text' },
-  '&[data-active]': { bg: 'bgSubtle', color: 'primary', borderColor: 'border', boxShadow: 'card' },
+  // The Converted box before a timezone is picked: a muted placeholder
+  // rather than dashes-with-no-explanation, so it's obvious what to do.
+  '&[data-empty]': { color: 'textMuted', fontWeight: 500, fontStyle: 'italic' },
 });
 const zonePicker = css({ position: 'relative' });
 const zonePickerControl = css({
@@ -358,9 +303,7 @@ const actionBtn = css({
 const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', _hover: { opacity: 0.9, color: 'white' } });
 ---
 
-<div class={workspaceOuter} data-ts-converter>
-  <div class={workspaceDots} aria-hidden="true"></div>
-  <div class={workspaceContent}>
+<WorkspaceShell hook="data-ts-converter" noJsMessage="The interactive timestamp converter needs JavaScript enabled.">
     <div class={detectRow}>
       <label class={fieldLabel} for="ts-detect">Paste any timestamp — auto-detect</label>
       <input
@@ -420,7 +363,7 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
         <p class={paneLabel}>Current instant</p>
         <div class={instantGroup}>
           <div class={instantBoxWrap}>
-            <span class={instantZoneLabel}>Original (UTC)</span>
+            <span class={instantZoneLabel}>UTC</span>
             <div class={instantRow}>
               <pre class={instantBox} data-ts-instant-utc>&nbsp;</pre>
               <button type="button" class={rowCopyBtn} data-ts-instant-copy="utc" data-copy-pop data-sound="copy" aria-label="Copy UTC time" title="Copy UTC time">
@@ -429,21 +372,26 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
             </div>
           </div>
           <div class={instantBoxWrap}>
-            <span class={instantZoneLabel} data-ts-instant-ref-label>Translated (UTC)</span>
+            <span class={instantZoneLabel} data-ts-instant-local-label>Local</span>
             <div class={instantRow}>
-              <pre class={instantBox} data-ts-instant-ref>&nbsp;</pre>
-              <button type="button" class={rowCopyBtn} data-ts-instant-copy="ref" data-copy-pop data-sound="copy" aria-label="Copy translated time" title="Copy translated time">
+              <pre class={instantBox} data-ts-instant-local>&nbsp;</pre>
+              <button type="button" class={rowCopyBtn} data-ts-instant-copy="local" data-copy-pop data-sound="copy" aria-label="Copy local time" title="Copy local time">
+                <Icon name="copy" size={13} />
+              </button>
+            </div>
+          </div>
+          <div class={instantBoxWrap}>
+            <span class={instantZoneLabel} data-ts-instant-converted-label>Converted</span>
+            <div class={instantRow}>
+              <pre class={instantBox} data-ts-instant-converted data-empty>Pick a timezone below…</pre>
+              <button type="button" class={rowCopyBtn} data-ts-instant-copy="converted" data-copy-pop data-sound="copy" aria-label="Copy converted time" title="Copy converted time">
                 <Icon name="copy" size={13} />
               </button>
             </div>
           </div>
         </div>
 
-        <p class={fieldLabel}>Reference (for local-time-only formats + local wall-clock display)</p>
-        <div class={refRow} role="radiogroup" aria-label="Reference timezone">
-          <button type="button" role="radio" aria-checked="true" data-active data-ts-ref="utc" data-sound="tick" class={refBtn}>UTC</button>
-          <button type="button" role="radio" aria-checked="false" data-ts-ref="local" data-sound="tick" class={refBtn}>Local</button>
-        </div>
+        <p class={fieldLabel}>Convert to a timezone (also drives the local-time-only formats below)</p>
         <div class={zonePicker} data-ts-zone-picker>
           <div class={zonePickerControl} data-ts-zone-control>
             <span class={zonePickerIco}><Icon name="search" size={14} /></span>
@@ -492,14 +440,12 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
         </div>
       </div>
     </div>
-  </div>
-</div>
-
-<p class={noJsNote}>The interactive timestamp converter needs JavaScript enabled.</p>
+</WorkspaceShell>
 
 <script>
   // @ts-nocheck — vanilla DOM client script
   import { formatById, detectFormat, offsetMinutesForZone, DEFAULT_CONTEXT } from '../utils/timestamps';
+  import { pop } from '../scripts/copyPop';
 
   (function () {
     function init() {
@@ -512,9 +458,10 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
         var detectInput = root.querySelector('[data-ts-detect]');
         var detectResults = root.querySelector('[data-ts-detect-results]');
         var instantUtcEl = root.querySelector('[data-ts-instant-utc]');
-        var instantRefEl = root.querySelector('[data-ts-instant-ref]');
-        var instantRefLabelEl = root.querySelector('[data-ts-instant-ref-label]');
-        var refBtns = Array.prototype.slice.call(root.querySelectorAll('[data-ts-ref]'));
+        var instantLocalEl = root.querySelector('[data-ts-instant-local]');
+        var instantLocalLabelEl = root.querySelector('[data-ts-instant-local-label]');
+        var instantConvertedEl = root.querySelector('[data-ts-instant-converted]');
+        var instantConvertedLabelEl = root.querySelector('[data-ts-instant-converted-label]');
         var zonePicker = root.querySelector('[data-ts-zone-picker]');
         var zoneControl = root.querySelector('[data-ts-zone-control]');
         var zoneInput = root.querySelector('[data-ts-zone-input]');
@@ -526,11 +473,15 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
         var commonZoneOptions = zoneList ? Array.prototype.slice.call(zoneList.querySelectorAll('[data-zone-id]')) : [];
         var nowBtn = root.querySelector('[data-ts-now]');
         var copyAllBtn = root.querySelector('[data-ts-copy-all]');
-        if (!instantUtcEl || !instantRefEl || !nowBtn) return;
+        if (!instantUtcEl || !instantLocalEl || !nowBtn) return;
 
+        // `ctx.refOffsetMinutes` drives the local-time-only formats (FAT/DOS,
+        // syslog) below — it follows the picked zone once one is chosen, else
+        // falls back to Local, so those fields always represent SOME real
+        // local wall-clock rather than needing their own separate control.
         var ctx = { refOffsetMinutes: 0, refYear: DEFAULT_CONTEXT.refYear };
         var current = null; // canonical ns (bigint) | null
-        var activeRef = 'utc'; // 'utc' | 'local' | an IANA zone name (e.g. 'America/New_York')
+        var pickedZone = null; // null | an IANA zone name (e.g. 'America/New_York')
 
         function browserZoneName() {
           try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) { return 'UTC'; }
@@ -641,10 +592,9 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
           zoneInput.setAttribute('aria-expanded', 'false');
         }
         function chooseZone(id) {
-          activeRef = id;
+          pickedZone = id;
           zoneInput.value = zoneDisplayLabel(id);
           zoneControl.setAttribute('data-active', '');
-          setActiveRefButton('');
           closeZoneList();
           render(null);
         }
@@ -669,16 +619,22 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
         // Recomputed on every render (not cached) since a DST-observing zone's
         // offset depends on the DATE, not just the zone name — editing a field
         // to a different date must re-resolve it, not keep a stale offset.
-        function recomputeOffset() {
+        // Drives the local-time-only formats: the picked zone if there is
+        // one, else Local — these fields always represent a real local
+        // wall-clock, never UTC (that was never really what "local-time-only"
+        // meant for FAT/DOS or syslog anyway).
+        function recomputeOffset(localZone) {
           if (current === null) { ctx.refOffsetMinutes = 0; return; }
-          if (activeRef === 'utc') { ctx.refOffsetMinutes = 0; return; }
-          var zoneName = activeRef === 'local' ? browserZoneName() : activeRef;
+          var zoneName = pickedZone || localZone;
           var offset = offsetMinutesForZone(current, zoneName);
           ctx.refOffsetMinutes = offset === null ? 0 : offset;
         }
 
         function render(skipId) {
-          recomputeOffset();
+          // Computed once per render and reused below for the Local box, rather
+          // than calling browserZoneName() a second time for the same value.
+          var localZone = browserZoneName();
+          recomputeOffset(localZone);
           fields.forEach(function (f) {
             if (f.id === skipId) return;
             var fmt = formatById(f.id);
@@ -690,16 +646,33 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
           });
           if (current === null) {
             instantUtcEl.textContent = ' ';
-            instantRefEl.textContent = ' ';
-            instantRefLabelEl.textContent = 'Translated (UTC)';
+            instantLocalEl.textContent = ' ';
+            instantConvertedEl.textContent = 'Pick a timezone below…';
+            instantConvertedEl.setAttribute('data-empty', '');
             if (zoneList && !zoneList.hidden) refreshZoneOffsets();
             return;
           }
           var isoUtc = formatById('iso8601').format(current, { refOffsetMinutes: 0, refYear: ctx.refYear });
           instantUtcEl.textContent = isoUtc;
-          var zoneLabel = activeRef === 'utc' ? 'UTC' : activeRef === 'local' ? browserZoneName() + ' (local)' : activeRef;
-          instantRefEl.textContent = ctx.refOffsetMinutes === 0 ? isoUtc : formatById('iso8601').format(current, ctx);
-          instantRefLabelEl.textContent = 'Translated (' + zoneLabel + ')';
+
+          // Local is always the browser's own zone, independent of whatever
+          // zone is picked for the Converted box below.
+          var localOffset = offsetMinutesForZone(current, localZone);
+          var localCtx = { refOffsetMinutes: localOffset === null ? 0 : localOffset, refYear: ctx.refYear };
+          instantLocalEl.textContent = formatById('iso8601').format(current, localCtx);
+          instantLocalLabelEl.textContent = 'Local (' + localZone + ')';
+
+          if (pickedZone) {
+            var convertedOffset = offsetMinutesForZone(current, pickedZone);
+            var convertedCtx = { refOffsetMinutes: convertedOffset === null ? 0 : convertedOffset, refYear: ctx.refYear };
+            instantConvertedEl.textContent = formatById('iso8601').format(current, convertedCtx);
+            instantConvertedEl.removeAttribute('data-empty');
+            instantConvertedLabelEl.textContent = 'Converted (' + zoneDisplayLabel(pickedZone) + ')';
+          } else {
+            instantConvertedEl.textContent = 'Pick a timezone below…';
+            instantConvertedEl.setAttribute('data-empty', '');
+            instantConvertedLabelEl.textContent = 'Converted';
+          }
           if (zoneList && !zoneList.hidden) refreshZoneOffsets();
         }
 
@@ -729,25 +702,6 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
           f.input.addEventListener('input', function () { setFromField(f.id); });
         });
 
-        function setActiveRefButton(mode) {
-          refBtns.forEach(function (o) {
-            var active = o.getAttribute('data-ts-ref') === mode;
-            if (active) o.setAttribute('data-active', ''); else o.removeAttribute('data-active');
-            o.setAttribute('aria-checked', String(active));
-          });
-        }
-
-        refBtns.forEach(function (b) {
-          b.addEventListener('click', function () {
-            activeRef = b.getAttribute('data-ts-ref');
-            setActiveRefButton(activeRef);
-            if (zoneInput) { zoneInput.value = ''; }
-            if (zoneControl) { zoneControl.removeAttribute('data-active'); }
-            closeZoneList();
-            render(null);
-          });
-        });
-
         nowBtn.addEventListener('click', function () {
           current = BigInt(Date.now()) * 1000000n;
           render(null);
@@ -755,9 +709,9 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
 
         // Shared copy-confirm pop (see motion.css's [data-copy-pop] rule) — same
         // attribute-toggle convention as the blog code-block copy button.
-        function pop(btn) {
-          btn.setAttribute('data-copied', '');
-          setTimeout(function () { btn.removeAttribute('data-copied'); }, 1600);
+        function copyText(btn, text) {
+          if (!text) return;
+          navigator.clipboard.writeText(text).then(function () { pop(btn); }).catch(function () {});
         }
 
         // Row copy buttons
@@ -765,18 +719,21 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
           btn.addEventListener('click', function () {
             var id = btn.getAttribute('data-ts-row-copy');
             var f = fields.filter(function (x) { return x.id === id; })[0];
-            if (!f || !f.input.value) return;
-            navigator.clipboard.writeText(f.input.value).then(function () { pop(btn); }).catch(function () {});
+            if (!f) return;
+            copyText(btn, f.input.value);
           });
         });
 
-        // Current-instant copy buttons (Original/UTC + Translated boxes)
+        // Current-instant copy buttons (UTC / Local / Converted boxes) — the
+        // Converted box no-ops while it's still showing its placeholder.
+        var instantBoxes = { utc: instantUtcEl, local: instantLocalEl, converted: instantConvertedEl };
         Array.prototype.forEach.call(root.querySelectorAll('[data-ts-instant-copy]'), function (btn) {
           btn.addEventListener('click', function () {
             var kind = btn.getAttribute('data-ts-instant-copy');
-            var text = (kind === 'utc' ? instantUtcEl : instantRefEl).textContent;
-            if (!text || !text.trim()) return;
-            navigator.clipboard.writeText(text.trim()).then(function () { pop(btn); }).catch(function () {});
+            var el = instantBoxes[kind];
+            if (!el || el.hasAttribute('data-empty')) return;
+            var text = el.textContent;
+            copyText(btn, text && text.trim());
           });
         });
 
@@ -785,7 +742,7 @@ const primaryBtn = css({ bg: 'primary', color: 'white', borderColor: 'primary', 
             if (current === null) return;
             var out = {};
             fields.forEach(function (f) { out[f.id] = formatById(f.id).format(current, ctx); });
-            navigator.clipboard.writeText(JSON.stringify(out, null, 2)).then(function () { pop(copyAllBtn); }).catch(function () {});
+            copyText(copyAllBtn, JSON.stringify(out, null, 2));
           });
         }
 

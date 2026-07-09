@@ -17,60 +17,8 @@
 // philosophy as the site's other builder tools.
 import { css } from 'styled-system/css';
 import Icon from './Icon.astro';
+import WorkspaceShell from './WorkspaceShell.astro';
 import { IOC_CATEGORIES } from '../utils/iocs';
-
-const workspaceOuter = css({
-  position: 'relative',
-  display: 'none',
-  bg: 'bgSubtle',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'lg',
-  p: { base: '1rem', md: '1.35rem' },
-  '&[data-ready]': { display: 'block' },
-  _before: {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    w: '22px',
-    h: '22px',
-    borderTop: '2px solid token(colors.primary)',
-    borderLeft: '2px solid token(colors.primary)',
-    borderTopLeftRadius: 'lg',
-    pointerEvents: 'none',
-  },
-  _after: {
-    content: '""',
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    w: '22px',
-    h: '22px',
-    borderBottom: '2px solid token(colors.primary)',
-    borderRight: '2px solid token(colors.primary)',
-    borderBottomRightRadius: 'lg',
-    pointerEvents: 'none',
-  },
-});
-const workspaceDots = css({
-  position: 'absolute',
-  inset: 0,
-  borderRadius: 'lg',
-  backgroundImage: 'radial-gradient(token(colors.border) 1px, transparent 1px)',
-  backgroundSize: '20px 20px',
-  opacity: 0.6,
-  pointerEvents: 'none',
-});
-const workspaceContent = css({ position: 'relative', display: 'flex', flexDirection: 'column', gap: '1rem' });
-const noJsNote = css({
-  color: 'textMuted',
-  fontSize: '0.88rem',
-  bg: 'bgSubtle',
-  border: '1px solid token(colors.border)',
-  borderRadius: 'md',
-  p: '0.85rem 1rem',
-  '[data-ioc-extractor][data-ready] ~ &': { display: 'none' },
-});
 
 const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted', mb: '0.3rem', display: 'block' });
 const textarea = css({
@@ -86,6 +34,8 @@ const textarea = css({
   px: '0.75rem',
   py: '0.6rem',
   resize: 'vertical',
+  overflowY: 'auto',
+  overflowX: 'hidden',
   transition: 'border-color 150ms ease',
   _focus: { outline: 'none', borderColor: 'primary' },
   '&::placeholder': { color: 'textMuted', opacity: 0.7 },
@@ -193,9 +143,7 @@ const categoryItemBtn = css({
 });
 ---
 
-<div class={workspaceOuter} data-ioc-extractor>
-  <div class={workspaceDots} aria-hidden="true"></div>
-  <div class={workspaceContent}>
+<WorkspaceShell hook="data-ioc-extractor" noJsMessage="The interactive IOC extractor needs JavaScript enabled.">
     <div>
       <label class={fieldLabel} for="ioc-input">Paste text — a log, an alert, a report, an email header</label>
       <textarea
@@ -248,14 +196,12 @@ const categoryItemBtn = css({
         <button type="button" class={categoryItemBtn} data-ioc-item-btn data-copy-pop data-sound="copy" title="Click to copy"></button>
       </li>
     </template>
-  </div>
-</div>
-
-<p class={noJsNote}>The interactive IOC extractor needs JavaScript enabled.</p>
+</WorkspaceShell>
 
 <script>
   // @ts-nocheck — vanilla DOM client script
-  import { IOC_CATEGORIES, extractIocs, defangValue } from '../utils/iocs';
+  import { IOC_CATEGORIES, extractIocs, defangValue, containsDefanged } from '../utils/iocs';
+  import { pop } from '../scripts/copyPop';
 
   (function () {
     function init() {
@@ -282,12 +228,6 @@ const categoryItemBtn = css({
         var defang = false;
         var lastResult = {};
 
-        // Shared copy-confirm pop (see motion.css's [data-copy-pop] rule) — same
-        // attribute-toggle convention as the blog code-block copy button.
-        function pop(btn) {
-          btn.setAttribute('data-copied', '');
-          setTimeout(function () { btn.removeAttribute('data-copied'); }, 1600);
-        }
         function copyText(btn, text) {
           if (!text) return;
           navigator.clipboard.writeText(text).then(function () { pop(btn); }).catch(function () {});
@@ -318,13 +258,14 @@ const categoryItemBtn = css({
             else c.card.removeAttribute('data-has-matches');
             renderList(c, values);
           });
+          var defangedNote = containsDefanged(text) ? ' Defanged indicators detected in your input and recognized.' : '';
           if (!text.trim()) {
             summaryEl.textContent = 'Paste something above to extract indicators.';
           } else if (total === 0) {
-            summaryEl.textContent = 'No indicators found in the pasted text.';
+            summaryEl.textContent = 'No indicators found in the pasted text.' + defangedNote;
           } else {
             summaryEl.textContent = total + ' indicator' + (total === 1 ? '' : 's') + ' found across ' +
-              cards.filter(function (c) { return (lastResult[c.id] || []).length > 0; }).length + ' categories.';
+              cards.filter(function (c) { return (lastResult[c.id] || []).length > 0; }).length + ' categories.' + defangedNote;
           }
         }
 

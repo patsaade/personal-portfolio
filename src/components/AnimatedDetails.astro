@@ -1,0 +1,18 @@
+---
+// Mounted once (BaseLayout): animates every <details> element's open/close
+// site-wide (Tools, Glossary, Certifications, ATT&CK/D3FEND maps, Cheat
+// Sheet, mobile nav accordion) instead of the native instant toggle. See
+// src/scripts/animatedDetails.ts for the behaviour and its guardrails
+// (reduced-motion no-op, doesn't intercept programmatic opens).
+---
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  import { animateDetails } from '../scripts/animatedDetails';
+
+  function init() {
+    Array.prototype.forEach.call(document.querySelectorAll('details'), animateDetails);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+</script>

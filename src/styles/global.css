@@ -30,12 +30,14 @@ html {
    css() types reject. The panel stays laid out (position: absolute, so no layout
    shift) but invisible/non-interactive at rest — visibility flips to hidden only
    after the fade/slide-out finishes (transition-delay), so it stays visible while
-   closing instead of vanishing mid-animation; opening flips it back instantly. */
+   closing instead of vanishing mid-animation; opening flips it back instantly.
+   500ms so the slide reads clearly rather than a near-instant snap — it's a
+   slide (translateY) that fades alongside it, never a bare fade. */
 .nav-more-menu {
   opacity: 0;
   visibility: hidden;
   transform: translateY(-6px);
-  transition: opacity 160ms ease, transform 160ms ease, visibility 0s linear 160ms;
+  transition: opacity 500ms ease, transform 500ms ease, visibility 0s linear 500ms;
 }
 .nav-more:hover .nav-more-menu,
 .nav-more:focus-within .nav-more-menu,
@@ -43,7 +45,7 @@ html {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
-  transition: opacity 160ms ease, transform 160ms ease, visibility 0s linear 0s;
+  transition: opacity 500ms ease, transform 500ms ease, visibility 0s linear 0s;
 }
 .nav-more:hover .nav-more-chev,
 .nav-more-btn[aria-expanded='true'] .nav-more-chev {

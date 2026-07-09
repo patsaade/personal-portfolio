@@ -26,7 +26,13 @@ CLAUDE.md
 README.md
 .github/
 .nvmrc
-scripts/
+# Leading slash anchors this to the repo-root maintenance-tooling directory
+# only — an unanchored "scripts/" would also match src/scripts/ (the client
+# script modules the production build actually needs, e.g. copyPop.ts,
+# animatedDetails.ts) and silently strip them from the Vercel upload, which
+# breaks the build with an unresolved-import error that a local `npm run
+# build` can't catch (it never consults .vercelignore).
+/scripts/
 # Note: .npmrc is intentionally NOT ignored — Vercel needs it at install time
 # (legacy-peer-deps=true).
 

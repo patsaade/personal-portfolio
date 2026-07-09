@@ -37,26 +37,31 @@ export const NAV_LINKS = [
 // "Toolkit" bucket — browse-and-look-things-up resources, the two paired
 // MITRE framework maps, and the interactive converter/builder tools each
 // get their own labeled group.
-export const REFERENCE_LINKS = [
+const REFERENCE_LINKS = [
   { href: '/tools/', label: 'Tool Catalog' },
   { href: '/tools/cheatsheet/', label: 'Command Cheat Sheet' },
   { href: '/glossary/', label: 'Glossary' },
+  { href: '/event-ids/', label: 'Event ID Reference' },
 ] as const;
 
 // The two MITRE framework maps — kept together since they're explicit
 // offensive/defensive counterparts, cross-linked throughout the site.
-export const FRAMEWORK_LINKS = [
+// Not exported — only consumed here via DFIR_GROUPS below.
+const FRAMEWORK_LINKS = [
   { href: '/attack-map/', label: 'MITRE ATT&CK Coverage Map' },
   { href: '/d3fend/', label: 'MITRE D3FEND Map' },
 ] as const;
 
 // Tools you *do* something with (convert, build a query) rather than browse —
-// as opposed to the static reference pages above.
-export const INTERACTIVE_TOOL_LINKS = [
-  { href: '/tools/timestamp-converter/', label: 'Timestamp Decoder' },
-  { href: '/tools/ioc-extractor/', label: 'IOC Extractor' },
-  { href: '/osint/', label: 'OSINT Toolkit' },
-] as const;
+// as opposed to the static reference pages above. `icon` is only consumed by
+// ToolSidebar's compact icon rail (a distinct icon per tool, since a couple of
+// these pages happen to share "search" as their own in-page header icon).
+export const INTERACTIVE_TOOL_LINKS: { href: string; label: string; icon: IconName }[] = [
+  { href: '/tools/timestamp-converter/', label: 'Timestamp Decoder', icon: 'clock' },
+  { href: '/tools/ioc-extractor/', label: 'IOC Extractor', icon: 'crosshair' },
+  { href: '/tools/hash-calculator/', label: 'Hash Calculator', icon: 'key' },
+  { href: '/osint/', label: 'OSINT Toolkit', icon: 'globe' },
+];
 
 // The DFIR dropdown's category groups, in display order.
 export const DFIR_GROUPS = [

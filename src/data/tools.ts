@@ -17,13 +17,9 @@
 // (public tools); add a tool by appending to its platform.
 
 import type { IconName } from '../components/Icon.astro';
+import type { Reference } from './references';
 
 export type ToolCost = 'Open source' | 'Free' | 'Freemium';
-
-export interface ToolReference {
-  name: string;
-  url: string;
-}
 
 export interface Tool {
   name: string;
@@ -37,7 +33,7 @@ export interface Tool {
   what?: string; // "What it is" — definition
   why?: string; // "Why it matters" — DFIR significance
   example?: string; // "In practice" — concrete example
-  references?: ToolReference[]; // additional verified docs/guides beyond the official site
+  references?: Reference[]; // additional verified docs/guides beyond the official site
   install?: string; // how to get it (verified)
   // Genuinely useful DFIR command-line examples, most representative first.
   // Verified against the tool's own docs/README/help output; omitted for
@@ -290,6 +286,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         commands: [
           { desc: "Generate a CSV timeline of detections from a directory of EVTX logs", cmd: "hayabusa csv-timeline -d evtx_dir -o timeline.csv" },
           { desc: "Extract and decode base64 strings (e.g. encoded PowerShell) embedded in events", cmd: "hayabusa extract-base64 -d evtx_dir -o base64-results.csv" },
+          { desc: "Summarize successful and failed logon attempts across a directory of EVTX logs", cmd: "hayabusa logon-summary -d evtx_dir -o logon-summary.csv" },
         ],
         references: [{ name: 'Hayabusa Documentation Site', url: 'https://yamato-security.github.io/hayabusa/' }],
         what: 'A fast Windows event-log threat-hunting tool that applies a Sigma-based ruleset to EVTX files and produces a timeline of findings.',
@@ -476,6 +473,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         commands: [
           { desc: "Install Sysmon with a custom configuration", cmd: "Sysmon64.exe -accepteula -i sysmonconfig.xml" },
           { desc: "Reset an installed Sysmon driver back to its default configuration", cmd: "Sysmon64.exe -c --" },
+          { desc: "Dump the currently active Sysmon configuration (rules and filters in effect) to the console", cmd: "Sysmon64.exe -c" },
         ],
         references: [{ name: 'Sysmon Event ID Reference — Microsoft Learn', url: 'https://learn.microsoft.com/en-us/windows/security/operating-system-security/sysmon/sysmon-events' }],
         what: 'A Windows system service (Sysinternals) that logs detailed process, network, and file activity to the event log.',
@@ -488,7 +486,11 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         tags: ['windows', 'processes', 'handles', 'tokens', 'live-triage'],
         url: 'https://systeminformer.io/',
         install: 'Download the installer/ZIP from systeminformer.com',
-        commands: [{ desc: "Jump straight to a specific process, skipping the kernel driver", cmd: "SystemInformer.exe -selectpid <PID> -nokph" }],
+        commands: [
+          { desc: "Jump straight to a specific process, skipping the kernel driver", cmd: "SystemInformer.exe -selectpid <PID> -nokph" },
+          { desc: "Launch straight into the System Information view (live CPU, memory, disk, and network graphs) for a fast resource-activity overview", cmd: "SystemInformer.exe -sysinfo" },
+          { desc: "Jump directly to the Network tab on startup to review active TCP/UDP connections and owning processes", cmd: "SystemInformer.exe -selecttab Network" },
+        ],
         references: [{ name: 'System Informer GitHub Repository', url: 'https://github.com/winsiderss/systeminformer' }],
         what: 'An open-source live process, handle, and token inspector (formerly Process Hacker) with deep system visibility. Command-line flags can jump straight to a process/tab, or skip loading its kernel driver for a lighter-touch triage run.',
         why: 'It exposes what’s running right now in far more detail than Task Manager, useful for live triage.',
@@ -502,6 +504,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         commands: [
           { desc: "Image a physical drive to an E01 forensic image with case metadata", cmd: "ftkimager.exe \\\\.\\PHYSICALDRIVE1 D:\\Images\\case001 --e01 --case-number 001 --evidence-number 1" },
           { desc: "Verify a previously created forensic image's stored hash against its actual contents", cmd: "\"FTK Imager.exe\" /VerifyImage D:\\Images\\case001.E01" },
+          { desc: "List all physical drives detected on the system, to confirm the correct source device before imaging", cmd: "ftkimager.exe --list-drives" },
         ],
         references: [{ name: 'FTK Imager User Guide (PDF)', url: 'https://d1kpmuwb7gvu1i.cloudfront.net/Imager/4_7_1/FTKImager_UserGuide.pdf' }],
         what: 'A free disk and memory imaging and preview tool that creates forensic images and inspects their contents.',
@@ -547,7 +550,10 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         tags: ['windows', 'pe', 'static-analysis', 'malware-indicators'],
         url: 'https://www.winitor.com/',
         install: 'Free for private/non-commercial use only, from winitor.com; a paid Pro license is required for professional use',
-        commands: [{ desc: "Batch-scan a file and write an XML report (Pro CLI mode)", cmd: "pestudiox -file:sample.exe (batch/CLI mode via pestudiox.exe \u00e2\u0080\u0094 Pro-only, writes an XML report)" }],
+        commands: [
+          { desc: "Batch-scan a file via the Pro CLI, writing a same-named XML report", cmd: "pestudiox -file:sample.exe" },
+          { desc: "Batch-scan a file and write the XML report to a specific path/filename instead, for feeding into a separate parsing pipeline", cmd: "pestudiox -file:sample.exe -xml:C:\\reports\\sample-report.xml" },
+        ],
         references: [
           { name: 'SANS ISC Diary — Triaging Suspicious Files with PEStudio', url: 'https://isc.sans.edu/diary/22706' },
           { name: 'PEStudio manual (official PDF, incl. command-line mode)', url: 'https://www.winitor.com/pdf/pestudio.pdf' },
@@ -666,6 +672,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         commands: [
           { desc: "Load LiME as a kernel module to dump memory to a mounted evidence share", cmd: "insmod lime-$(uname -r).ko \"path=/mnt/evidence/mem.lime format=lime\"" },
           { desc: "Dump memory directly over the network to a listening collector instead of writing to local disk", cmd: "insmod lime-$(uname -r).ko \"path=tcp:4444 format=lime\"" },
+          { desc: "Dump memory to local disk while generating a SHA-256 hash sidecar file for chain-of-custody integrity verification", cmd: "insmod lime-$(uname -r).ko \"path=/mnt/evidence/mem.lime format=lime digest=sha256\"" },
         ],
         references: [{ name: 'LiME Black Hat Arsenal Whitepaper (Joe Sylve)', url: 'https://media.blackhat.com/bh-us-12/Arsenal/Sylve/BH_US_12_Sylve_LiME_WP.pdf' }],
         what: 'A Loadable Kernel Module that extracts volatile memory from Linux (and Android) systems.',
@@ -726,6 +733,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         commands: [
           { desc: "Parse macOS unified logs into readable records (uuidtext, timesync, then tracev3 path, in that order)", cmd: "python3 UnifiedLogReader.py uuidtext_path timesync_path tracev3_path output_path" },
           { desc: "Parse unified logs and write the results to a SQLite database instead of the default log-style output", cmd: "python3 UnifiedLogReader.py -f SQLITE uuidtext_path timesync_path tracev3_path output_path" },
+          { desc: "Parse a .logarchive bundle (e.g. from macOS's log collect or a sysdiagnose) by pointing uuidtext_path/tracev3_path at the .logarchive folder itself and timesync_path at its embedded timesync subfolder", cmd: "python3 UnifiedLogReader.py logarchive_path logarchive_path/timesync logarchive_path output_path" },
         ],
         references: [{ name: 'UnifiedLogReader README (usage & project status)', url: 'https://github.com/ydkhatri/UnifiedLogReader/blob/master/README.md' }],
         what: 'A tool to parse Apple’s binary Unified Logging (.tracev3) into readable records.',
@@ -772,6 +780,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         commands: [
           { desc: "Submit a URL for sandboxed scanning (public visibility)", cmd: "curl --request POST --url https://urlscan.io/api/v1/scan/ --header \"API-Key: YOUR_API_KEY\" --header \"Content-Type: application/json\" --data '{\"url\": \"https://example.com\", \"visibility\": \"public\"}'" },
           { desc: "Retrieve a completed scan's results by UUID (returned from the submit call)", cmd: "curl --request GET \"https://urlscan.io/api/v1/result/<uuid>/\"" },
+          { desc: "Search urlscan.io's historical scan database for prior sightings of a domain", cmd: "curl --request GET \"https://urlscan.io/api/v1/search/?q=domain:example.com\"" },
         ],
         references: [{ name: 'Official API Documentation', url: 'https://urlscan.io/docs/api/' }],
         what: 'A service that visits and sandboxes a URL, recording the resources, screenshots, and behavior of the page.',
@@ -811,6 +820,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         commands: [
           { desc: "Submit a URL to Joe Sandbox Cloud for analysis (Cloud Basic API key, form-encoded auth)", cmd: "curl --request POST https://jbxcloud.joesecurity.org/api/v2/submission/new --data-urlencode \"apikey=YOUR_API_KEY\" --data-urlencode \"accept-tac=1\" --data-urlencode \"url=https://example.com\"" },
           { desc: "Check the status and key attributes of a submitted analysis by its web ID", cmd: "curl --request POST https://jbxcloud.joesecurity.org/api/v2/analysis/info --data-urlencode \"apikey=YOUR_API_KEY\" --data-urlencode \"webid=123456\"" },
+          { desc: "Submit a local file sample for analysis using the official jbxapi command-line tool instead of raw curl calls", cmd: "jbxapi submit sample.exe" },
         ],
         references: [{ name: 'Official Python API Wrapper (jbxapi)', url: 'https://github.com/joesecurity/jbxapi' }],
         what: 'An automated malware analysis sandbox with a free Cloud Basic tier and detailed behavior reports.',
@@ -854,6 +864,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         commands: [
           { desc: "Search ThreatFox for an IOC — IP, domain, hash, or URL (requires a free Auth-Key from auth.abuse.ch)", cmd: "curl -H \"Auth-Key: YOUR_API_KEY\" -X POST https://threatfox-api.abuse.ch/api/v1/ -d '{\"query\": \"search_ioc\", \"search_term\": \"139.180.203.104\"}'" },
           { desc: "List recent IOCs associated with a malware family (e.g. Cobalt Strike)", cmd: "curl -H \"Auth-Key: YOUR_API_KEY\" -X POST https://threatfox-api.abuse.ch/api/v1/ -d '{\"query\": \"malwareinfo\", \"malware\": \"win.cobalt_strike\", \"limit\": 10}'" },
+          { desc: "Search ThreatFox for IOCs associated with a specific malware sample by its MD5 or SHA256 hash", cmd: "curl -H \"Auth-Key: YOUR_API_KEY\" -X POST https://threatfox-api.abuse.ch/api/v1/ -d '{\"query\": \"search_hash\", \"hash\": \"2151c4b970eff0071948dbbc19066aa4\"}'" },
         ],
         references: [{ name: 'Official API Documentation', url: 'https://threatfox.abuse.ch/api/' }],
         what: 'An abuse.ch platform for searching and sharing indicators of compromise.',
@@ -868,6 +879,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         commands: [
           { desc: "Check an IP address's abuse confidence score and report history", cmd: "curl -G https://api.abuseipdb.com/api/v2/check --data-urlencode \"ipAddress=118.25.6.39\" -d maxAgeInDays=90 -H \"Key: YOUR_API_KEY\" -H \"Accept: application/json\"" },
           { desc: "Pull the current blocklist of high-confidence abusive IPs", cmd: "curl https://api.abuseipdb.com/api/v2/blacklist -H \"Key: YOUR_API_KEY\" -H \"Accept: application/json\"" },
+          { desc: "Check every IP in a CIDR range/subnet at once, for triaging a whole suspicious network block found in firewall or netflow logs", cmd: "curl -G https://api.abuseipdb.com/api/v2/check-block --data-urlencode \"network=127.0.0.1/24\" -d maxAgeInDays=15 -H \"Key: YOUR_API_KEY\" -H \"Accept: application/json\"" },
         ],
         references: [{ name: 'Official API Documentation', url: 'https://docs.abuseipdb.com/' }],
         what: 'A community database of reported abusive IP addresses with reputation scoring.',
@@ -896,6 +908,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         commands: [
           { desc: "Check whether an IP is known internet background-scan noise (free Community API)", cmd: "curl https://api.greynoise.io/v3/community/8.8.8.8 -H \"key: YOUR_API_KEY\"" },
           { desc: "Run a GNQL query to search the full GreyNoise dataset for IPs matching arbitrary criteria (classification, tags, CVE, ASN, etc.), not just a single known IP", cmd: "curl -G \"https://api.greynoise.io/v3/gnql\" --data-urlencode \"query=classification:malicious tags:\\\"Mirai\\\"\" -H \"key: YOUR_API_KEY\"" },
+          { desc: "Quickly triage a batch of IPs (e.g. pulled from firewall/IDS logs) via the official GreyNoise CLI, flagging which are known internet noise or RIOT business services", cmd: "greynoise quick 69.160.160.55,8.8.8.8" },
         ],
         references: [{ name: 'Official Documentation Hub', url: 'https://docs.greynoise.io/' }],
         what: 'A service that characterizes internet-wide scan and background noise to separate targeted activity from spray.',
@@ -1025,6 +1038,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         commands: [
           { desc: "Break down a URL into its components (query params, encoded data, timestamps)", cmd: "unfurl https://twitter.com/_RyanBenson/status/1205161015177961473" },
           { desc: "Get detailed, verbose output explaining what each URL fragment decodes to", cmd: "unfurl -d \"https://www.google.com/search?q=dfir.blog&oq=dfir.blog\"" },
+          { desc: "Batch-process every URL in a text file (one per line, e.g. from browser history or proxy logs) and write the parsed breakdown as CSV rows", cmd: "unfurl -o results.csv urls.txt" },
         ],
         references: [{ name: 'Official GitHub Repository', url: 'https://github.com/RyanDFIR/unfurl' }],
         what: 'A tool (dfir.blog) that breaks a complex URL into its components and visualizes the embedded data.',
@@ -1038,14 +1052,16 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
 /** Flattened tools, each carrying its platform context (for detail pages + search). */
 export interface ToolEntry extends Tool {
   platform: string;
-  platformId: string;
-  platformIcon: IconName;
 }
-export const TOOLS: ToolEntry[] = TOOL_PLATFORMS.flatMap((p) =>
-  p.tools.map((t) => ({ ...t, platform: p.title, platformId: p.id, platformIcon: p.icon })),
-);
+export const TOOLS: ToolEntry[] = TOOL_PLATFORMS.flatMap((p) => p.tools.map((t) => ({ ...t, platform: p.title })));
 export const TOTAL_TOOLS = TOOLS.length;
 
 /** Tag tone per cost, for the shared `tag` recipe (open source = accent, freemium = primary). */
 export const costTone = (cost: ToolCost): 'muted' | 'primary' | 'accent' =>
   cost === 'Open source' ? 'accent' : cost === 'Freemium' ? 'primary' : 'muted';
+
+/** Tools that directly implement a glossary concept (see `glossarySlugs` above) —
+ *  shared by the glossary term page and the ATT&CK/D3FEND technique pages'
+ *  "Tools" cross-link section, which each otherwise re-filtered TOOLS themselves. */
+export const toolsByGlossarySlug = (slug: string): ToolEntry[] =>
+  TOOLS.filter((t) => (t.glossarySlugs ?? []).includes(slug));
