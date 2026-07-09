@@ -157,11 +157,30 @@ const exampleBox = css({
   fontSize: '0.95rem',
   lineHeight: 1.75,
 });
+// Raw sample log — a real multi-line event rendering, so it's capped and
+// scrolls vertically instead of growing the page unbounded (same convention
+// as HashCalculator/IocExtractor's output boxes); wrapping (not horizontal
+// scroll) handles any single long line.
+const sampleLogBox = css({
+  m: 0,
+  p: '0.9rem 1.05rem',
+  maxH: '22rem',
+  overflowY: 'auto',
+  fontFamily: 'mono',
+  fontSize: '0.82rem',
+  lineHeight: 1.6,
+  color: 'text',
+  bg: 'codeBg',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+});
 ---
 
 {matches ? (
   <BaseLayout
-    title={dest ? `Moved — Event ${matches[0].id}` : `Event ${matches[0].id} — multiple matches`}
+    title={dest ? `Moved — Event ${matches[0].id}` : `Event ${matches[0].id} — Multiple Matches`}
     description={dest ? `This page has moved to the canonical Event ${matches[0].id} reference page.` : `Event ID ${matches[0].id} exists in more than one Windows log — pick the one you mean.`}
     robots="noindex"
   >
@@ -239,6 +258,20 @@ const exampleBox = css({
       <>
         <h2 class={sectionH2}><Icon name="file-text" size={18} class={css({ color: 'primary' })} /> Example</h2>
         <p class={exampleBox}>{entry.example}</p>
+      </>
+    )
+  }
+
+  {
+    entry.sampleLog && (
+      <>
+        <h2 class={sectionH2}><Icon name="terminal" size={18} class={css({ color: 'primary' })} /> Sample log</h2>
+        <p class={css({ color: 'textMuted', fontSize: '0.92rem', mb: '0.85rem', lineHeight: 1.7 })}>
+          {entry.source === 'sysmon'
+            ? "Rendered in Sysmon's own field-value style, as it appears in the operational log."
+            : "Rendered in Windows Event Viewer's plain-text \"Friendly View\" style. Values are illustrative — redacted-style names and RFC 5737 documentation IPs, never a real captured event."}
+        </p>
+        <pre class={sampleLogBox}><code>{entry.sampleLog}</code></pre>
       </>
     )
   }

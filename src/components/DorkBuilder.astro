@@ -30,7 +30,14 @@ const syntaxLabel = (op: DorkOperator) =>
   op.kind === 'phrase' ? '"…"' : op.kind === 'exclude' ? '-term' : op.kind === 'or' ? 'OR' : (op.prefix ?? '');
 
 const topRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-end' });
-const engineRow = css({ display: 'inline-flex', gap: '0.15rem', p: '0.2rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'md', alignSelf: 'flex-start' });
+// position:relative + zIndex:0 is the whole retrofit contract for
+// src/scripts/animatedSwitch.ts's site-wide sliding-thumb switch (see
+// AnimatedSwitch.astro, mounted once in BaseLayout, and CLAUDE.md invariant
+// 12) — it auto-wires every role="radiogroup" on the page, including this
+// one, with no other change needed here. flexWrap lets the row wrap onto a
+// second line instead of overflowing at narrow widths now that it holds four
+// engine buttons instead of three.
+const engineRow = css({ display: 'inline-flex', flexWrap: 'wrap', gap: '0.15rem', p: '0.2rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'md', alignSelf: 'flex-start', position: 'relative', zIndex: 0 });
 const engineBtn = css({
   display: 'inline-flex',
   alignItems: 'center',
@@ -48,6 +55,14 @@ const engineBtn = css({
   transition: 'all 150ms ease',
   _hover: { color: 'text' },
   '&[data-active]': { bg: 'bgSubtle', color: 'primary', borderColor: 'border', boxShadow: 'card' },
+  // Once AnimatedSwitch arms a sliding thumb underneath (see
+  // animatedSwitch.ts / CLAUDE.md invariant 12), suppress this button's own
+  // bg/border/shadow so the two don't animate against each other on
+  // separate clocks. No-JS/reduced-motion visitors never get
+  // data-switch-armed, so their indicator is untouched.
+  '[data-switch-armed] &': {
+    '&[data-active]': { bg: 'transparent', borderColor: 'transparent', boxShadow: 'none' },
+  },
 });
 
 const selectorField = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: '1 1 200px', minW: '160px' });
@@ -111,6 +126,28 @@ const blockBadge = css({
   color: 'primary',
   whiteSpace: 'nowrap',
 });
+// A small always-visible "Exact" chip glued onto the phrase operator's badge
+// (and the matching Operator Reference table cell in osint.astro) — the bare
+// quote glyphs alone read ambiguously at a glance, unlike every other
+// operator's badge (-term, OR, site:, ...), which is already self-evident.
+// Zero-interaction fix: no title/hover needed, matches this badge's existing
+// aria-hidden treatment (the input's own aria-label already carries the
+// operator name for screen readers).
+const exactTag = css({
+  display: 'inline-block',
+  fontFamily: 'sans',
+  fontSize: '0.58rem',
+  fontWeight: 800,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+  color: 'accent',
+  bg: 'color-mix(in srgb, token(colors.accent) 16%, transparent)',
+  borderRadius: 'sm',
+  px: '0.3rem',
+  py: '0.05rem',
+  ml: '0.35rem',
+  verticalAlign: 'middle',
+});
 const blockInput = css({
   flex: 1,
   minW: 0,
@@ -149,7 +186,12 @@ const outputBox = css({
   minH: '4.5rem',
 });
 const actionCol = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' });
-const actionBtn = css({
+// Kept as plain objects (not pre-atomized css() calls) so the primary variant
+// below can css(actionBtnBase, primaryBtnBase) — a deep object merge that
+// deterministically overrides actionBtnBase's own _hover.color, unlike
+// concatenating two independently-atomized class strings (see STYLE_GUIDE.md
+// "Buttons" for why that pattern silently broke a hover state elsewhere).
+const actionBtnBase = {
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -166,13 +208,15 @@ const actionBtn = css({
   bg: 'bgCard',
   transition: 'all 150ms ease',
   _hover: { borderColor: 'primary', color: 'primary' },
-});
-const primaryBtn = css({
+} as const;
+const primaryBtnBase = {
   bg: 'primary',
   color: 'onPrimary',
   borderColor: 'primary',
   _hover: { opacity: 0.9, color: 'onPrimary' },
-});
+} as const;
+const actionBtn = css(actionBtnBase);
+const primaryActionBtn = css(actionBtnBase, primaryBtnBase);
 ---
 
 <WorkspaceShell
@@ -219,7 +263,10 @@ const primaryBtn = css({
           {
             operators.map((op) => (
               <div class={blockRow} data-dork-field-wrap data-engines={op.engines.join(' ')}>
-                <span class={blockBadge} aria-hidden="true">{syntaxLabel(op)}</span>
+                <span class={blockBadge} aria-hidden="true">
+                  {syntaxLabel(op)}
+                  {op.kind === 'phrase' && <span class={exactTag}>Exact</span>}
+                </span>
                 <input
                   id={`dork-${op.id}`}
                   type="text"
@@ -242,7 +289,7 @@ const primaryBtn = css({
         <p class={paneLabel}>Recipe</p>
         <pre class={outputBox}><code data-dork-output>&nbsp;</code></pre>
         <div class={actionCol}>
-          <button type="button" class={`${actionBtn} ${primaryBtn}`} data-dork-copy data-sound="copy">
+          <button type="button" class={primaryActionBtn} data-dork-copy data-sound="copy">
             <Icon name="copy" size={15} /> Copy
           </button>
           <a class={actionBtn} data-dork-search href="#" target="_blank" rel="noopener" data-sound="tick">

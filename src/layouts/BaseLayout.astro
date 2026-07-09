@@ -18,6 +18,7 @@ import OfflineIndicator from '../components/OfflineIndicator.astro';
 import BackToTop from '../components/BackToTop.astro';
 import ToolSidebar from '../components/ToolSidebar.astro';
 import AnimatedDetails from '../components/AnimatedDetails.astro';
+import AnimatedSwitch from '../components/AnimatedSwitch.astro';
 import SpeedInsights from '@vercel/speed-insights/astro';
 import { DEFAULT_DARK } from '../themes';
 
@@ -79,6 +80,11 @@ const props = Astro.props;
         invariant 12 / AnimatedDetails.astro's own docblock, which already
         documented this as sitewide behavior that wasn't actually running). */}
     <AnimatedDetails />
+
+    {/* Slides a thumb behind the active segment of every segmented switch
+        (role="radiogroup") site-wide — see AnimatedSwitch.astro / CLAUDE.md
+        invariant 12 for the mechanism and its retrofit contract. */}
+    <AnimatedSwitch />
 
     <main
       id="main"

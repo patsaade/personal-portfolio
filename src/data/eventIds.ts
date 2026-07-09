@@ -19,7 +19,15 @@
 // only, real legitimate process names where relevant) -- follows the same
 // no-guessing discipline; an entry the research pass couldn't ground in the
 // event's own documented fields just omits the field rather than inventing
-// filler, so it's optional and absent on a few entries.
+// filler, so it's optional and absent on a few entries. `sampleLog` -- a full
+// raw log rendering, one per entry -- follows the exact same no-guessing
+// discipline as `example` but at full length: Security events use Windows
+// Event Viewer's plain-text "Friendly View" style (field-label-colon-value
+// blocks, grounded in the entry's own `references` URL, which almost always
+// documents the exact field layout); Sysmon events use Sysmon's own flat
+// "Field: Value" rendering from the official Sysinternals docs. Same value
+// discipline as `example` (redacted-style usernames, RFC 5737 documentation
+// IPs only) so it never reads as a real captured event.
 import type { Reference } from './references';
 
 export type EventIdSource = 'security' | 'sysmon';
@@ -43,6 +51,8 @@ export interface EventIdEntry {
   keyFields: EventIdField[];
   /** Short, generic illustrative occurrence — see the file header comment. */
   example?: string;
+  /** Full raw log rendering — see the file header comment. */
+  sampleLog?: string;
   relatedEventIds: string[];
   attackTechniques: string[];
   references: Reference[];
@@ -73,7 +83,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn — 1100(S) The event logging service has shut down",
         "url": "https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-1100"
       }
-    ]
+    ],
+    "sampleLog": "The Event logging service has shut down."
   },
   {
     "slug": "security-1102",
@@ -112,7 +123,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn — 1102(S) The audit log was cleared",
         "url": "https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-1102"
       }
-    ]
+    ],
+    "sampleLog": "The audit log was cleared.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-500\n\tAccount Name:\t\tadministrator\n\tDomain Name:\t\tCORP\n\tLogon ID:\t\t0x3E7F2A1"
   },
   {
     "slug": "security-1104",
@@ -136,7 +148,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn — 1104(S) The security log is now full",
         "url": "https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-1104"
       }
-    ]
+    ],
+    "sampleLog": "The security log is now full."
   },
   {
     "slug": "security-4624",
@@ -192,7 +205,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4624(S) An account was successfully logged on",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4624"
       }
-    ]
+    ],
+    "sampleLog": "An account was successfully logged on.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-18\n\tAccount Name:\t\tWORKSTATION01$\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7\n\nLogon Information:\n\tLogon Type:\t\t3\n\tRestricted Admin Mode:\t-\n\tVirtual Account:\t\tNo\n\tElevated Token:\t\tNo\n\nImpersonation Level:\t\tImpersonation\n\nNew Logon:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7F2A1\n\tLinked Logon ID:\t\t0x0\n\tNetwork Account Name:\t-\n\tNetwork Account Domain:\t-\n\tLogon GUID:\t\t{00000000-0000-0000-0000-000000000000}\n\nProcess Information:\n\tProcess ID:\t\t0x0\n\tProcess Name:\t\t-\n\nNetwork Information:\n\tWorkstation Name:\tWORKSTATION01\n\tSource Network Address:\t203.0.113.10\n\tSource Port:\t\t49234\n\nDetailed Authentication Information:\n\tLogon Process:\t\tNtLmSsp\n\tAuthentication Package:\tNTLM\n\tTransited Services:\t-\n\tPackage Name (NTLM only):\tNTLM V2\n\tKey Length:\t\t128"
   },
   {
     "slug": "security-4625",
@@ -240,7 +254,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4625(F) An account failed to log on",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4625"
       }
-    ]
+    ],
+    "sampleLog": "An account failed to log on.\n\nSubject:\n\tSecurity ID:\t\tS-1-0-0\n\tAccount Name:\t\t-\n\tAccount Domain:\t\t-\n\tLogon ID:\t\t0x0\n\nLogon Type:\t\t\t3\n\nAccount For Which Logon Failed:\n\tSecurity ID:\t\tS-1-0-0\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\nFailure Information:\n\tFailure Reason:\t\tUnknown user name or bad password.\n\tStatus:\t\t\t0xC000006D\n\tSub Status:\t\t0xC000006A\n\nProcess Information:\n\tCaller Process ID:\t0x0\n\tCaller Process Name:\t-\n\nNetwork Information:\n\tWorkstation Name:\tWORKSTATION01\n\tSource Network Address:\t203.0.113.15\n\tSource Port:\t\t49523\n\nDetailed Authentication Information:\n\tLogon Process:\t\tNtLmSsp\n\tAuthentication Package:\tNTLM\n\tTransited Services:\t-\n\tPackage Name (NTLM only):\t-\n\tKey Length:\t\t0"
   },
   {
     "slug": "security-4626",
@@ -277,7 +292,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4626(S) User/Device claims information",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4626"
       }
-    ]
+    ],
+    "sampleLog": "User/Device claims information.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7F2A1\n\nLogon Type:\t\t\t2\n\nImpersonation Level:\t\tImpersonation\n\nRestricted Admin Mode:\t\t-\n\nVirtual Account:\t\t\tNo\n\nElevated Token:\t\t\tNo\n\nUser Claims:\n\t-\n\nDevice Claims:\n\t-"
   },
   {
     "slug": "security-4627",
@@ -314,7 +330,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4627(S) Group membership information",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4627"
       }
-    ]
+    ],
+    "sampleLog": "Group membership information.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7F2A1\n\nGroup Membership:\n\tCORP\\Domain Users\t\t(S-1-5-21-3623811015-3361044348-30300820-513)\n\tBUILTIN\\Users\t\t(S-1-5-32-545)\n\tEveryone\t\t(S-1-1-0)\n\tNT AUTHORITY\\Authenticated Users\t(S-1-5-11)\n\tNT AUTHORITY\\This Organization\t(S-1-5-15)"
   },
   {
     "slug": "security-4634",
@@ -351,7 +368,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4634(S) An account was logged off",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4634"
       }
-    ]
+    ],
+    "sampleLog": "An account was logged off.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7F2A1\n\nLogon Type:\t\t\t3"
   },
   {
     "slug": "security-4647",
@@ -384,7 +402,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4647(S) User initiated logoff",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4647"
       }
-    ]
+    ],
+    "sampleLog": "User initiated logoff.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7F2A1"
   },
   {
     "slug": "security-4648",
@@ -429,7 +448,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4648(S) A logon was attempted using explicit credentials",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4648"
       }
-    ]
+    ],
+    "sampleLog": "A logon was attempted using explicit credentials.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7F2A1\n\tLogon GUID:\t\t{00000000-0000-0000-0000-000000000000}\n\nAccount Whose Credentials Were Used:\n\tAccount Name:\t\tsvc_backup\n\tAccount Domain:\t\tCORP\n\tLogon GUID:\t\t{00000000-0000-0000-0000-000000000000}\n\nTarget Server:\n\tTarget Server Name:\tfileserver01.corp.example.com\n\tAdditional Information:\tfileserver01.corp.example.com\n\nProcess Information:\n\tProcess ID:\t\t0x1a4\n\tProcess Name:\t\tC:\\Windows\\System32\\mmc.exe\n\nNetwork Information:\n\tNetwork Address:\t203.0.113.20\n\tPort:\t\t\t0"
   },
   {
     "slug": "security-4649",
@@ -462,7 +482,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4649(S) A replay attack was detected",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4649"
       }
-    ]
+    ],
+    "sampleLog": "A replay attack was detected.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-18\n\tAccount Name:\t\tDC01$\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7\n\nCredentials Which Were Replayed:\n\tAccount Name:\t\tjdoe\n\tAccount Domain:\t\tCORP.LOCAL\n\nProcess Information:\n\tProcess ID:\t\t0x260\n\tProcess Name:\t\tC:\\Windows\\System32\\lsass.exe\n\nNetwork Information:\n\tWorkstation Name:\tWKSTN-07\n\nDetailed Authentication Information:\n\tRequest Type:\t\tKerbVerifyPacRequestMessage\n\tLogon Process:\t\tKerberos\n\tAuthentication Package:\tKerberos\n\tTransited Services:\t-\n\nThis event indicates that a Kerberos replay attack was detected - a request was received twice with identical information. This condition could be caused by network misconfiguration."
   },
   {
     "slug": "security-4656",
@@ -512,7 +533,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit File System (Microsoft Learn)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-file-system"
       }
-    ]
+    ],
+    "sampleLog": "A handle to an object was requested.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjdoe\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E4B2\n\nObject:\n\tObject Server:\t\tSecurity\n\tObject Type:\t\tFile\n\tObject Name:\t\tC:\\Finance\\Q3_Report.xlsx\n\tHandle ID:\t\t0x0\n\tResource Attributes:\tS:AI\n\nProcess Information:\n\tProcess ID:\t\t0x1A4C\n\tProcess Name:\t\tC:\\Windows\\System32\\notepad.exe\n\nAccess Request Information:\n\tTransaction ID:\t\t{00000000-0000-0000-0000-000000000000}\n\tAccesses:\t\tREAD_CONTROL\n\t\t\t\tSYNCHRONIZE\n\t\t\t\tReadAttributes\n\t\t\t\tReadData (or ListDirectory)\n\n\tAccess Reasons:\t\tREAD_CONTROL: Granted by D:(A;;RC;;;WD)\n\t\t\t\tSYNCHRONIZE: Granted by D:(A;;0x100000;;;WD)\n\t\t\t\tReadAttributes: Granted by D:(A;;0x80;;;WD)\n\t\t\t\tReadData (or ListDirectory): Granted by D:(A;;0x1;;;WD)\n\n\tAccess Mask:\t\t0x120089\n\tPrivileges Used for Access Check:\t-\n\tRestricted SID Count:\t0"
   },
   {
     "slug": "security-4658",
@@ -549,7 +571,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit Handle Manipulation (Microsoft Learn)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-handle-manipulation"
       }
-    ]
+    ],
+    "sampleLog": "The handle to an object was closed.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjdoe\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E4B2\n\nObject:\n\tObject Server:\t\tSecurity\n\tHandle ID:\t\t0x18A8\n\nProcess Information:\n\tProcess ID:\t\t0xEF0\n\tProcess Name:\t\tC:\\Windows\\explorer.exe"
   },
   {
     "slug": "security-4660",
@@ -586,7 +609,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "4660(S) An object was deleted (Microsoft Learn)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4660"
       }
-    ]
+    ],
+    "sampleLog": "An object was deleted.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjdoe\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E4B2\n\nObject:\n\tObject Server:\t\tSecurity\n\tHandle ID:\t\t0x1678\n\nProcess Information:\n\tProcess ID:\t\t0xEF0\n\tProcess Name:\t\tC:\\Windows\\explorer.exe\n\nTransaction ID:\t\t{00000000-0000-0000-0000-000000000000}"
   },
   {
     "slug": "security-4663",
@@ -627,7 +651,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "4663(S) An attempt was made to access an object (Microsoft Learn)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4663"
       }
-    ]
+    ],
+    "sampleLog": "An attempt was made to access an object.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjdoe\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E4B2\n\nObject:\n\tObject Server:\t\tSecurity\n\tObject Type:\t\tFile\n\tObject Name:\t\tC:\\Finance\\Q3_Report.xlsx\n\tHandle ID:\t\t0x1BC\n\tResource Attributes:\tS:AI\n\nProcess Information:\n\tProcess ID:\t\t0x458\n\tProcess Name:\t\tC:\\Windows\\System32\\notepad.exe\n\nAccess Request Information:\n\tAccesses:\t\tWriteData (or AddFile)\n\t\t\t\tAppendData (or AddSubdirectory or CreatePipeInstance)\n\n\tAccess Mask:\t\t0x6"
   },
   {
     "slug": "security-4672",
@@ -665,7 +690,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit Special Logon (Microsoft Learn)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-special-logon"
       }
-    ]
+    ],
+    "sampleLog": "Special privileges assigned to new logon.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-500\n\tAccount Name:\t\tadministrator\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x8A2F1\n\nPrivileges:\t\tSeSecurityPrivilege\n\t\t\tSeBackupPrivilege\n\t\t\tSeRestorePrivilege\n\t\t\tSeTakeOwnershipPrivilege\n\t\t\tSeDebugPrivilege\n\t\t\tSeSystemEnvironmentPrivilege\n\t\t\tSeLoadDriverPrivilege\n\t\t\tSeImpersonatePrivilege"
   },
   {
     "slug": "security-4673",
@@ -710,7 +736,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit Sensitive Privilege Use (Microsoft Learn)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-sensitive-privilege-use"
       }
-    ]
+    ],
+    "sampleLog": "A privileged service was called.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-18\n\tAccount Name:\t\tDC01$\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7\n\nService:\n\tServer:\t\t\tNT Local Security Authority / Authentication Service\n\tService Name:\t\tLsaRegisterLogonProcess()\n\nProcess:\n\tProcess ID:\t\t0x1F0\n\tProcess Name:\t\tC:\\Windows\\System32\\lsass.exe\n\nService Request Information:\n\tPrivileges:\t\tSeTcbPrivilege"
   },
   {
     "slug": "security-4674",
@@ -752,7 +779,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "4674(S, F) An operation was attempted on a privileged object (Microsoft Learn)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4674"
       }
-    ]
+    ],
+    "sampleLog": "An operation was attempted on a privileged object.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-19\n\tAccount Name:\t\tLOCAL SERVICE\n\tAccount Domain:\t\tNT AUTHORITY\n\tLogon ID:\t\t0x3E5\n\nObject:\n\tObject Server:\t\tLSA\n\tObject Type:\t\t-\n\tObject Name:\t\t-\n\tObject Handle:\t\t0x0\n\nProcess Information:\n\tProcess ID:\t\t0x1F0\n\tProcess Name:\t\tC:\\Windows\\System32\\lsass.exe\n\nRequested Operation:\n\tDesired Access:\t\t16777216\n\tPrivileges:\t\tSeSecurityPrivilege"
   },
   {
     "slug": "security-4675",
@@ -782,7 +810,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4675(S) SIDs were filtered",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4675"
       }
-    ]
+    ],
+    "sampleLog": "SIDs were filtered.\n\nTarget Account:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjdoe\n\tAccount Domain:\t\tCORP\n\nTrust Information:\n\tTrust Direction:\tInbound\n\tTrust Attributes:\tQuarantined Domain (SID Filtering)\n\tTrust Type:\t\tUplevel Trust\n\tTDO Domain SID:\t\tS-1-5-21-1004336348-1177238915-682003330\n\tFiltered SIDs:\t\tS-1-5-21-1004336348-1177238915-682003330-512"
   },
   {
     "slug": "security-4688",
@@ -834,7 +863,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit Process Creation (Microsoft Learn)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-process-creation"
       }
-    ]
+    ],
+    "sampleLog": "A new process has been created.\n\nCreator Subject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjdoe\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E4B2\n\nTarget Subject:\n\tSecurity ID:\t\tS-1-0-0\n\tAccount Name:\t\t-\n\tAccount Domain:\t\t-\n\tLogon ID:\t\t0x0\n\nProcess Information:\n\tNew Process ID:\t\t0x1A44\n\tNew Process Name:\tC:\\Windows\\System32\\cmd.exe\n\tToken Elevation Type:\tTokenElevationTypeLimited (3)\n\tMandatory Label:\tMandatory Label\\Medium Mandatory Level\n\tCreator Process ID:\t0xF68\n\tCreator Process Name:\tC:\\Windows\\explorer.exe\n\tProcess Command Line:\tC:\\Windows\\System32\\cmd.exe /c whoami\n\nToken Elevation Type indicates the type of token that was assigned to the new process in accordance with User Account Control policy.\n\nType 1 is a full token with no privileges removed or groups disabled. A full token is only used if User Account Control is disabled or if the user is the built-in Administrator account, service account, or local system account.\n\nType 2 is an elevated token with no privileges removed or groups disabled. An elevated token is used when User Account Control is enabled and the user chooses to start the program using Run as administrator. An elevated token is also used when an application is configured to always require administrative privilege or to always require maximum privilege, and the user is a member of the Administrators group.\n\nType 3 is a limited token with administrative privileges removed and administrative groups disabled. The limited token is used when User Account Control is enabled, the application does not require administrative privilege, and the user does not choose to start the program using Run as administrator."
   },
   {
     "slug": "security-4689",
@@ -870,7 +900,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "4689(S) A process has exited (Microsoft Learn)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4689"
       }
-    ]
+    ],
+    "sampleLog": "A process has exited.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x2A9F31\n\nProcess Information:\n\tProcess ID:\t\t0x1a6c\n\tProcess Name:\t\tC:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\n\tExit Status:\t\t0x0"
   },
   {
     "slug": "security-4697",
@@ -920,7 +951,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit Security System Extension (Microsoft Learn)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-security-system-extension"
       }
-    ]
+    ],
+    "sampleLog": "A service was installed in the system.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x2A9F31\n\nService Information:\n\tService Name:\t\tWinDefragSvc\n\tService File Name:\tC:\\Windows\\Temp\\update.exe\n\tService Type:\t\t0x10\n\tService Start Type:\t2\n\tService Account:\tLocalSystem"
   },
   {
     "slug": "security-4698",
@@ -961,7 +993,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit Other Object Access Events (Microsoft Learn)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-other-object-access-events"
       }
-    ]
+    ],
+    "sampleLog": "A scheduled task was created.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x2A9F31\n\nTask Information:\n\tTask Name:\t\t\\Microsoft\\Windows\\UpdateOrchestrator\\UpdateCheck\n\tTask Content:\t\t<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <RegistrationInfo>\n    <Author>CORP\\jsmith</Author>\n  </RegistrationInfo>\n  <Triggers>\n    <TimeTrigger>\n      <StartBoundary>2024-01-15T09:00:00</StartBoundary>\n      <Enabled>true</Enabled>\n    </TimeTrigger>\n  </Triggers>\n  <Actions Context=\"Author\">\n    <Exec>\n      <Command>C:\\Windows\\Temp\\update.exe</Command>\n    </Exec>\n  </Actions>\n</Task>"
   },
   {
     "slug": "security-4699",
@@ -998,7 +1031,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "4699(S) A scheduled task was deleted (Microsoft Learn)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4699"
       }
-    ]
+    ],
+    "sampleLog": "A scheduled task was deleted.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x2A9F31\n\nTask Information:\n\tTask Name:\t\t\\Microsoft\\Windows\\UpdateOrchestrator\\UpdateCheck"
   },
   {
     "slug": "security-4700",
@@ -1035,7 +1069,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "4700(S) A scheduled task was enabled (Microsoft Learn)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4700"
       }
-    ]
+    ],
+    "sampleLog": "A scheduled task was enabled.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x2A9F31\n\nTask Information:\n\tTask Name:\t\t\\Microsoft\\Windows\\UpdateOrchestrator\\UpdateCheck\n\tTask Content:\t\t<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <Settings>\n    <Enabled>true</Enabled>\n  </Settings>\n  <Actions Context=\"Author\">\n    <Exec>\n      <Command>C:\\Windows\\Temp\\update.exe</Command>\n    </Exec>\n  </Actions>\n</Task>"
   },
   {
     "slug": "security-4701",
@@ -1072,7 +1107,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "4701(S) A scheduled task was disabled (Microsoft Learn)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4701"
       }
-    ]
+    ],
+    "sampleLog": "A scheduled task was disabled.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x2A9F31\n\nTask Information:\n\tTask Name:\t\t\\Microsoft\\Windows\\UpdateOrchestrator\\UpdateCheck\n\tTask Content:\t\t<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <Settings>\n    <Enabled>false</Enabled>\n  </Settings>\n  <Actions Context=\"Author\">\n    <Exec>\n      <Command>C:\\Windows\\Temp\\update.exe</Command>\n    </Exec>\n  </Actions>\n</Task>"
   },
   {
     "slug": "security-4702",
@@ -1109,7 +1145,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "4702(S) A scheduled task was updated (Microsoft Learn)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4702"
       }
-    ]
+    ],
+    "sampleLog": "A scheduled task was updated.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x2A9F31\n\nTask Information:\n\tTask Name:\t\t\\Microsoft\\Windows\\UpdateOrchestrator\\UpdateCheck\n\tTask Content:\t\t<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <Triggers>\n    <TimeTrigger>\n      <StartBoundary>2024-02-01T09:00:00</StartBoundary>\n      <Enabled>true</Enabled>\n    </TimeTrigger>\n  </Triggers>\n  <Actions Context=\"Author\">\n    <Exec>\n      <Command>C:\\Windows\\Temp\\update2.exe</Command>\n      <Arguments>-silent</Arguments>\n    </Exec>\n  </Actions>\n</Task>"
   },
   {
     "slug": "security-4719",
@@ -1143,7 +1180,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn — 4719(S) System audit policy was changed",
         "url": "https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4719"
       }
-    ]
+    ],
+    "sampleLog": "System audit policy was changed.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x2A9F31\n\nAudit Policy Change:\n\tCategory:\t\tLogon/Logoff\n\tSubcategory:\t\tLogon\n\tSubcategory GUID:\t{0CCE9215-69AE-11D9-BED3-505054503030}\n\tChanges:\t\tSuccess removed"
   },
   {
     "slug": "security-4720",
@@ -1200,7 +1238,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1136: Create Account",
         "url": "https://attack.mitre.org/techniques/T1136/"
       }
-    ]
+    ],
+    "sampleLog": "A user account was created.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x2A9F31\n\nNew Account:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1108\n\tAccount Name:\t\tjdoe\n\tAccount Domain:\t\tCORP\n\nAttributes:\n\tSAM Account Name:\tjdoe\n\tDisplay Name:\t\tJane Doe\n\tUser Principal Name:\tjdoe@corp.example\n\tHome Directory:\t\t-\n\tHome Drive:\t\t-\n\tScript Path:\t\t-\n\tProfile Path:\t\t-\n\tUser Workstations:\t-\n\tPassword Last Set:\t<never>\n\tAccount Expires:\t<never>\n\tPrimary Group ID:\t513\n\tAllowed To Delegate To:\t-\n\tOld UAC Value:\t\t0x0\n\tNew UAC Value:\t\t0x15\n\tUser Account Control:\t\n\t\tAccount Disabled\n\t\t'Password Not Required' - Enabled\n\t\t'Normal Account' - Enabled\n\tUser Parameters:\t-\n\tSID History:\t\t-\n\tLogon Hours:\t\tAll\n\nAdditional Information:\n\tPrivileges\t\t-"
   },
   {
     "slug": "security-4722",
@@ -1238,7 +1277,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit User Account Management",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-user-account-management"
       }
-    ]
+    ],
+    "sampleLog": "A user account was enabled.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x2A9F31\n\nTarget Account:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1108\n\tAccount Name:\t\tjdoe\n\tAccount Domain:\t\tCORP"
   },
   {
     "slug": "security-4723",
@@ -1274,7 +1314,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit User Account Management",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-user-account-management"
       }
-    ]
+    ],
+    "sampleLog": "An attempt was made to change an account's password.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1105\n\tAccount Name:\t\tjdoe\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7A2B\n\nTarget Account:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1105\n\tAccount Name:\t\tjdoe\n\tAccount Domain:\t\tCORP\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4724",
@@ -1317,7 +1358,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1531: Account Access Removal",
         "url": "https://attack.mitre.org/techniques/T1531/"
       }
-    ]
+    ],
+    "sampleLog": "An attempt was made to reset an account's password.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1001\n\tAccount Name:\t\tsvc-helpdesk\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E5F10\n\nTarget Account:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1108\n\tAccount Name:\t\tmwilson\n\tAccount Domain:\t\tCORP"
   },
   {
     "slug": "security-4725",
@@ -1361,7 +1403,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1531: Account Access Removal",
         "url": "https://attack.mitre.org/techniques/T1531/"
       }
-    ]
+    ],
+    "sampleLog": "A user account was disabled.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1001\n\tAccount Name:\t\tsvc-helpdesk\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E5F10\n\nTarget Account:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1108\n\tAccount Name:\t\tmwilson\n\tAccount Domain:\t\tCORP"
   },
   {
     "slug": "security-4726",
@@ -1405,7 +1448,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1531: Account Access Removal",
         "url": "https://attack.mitre.org/techniques/T1531/"
       }
-    ]
+    ],
+    "sampleLog": "A user account was deleted.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1001\n\tAccount Name:\t\tsvc-helpdesk\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E5F10\n\nTarget Account:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1112\n\tAccount Name:\t\ttcontract\n\tAccount Domain:\t\tCORP\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4727",
@@ -1447,7 +1491,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "4731(S) A security-enabled local group was created. (shared field reference)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4731"
       }
-    ]
+    ],
+    "sampleLog": "A security-enabled global group was created.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1001\n\tAccount Name:\t\tsvc-helpdesk\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E5F10\n\nNew Group:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-5201\n\tGroup Name:\t\tSOC-Analysts\n\tGroup Domain:\t\tCORP\n\nAttributes:\n\tSAM Account Name:\t\tSOC-Analysts\n\tSID History:\t\t-\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4728",
@@ -1495,7 +1540,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1098.007: Additional Local or Domain Groups",
         "url": "https://attack.mitre.org/techniques/T1098/007/"
       }
-    ]
+    ],
+    "sampleLog": "A member was added to a security-enabled global group.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1001\n\tAccount Name:\t\tsvc-helpdesk\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E5F10\n\nMember:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1103\n\tAccount Name:\t\tCN=Jane Smith,OU=Users,DC=corp,DC=local\n\nGroup:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-5201\n\tGroup Name:\t\tSOC-Analysts\n\tGroup Domain:\t\tCORP\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4729",
@@ -1536,7 +1582,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "4733(S) A member was removed from a security-enabled local group. (shared field reference)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4733"
       }
-    ]
+    ],
+    "sampleLog": "A member was removed from a security-enabled global group.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1001\n\tAccount Name:\t\tsvc-helpdesk\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E5F10\n\nMember:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1108\n\tAccount Name:\t\tCN=Mark Wilson,OU=Users,DC=corp,DC=local\n\nGroup:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-5202\n\tGroup Name:\t\tVPN-Users\n\tGroup Domain:\t\tCORP\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4730",
@@ -1573,7 +1620,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "4734(S) A security-enabled local group was deleted. (shared field reference)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4734"
       }
-    ]
+    ],
+    "sampleLog": "A security-enabled global group was deleted.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1001\n\tAccount Name:\t\tsvc-helpdesk\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E5F10\n\nGroup:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-5203\n\tGroup Name:\t\tTempProject-Access\n\tGroup Domain:\t\tCORP\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4731",
@@ -1615,7 +1663,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit Security Group Management",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-security-group-management"
       }
-    ]
+    ],
+    "sampleLog": "A security-enabled local group was created.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-1608875090-2011518412-93892229-500\n\tAccount Name:\t\tAdministrator\n\tAccount Domain:\t\tWIN-FS01\n\tLogon ID:\t\t0x3A2110\n\nNew Group:\n\tSecurity ID:\t\tS-1-5-21-1608875090-2011518412-93892229-1003\n\tGroup Name:\t\tFileShareAdmins\n\tGroup Domain:\t\tWIN-FS01\n\nAttributes:\n\tSAM Account Name:\t\tFileShareAdmins\n\tSID History:\t\t-\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4732",
@@ -1662,7 +1711,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1098.007: Additional Local or Domain Groups",
         "url": "https://attack.mitre.org/techniques/T1098/007/"
       }
-    ]
+    ],
+    "sampleLog": "A member was added to a security-enabled local group.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-1608875090-2011518412-93892229-500\n\tAccount Name:\t\tAdministrator\n\tAccount Domain:\t\tWIN-FS01\n\tLogon ID:\t\t0x3A2110\n\nMember:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1103\n\tAccount Name:\t\t-\n\nGroup:\n\tSecurity ID:\t\tS-1-5-21-1608875090-2011518412-93892229-544\n\tGroup Name:\t\tAdministrators\n\tGroup Domain:\t\tBuiltin\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4733",
@@ -1703,7 +1753,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit Security Group Management",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-security-group-management"
       }
-    ]
+    ],
+    "sampleLog": "A member was removed from a security-enabled local group.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1108\n\tAccount Name:\t\tsecops1\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E4F21\n\nMember:\n\tSecurity ID:\t\tS-1-5-21-2145458109-3117313177-1409058401-1142\n\tAccount Name:\t\t-\n\nGroup:\n\tSecurity ID:\t\tS-1-5-32-544\n\tGroup Name:\t\tAdministrators\n\tGroup Domain:\t\tBuiltin\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4734",
@@ -1740,7 +1791,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit Security Group Management",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-security-group-management"
       }
-    ]
+    ],
+    "sampleLog": "A security-enabled local group was deleted.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1105\n\tAccount Name:\t\titadmin1\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E4A17\n\nGroup:\n\tSecurity ID:\t\tS-1-5-21-2145458109-3117313177-1409058401-1005\n\tGroup Name:\t\tTempAdmins\n\tGroup Domain:\t\tSRV-APP01\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4735",
@@ -1779,7 +1831,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit Security Group Management",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-security-group-management"
       }
-    ]
+    ],
+    "sampleLog": "A security-enabled local group was changed.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1105\n\tAccount Name:\t\titadmin1\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E4A17\n\nGroup:\n\tSecurity ID:\t\tS-1-5-21-2145458109-3117313177-1409058401-1008\n\tGroup Name:\t\tHelpDeskLocal\n\tGroup Domain:\t\tWKSTN-0231\n\nChanged Attributes:\n\tSAM Account Name:\tHelpDeskSupport\n\tSID History:\t\t-\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4737",
@@ -1818,7 +1871,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "4735(S) A security-enabled local group was changed. (shared field reference)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4735"
       }
-    ]
+    ],
+    "sampleLog": "A security-enabled global group was changed.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1105\n\tAccount Name:\t\titadmin1\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E4A17\n\nGroup:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-3601\n\tGroup Name:\t\tFinance-Admins\n\tGroup Domain:\t\tCORP\n\nChanged Attributes:\n\tSAM Account Name:\tFA-Legacy\n\tSID History:\t\t-\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4738",
@@ -1871,7 +1925,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1098: Account Manipulation",
         "url": "https://attack.mitre.org/techniques/T1098/"
       }
-    ]
+    ],
+    "sampleLog": "A user account was changed.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1105\n\tAccount Name:\t\titadmin1\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E4A17\n\nTarget Account:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-2201\n\tAccount Name:\t\tsvc-sql02\n\tAccount Domain:\t\tCORP\n\nChanged Attributes:\n\tSAM Account Name:\t\tsvc-sql02\n\tDisplay Name:\t\t\t-\n\tUser Principal Name:\t\tsvc-sql02@corp.local\n\tHome Directory:\t\t\t-\n\tHome Drive:\t\t\t-\n\tScript Path:\t\t\t-\n\tProfile Path:\t\t\t-\n\tUser Workstations:\t\t-\n\tPassword Last Set:\t\t-\n\tAccount Expires:\t\t-\n\tPrimary Group ID:\t\t-\n\tAllowedToDelegateTo:\t\tCIFS/dc01.corp.local\n\tOld UAC Value:\t\t\t0x80000\n\tNew UAC Value:\t\t\t0x80200\n\tUser Account Control:\t\tTrusted For Delegation - Enabled\n\tUser Parameters:\t\t-\n\tSID History:\t\t\t-\n\tLogon Hours:\t\t\t-\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4740",
@@ -1908,7 +1963,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit User Account Management",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-user-account-management"
       }
-    ]
+    ],
+    "sampleLog": "A user account was locked out.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-18\n\tAccount Name:\t\tWIN-DC01$\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7\n\nAccount That Was Locked Out:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1142\n\tAccount Name:\t\tjsmith\n\nAdditional Information:\n\tCaller Computer Name:\tWKSTN-0459"
   },
   {
     "slug": "security-4749",
@@ -1944,7 +2000,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit Distribution Group Management",
         "url": "https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/audit-distribution-group-management"
       }
-    ]
+    ],
+    "sampleLog": "A security-disabled global group was created.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1110\n\tAccount Name:\t\tsvc-exchange\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E4B02\n\nNew Group:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-3105\n\tGroup Name:\t\tDL-ExecutiveTeam\n\tGroup Domain:\t\tCORP\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4751",
@@ -1980,7 +2037,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit Distribution Group Management",
         "url": "https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/audit-distribution-group-management"
       }
-    ]
+    ],
+    "sampleLog": "A member was added to a security-disabled global group.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1110\n\tAccount Name:\t\tsvc-exchange\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E4B02\n\nMember:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-2415\n\tAccount Name:\t\tCN=John Doe,OU=NewHires,DC=corp,DC=local\n\nGroup:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-3020\n\tGroup Name:\t\tDL-AllStaff\n\tGroup Domain:\t\tCORP\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4752",
@@ -2016,7 +2074,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit Distribution Group Management",
         "url": "https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/audit-distribution-group-management"
       }
-    ]
+    ],
+    "sampleLog": "A member was removed from a security-disabled global group.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1105\n\tAccount Name:\t\titadmin1\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E4A17\n\nMember:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-2455\n\tAccount Name:\t\tCN=Jane Doe,OU=Finance,DC=corp,DC=local\n\nGroup:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-3210\n\tGroup Name:\t\tAll-Finance-Announcements\n\tGroup Domain:\t\tCORP\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4754",
@@ -2054,7 +2113,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "4731(S) A security-enabled local group was created. (shared field reference)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4731"
       }
-    ]
+    ],
+    "sampleLog": "A security-enabled universal group was created.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1115\n\tAccount Name:\t\tadmin.jsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E4C19\n\nNew Group:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-3301\n\tGroup Name:\t\tGlobal-VPN-Access\n\tGroup Domain:\t\tCORP\n\nAdditional Information:\n\tPrivileges:\t\t-"
   },
   {
     "slug": "security-4755",
@@ -2093,7 +2153,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "4735(S) A security-enabled local group was changed. (shared field reference)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4735"
       }
-    ]
+    ],
+    "sampleLog": "A security-enabled universal group was changed.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-500\n\tAccount Name:\t\tadministrator\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7\n\nGroup:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1214\n\tGroup Name:\t\tEnterprise-IT-Access\n\tGroup Domain:\t\tCORP\n\nChanged Attributes:\n\tSAM Account Name:\t-\n\tSID History:\t\t-\n\tGroup Type:\t\t-\n\tSecurity Enabled Universal Group:\t-\n\tEnterprise Wide Group:\t-\n\tGroup Attributes:\t0x80000000\n\tDescription:\t\tEnterprise-wide IT administration access group\n\nAdditional Information:\n\tPrivilege List:\t-"
   },
   {
     "slug": "security-4756",
@@ -2136,7 +2197,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1098.007: Additional Local or Domain Groups",
         "url": "https://attack.mitre.org/techniques/T1098/007/"
       }
-    ]
+    ],
+    "sampleLog": "A member was added to a security-enabled universal group.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-500\n\tAccount Name:\t\tadministrator\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7\n\nMember:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1198\n\tAccount Name:\t\t-\n\nGroup:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1101\n\tGroup Name:\t\tEnterprise Admins\n\tGroup Domain:\t\tCORP\n\nAdditional Information:\n\tPrivilege List:\t-"
   },
   {
     "slug": "security-4757",
@@ -2173,7 +2235,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "4733(S) A member was removed from a security-enabled local group. (shared field reference)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4733"
       }
-    ]
+    ],
+    "sampleLog": "A member was removed from a security-enabled universal group.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-500\n\tAccount Name:\t\tadministrator\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7\n\nMember:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1198\n\tAccount Name:\t\t-\n\nGroup:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1101\n\tGroup Name:\t\tEnterprise Admins\n\tGroup Domain:\t\tCORP\n\nAdditional Information:\n\tPrivilege List:\t-"
   },
   {
     "slug": "security-4758",
@@ -2210,7 +2273,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "4734(S) A security-enabled local group was deleted. (shared field reference)",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4734"
       }
-    ]
+    ],
+    "sampleLog": "A security-enabled universal group was deleted.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-500\n\tAccount Name:\t\tadministrator\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7\n\nGroup:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1214\n\tGroup Name:\t\tTempProject-Universal\n\tGroup Domain:\t\tCORP\n\nAdditional Information:\n\tPrivilege List:\t-"
   },
   {
     "slug": "security-4764",
@@ -2248,7 +2312,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit Security Group Management",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-security-group-management"
       }
-    ]
+    ],
+    "sampleLog": "A group's type was changed.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1105\n\tAccount Name:\t\tjdoe\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7C29\n\nGroup:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1214\n\tGroup Name:\t\tProjectTeamAlpha\n\tGroup Domain:\t\tCORP\n\nChange Information:\n\tNew Group Type:\tSecurity Enabled Universal Group"
   },
   {
     "slug": "security-4767",
@@ -2284,7 +2349,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit User Account Management",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-user-account-management"
       }
-    ]
+    ],
+    "sampleLog": "A user account was unlocked.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-500\n\tAccount Name:\t\tadministrator\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7\n\nTarget Account:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP"
   },
   {
     "slug": "security-4768",
@@ -2332,7 +2398,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4768(S, F) A Kerberos authentication ticket (TGT) was requested",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4768"
       }
-    ]
+    ],
+    "sampleLog": "A Kerberos authentication ticket (TGT) was requested.\n\nAuthentication Ticket Request:\n\tAccount Information:\n\t\tAccount Name:\t\tjdoe\n\t\tSupplied Realm Name:\tCORP.LOCAL\n\t\tUser ID:\t\tCORP\\jdoe\n\n\tService Information:\n\t\tService Name:\t\tkrbtgt\n\t\tService ID:\t\tCORP\\krbtgt\n\n\tNetwork Information:\n\t\tClient Address:\t\t::ffff:192.0.2.10\n\t\tClient Port:\t\t0\n\n\tAdditional Information:\n\t\tTicket Options:\t\t0x40810010\n\t\tResult Code:\t\t0x0\n\t\tTicket Encryption Type:\t0x12\n\t\tPre-Authentication Type:\t2\n\nCertificate Information:\n\tCertificate Issuer Name:\t\t-\n\tCertificate Serial Number:\t\t-\n\tCertificate Thumbprint:\t\t-"
   },
   {
     "slug": "security-4769",
@@ -2380,7 +2447,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4769(S, F) A Kerberos service ticket was requested",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4769"
       }
-    ]
+    ],
+    "sampleLog": "A Kerberos service ticket was requested.\n\nAccount Information:\n\tAccount Name:\t\tjdoe@CORP.LOCAL\n\tAccount Domain:\t\tCORP.LOCAL\n\tLogon GUID:\t\t{00000000-0000-0000-0000-000000000000}\n\nService Information:\n\tService Name:\t\tSQLSvc01\n\tService ID:\t\tCORP\\SQLSvc01\n\nNetwork Information:\n\tClient Address:\t\t::ffff:192.0.2.15\n\tClient Port:\t\t49812\n\nAdditional Information:\n\tTicket Options:\t\t0x40810000\n\tTicket Encryption Type:\t0x17\n\tFailure Code:\t\t0x0\n\tTransited Services:\t-"
   },
   {
     "slug": "security-4770",
@@ -2416,7 +2484,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4770(S) A Kerberos service ticket was renewed",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4770"
       }
-    ]
+    ],
+    "sampleLog": "A Kerberos service ticket was renewed.\n\nAccount Information:\n\tAccount Name:\t\tjdoe@CORP.LOCAL\n\tAccount Domain:\t\tCORP.LOCAL\n\nService Information:\n\tService Name:\t\tSQLSvc01\n\tService ID:\t\tCORP\\SQLSvc01\n\nNetwork Information:\n\tClient Address:\t\t::ffff:192.0.2.15\n\tClient Port:\t\t49812\n\nAdditional Information:\n\tTicket Options:\t\t0x40810000\n\tTicket Encryption Type:\t0x12"
   },
   {
     "slug": "security-4771",
@@ -2455,7 +2524,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4771(F) Kerberos pre-authentication failed",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4771"
       }
-    ]
+    ],
+    "sampleLog": "Kerberos pre-authentication failed.\n\nAccount Information:\n\tSecurity ID:\t\tS-1-0-0\n\tAccount Name:\t\tjsmith\n\nService Information:\n\tService Name:\t\tkrbtgt/CORP.LOCAL\n\nNetwork Information:\n\tClient Address:\t\t192.0.2.20\n\tClient Port:\t\t0\n\nAdditional Information:\n\tTicket Options:\t\t0x40810010\n\tFailure Code:\t\t0x18\n\tPre-Authentication Type:\t2"
   },
   {
     "slug": "security-4772",
@@ -2477,7 +2547,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4772(F) A Kerberos authentication ticket request failed",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4772"
       }
-    ]
+    ],
+    "sampleLog": "A Kerberos authentication ticket request failed.\n\nAccount Information:\n\tSecurity ID:\t\tNULL SID\n\tAccount Name:\t\tjdoe\n\tSupplied Realm Name:\tCORP.LOCAL\n\tUser ID:\t\t\tNULL SID\n\nService Information:\n\tService Name:\t\tkrbtgt/CORP.LOCAL\n\tService ID:\t\tNULL SID\n\nNetwork Information:\n\tClient Address:\t\t::ffff:192.0.2.55\n\tClient Port:\t\t52341\n\nAdditional Information:\n\tTicket Options:\t\t0x40810010\n\tResult Code:\t\t0x6\n\tPre-Authentication Type:\t2\n\nCertificate Information:\n\tCertificate Issuer Name:\t\t\n\tCertificate Serial Number:\t\n\tCertificate Thumbprint:\t\t\n\nCertificate information is only provided if a certificate was used for pre-authentication.\n\nPre-authentication types, ticket options, encryption types and result codes are defined in RFC 4120."
   },
   {
     "slug": "security-4773",
@@ -2499,7 +2570,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4773(F) A Kerberos service ticket request failed",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4773"
       }
-    ]
+    ],
+    "sampleLog": "A Kerberos service ticket request failed.\n\nAccount Information:\n\tAccount Name:\t\tjdoe@CORP.LOCAL\n\tAccount Domain:\t\tCORP.LOCAL\n\tLogon GUID:\t\t{00000000-0000-0000-0000-000000000000}\n\nService Information:\n\tService Name:\t\thost/fileserver01.corp.local\n\tService ID:\t\tCORP\\fileserver01$\n\nNetwork Information:\n\tClient Address:\t\t::ffff:192.0.2.55\n\tClient Port:\t\t56231\n\nAdditional Information:\n\tTicket Options:\t\t0x40810000\n\tTicket Encryption Type:\t0xFFFFFFFF\n\tFailure Code:\t\t0x10\n\tTransited Services:\t-\n\nThe substatus field of this event indicates the reason for failure.\n\nTransited services indicate which intermediate services have participated in this logon request.\n\nFilter and Ticket Options, Encryption Types, and Failure Codes are defined in RFC 4120."
   },
   {
     "slug": "security-4774",
@@ -2529,7 +2601,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4774(S, F) An account was mapped for logon",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4774"
       }
-    ]
+    ],
+    "sampleLog": "An account was mapped for logon.\n\nAccount Name:\tjdoe\nAccount ID:\tS-1-5-21-3623811015-3361044348-30300820-1104\nMapped Name:\tjdoe@corp.local"
   },
   {
     "slug": "security-4775",
@@ -2549,7 +2622,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4775(F) An account could not be mapped for logon",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4775"
       }
-    ]
+    ],
+    "sampleLog": "An account could not be mapped for logon.\n\nAccount Name:\tjdoe\nMapped Name:\tjdoe@corp.local"
   },
   {
     "slug": "security-4776",
@@ -2588,7 +2662,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn – 4776(S, F) The computer attempted to validate the credentials for an account",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4776"
       }
-    ]
+    ],
+    "sampleLog": "The computer attempted to validate the credentials for an account.\n\nAuthentication Package:\tMICROSOFT_AUTHENTICATION_PACKAGE_V1_0\nLogon Account:\tjdoe\nSource Workstation:\tWKSTN01\nError Code:\t0xC000006A"
   },
   {
     "slug": "security-4781",
@@ -2628,7 +2703,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Audit User Account Management",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-user-account-management"
       }
-    ]
+    ],
+    "sampleLog": "The name of an account was changed.\n\nSubject:\n\tSecurity ID:\t\tCORP\\administrator\n\tAccount Name:\t\tadministrator\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7\n\nTarget Account:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1105\n\tAccount Domain:\t\tCORP\n\nChanged Attributes:\n\tOld Account Name:\tjdoe\n\tNew Account Name:\tjdoe2"
   },
   {
     "slug": "security-4946",
@@ -2668,7 +2744,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn — 4946(S) A change has been made to Windows Firewall exception list. A rule was added",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4946"
       }
-    ]
+    ],
+    "sampleLog": "A change has been made to Windows Firewall exception list. A rule was added.\n\nProfile Changed:\t\tDomain\n\nRule ID:\t\t\t{7793E274-A697-4E6D-8F6E-C012BA6486DE}\nRule Name:\t\tCustom TCP Port 8080"
   },
   {
     "slug": "security-4947",
@@ -2708,7 +2785,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn — 4947(S) A change has been made to Windows Firewall exception list. A rule was modified",
         "url": "https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4947"
       }
-    ]
+    ],
+    "sampleLog": "A change has been made to Windows Firewall exception list. A rule was modified.\n\nProfile Changed:\t\tDomain\n\nRule ID:\t\t\t{7793E274-A697-4E6D-8F6E-C012BA6486DE}\nRule Name:\t\tCustom TCP Port 8080"
   },
   {
     "slug": "security-4948",
@@ -2748,7 +2826,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn — 4948(S) A change has been made to Windows Firewall exception list. A rule was deleted",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4948"
       }
-    ]
+    ],
+    "sampleLog": "A change has been made to Windows Firewall exception list. A rule was deleted.\n\nProfile Changed:\t\tDomain\n\nRule ID:\t\t\t{7793E274-A697-4E6D-8F6E-C012BA6486DE}\nRule Name:\t\tCustom TCP Port 8080"
   },
   {
     "slug": "security-4950",
@@ -2788,7 +2867,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn — 4950(S) A Windows Firewall setting has changed",
         "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4950"
       }
-    ]
+    ],
+    "sampleLog": "A Windows Firewall setting has changed.\n\nProfile Changed:\t\tDomain\n\nSetting Type:\t\tGlobal Setting\nSetting Name:\t\tDisableNotifications\nNew Setting Value:\t%%801"
   },
   {
     "slug": "security-5140",
@@ -2830,7 +2910,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn — 5140(S, F) A network share object was accessed",
         "url": "https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-5140"
       }
-    ]
+    ],
+    "sampleLog": "A network share object was accessed.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3A2F1B7\n\nNetwork Information:\n\tObject Type:\t\tFile\n\tSource Address:\t\t203.0.113.10\n\tSource Port:\t\t49212\n\nShare Information:\n\tShare Name:\t\t\\\\*\\C$\n\tShare Path:\t\t\\??\\C:\\\n\nAccess Request Information:\n\tAccess Mask:\t\t0x1\n\tAccesses:\t\tReadData (or ListDirectory)"
   },
   {
     "slug": "security-5145",
@@ -2872,7 +2953,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Microsoft Learn — 5145(S, F) A network share object was checked to see whether client can be granted desired access",
         "url": "https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-5145"
       }
-    ]
+    ],
+    "sampleLog": "A network share object was checked to see whether client can be granted desired access.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3457937927-2839227994-823803824-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3A2F1B7\n\nNetwork Information:\n\tObject Type:\t\tFile\n\tSource Address:\t\t203.0.113.10\n\tSource Port:\t\t49212\n\nShare Information:\n\tShare Name:\t\t\\\\*\\Documents\n\tShare Path:\t\t\\??\\C:\\Documents\n\tRelative Target Name:\tpayroll.xlsx\n\nAccess Request Information:\n\tAccess Mask:\t\t0x100081\n\tAccesses:\t\tReadData (or ListDirectory)\n\t\t\t\tReadAttributes\n\t\t\t\tSYNCHRONIZE\n\nAccess Check Result:\n\tReadData (or ListDirectory): Granted by D:(A;;FA;;;WD)\n\tReadAttributes: Granted by D:(A;;FA;;;WD)\n\tSYNCHRONIZE: Granted by D:(A;;FA;;;WD)"
   },
   {
     "slug": "security-7045",
@@ -2914,7 +2996,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Troubleshoot unexpected reboots using system event logs — documents Event ID 7045, Service Control Manager source and field format (Microsoft Learn)",
         "url": "https://learn.microsoft.com/en-us/troubleshoot/windows-server/performance/troubleshoot-unexpected-reboots-system-event-logs"
       }
-    ]
+    ],
+    "sampleLog": "A service was installed in the system.\n\nService Name:  WinUpdateSvc\nService File Name:  C:\\Windows\\Temp\\svc.exe\nService Type:  user mode service\nService Start Type:  auto start\nService Account:  LocalSystem"
   },
   {
     "slug": "sysmon-1",
@@ -2971,7 +3054,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Sysmon - Sysinternals | Microsoft Learn",
         "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon"
       }
-    ]
+    ],
+    "sampleLog": "Process Create:\nRuleName: -\nUtcTime: 2024-01-15 14:32:07.123\nProcessGuid: {5a8f3c2b-7e41-65b0-1200-000000001b00}\nProcessId: 4521\nImage: C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\nFileVersion: 10.0.19041.1\nDescription: Windows PowerShell\nProduct: Microsoft® Windows® Operating System\nCompany: Microsoft Corporation\nOriginalFileName: PowerShell.EXE\nCommandLine: \"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcA\nCurrentDirectory: C:\\Users\\jsmith\\Desktop\\\nUser: CORP\\jsmith\nLogonGuid: {5a8f3c2b-7e3f-65b0-1100-0000000a4d3e}\nLogonId: 0xA4D3E\nTerminalSessionId: 1\nIntegrityLevel: Medium\nHashes: SHA1=1B69B7E805A9A5424B76CD1FE7C3A22F9E2C6D40\nParentProcessGuid: {5a8f3c2b-7e3d-65b0-0f00-000000001a00}\nParentProcessId: 3344\nParentImage: C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE\nParentCommandLine: \"C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE\" /n \"C:\\Users\\jsmith\\Desktop\\invoice.docm\"\nParentUser: CORP\\jsmith"
   },
   {
     "slug": "sysmon-2",
@@ -3017,7 +3101,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1070.006 - Indicator Removal: Timestomp",
         "url": "https://attack.mitre.org/techniques/T1070/006/"
       }
-    ]
+    ],
+    "sampleLog": "File creation time changed:\nRuleName: -\nUtcTime: 2024-01-15 14:35:12.456\nProcessGuid: {5a8f3c2b-7e44-65b0-1300-000000001c00}\nProcessId: 5566\nImage: C:\\Users\\jsmith\\AppData\\Local\\Temp\\update.exe\nTargetFilename: C:\\Users\\jsmith\\AppData\\Local\\Temp\\update.exe\nCreationUtcTime: 2019-12-07 10:14:32.000\nPreviousCreationUtcTime: 2024-01-15 14:35:10.221\nUser: CORP\\jsmith"
   },
   {
     "slug": "sysmon-3",
@@ -3066,7 +3151,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Sysmon - Sysinternals | Microsoft Learn",
         "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon"
       }
-    ]
+    ],
+    "sampleLog": "Network connection detected:\nRuleName: -\nUtcTime: 2024-01-15 14:36:02.789\nProcessGuid: {5a8f3c2b-7e41-65b0-1200-000000001b00}\nProcessId: 4521\nImage: C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\nUser: CORP\\jsmith\nProtocol: tcp\nInitiated: true\nSourceIsIpv6: false\nSourceIp: 198.51.100.23\nSourceHostname: WKSTN-JSMITH.corp.local\nSourcePort: 51322\nSourcePortName: -\nDestinationIsIpv6: false\nDestinationIp: 203.0.113.10\nDestinationHostname: -\nDestinationPort: 443\nDestinationPortName: https"
   },
   {
     "slug": "sysmon-4",
@@ -3102,7 +3188,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Sysmon - Sysinternals | Microsoft Learn",
         "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon"
       }
-    ]
+    ],
+    "sampleLog": "Sysmon service state changed:\nUtcTime: 2024-01-15 09:01:00.001\nState: Stopped\nVersion: 15.15\nSchemaVersion: 4.90"
   },
   {
     "slug": "sysmon-5",
@@ -3138,7 +3225,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Sysmon - Sysinternals | Microsoft Learn",
         "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon"
       }
-    ]
+    ],
+    "sampleLog": "Process terminated:\nRuleName: -\nUtcTime: 2024-01-15 14:32:11.982\nProcessGuid: {5a8f3c2b-7e46-65b0-1400-000000001d00}\nProcessId: 5566\nImage: C:\\Users\\jsmith\\AppData\\Local\\Temp\\payload.exe\nUser: CORP\\jsmith"
   },
   {
     "slug": "sysmon-6",
@@ -3182,7 +3270,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Sysmon - Sysinternals | Microsoft Learn",
         "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon"
       }
-    ]
+    ],
+    "sampleLog": "Driver loaded:\nRuleName: -\nUtcTime: 2024-01-15 14:40:03.112\nImageLoaded: C:\\Windows\\System32\\drivers\\rzpnk.sys\nHashes: SHA1=9F2E1C7B4A6D3E805C1F9B2A7D4E6C8F1A3B5D70\nSigned: false\nSignature: -\nSignatureStatus: Unavailable"
   },
   {
     "slug": "sysmon-7",
@@ -3237,7 +3326,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1129 - Shared Modules",
         "url": "https://attack.mitre.org/techniques/T1129/"
       }
-    ]
+    ],
+    "sampleLog": "Image loaded:\nRuleName: -\nUtcTime: 2024-01-15 14:41:20.556\nProcessGuid: {5a8f3c2b-7e48-65b0-1500-000000001e00}\nProcessId: 6102\nImage: C:\\Program Files\\VendorApp\\legitapp.exe\nImageLoaded: C:\\Program Files\\VendorApp\\version.dll\nFileVersion: -\nDescription: -\nProduct: -\nCompany: -\nOriginalFileName: -\nHashes: SHA1=4C8A2E9F1B6D3C705A2E8F4C1B9D6E3A7C5F2B10\nSigned: false\nSignature: -\nSignatureStatus: Unavailable\nUser: CORP\\jsmith"
   },
   {
     "slug": "sysmon-8",
@@ -3289,7 +3379,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1055 - Process Injection",
         "url": "https://attack.mitre.org/techniques/T1055/"
       }
-    ]
+    ],
+    "sampleLog": "CreateRemoteThread detected:\nRuleName: technique_id=T1055,technique_name=Process Injection\nUtcTime: 2024-01-15 14:32:07.123\nSourceProcessGuid: {A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B0001}\nSourceProcessId: 4521\nSourceImage: C:\\Windows\\Temp\\update.exe\nTargetProcessGuid: {A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B0002}\nTargetProcessId: 1024\nTargetImage: C:\\Windows\\System32\\svchost.exe\nNewThreadId: 6120\nStartAddress: 0x00007FFA12340000\nStartModule: -\nStartFunction: -\nSourceUser: CORP\\jsmith\nTargetUser: NT AUTHORITY\\SYSTEM"
   },
   {
     "slug": "sysmon-9",
@@ -3325,7 +3416,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1006 - Direct Volume Access",
         "url": "https://attack.mitre.org/techniques/T1006/"
       }
-    ]
+    ],
+    "sampleLog": "RawAccessRead detected:\nRuleName: technique_id=T1006,technique_name=Direct Volume Access\nUtcTime: 2024-01-15 14:35:22.456\nProcessGuid: {A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B0003}\nProcessId: 3344\nImage: C:\\Windows\\Temp\\diskscan.exe\nDevice: \\Device\\HarddiskVolume2\nUser: CORP\\jsmith"
   },
   {
     "slug": "sysmon-10",
@@ -3372,7 +3464,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1003.001 - OS Credential Dumping: LSASS Memory",
         "url": "https://attack.mitre.org/techniques/T1003/001/"
       }
-    ]
+    ],
+    "sampleLog": "Process accessed:\nRuleName: technique_id=T1003.001,technique_name=OS Credential Dumping: LSASS Memory\nUtcTime: 2024-01-15 14:40:10.789\nSourceProcessGUID: {A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B0004}\nSourceProcessId: 5566\nSourceThreadId: 5570\nSourceImage: C:\\Windows\\Temp\\procdump.exe\nTargetProcessGUID: {A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B0005}\nTargetProcessId: 668\nTargetImage: C:\\Windows\\System32\\lsass.exe\nGrantedAccess: 0x1410\nCallTrace: C:\\Windows\\SYSTEM32\\ntdll.dll+9c3e4|C:\\Windows\\System32\\KERNELBASE.dll+2d4a3|C:\\Windows\\Temp\\procdump.exe+1a2b\nSourceUser: CORP\\jsmith\nTargetUser: NT AUTHORITY\\SYSTEM"
   },
   {
     "slug": "sysmon-11",
@@ -3411,7 +3504,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Sysmon - Sysinternals | Microsoft Learn",
         "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon"
       }
-    ]
+    ],
+    "sampleLog": "File created:\nRuleName: -\nUtcTime: 2024-01-15 14:42:33.012\nProcessGuid: {A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B0006}\nProcessId: 7788\nImage: C:\\Users\\jsmith\\AppData\\Local\\Temp\\invoice.exe\nTargetFilename: C:\\Users\\jsmith\\AppData\\Roaming\\update.dll\nCreationUtcTime: 2024-01-15 14:42:33.012\nUser: CORP\\jsmith"
   },
   {
     "slug": "sysmon-12",
@@ -3454,7 +3548,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1112 - Modify Registry",
         "url": "https://attack.mitre.org/techniques/T1112/"
       }
-    ]
+    ],
+    "sampleLog": "Registry object added or deleted:\nRuleName: technique_id=T1112,technique_name=Modify Registry\nEventType: CreateKey\nUtcTime: 2024-01-15 14:45:01.345\nProcessGuid: {A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B0007}\nProcessId: 2200\nImage: C:\\Windows\\System32\\reg.exe\nTargetObject: HKU\\S-1-5-21-1111111111-2222222222-3333333333-1001\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\nUser: CORP\\jsmith"
   },
   {
     "slug": "sysmon-13",
@@ -3498,7 +3593,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1547.001 - Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder",
         "url": "https://attack.mitre.org/techniques/T1547/001/"
       }
-    ]
+    ],
+    "sampleLog": "Registry value set:\nRuleName: technique_id=T1547.001,technique_name=Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder\nEventType: SetValue\nUtcTime: 2024-01-15 14:46:15.678\nProcessGuid: {A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B0007}\nProcessId: 2200\nImage: C:\\Windows\\System32\\reg.exe\nTargetObject: HKU\\S-1-5-21-1111111111-2222222222-3333333333-1001\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\Updater\nDetails: C:\\Users\\jsmith\\AppData\\Roaming\\update.exe\nUser: CORP\\jsmith"
   },
   {
     "slug": "sysmon-14",
@@ -3541,7 +3637,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1112 - Modify Registry",
         "url": "https://attack.mitre.org/techniques/T1112/"
       }
-    ]
+    ],
+    "sampleLog": "Registry object renamed:\nRuleName: technique_id=T1112,technique_name=Modify Registry\nEventType: RenameKey\nUtcTime: 2024-01-15 14:47:40.901\nProcessGuid: {A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B0007}\nProcessId: 2200\nImage: C:\\Windows\\System32\\reg.exe\nTargetObject: HKU\\S-1-5-21-1111111111-2222222222-3333333333-1001\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\Updater\nNewName: HKU\\S-1-5-21-1111111111-2222222222-3333333333-1001\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\WindowsUpdateHelper\nUser: CORP\\jsmith"
   },
   {
     "slug": "sysmon-15",
@@ -3587,7 +3684,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1553.005 - Subvert Trust Controls: Mark-of-the-Web Bypass",
         "url": "https://attack.mitre.org/techniques/T1553/005/"
       }
-    ]
+    ],
+    "sampleLog": "File stream created:\nRuleName: technique_id=T1553.005,technique_name=Subvert Trust Controls: Mark-of-the-Web Bypass\nUtcTime: 2024-01-15 14:50:12.234\nProcessGuid: {A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B0008}\nProcessId: 8899\nImage: C:\\Program Files\\Internet Explorer\\iexplore.exe\nTargetFilename: C:\\Users\\jsmith\\Downloads\\invoice.pdf:Zone.Identifier\nCreationUtcTime: 2024-01-15 14:50:12.234\nHash: SHA256=6DE1FF3EDA9C0207D50131BE45AD0BE99CE4A5601E3EE59AA34FFDD671B1DAF\nContents: [ZoneTransfer]\nZoneId=3\nReferrerUrl=http://198.51.100.24/download\nHostUrl=http://198.51.100.24/files/invoice.pdf\nUser: CORP\\jsmith"
   },
   {
     "slug": "sysmon-16",
@@ -3619,7 +3717,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Sysmon - Sysinternals | Microsoft Learn",
         "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon"
       }
-    ]
+    ],
+    "sampleLog": "Sysmon config state changed:\nUtcTime: 2024-01-15 09:12:00.000\nConfiguration: C:\\ProgramData\\sysmonconfig.xml\nConfigurationFileHash: SHA256=A1B2C3D4E5F60718293A4B5C6D7E8F9001122334455667788990AABBCCDDEEFF"
   },
   {
     "slug": "sysmon-17",
@@ -3651,7 +3750,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Sysmon - Sysinternals | Microsoft Learn",
         "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon"
       }
-    ]
+    ],
+    "sampleLog": "Pipe Created:\nRuleName: -\nEventType: CreatePipe\nUtcTime: 2024-01-15 14:55:30.567\nProcessGuid: {A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B0009}\nProcessId: 3300\nPipeName: \\PSHost.14a2b3c4.1.2.0.0\nImage: C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\nUser: CORP\\jsmith"
   },
   {
     "slug": "sysmon-18",
@@ -3683,7 +3783,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Sysmon - Sysinternals | Microsoft Learn",
         "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon"
       }
-    ]
+    ],
+    "sampleLog": "Pipe Connected:\nRuleName: -\nEventType: ConnectPipe\nUtcTime: 2024-02-11 09:41:27.118\nProcessGuid: {a1b2c3d4-1234-65a1-0000-001122334455}\nProcessId: 6120\nPipeName: \\msagent_de5f\nImage: C:\\Windows\\Temp\\stager.exe\nUser: CORP\\jdoe"
   },
   {
     "slug": "sysmon-19",
@@ -3730,7 +3831,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1546.003 - Event Triggered Execution: Windows Management Instrumentation Event Subscription",
         "url": "https://attack.mitre.org/techniques/T1546/003/"
       }
-    ]
+    ],
+    "sampleLog": "Wmi filter:\nRuleName: -\nEventType: WmiFilterEvent\nUtcTime: 2024-02-11 09:42:03.552\nOperation: Created\nUser: CORP\\jdoe\nEventNamespace: root\\cimv2\nName: BotFilter82\nQuery: SELECT * FROM __InstanceModificationEvent WITHIN 60 WHERE TargetInstance ISA 'Win32_PerfFormattedData_PerfOS_System'"
   },
   {
     "slug": "sysmon-20",
@@ -3777,7 +3879,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1546.003 - Event Triggered Execution: Windows Management Instrumentation Event Subscription",
         "url": "https://attack.mitre.org/techniques/T1546/003/"
       }
-    ]
+    ],
+    "sampleLog": "Wmi consumer:\nRuleName: -\nEventType: WmiConsumerEvent\nUtcTime: 2024-02-11 09:42:04.117\nOperation: Created\nUser: CORP\\jdoe\nName: BotConsumer23\nType: CommandLineEventConsumer\nDestination: cmd.exe /c powershell.exe -NoProfile -WindowStyle Hidden -EncodedCommand <base64>"
   },
   {
     "slug": "sysmon-21",
@@ -3820,7 +3923,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1546.003 - Event Triggered Execution: Windows Management Instrumentation Event Subscription",
         "url": "https://attack.mitre.org/techniques/T1546/003/"
       }
-    ]
+    ],
+    "sampleLog": "Wmi binding:\nRuleName: -\nEventType: WmiBindingEvent\nUtcTime: 2024-02-11 09:42:04.389\nOperation: Created\nConsumer: CommandLineEventConsumer=BotConsumer23\nFilter: EventFilter=BotFilter82"
   },
   {
     "slug": "sysmon-22",
@@ -3866,7 +3970,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1071.004 - Application Layer Protocol: DNS",
         "url": "https://attack.mitre.org/techniques/T1071/004/"
       }
-    ]
+    ],
+    "sampleLog": "Dns query:\nRuleName: -\nUtcTime: 2024-02-11 09:43:12.204\nProcessGuid: {a1b2c3d4-1234-65a1-0000-001122334466}\nProcessId: 7148\nQueryName: update.example.com\nQueryStatus: 0\nQueryResults: ::ffff:198.51.100.42;\nImage: C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
   },
   {
     "slug": "sysmon-23",
@@ -3913,7 +4018,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1070.004 - Indicator Removal: File Deletion",
         "url": "https://attack.mitre.org/techniques/T1070/004/"
       }
-    ]
+    ],
+    "sampleLog": "File Delete archived:\nRuleName: -\nUtcTime: 2024-02-11 09:44:51.663\nProcessGuid: {a1b2c3d4-1234-65a1-0000-001122334477}\nProcessId: 6120\nUser: CORP\\jdoe\nImage: C:\\Windows\\Temp\\stager.exe\nTargetFilename: C:\\Windows\\Temp\\stager.exe\nHashes: SHA256=A1B2C3D4E5F60718293A4B5C6D7E8F90112233445566778899AABBCCDDEEFF00\nIsExecutable: true\nArchived: true"
   },
   {
     "slug": "sysmon-24",
@@ -3957,7 +4063,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1115 - Clipboard Data",
         "url": "https://attack.mitre.org/techniques/T1115/"
       }
-    ]
+    ],
+    "sampleLog": "Clipboard changed:\nRuleName: -\nEventType: -\nUtcTime: 2024-02-11 09:45:09.884\nProcessGuid: {a1b2c3d4-1234-65a1-0000-001122334488}\nProcessId: 3944\nImage: C:\\Windows\\System32\\notepad.exe\nSession: 1\nClientInfo: <Local Session>\nHashes: SHA256=A1B2C3D4E5F60718293A4B5C6D7E8F90112233445566778899AABBCCDDEEFF00\nArchived: true\nUser: CORP\\jdoe"
   },
   {
     "slug": "sysmon-25",
@@ -3996,7 +4103,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1055.012 - Process Injection: Process Hollowing",
         "url": "https://attack.mitre.org/techniques/T1055/012/"
       }
-    ]
+    ],
+    "sampleLog": "Process image change:\nRuleName: technique_id=T1055.012,technique_name=Process Hollowing\nUtcTime: 2024-02-11 09:46:37.021\nProcessGuid: {a1b2c3d4-1234-65a1-0000-001122334499}\nProcessId: 5288\nImage: C:\\Windows\\System32\\svchost.exe\nType: Image is replaced\nUser: CORP\\jdoe"
   },
   {
     "slug": "sysmon-26",
@@ -4039,7 +4147,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1070.004 - Indicator Removal: File Deletion",
         "url": "https://attack.mitre.org/techniques/T1070/004/"
       }
-    ]
+    ],
+    "sampleLog": "File Delete logged:\nRuleName: -\nUtcTime: 2024-02-11 09:47:14.409\nProcessGuid: {a1b2c3d4-1234-65a1-0000-0011223344aa}\nProcessId: 6120\nUser: CORP\\jdoe\nImage: C:\\Windows\\Temp\\stager.exe\nTargetFilename: C:\\Users\\jdoe\\AppData\\Local\\Temp\\payload.tmp\nHashes: SHA256=A1B2C3D4E5F60718293A4B5C6D7E8F90112233445566778899AABBCCDDEEFF00\nIsExecutable: false"
   },
   {
     "slug": "sysmon-27",
@@ -4076,7 +4185,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Sysmon - Sysinternals | Microsoft Learn",
         "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon"
       }
-    ]
+    ],
+    "sampleLog": "File Block Executed:\nRuleName: -\nUtcTime: 2024-02-11 09:48:02.775\nProcessGuid: {a1b2c3d4-1234-65a1-0000-0011223344bb}\nProcessId: 4820\nUser: CORP\\jdoe\nImage: C:\\Windows\\System32\\cmd.exe\nTargetFilename: C:\\Users\\jdoe\\Downloads\\invoice.exe\nHashes: SHA256=A1B2C3D4E5F60718293A4B5C6D7E8F90112233445566778899AABBCCDDEEFF00"
   },
   {
     "slug": "sysmon-28",
@@ -4123,7 +4233,8 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "MITRE ATT&CK T1070.004 - Indicator Removal: File Deletion",
         "url": "https://attack.mitre.org/techniques/T1070/004/"
       }
-    ]
+    ],
+    "sampleLog": "File Block Shredding:\nRuleName: -\nUtcTime: 2024-03-12 09:41:18.552\nProcessGuid: {c15c1a86-9e3f-661d-9b04-000000002800}\nProcessId: 7184\nUser: CORP\\jsmith\nImage: C:\\Tools\\sdelete64.exe\nTargetFilename: C:\\Tools\\mimikatz.exe\nHashes: SHA256=8F14E45FCEEA167A5A36DEDD4BEA2543E2FA31A2C1E7B6F5F5D8A9C3B2E1F00\nIsExecutable: true"
   },
   {
     "slug": "sysmon-29",
@@ -4160,7 +4271,964 @@ export const EVENT_IDS: EventIdEntry[] = [
         "name": "Sysmon - Sysinternals | Microsoft Learn",
         "url": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon"
       }
-    ]
+    ],
+    "sampleLog": "File Executable Detected:\nRuleName: -\nUtcTime: 2024-04-02 16:07:44.881\nProcessGuid: {c15c1a86-cc38-661d-9c04-000000002900}\nProcessId: 5320\nUser: CORP\\jsmith\nImage: C:\\Windows\\System32\\msiexec.exe\nTargetFilename: C:\\Users\\jsmith\\Downloads\\setup_tool.exe\nHashes: SHA256=3B5D9A1E7C4F6082A9E1D0C8B7F3A2E4D6C1B9F8A0E3D7C5B2A4F6E8D0C1B9A3"
+  },
+  {
+    "slug": "security-4657",
+    "id": "4657",
+    "source": "security",
+    "name": "A registry value was modified",
+    "channel": "Security",
+    "category": "Object Access — Audit Registry",
+    "what": "Records that a specific registry key VALUE — not the key itself — was modified. It generates only when 'Set Value' auditing is configured in the target key's SACL, and fires once per modified value, capturing the Operation Type (new value created, value deleted, or existing value modified) plus the value's old and new content and types.",
+    "why": "One of the few Security events that shows a literal before/after diff of a registry change, which makes it the sharpest tool for confirming registry-based persistence or tampering as it happens — a Run/RunOnce autostart entry, a hijacked service ImagePath, or a disabled security-product setting all show up here with the exact old and new values and the process that wrote them, not just 'something changed.'",
+    "commonTriggers": "Legitimate configuration changes pushed by Group Policy, software installers, or admin tools like regedit.exe and PowerShell's Set-ItemProperty; anomalously, malware or an intruder writing a new autostart value under a Run/RunOnce key, editing a service's ImagePath to hijack or persist through it, or disabling a security tool's tamper-protection setting. Requires 'Set Value' SACL auditing on the specific key, which is not enabled by default.",
+    "keyFields": [
+    {
+      "name": "Object Name",
+      "desc": "Full registry path of the key whose value changed (e.g. \\REGISTRY\\MACHINE\\SOFTWARE\\...) — identifies exactly which part of the hive was touched."
+    },
+    {
+      "name": "Object Value Name",
+      "desc": "The specific value name modified within that key — the actual autostart entry, service parameter, or setting name."
+    },
+    {
+      "name": "Operation Type",
+      "desc": "Whether the value was newly created, deleted, or modified — separates a fresh persistence entry from cleanup or removal."
+    },
+    {
+      "name": "New Value",
+      "desc": "The literal content the value was changed to — the direct evidence of what changed, e.g. an ImagePath now pointing to an unexpected binary."
+    },
+    {
+      "name": "Process Name",
+      "desc": "Full path of the process that wrote the value — attributes the change to a specific tool or rules one out."
+    }
+  ],
+    "example": "Logged when a process modifies a value under a Run key SACL-audited for 'Set Value' — for example, a process writes a new value named 'Updater' under \\REGISTRY\\MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run, with Operation Type 'New registry value created' and New Value pointing to C:\\Users\\Public\\update.exe. Reviewing Object Value Name, Operation Type, and Process Name together flags an unfamiliar autostart entry written by a process with no legitimate reason to touch that key.",
+    "sampleLog": "A registry value was modified.\n\nSubject:\n\tSecurity ID:\t\tCORP\\jsmith\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E4F2\n\nObject:\n\tObject Name:\t\t\\REGISTRY\\MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\n\tObject Value Name:\tUpdater\n\tHandle ID:\t\t0x220\n\tOperation Type:\t\tNew registry value created\n\nProcess Information:\n\tProcess ID:\t\t0x1a84\n\tProcess Name:\t\tC:\\Windows\\regedit.exe\n\nChange Information:\n\tOld Value Type:\t\t-\n\tOld Value:\t\t-\n\tNew Value Type:\t\tREG_SZ\n\tNew Value:\t\tC:\\Users\\Public\\update.exe",
+    "relatedEventIds": ["4656","4663"],
+    "attackTechniques": ["T1547.001","T1543.003","T1112"],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4657(S) A registry value was modified",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4657"
+    },
+    {
+      "name": "Microsoft Learn – Audit Registry",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-registry"
+    }
+  ]
+  },
+  {
+    "slug": "security-4662",
+    "id": "4662",
+    "source": "security",
+    "name": "An operation was performed on an object",
+    "channel": "Security",
+    "category": "DS Access (Audit Directory Service Access)",
+    "what": "Generated on a domain controller every time an operation is performed against an Active Directory object whose SACL is configured to audit it — captures the object's type and distinguished name, the operation performed, the specific access rights used (Accesses/Access Mask), and the Properties field listing the GUIDs of the specific attributes or extended rights involved. One 4662 is generated per operation type performed.",
+    "why": "Because the Properties field records the exact extended-right GUIDs exercised against an object, 4662 is the canonical way to catch DCSync: a replication request that invokes the DS-Replication-Get-Changes and DS-Replication-Get-Changes-All extended rights against a domain naming context, normally reserved for domain controllers and a small set of privileged replication accounts. Any other account successfully exercising those rights is a strong signal of credential-dumping via directory replication.",
+    "commonTriggers": "Legitimately, normal Active Directory replication between domain controllers, or any properly permissioned directory operation against a SACL-audited object. Maliciously, a compromised account with (or granted) DCSync-capable rights using a tool such as Mimikatz's lsadump::dcsync or Impacket's secretsdump.py to request replication of password hashes, or other extended-rights abuse against a sensitive AD object.",
+    "keyFields": [
+    {
+      "name": "Object Name",
+      "desc": "Distinguished name of the AD object the operation targeted — for DCSync this is the domain naming context DN (e.g. DC=corp,DC=local), not a single user object."
+    },
+    {
+      "name": "Object Type",
+      "desc": "Class of the accessed object (e.g. domainDNS) — confirms the operation targeted the domain object itself."
+    },
+    {
+      "name": "Properties",
+      "desc": "GUID(s) of the specific extended right(s) or attributes exercised — DS-Replication-Get-Changes ({1131f6aa-9c07-11d1-f79f-00c04fc2dcd2}) together with DS-Replication-Get-Changes-All ({1131f6ad-9c07-11d1-f79f-00c04fc2dcd2}) against a domain object is the DCSync signature."
+    },
+    {
+      "name": "Account Name (Subject)",
+      "desc": "The account that performed the operation — for DCSync, an account with no legitimate replication role (i.e. not a domain controller's own account or an authorized replication service account)."
+    },
+    {
+      "name": "Accesses",
+      "desc": "The type of access exercised — 'Control Access' is what extended-rights operations like DCSync use."
+    }
+  ],
+    "example": "Logged on a domain controller when an account exercises the DS-Replication-Get-Changes and DS-Replication-Get-Changes-All extended rights against the domain object DC=corp,DC=local. If Account Name is CORP\\svc-web — a service account with no legitimate replication role — rather than a domain controller's own computer account, that pairing of Properties GUIDs against a domain naming context is the standard DCSync indicator.",
+    "sampleLog": "An operation was performed on an object.\n\nSubject:\n\tSecurity ID:\t\tCORP\\svc-web\n\tAccount Name:\t\tsvc-web\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x8A2C1\n\nObject:\n\tObject Server:\t\tDS\n\tObject Type:\t\tdomainDNS\n\tObject Name:\t\tDC=corp,DC=local\n\tHandle ID:\t\t0x0\n\nOperation:\n\tOperation Type:\t\tObject Access\n\tAccesses:\t\tControl Access\n\tAccess Mask:\t\t0x100\n\tProperties:\t\tControl Access\n\t\t\t\t{1131f6aa-9c07-11d1-f79f-00c04fc2dcd2} (DS-Replication-Get-Changes)\n\t\t\t\t{1131f6ad-9c07-11d1-f79f-00c04fc2dcd2} (DS-Replication-Get-Changes-All)\n\nAdditional Information:\n\tParameter 1:\t\t-\n\tParameter 2:\t\t-",
+    "relatedEventIds": ["4661","4624"],
+    "attackTechniques": ["T1003.006"],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4662(S, F) An operation was performed on an object",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4662"
+    },
+    {
+      "name": "Microsoft Learn – Audit Directory Service Access",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-directory-service-access"
+    }
+  ]
+  },
+  {
+    "slug": "security-4741",
+    "id": "4741",
+    "source": "security",
+    "name": "A computer account was created",
+    "channel": "Security",
+    "category": "Computer Account Management",
+    "what": "Generated only on a domain controller every time a new computer object is created in Active Directory. Captures who created it (Subject), the new machine account's name and SID, and a snapshot of its initial attributes — SAM account name, UAC flags, primary group, password-last-set, DNS host name, and registered SPNs.",
+    "why": "Every domain-joined machine, and every rogue machine account an attacker registers, starts here. Because any authenticated user can create up to ms-DS-MachineAccountQuota (10 by default) computer accounts, 4741 is the starting point for spotting machine-account-quota abuse — attacks like noPac/sAMAccountName-spoofing that create a throwaway computer account as a stepping stone toward impersonating a domain controller or escalating privileges.",
+    "commonTriggers": "Legitimately, a workstation or server joining the domain, or IT staff pre-staging a computer account before deployment. Anomalously, a low-privileged authenticated user creating a computer account outside any deployment process, especially one whose SAM Account Name, Primary Group ID, or UAC flags don't match the routine domain-join pattern.",
+    "keyFields": [
+    {
+      "name": "Account Name (Subject)",
+      "desc": "Who created the new computer account — routine domain-join is performed by the joining machine or an IT/provisioning account; creation by an ordinary user account is the anomaly to chase."
+    },
+    {
+      "name": "Account Name (New Computer Account)",
+      "desc": "The new machine account's SAM name, ending in $ — the identity to track going forward (e.g. for a subsequent rename in a sAMAccountName-spoofing attack)."
+    },
+    {
+      "name": "SAM Account Name",
+      "desc": "Should equal Account Name — a mismatch or an unusual naming pattern (rather than a normal hostname) is worth reviewing."
+    },
+    {
+      "name": "Primary Group ID",
+      "desc": "RID of the new account's primary group — 515 (Domain Computers) is normal; 516/521 (Domain Controllers/RODCs) on an account that isn't an actual new DC is a red flag."
+    },
+    {
+      "name": "Password Last Set",
+      "desc": "Timestamp the account's password was set — '<never>' typically indicates a manually created computer account rather than a standard domain join."
+    }
+  ],
+    "example": "Logged on a domain controller when a new computer account WKSTN042$ is created with Account Name (Subject) CORP\\itadmin, Primary Group ID 515, and Password Last Set showing the join time — a routine workstation domain join. The same event for an account created by CORP\\jsmith (an ordinary user, not IT staff) outside any known deployment window is the pattern flagged in machine-account-quota abuse, where the throwaway account is later renamed and used to impersonate a domain controller.",
+    "sampleLog": "A computer account was created.\n\nSubject:\n\tSecurity ID:\t\tCORP\\itadmin\n\tAccount Name:\t\titadmin\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0xC88B2\n\nNew Computer Account:\n\tSecurity ID:\t\tCORP\\WKSTN042$\n\tAccount Name:\t\tWKSTN042$\n\tAccount Domain:\t\tCORP\n\nAttributes:\n\tSAM Account Name:\tWKSTN042$\n\tDisplay Name:\t\t-\n\tPassword Last Set:\t7/9/2026 9:14:02 AM\n\tPrimary Group ID:\t515\n\tOld UAC Value:\t\t0x0\n\tNew UAC Value:\t\t0x80\n\tDNS Host Name:\t\tWKSTN042.corp.local\n\tService Principal Names:\tHOST/WKSTN042.corp.local HOST/WKSTN042\n\nAdditional Information:\n\tPrivileges:\t\t-",
+    "relatedEventIds": ["4742","4743","4720"],
+    "attackTechniques": [],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4741(S) A computer account was created",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4741"
+    },
+    {
+      "name": "Microsoft Learn – Audit Computer Account Management",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-computer-account-management"
+    }
+  ]
+  },
+  {
+    "slug": "security-4742",
+    "id": "4742",
+    "source": "security",
+    "name": "A computer account was changed",
+    "channel": "Security",
+    "category": "Computer Account Management",
+    "what": "Generated on a domain controller every time an existing computer object's attributes are changed — one event per change, recording who made it (Subject), which computer account was changed, and a Changed Attributes block (SAM account name, delegation SPN list, UAC flags, DNS host name, SPNs, etc.). A change to an attribute not in that enumerated list — Microsoft's own documentation cites a DACL edit as the explicit example — still generates 4742, but with every listed attribute shown as '-'.",
+    "why": "This is the trip-wire for delegation abuse. Traditional constrained-delegation abuse shows up directly: AllowedToDelegateTo going from '-' to a populated SPN list is the documented signal that a computer account's msDS-AllowedToDelegateTo attribute was set. Resource-Based Constrained Delegation abuse — writing msDS-AllowedToActOnBehalfOfOtherIdentity — still fires 4742 on the target computer object, but since that attribute isn't one of the event's enumerated fields, it lands in the same 'all attributes blank' bucket Microsoft's own docs describe for DACL changes; a 4742 against a high-value computer account with a fully blank Changed Attributes block is therefore still worth investigating even though the event doesn't name what changed.",
+    "commonTriggers": "Legitimately, a scheduled computer-account password rotation (roughly every 30 days by default, reflected in Password Last Set), an admin configuring Kerberos delegation on the account's Delegation tab, or routine SPN registration after a reboot following a domain join. Anomalously, an attacker with sufficient rights over a computer object writing delegation settings, flipping UAC flags such as 'Trusted For Delegation,' or making any other change to a high-value computer account (a domain controller, admin workstation, or critical server) outside a known change window.",
+    "keyFields": [
+    {
+      "name": "Account Name (Computer Account That Was Changed)",
+      "desc": "The machine account whose object was modified — routine noise on most hosts, but a change on a domain controller or admin workstation account is high-value."
+    },
+    {
+      "name": "AllowedToDelegateTo",
+      "desc": "Populated (rather than '-') means the account's constrained-delegation SPN list was set or changed — the direct signal for constrained-delegation abuse."
+    },
+    {
+      "name": "New UAC Value",
+      "desc": "Account-control flags after the change — compare against Old UAC Value for 'Trusted For Delegation' or 'Trusted To Authenticate For Delegation' flipping to enabled on an account that shouldn't have delegation rights."
+    },
+    {
+      "name": "Account Name (Subject)",
+      "desc": "Who made the change — the operator to check against expected admin/deployment activity."
+    },
+    {
+      "name": "Password Last Set",
+      "desc": "Should change roughly monthly for a normal computer account; more frequent changes can indicate an anomaly."
+    }
+  ],
+    "example": "Logged when CORP\\admin-jdoe changes computer account WEBSRV03$'s New UAC Value to include 'Trusted For Delegation' with AllowedToDelegateTo populated with an SPN list — expected if a planned constrained-delegation configuration is underway, but worth escalating if WEBSRV03$ wasn't on the approved delegation list. A 4742 against a domain controller's own computer account with every Changed Attributes field showing '-' is consistent with a DACL-level edit such as writing msDS-AllowedToActOnBehalfOfOtherIdentity to configure Resource-Based Constrained Delegation.",
+    "sampleLog": "A computer account was changed.\n\nSubject:\n\tSecurity ID:\t\tCORP\\admin-jdoe\n\tAccount Name:\t\tadmin-jdoe\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x2E80C\n\nComputer Account That Was Changed:\n\tSecurity ID:\t\tCORP\\WEBSRV03$\n\tAccount Name:\t\tWEBSRV03$\n\tAccount Domain:\t\tCORP\n\nChanged Attributes:\n\tSAM Account Name:\t-\n\tDisplay Name:\t\t-\n\tAllowedToDelegateTo:\tHOST/WEBSRV03.corp.local\n\tOld UAC Value:\t\t0x1000\n\tNew UAC Value:\t\t0x81000\n\tDNS Host Name:\t\t-\n\tService Principal Names:\t-\n\nAdditional Information:\n\tPrivileges:\t\t-",
+    "relatedEventIds": ["4741","4743","4738"],
+    "attackTechniques": [],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4742(S) A computer account was changed",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4742"
+    },
+    {
+      "name": "Microsoft Learn – Audit Computer Account Management",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-computer-account-management"
+    }
+  ]
+  },
+  {
+    "slug": "security-4743",
+    "id": "4743",
+    "source": "security",
+    "name": "A computer account was deleted",
+    "channel": "Security",
+    "category": "Computer Account Management",
+    "what": "Generated on a domain controller every time a computer object is deleted from Active Directory. Records the Subject who performed the deletion and the Target Computer's name and SID — a much smaller event than 4741/4742 since there are no remaining attributes to enumerate.",
+    "why": "Completes the create/change/delete lifecycle for AD computer objects. Deletion of a domain controller, administrative workstation, or other critical server's computer account is a severe anomaly — it breaks that machine's domain trust relationship and, in a targeted attack, can be used to disrupt a competing service or clean up a rogue computer account created earlier in the same operation.",
+    "commonTriggers": "Legitimately, IT decommissioning a retired workstation or server, or cleanup of a stale/duplicate computer object during AD hygiene. Anomalously, deletion of a computer account with no corresponding decommissioning record — particularly a domain controller or admin workstation, or an account that was itself created only shortly before, consistent with an attacker cleaning up a throwaway machine account used earlier in an attack chain.",
+    "keyFields": [
+    {
+      "name": "Account Name (Target Computer)",
+      "desc": "The machine account that was deleted — check against a decommissioning record before treating it as routine."
+    },
+    {
+      "name": "Account Name (Subject)",
+      "desc": "Who deleted the account — the operator to verify against expected IT/admin activity."
+    },
+    {
+      "name": "Logon ID",
+      "desc": "Correlates the deletion back to the Subject's own logon session for a fuller activity timeline."
+    }
+  ],
+    "example": "Logged when CORP\\itadmin deletes the computer account of a retired workstation, WKSTN019$, as part of routine decommissioning. The same event for a computer account created only minutes earlier by a non-IT account, then deleted again shortly after, is consistent with an attacker cleaning up a throwaway machine account used in a machine-account-quota-abuse attack chain.",
+    "sampleLog": "A computer account was deleted.\n\nSubject:\n\tSecurity ID:\t\tCORP\\itadmin\n\tAccount Name:\t\titadmin\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3007B\n\nTarget Computer:\n\tSecurity ID:\t\tCORP\\WKSTN019$\n\tAccount Name:\t\tWKSTN019$\n\tAccount Domain:\t\tCORP\n\nAdditional Information:\n\tPrivileges:\t\t-",
+    "relatedEventIds": ["4741","4742"],
+    "attackTechniques": [],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4743(S) A computer account was deleted",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4743"
+    },
+    {
+      "name": "Microsoft Learn – Audit Computer Account Management",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-computer-account-management"
+    }
+  ]
+  },
+  {
+    "slug": "security-6416",
+    "id": "6416",
+    "source": "security",
+    "name": "A new external device was recognized by the System",
+    "channel": "Security",
+    "category": "Detailed Tracking — Audit PNP Activity",
+    "what": "Generated every time Plug and Play recognizes a new external device on the system — for example, a device being connected or enabled for the first time. Captures the device's instance path, description, hardware/class GUIDs, and physical bus location, and is logged on the machine where the device was attached.",
+    "why": "The Security-log counterpart to registry-based USB forensics (USBSTOR/USB device-history analysis): it's a live, timestamped record of exactly when a specific device — identified by hardware/vendor IDs, not just a friendly name — first appeared on a host. Because it's typically triggered by the SYSTEM account, Microsoft's own guidance is to flag any occurrence where the Subject isn't SYSTEM.",
+    "commonTriggers": "Any external Plug and Play device connected or enabled for the first time — USB flash drives and external disks, keyboards/mice, phones in MTP/media mode, webcams, or other removable hardware. On a domain controller, administrative workstation, or other host where external media shouldn't appear at all, this event is itself the anomaly worth reviewing, regardless of the specific device it names.",
+    "keyFields": [
+    {
+      "name": "Device ID",
+      "desc": "The device instance path (Device Manager's 'Details' tab) — the unique identifier for the specific physical device connected, matched against a known-device allowlist during triage."
+    },
+    {
+      "name": "Device Name",
+      "desc": "Human-readable device description — e.g. a specific drive model, useful for quickly recognizing what was plugged in."
+    },
+    {
+      "name": "Class Name",
+      "desc": "The device class (e.g. DiskDrive) — separates mass-storage devices (the highest data-exfiltration/malware-delivery risk) from input devices, imaging devices, etc."
+    },
+    {
+      "name": "Vendor IDs",
+      "desc": "Hardware IDs including vendor/product/serial identifiers — the most specific way to recognize or block a particular physical device across multiple hosts/events."
+    },
+    {
+      "name": "Location Information",
+      "desc": "Physical bus/port location the device was attached to — useful for correlating with a specific machine's port when investigating in person."
+    }
+  ],
+    "example": "Logged when a USB mass-storage device is connected to a workstation for the first time — Device Name 'Generic USB Flash Disk,' Class Name DiskDrive, and Vendor IDs containing the drive's hardware/serial identifiers. On an administrative workstation or domain controller where removable storage is prohibited by policy, this event alone — regardless of the specific device — is the indicator worth escalating.",
+    "sampleLog": "A new external device was recognized by the System.\n\nSubject:\n\tSecurity ID:\t\tNT AUTHORITY\\SYSTEM\n\tAccount Name:\t\tWKSTN042$\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7\n\nDevice Information:\n\tDevice ID:\t\tUSBSTOR\\Disk&Ven_Generic&Prod_Flash_Disk&Rev_8.07\\000000001234&0\n\tDevice Name:\t\tGeneric USB Flash Disk USB Device\n\tClass ID:\t\t{4D36E967-E325-11CE-BFC1-08002BE10318}\n\tClass Name:\t\tDiskDrive\n\tVendor IDs:\t\tUSBSTOR\\DiskGeneric_Flash_Disk____8.07 USBSTOR\\DiskGeneric_Flash_Disk_ GenDisk\n\tCompatible IDs:\t\tUSBSTOR\\Disk USBSTOR\\RAW GenDisk\n\tLocation Information:\tPort_#0002.Hub_#0003",
+    "relatedEventIds": ["6419","6420","6421","6422"],
+    "attackTechniques": ["T1200"],
+    "references": [
+    {
+      "name": "Microsoft Learn – 6416(S) A new external device was recognized by the System",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-6416"
+    },
+    {
+      "name": "Microsoft Learn – Audit PNP Activity",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-pnp-activity"
+    }
+  ]
+  },
+  {
+    "slug": "security-4794",
+    "id": "4794",
+    "source": "security",
+    "name": "An attempt was made to set the Directory Services Restore Mode administrator password",
+    "channel": "Security",
+    "category": "User Account Management",
+    "what": "Generated only on domain controllers, every time the Directory Services Restore Mode (DSRM) administrator password is changed — captured as a Success or Failure event depending on the outcome. It records the Subject who made the change, their Logon ID, and the Caller Workstation the request came from.",
+    "why": "The DSRM administrator is a local SAM-based account stored outside Active Directory, so it isn't subject to domain password policy, Group Policy, or normal AD credential resets — a well-known persistence backdoor on domain controllers, since an attacker who sets a known DSRM password retains an AD-independent, effectively local-admin credential on every DC where they do it. Microsoft's own guidance is to always monitor and alert on every occurrence of this event.",
+    "commonTriggers": "Legitimately: a rare, deliberate administrative action — setting or resetting the DSRM password with ntdsutil, typically during DC build-out or ahead of a planned AD restore. Because it's so infrequent in normal operations, essentially any 4794 outside a known, documented change window warrants investigation.",
+    "keyFields": [
+    {
+      "name": "Account Name (Subject)",
+      "desc": "Who requested the DSRM password change — a change by an unexpected account, or on a DC with no planned maintenance, is the primary red flag."
+    },
+    {
+      "name": "Logon ID",
+      "desc": "Correlates the change back to the specific logon session (via the matching 4624) that performed it."
+    },
+    {
+      "name": "Caller Workstation",
+      "desc": "The computer the request originated from — matches the DC's own name if the change was made locally at the console, differs if pushed from elsewhere."
+    }
+  ],
+    "example": "On DC01, Account Name CORP\\dadmin sets the DSRM administrator password via ntdsutil, with Caller Workstation DC01 and Status 0x0 (success). The same event appearing on a domain controller with no scheduled AD restore or rebuild in progress — especially one triggered remotely rather than from the DC's own console — is the classic signature of an attacker planting a DSRM-based backdoor credential.",
+    "sampleLog": "Log Name:\tSecurity\nSource:\tMicrosoft-Windows-Security-Auditing\nEvent ID:\t4794\nTask Category:\tUser Account Management\nLevel:\tInformation\nKeywords:\tAudit Success\nUser:\tN/A\nComputer:\tDC01.corp.example.local\nDescription:\nAn attempt was made to set the Directory Services Restore Mode administrator password.\n\nSubject:\n\tSecurity ID:\t\tCORP\\dadmin\n\tAccount Name:\t\tdadmin\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x36F67\n\nAdditional Information:\n\tCaller Workstation:\tDC01\n\tStatus Code:\t\t0x0",
+    "relatedEventIds": ["4624"],
+    "attackTechniques": ["T1098"],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4794(S, F) An attempt was made to set the Directory Services Restore Mode administrator password",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4794"
+    }
+  ]
+  },
+  {
+    "slug": "security-4964",
+    "id": "4964",
+    "source": "security",
+    "name": "Special groups have been assigned to a new logon",
+    "channel": "Security",
+    "category": "Logon/Logoff (Audit Special Logon)",
+    "what": "Fires whenever an account that's a member of an administrator-defined 'Special Group' — a list of security-critical group SIDs (e.g. Domain Admins, Enterprise Admins, or a custom service-account group) configured in the registry — successfully logs on. The event lists the New Logon account and the specific Special Group SID(s) it belongs to.",
+    "why": "Special Groups auditing exists specifically to flag every logon by a member of a group the organization has designated as critical, independent of the generic 4672 privileged-logon event — Microsoft's own guidance is that essentially every 4964 should be monitored, since the feature's entire purpose is alerting on things like a Domain Admin logging on somewhere unexpected. It's a direct way to catch a privileged account authenticating to an ordinary workstation instead of a hardened admin host, a strong indicator of credential-theft exposure or lateral movement.",
+    "commonTriggers": "Legitimately: a configured Special Group member (e.g. a Domain Admin) logging on for routine administrative work. The signal analysts actually care about is location — a Special Group member logging onto a general-purpose workstation rather than a designated Tier-0/privileged-access host, since that's where the credential is most exposed to theft.",
+    "keyFields": [
+    {
+      "name": "Account Name (New Logon)",
+      "desc": "The privileged account that logged on — the identity to check against where it's normally expected to authenticate."
+    },
+    {
+      "name": "Special Groups Assigned",
+      "desc": "The specific Special Group SID(s) the account belongs to (e.g. Domain Admins) — confirms exactly which sensitive membership triggered the event."
+    },
+    {
+      "name": "Logon ID / Logon GUID",
+      "desc": "Correlates the privileged logon to the matching 4624, and on a domain controller to the corresponding 4769 Kerberos service ticket or 4648 explicit-credential logon."
+    }
+  ],
+    "example": "CORP\\dadmin, a Domain Admins member, generates a 4964 with Special Groups Assigned listing the Domain Admins SID when logging on. The same event firing for that account on a general-purpose workstation rather than a designated privileged-access host is the kind of out-of-place privileged logon Special Groups auditing exists to catch.",
+    "sampleLog": "Log Name:\tSecurity\nSource:\tMicrosoft-Windows-Security-Auditing\nEvent ID:\t4964\nTask Category:\tSpecial Logon\nLevel:\tInformation\nKeywords:\tAudit Success\nUser:\tN/A\nComputer:\tDC01.corp.example.local\nDescription:\nSpecial groups have been assigned to a new logon.\n\nSubject:\n\tSecurity ID:\t\tCORP\\dadmin\n\tAccount Name:\t\tdadmin\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0xD972E\n\nNew Logon:\n\tSecurity ID:\t\tCORP\\dadmin\n\tAccount Name:\t\tdadmin\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x139FAF\n\tSpecial Groups:\t\tCORP\\Domain Admins",
+    "relatedEventIds": ["4624","4672","4648","4769"],
+    "attackTechniques": [],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4964(S) Special groups have been assigned to a new logon",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4964"
+    }
+  ]
+  },
+  {
+    "slug": "security-4661",
+    "id": "4661",
+    "source": "security",
+    "name": "A handle to an object was requested",
+    "channel": "Security",
+    "category": "DS Access — Audit Directory Service Access / Object Access — Audit SAM",
+    "what": "Generated when a handle is requested to either an Active Directory object (on a domain controller) or a Security Account Manager (SAM) object — a local group, group, user account, domain, or computer account — recording the requesting Subject, the Object Type/Name, and the specific access rights requested. A Failure event means the requested access was declined; it only generates if Success auditing is enabled for the Audit Handle Manipulation subcategory.",
+    "why": "This is the event that captures the opening move of SAM/AD object enumeration: remote SAM access — the kind performed by tools like Impacket's secretsdump.py or samrdump — and directory-object access both begin by requesting a handle, making 4661 a leading indicator of credential-dumping reconnaissance. Because opening a handle to a domain naming-context object with the Control Access right is also the first step toward abusing DS-Replication-Get-Changes (DCSync), a 4661 against a SAM_DOMAIN/directory object from an account with no legitimate replication role is worth escalating — though the specific extended-right GUID that confirms DCSync is carried on the companion event, 4662.",
+    "commonTriggers": "Legitimately: extremely high volume — any normal SAM/AD read (Active Directory Users and Computers, PowerShell AD cmdlets, logon processing) requests object handles constantly, which is why Microsoft doesn't recommend broadly monitoring this event on its own. Anomalously: remote SAM enumeration/dumping tools requesting handles to SAM_DOMAIN or SAM_USER objects, or a non-replication account requesting Control Access to a domain object as part of a DCSync attempt.",
+    "keyFields": [
+    {
+      "name": "Object Type / Object Name",
+      "desc": "SAM_DOMAIN, SAM_USER, SAM_ALIAS, SAM_GROUP, or SAM_SERVER for SAM objects (a distinguished name for AD objects) — identifies exactly what was targeted."
+    },
+    {
+      "name": "Accesses / Access Mask",
+      "desc": "The specific rights requested — Control Access (0x100) requested against a domain object is the flag to watch for replication-right abuse."
+    },
+    {
+      "name": "Account Name (Subject)",
+      "desc": "Who requested the handle — an account with no administrative or replication role requesting SAM/domain-object handles is the anomaly to chase."
+    },
+    {
+      "name": "Handle ID",
+      "desc": "Correlates this event to the follow-on operation performed on the same object, e.g. the matching 4662."
+    }
+  ],
+    "example": "CORP\\svc-backup, an account with no AD-replication role, requests a handle to Object Type SAM_DOMAIN, Object Name DC=corp,DC=example,DC=local, with Access Mask including Control Access (0x100), from a member server rather than a domain controller. Paired with a matching 4662 on the same object showing the DS-Replication-Get-Changes extended right, this is the signature of a DCSync-style credential-dumping attempt.",
+    "sampleLog": "Log Name:\tSecurity\nSource:\tMicrosoft-Windows-Security-Auditing\nEvent ID:\t4661\nTask Category:\tSAM\nLevel:\tInformation\nKeywords:\tAudit Success\nUser:\tN/A\nComputer:\tDC01.corp.example.local\nDescription:\nA handle to an object was requested.\n\nSubject:\n\tSecurity ID:\t\tCORP\\svc-backup\n\tAccount Name:\t\tsvc-backup\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x4280E\n\nObject:\n\tObject Server:\t\tSecurity Account Manager\n\tObject Type:\t\tSAM_DOMAIN\n\tObject Name:\t\tDC=corp,DC=example,DC=local\n\tHandle ID:\t\t0xdd64d36870\n\nProcess Information:\n\tProcess ID:\t\t0x9a4\n\tProcess Name:\t\tC:\\Windows\\System32\\lsass.exe\n\nAccess Request Information:\n\tAccesses:\t\tControl Access\n\tAccess Mask:\t\t0x100",
+    "relatedEventIds": ["4662","4660","4624"],
+    "attackTechniques": ["T1003.002","T1003.006"],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4661(S, F) A handle to an object was requested",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4661"
+    },
+    {
+      "name": "Audit SAM (Microsoft Learn)",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-sam"
+    }
+  ]
+  },
+  {
+    "slug": "security-4670",
+    "id": "4670",
+    "source": "security",
+    "name": "Permissions on an object were changed",
+    "channel": "Security",
+    "category": "Object Access — Audit File System / Audit Registry; Policy Change — Audit Authentication Policy Change / Audit Authorization Policy Change",
+    "what": "Generated when the DACL (permissions) on a file system, registry, or security-token object is changed, recording the Subject who made the change and both the Original and New Security Descriptor in SDDL. It does not fire on SACL (auditing-ACL) changes, and needs 'Change Permissions'/'Take Ownership' (files) or 'Write DAC'/'Write Owner' (registry) set in the object's own SACL before it will generate.",
+    "why": "The Original/New Security Descriptor pair is a rare artifact that shows exactly which ACE was added or removed on a specific file or registry key — the mechanism behind permission-based persistence backdoors, such as granting a low-privileged account write access to a sensitive registry key or high-value file. Microsoft explicitly calls out monitoring 4670 on a domain controller's ntds.dit file as a use case, since an unexpected permissions change to the AD database file itself is a serious tampering indicator; note that ACL changes on Active Directory objects themselves (e.g. AdminSDHolder) are captured separately, via 5136.",
+    "commonTriggers": "Legitimately: an administrator deliberately changing permissions on a file or registry key (sharing a folder, hardening a key), or software installers adjusting ACLs during setup. Maliciously: an attacker with sufficient access modifying the DACL on a sensitive file or registry key to grant themselves or another account persistent access, as part of a broader privilege-escalation or persistence chain.",
+    "keyFields": [
+    {
+      "name": "Object Name",
+      "desc": "The file, registry key, or object whose permissions changed — cross-reference against a known-sensitive-object list (e.g. ntds.dit, security-tool binaries, autorun keys)."
+    },
+    {
+      "name": "Object Type",
+      "desc": "Distinguishes a file, registry key (Key), or Token object change — Token-object changes are largely informational, while File/Key changes on high-value objects are the ones worth alerting on."
+    },
+    {
+      "name": "Original Security Descriptor / New Security Descriptor",
+      "desc": "The before/after SDDL strings — diff them to see exactly which account (SID) gained or lost which right; a new ACE granting an unexpected SID Full Control (FA) is the primary red flag."
+    },
+    {
+      "name": "Process Name",
+      "desc": "The process that made the change — an unfamiliar process, or one outside System32/Program Files, changing permissions on a sensitive object is worth escalating."
+    }
+  ],
+    "example": "On a domain controller, the DACL on ntds.dit changes via Process Name dllhost.exe, with the New Security Descriptor granting an unexpected SID Full Control (FA) that wasn't present in the Original Security Descriptor. A permissions change on that specific file outside a planned backup or restore operation is a strong indicator of an attempt to tamper with or later exfiltrate the AD database.",
+    "sampleLog": "Log Name:\tSecurity\nSource:\tMicrosoft-Windows-Security-Auditing\nEvent ID:\t4670\nTask Category:\tFile System\nLevel:\tInformation\nKeywords:\tAudit Success\nUser:\tN/A\nComputer:\tDC01.corp.example.local\nDescription:\nPermissions on an object were changed.\n\nSubject:\n\tSecurity ID:\t\tCORP\\jsmith\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x43659\n\nObject:\n\tObject Server:\t\tSecurity\n\tObject Type:\t\tFile\n\tObject Name:\t\tC:\\Windows\\NTDS\\ntds.dit\n\tHandle ID:\t\t0x3f0\n\nProcess Information:\n\tProcess ID:\t\t0xdb0\n\tProcess Name:\t\tC:\\Windows\\System32\\dllhost.exe\n\nPermissions Change:\n\tOriginal Security Descriptor:\tD:AI(A;OICIID;FA;;;SY)(A;OICIID;FA;;;BA)\n\tNew Security Descriptor:\tD:ARAI(A;OICI;FA;;;WD)(A;OICIID;FA;;;SY)(A;OICIID;FA;;;BA)",
+    "relatedEventIds": ["4663","4656","4660"],
+    "attackTechniques": ["T1222.001"],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4670(S) Permissions on an object were changed",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4670"
+    },
+    {
+      "name": "Audit Authentication Policy Change (Microsoft Learn)",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-authentication-policy-change"
+    }
+  ]
+  },
+  {
+    "slug": "security-5136",
+    "id": "5136",
+    "source": "security",
+    "name": "A directory service object was modified",
+    "channel": "Security",
+    "category": "DS Access — Audit Directory Service Changes",
+    "what": "Generated every time an audited attribute of an Active Directory object is modified, provided the object's SACL has a 'Write' auditing entry for that attribute. A single change typically produces two 5136 events sharing the same Correlation ID — one 'Value Deleted' (the prior value) and one 'Value Added' (the new value) — plus the object's DN, GUID, class, and the specific LDAP attribute name changed.",
+    "why": "This is the most granular AD change-auditing event available: because it records the actual attribute name and old/new value, it's the event that catches GPO link changes, delegation-attribute changes, userAccountControl flips, and — critically — modifications to an object's own nTSecurityDescriptor (its ACL), which is exactly how an AdminSDHolder or other privileged-object ACL backdoor shows up in the log. Microsoft explicitly recommends monitoring all modifications to CN=AdminSDHolder,CN=System for this reason.",
+    "commonTriggers": "Legitimately: routine AD administration — group membership changes, GPO edits, attribute updates via ADUC or PowerShell. Maliciously: an attacker with sufficient rights modifying a privileged object's ACL (AdminSDHolder, a Domain Admins-linked GPO) to grant themselves standing access, or tampering with a delegation attribute to enable constrained-delegation abuse.",
+    "keyFields": [
+    {
+      "name": "Object DN / Class",
+      "desc": "Which AD object was modified and its class (user, group, groupPolicyContainer, container, etc.) — watch for known-sensitive DNs like AdminSDHolder or a privileged GPO."
+    },
+    {
+      "name": "Attribute LDAP Display Name",
+      "desc": "The specific attribute changed — nTSecurityDescriptor (an ACL change), msDS-AllowedToDelegateTo (delegation abuse), or userAccountControl (account-flag tampering) are the highest-value values to alert on."
+    },
+    {
+      "name": "Value / Operation Type",
+      "desc": "The value added or deleted — pair the 'Value Added' event with the matching 'Value Deleted' event on the same Correlation ID to see the full before/after change."
+    },
+    {
+      "name": "Correlation ID",
+      "desc": "Ties together every 5136 (and any accompanying 5137/5139) event that's part of the same underlying LDAP operation."
+    }
+  ],
+    "example": "CN=AdminSDHolder,CN=System,DC=corp,DC=example,DC=local shows a 5136 with Attribute LDAP Display Name nTSecurityDescriptor and Operation Type Value Added, requested by CORP\\jsmith — an account with no delegated rights over that object. A permissions change to AdminSDHolder outside a planned hardening change is high-value to alert on, since it propagates to every protected privileged account and group on the next SDProp cycle.",
+    "sampleLog": "Log Name:\tSecurity\nSource:\tMicrosoft-Windows-Security-Auditing\nEvent ID:\t5136\nTask Category:\tDirectory Service Changes\nLevel:\tInformation\nKeywords:\tAudit Success\nUser:\tN/A\nComputer:\tDC01.corp.example.local\nDescription:\nA directory service object was modified.\n\nSubject:\n\tSecurity ID:\t\tCORP\\jsmith\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x32004\n\nDirectory Service:\n\tName:\t\tcorp.example.local\n\tType:\t\tActive Directory Domain Services\n\nObject:\n\tDN:\t\tCN=AdminSDHolder,CN=System,DC=corp,DC=example,DC=local\n\tGUID:\t\t{4FE80A66-5F93-4F73-B215-68678058E613}\n\tClass:\t\tcontainer\n\nAttribute:\n\tLDAP Display Name:\tnTSecurityDescriptor\n\tSyntax (OID):\t\t2.5.5.15\n\tValue:\t\tO:BAG:DAD:PAI(A;;RPWPCRLCLOCCRCWOWDSDDTSW;;;CORP\\jsmith)\n\nOperation:\n\tType:\t\tValue Added\n\tCorrelation ID:\t{02647639-8626-43CE-AFE6-7AA1AD657739}\n\tApplication Correlation ID:\t-",
+    "relatedEventIds": ["5137","5141","4662"],
+    "attackTechniques": ["T1098","T1484.001"],
+    "references": [
+    {
+      "name": "Microsoft Learn – 5136(S) A directory service object was modified",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-5136"
+    },
+    {
+      "name": "Audit Directory Service Changes (Microsoft Learn)",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-directory-service-changes"
+    }
+  ]
+  },
+  {
+    "slug": "security-5137",
+    "id": "5137",
+    "source": "security",
+    "name": "A directory service object was created",
+    "channel": "Security",
+    "category": "DS Access — Audit Directory Service Changes",
+    "what": "Generated every time a new Active Directory object is created, provided the parent container's SACL has a 'Create' auditing entry for that object class. Records the new object's DN, GUID, and class (user, computer, group, groupPolicyContainer, etc.), along with the Subject who created it.",
+    "why": "Completes the AD object lifecycle audit trail alongside 5136 (modified) and 5141 (deleted) — it's the earliest point at which a newly provisioned object (a backdoor user account, an unexpected new GPO, a rogue computer object) appears in the log, before any of its other attributes have been individually set. Microsoft specifically recommends monitoring for new groupPolicyContainer creations.",
+    "commonTriggers": "Legitimately: routine account, computer, group, or OU provisioning by IT/HR onboarding workflows. Maliciously: an attacker creating a new user or computer account for persistence, or a new GPO intended to push a malicious logon script or scheduled task domain-wide.",
+    "keyFields": [
+    {
+      "name": "Object Class",
+      "desc": "The type of object created — user, computer, group, and especially groupPolicyContainer are the highest-value classes to watch for creation outside a change window."
+    },
+    {
+      "name": "Object DN",
+      "desc": "Where in the AD tree the object was created — a new object landing outside the expected OU structure (e.g. directly in a default Users container rather than a provisioning OU) is worth a second look."
+    },
+    {
+      "name": "Account Name (Subject)",
+      "desc": "Who created the object — creation by an account outside the normal provisioning workflow or service account is the primary anomaly signal."
+    },
+    {
+      "name": "Correlation ID",
+      "desc": "Links this creation to any accompanying 5136 attribute-set events from the same underlying LDAP operation."
+    }
+  ],
+    "example": "A new object with Object Class groupPolicyContainer and Object DN CN={6F9619FF-8B86-D011-B42D-00C04FC964FF},CN=Policies,CN=System,DC=corp,DC=example,DC=local is created by CORP\\jsmith, an account with no Group Policy management role. An unexpected new GPO creation like this, especially followed by it being linked to a high-value OU, is a well-known technique for pushing malicious startup scripts or scheduled tasks domain-wide.",
+    "sampleLog": "Log Name:\tSecurity\nSource:\tMicrosoft-Windows-Security-Auditing\nEvent ID:\t5137\nTask Category:\tDirectory Service Changes\nLevel:\tInformation\nKeywords:\tAudit Success\nUser:\tN/A\nComputer:\tDC01.corp.example.local\nDescription:\nA directory service object was created.\n\nSubject:\n\tSecurity ID:\t\tCORP\\jsmith\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x32004\n\nDirectory Service:\n\tName:\t\tcorp.example.local\n\tType:\t\tActive Directory Domain Services\n\nObject:\n\tDN:\t\tCN={6F9619FF-8B86-D011-B42D-00C04FC964FF},CN=Policies,CN=System,DC=corp,DC=example,DC=local\n\tGUID:\t\t{41D5F7AF-64A2-4985-9A4B-70DAAFC7CCE6}\n\tClass:\t\tgroupPolicyContainer\n\nOperation:\n\tCorrelation ID:\t{4EAD68FF-7229-42A4-8C73-AAB57169858B}\n\tApplication Correlation ID:\t-",
+    "relatedEventIds": ["5136","5141","4720"],
+    "attackTechniques": ["T1136.002"],
+    "references": [
+    {
+      "name": "Microsoft Learn – 5137(S) A directory service object was created",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-5137"
+    },
+    {
+      "name": "Audit Directory Service Changes (Microsoft Learn)",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-directory-service-changes"
+    }
+  ]
+  },
+  {
+    "slug": "security-5138",
+    "id": "5138",
+    "source": "security",
+    "name": "A directory service object was undeleted",
+    "channel": "Security",
+    "category": "DS Access (Audit Directory Service Changes)",
+    "what": "Generated on an Active Directory domain controller whenever an AD object is undeleted — for example, restored from the Active Directory Recycle Bin. It only fires if the destination container has a matching 'Create' auditing entry in its SACL for that object class. Records the requesting Subject, the AD domain, the object's Old DN (its tombstone path under CN=Deleted Objects), New DN (the container it was restored into), GUID, and object Class.",
+    "why": "Undelete operations are rare in routine AD administration, so Microsoft's own guidance is to monitor every occurrence and confirm a legitimate reason exists. An unexpected 5138 can indicate anti-forensic activity — an intruder restoring a previously deleted, still-privileged account or object for renewed access, or putting a deleted object back to make earlier tampering less conspicuous.",
+    "commonTriggers": "Legitimately: an administrator restoring an accidentally deleted user, group, or computer object via Active Directory Administrative Center or the Restore-ADObject PowerShell cmdlet. Rarely and suspiciously: an attacker restoring a dormant privileged object as part of a persistence or anti-forensic play. The event only generates at all when the destination container's SACL audits 'Create' for that object class.",
+    "keyFields": [
+    {
+      "name": "Subject > Account Name",
+      "desc": "Who performed the restore — verify it's a legitimate admin action tied to a known recovery request."
+    },
+    {
+      "name": "Object > New DN",
+      "desc": "The container the object was restored into — flag restores into privileged OUs or containers with no matching change ticket."
+    },
+    {
+      "name": "Object > Old DN",
+      "desc": "The object's pre-restore path under CN=Deleted Objects — confirms this was a genuine tombstone recovery rather than some other object-creation path."
+    },
+    {
+      "name": "Object > Class",
+      "desc": "The class of the restored object (user, group, groupPolicyContainer, etc.) — a restored privileged account or GPO warrants closer review than a routine user restore."
+    }
+  ],
+    "example": "An administrator restores the AD user object 'jdoe' via Active Directory Administrative Center after an accidental deletion; Object > Old DN shows CN=jdoe\\0ADEL:8f14e45f-ceea-167a-5a36-dedd4bea2543,CN=Deleted Objects,DC=corp,DC=example,DC=com and New DN shows CN=jdoe,CN=Users,DC=corp,DC=example,DC=com — routine recovery, but the same event restoring a dormant admin account with no matching help-desk ticket deserves scrutiny.",
+    "sampleLog": "A directory service object was undeleted.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-500\n\tAccount Name:\t\tadministrator\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7F2A1\n\nDirectory Service:\n\tName:\t\tcorp.example.com\n\tType:\t\tActive Directory Domain Services\n\nObject:\n\tOld DN:\t\tCN=jdoe\\0ADEL:8f14e45f-ceea-167a-5a36-dedd4bea2543,CN=Deleted Objects,DC=corp,DC=example,DC=com\n\tNew DN:\t\tCN=jdoe,CN=Users,DC=corp,DC=example,DC=com\n\tGUID:\t\t{8F14E45F-CEEA-167A-5A36-DEDD4BEA2543}\n\tClass:\t\tuser\n\nOperation:\n\tCorrelation ID:\t\t{3E2B5ECF-4C35-4C3F-8D82-B8D6F477D846}\n\tApplication Correlation ID:\t-",
+    "relatedEventIds": ["5139","5141"],
+    "attackTechniques": [],
+    "references": [
+    {
+      "name": "Microsoft Learn – 5138(S) A directory service object was undeleted",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-5138"
+    },
+    {
+      "name": "Audit Directory Service Changes",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-directory-service-changes"
+    }
+  ]
+  },
+  {
+    "slug": "security-5139",
+    "id": "5139",
+    "source": "security",
+    "name": "A directory service object was moved",
+    "channel": "Security",
+    "category": "DS Access (Audit Directory Service Changes)",
+    "what": "Generated on an Active Directory domain controller whenever an AD object is moved between containers, provided the destination container has a matching 'Create' auditing entry in its SACL for that object class. Records the requesting Subject, the AD domain, the object's Old DN (pre-move location), New DN (destination container), GUID, and object Class.",
+    "why": "Moving an object between OUs changes which Group Policy Objects apply to it and which delegated administrators can manage it. An attacker who compromises a low-privilege OU can move an object with weaker security into a container with looser controls, or move a target account out of a monitored or GPO-restricted OU to evade a control tied to OU placement — comparing Old DN and New DN shows exactly what protection the object gained or lost.",
+    "commonTriggers": "Legitimately: routine AD administration such as reorganizing OU structure or moving a user or computer to a different department's OU during onboarding/offboarding. Maliciously: an attacker relocating an object out of a tightly-audited or GPO-restricted OU into a more permissive one to evade a control tied to its container.",
+    "keyFields": [
+    {
+      "name": "Subject > Account Name",
+      "desc": "Who performed the move — verify it's tied to a known reorg or onboarding change."
+    },
+    {
+      "name": "Object > Old DN",
+      "desc": "The object's origin container — what GPOs/delegation applied before the move."
+    },
+    {
+      "name": "Object > New DN",
+      "desc": "The object's destination container — check whether it gained looser delegation or escaped a restrictive GPO the origin OU enforced."
+    },
+    {
+      "name": "Object > Class",
+      "desc": "The class of the moved object — a computer or user object moved out of a hardened OU is more notable than a routine group reorganization."
+    }
+  ],
+    "example": "IT moves the computer object 'WKS-0142' from the default Computers container into a delegated 'Finance-Workstations' OU as part of a departmental reorg; Object > Old DN shows CN=WKS-0142,CN=Computers,DC=corp,DC=example,DC=com and New DN shows CN=WKS-0142,OU=Finance-Workstations,DC=corp,DC=example,DC=com — routine here, but the same move away from a tightly-restricted OU on an object with no matching change ticket is worth flagging.",
+    "sampleLog": "A directory service object was moved.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1105\n\tAccount Name:\t\tjdoe\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7C29\n\nDirectory Service:\n\tName:\t\tcorp.example.com\n\tType:\t\tActive Directory Domain Services\n\nObject:\n\tOld DN:\t\tCN=WKS-0142,CN=Computers,DC=corp,DC=example,DC=com\n\tNew DN:\t\tCN=WKS-0142,OU=Finance-Workstations,DC=corp,DC=example,DC=com\n\tGUID:\t\t{06713960-9CC3-4B5D-A594-35883A04F934}\n\tClass:\t\tcomputer\n\nOperation:\n\tCorrelation ID:\t\t{67A42C05-A70D-4348-AF19-E883CB1FCA9C}\n\tApplication Correlation ID:\t-",
+    "relatedEventIds": ["5138","5141"],
+    "attackTechniques": [],
+    "references": [
+    {
+      "name": "Microsoft Learn – 5139(S) A directory service object was moved",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-5139"
+    },
+    {
+      "name": "Audit Directory Service Changes",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-directory-service-changes"
+    }
+  ]
+  },
+  {
+    "slug": "security-5141",
+    "id": "5141",
+    "source": "security",
+    "name": "A directory service object was deleted",
+    "channel": "Security",
+    "category": "DS Access (Audit Directory Service Changes)",
+    "what": "Generated on an Active Directory domain controller whenever an AD object is deleted, provided the object has a matching 'Delete' auditing entry in its SACL. Records the requesting Subject, the AD domain, the deleted object's DN, GUID, and object Class, plus a Tree Delete flag indicating whether the 'Delete Subtree' server control was used to remove an entire branch (e.g. an OU and everything under it) in one operation.",
+    "why": "This is the definitive AD-object-deletion event — a domain admin account, GPO, trust object, or entire OU subtree disappearing mid-investigation is one of the highest-value events to alert on. Microsoft specifically recommends monitoring deletion of groupPolicyContainer objects and any other critical objects that shouldn't be removed; Tree Delete = Yes flags a subtree wipe with a far larger blast radius than a single-object delete.",
+    "commonTriggers": "Legitimately: planned decommissioning of a user, computer, group, GPO, or OU as part of routine AD lifecycle management. Maliciously: an attacker deleting a privileged account, a GPO, a trust object, or an entire OU subtree (Tree Delete) as a destructive act or to remove evidence of earlier AD tampering.",
+    "keyFields": [
+    {
+      "name": "Object > DN",
+      "desc": "What was deleted — flag privileged accounts, GPOs (groupPolicyContainer), or trust objects immediately."
+    },
+    {
+      "name": "Object > Class",
+      "desc": "The object's class — groupPolicyContainer and trustedDomain deletions carry outsized impact and are worth alerting on directly, per Microsoft's own guidance."
+    },
+    {
+      "name": "Operation > Tree Delete",
+      "desc": "'Yes' means an entire subtree was removed in one 'Delete Subtree' operation — a much larger blast radius than a single-object delete, and worth escalating immediately."
+    },
+    {
+      "name": "Subject > Account Name",
+      "desc": "Who performed the deletion — confirm it's tied to a known decommissioning change rather than unexplained privileged activity."
+    }
+  ],
+    "example": "An attacker with domain admin rights deletes the computer object 'WIN2003' used earlier for staging, to cover their tracks; Object > DN shows CN=WIN2003,CN=Users,DC=corp,DC=example,DC=com, Class shows computer, and Tree Delete shows No — an isolated single-object delete outside any known decommissioning ticket, or the same event with Class groupPolicyContainer or Tree Delete Yes on an OU, warrants immediate escalation.",
+    "sampleLog": "A directory service object was deleted.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-500\n\tAccount Name:\t\tadministrator\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7F2A1\n\nDirectory Service:\n\tName:\t\tcorp.example.com\n\tType:\t\tActive Directory Domain Services\n\nObject:\n\tDN:\t\tCN=WIN2003,CN=Users,DC=corp,DC=example,DC=com\n\tGUID:\t\t{CA15B875-AFB1-4E5A-86B2-96E61DE09110}\n\tClass:\t\tcomputer\n\nOperation:\n\tTree Delete:\t\tNo\n\tCorrelation ID:\t\t{C8A9000C-C618-4EE9-87FF-F852C0564F18}\n\tApplication Correlation ID:\t-",
+    "relatedEventIds": ["5138","5139"],
+    "attackTechniques": [],
+    "references": [
+    {
+      "name": "Microsoft Learn – 5141(S) A directory service object was deleted",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-5141"
+    },
+    {
+      "name": "Audit Directory Service Changes",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-directory-service-changes"
+    }
+  ]
+  },
+  {
+    "slug": "security-4765",
+    "id": "4765",
+    "source": "security",
+    "name": "SID History was added to an account",
+    "channel": "Security",
+    "category": "User Account Management",
+    "what": "Generated on a domain controller whenever a value is added to an account's sIDHistory attribute. Records the Subject who performed the operation, the Target Account the SID History was added to, the Source Account the historical SID came from, and the specific SID(s) added in the SID List.",
+    "why": "This is the direct detection point for SID-History injection (MITRE ATT&CK T1134.005). sIDHistory is normally only populated by a controlled inter-domain/inter-forest migration tool such as ADMT, so any 4765 outside a known, scheduled migration window is worth immediate scrutiny — an attacker with sufficient privilege (or via a DCShadow rogue-DC operation) can inject the SID of a highly-privileged group such as Enterprise Admins into a low-privilege account's SID History, granting it that group's effective access without ever adding it as a visible group member.",
+    "commonTriggers": "Legitimately: an Active Directory Migration Tool (ADMT) or equivalent cross-domain/cross-forest migration job adding a migrated account's original SID to the new account's SID History so it retains access to resources in the source domain. Maliciously: an attacker with domain admin-equivalent rights directly injecting an SID from a privileged group or account into a target's SID History outside any known migration window.",
+    "keyFields": [
+    {
+      "name": "Target Account > Account Name",
+      "desc": "The account SID History was added to — the account gaining the extra, normally invisible access."
+    },
+    {
+      "name": "Source Account > Account Name",
+      "desc": "The account the historical SID was copied from — verify it's a legitimate migration source, not a privileged account or group in another domain/forest."
+    },
+    {
+      "name": "Additional Information > SID List",
+      "desc": "The actual SID(s) added — resolve each one to check whether it belongs to a highly-privileged group (e.g. Enterprise Admins) the target account shouldn't inherit access from."
+    },
+    {
+      "name": "Subject > Account Name",
+      "desc": "Who or what performed the addition — outside the ADMT service account or a documented migration window, this is a strong red flag."
+    }
+  ],
+    "example": "A cross-forest ADMT migration adds the source-domain SID for a newly migrated account to the target account's SID History; Target Account > Account Name shows CORP\\jdoe, Source Account > Account Name shows LEGACY\\jdoe, and Additional Information > SID List shows the single migrated SID — routine during a scheduled migration window, but the same event adding an Enterprise Admins group SID to an otherwise low-privilege account, performed by a subject other than the ADMT service account, is a strong SID-History-injection indicator.",
+    "sampleLog": "SID History was added to an account.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-500\n\tAccount Name:\t\tadministrator\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7F2A1\n\nTarget Account:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1108\n\tAccount Name:\t\tjdoe\n\tAccount Domain:\t\tCORP\n\nSource Account:\n\tSecurity ID:\t\tS-1-5-21-1177238915-682003330-1004336348-1108\n\tAccount Name:\t\tjdoe\n\nAdditional Information:\n\tPrivileges:\t\t-\n\tSID List:\t\tS-1-5-21-1177238915-682003330-1004336348-1108",
+    "relatedEventIds": ["4766","4738"],
+    "attackTechniques": ["T1134.005"],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4765(S) SID History was added to an account",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4765"
+    },
+    {
+      "name": "Audit User Account Management",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-user-account-management"
+    }
+  ]
+  },
+  {
+    "slug": "security-4766",
+    "id": "4766",
+    "source": "security",
+    "name": "An attempt to add SID History to an account failed",
+    "channel": "Security",
+    "category": "User Account Management",
+    "what": "Generated on a domain controller when an attempt to add a value to an account's sIDHistory attribute fails. Records the Subject, the Target Account the addition was attempted against, and the Source Account name the SID would have come from. Unlike its success counterpart (4765), Microsoft's own event schema hard-codes the Subject's Security ID to a placeholder rather than substituting a real SID, and the Source Account section carries only an Account Name with no SID or SID List field — so the specific SID and failure reason aren't captured in the event itself.",
+    "why": "This is the failure companion to 4765, and Microsoft explicitly recommends enabling Failure auditing on this subcategory specifically to catch failed SID-History injection attempts — for example when an attacker's privileges are insufficient, or SID Filtering on a trust blocks the write. A cluster of 4766 failures against the same target account is as strong a signal of an attempted privilege-escalation attempt as a successful 4765, even though the injection itself didn't take hold.",
+    "commonTriggers": "Legitimately: a transient permissions or connectivity failure during a legitimate ADMT migration job. Maliciously: an attacker attempting SID-History injection without sufficient rights on the target domain, or being blocked by SID Filtering/quarantine on the trust between the source and target domains.",
+    "keyFields": [
+    {
+      "name": "Target Account > Account Name",
+      "desc": "The account the SID History addition was attempted against — the intended beneficiary of the failed injection."
+    },
+    {
+      "name": "Source Account > Account Name",
+      "desc": "The account name the SID would have been copied from — the only identifying detail this sparsely-documented event captures about the attempted source."
+    },
+    {
+      "name": "Subject > Account Name",
+      "desc": "Who attempted the operation — check for legitimacy the same way as on a successful 4765."
+    }
+  ],
+    "example": "An attempt to inject a privileged SID into CORP\\svc-app's SID History fails because SID Filtering is enabled on the inbound trust from the source domain; Target Account > Account Name shows CORP\\svc-app and Source Account > Account Name shows the attempted source identity — since this sparsely-documented event carries no SID List or failure-code field, the analyst pivots to the surrounding authentication and trust-relationship events on the same Logon ID to reconstruct what was attempted.",
+    "sampleLog": "An attempt to add SID History to an account failed.\n\nSubject:\n\tSecurity ID:\t\t-\n\tAccount Name:\t\tadministrator\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7F2A1\n\nTarget Account:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1204\n\tAccount Name:\t\tsvc-app\n\tAccount Domain:\t\tCORP\n\nSource Account:\n\tAccount Name:\t\tsvc-app\n\nAdditional Information:\n\tPrivileges:\t\t-",
+    "relatedEventIds": ["4765","4738"],
+    "attackTechniques": ["T1134.005"],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4766(F) An attempt to add SID History to an account failed",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4766"
+    },
+    {
+      "name": "Audit User Account Management",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-user-account-management"
+    }
+  ]
+  },
+  {
+    "slug": "security-4777",
+    "id": "4777",
+    "source": "security",
+    "name": "The domain controller failed to validate the credentials for an account",
+    "channel": "Security",
+    "category": "Account Logon (Audit Credential Validation)",
+    "what": "A defined Windows security event ID that, per Microsoft's own documentation, currently doesn't generate — it is a defined event that is never invoked by the operating system; a Failure instance of event 4776 is generated instead.",
+    "why": "Important for building detections correctly: any monitoring rule authored against 4777 will never fire in practice. NTLM credential-validation-failure detection logic — for brute-force or password-spray attempts against domain accounts — should target 4776 Failure events instead.",
+    "commonTriggers": "N/A — per Microsoft's documentation, this event does not occur in practice.",
+    "keyFields": [],
+    "example": "Not observed in practice — Microsoft's documentation states 4777 is a defined event the operating system never actually invokes; a Failure instance of 4776 is generated for the equivalent NTLM credential-validation failure instead.",
+    "sampleLog": "Not applicable — per Microsoft's own documentation, event 4777 is defined but never generated by the operating system in practice; the corresponding failure is recorded as event 4776 instead.",
+    "relatedEventIds": ["4776"],
+    "attackTechniques": [],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4777(F) The domain controller failed to validate the credentials for an account",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4777"
+    },
+    {
+      "name": "Audit Credential Validation",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-credential-validation"
+    }
+  ]
+  },
+  {
+    "slug": "security-4778",
+    "id": "4778",
+    "source": "security",
+    "name": "A session was reconnected to a Window Station",
+    "channel": "Security",
+    "category": "Logon/Logoff (Audit Other Logon/Logoff Events)",
+    "what": "Generated when a user reconnects to an existing, disconnected Terminal Services (RDP) session, switches back to a desktop via Fast User Switching, or reconnects to a Hyper-V Enhanced Session. Records the Subject account, the Session Name the session reconnected to, and — for a network reconnect — the Client Name and Client Address it came from.",
+    "why": "Distinguishes a session resuming from a dormant, disconnected state from a brand-new authentication (4624), since a disconnected RDP session stays logged on in memory without re-prompting for credentials. Paired with 4779, it lets an analyst bound exactly how long a given Window Station session was actively in use versus sitting idle-but-live across a shift or an investigation window. An unexpected reconnect — from an unfamiliar Client Address, outside normal hours, or to an account that shouldn't have a lingering session — is a signal an attacker regained a dormant foothold without needing a fresh logon.",
+    "commonTriggers": "Legitimately: a user reconnecting to their own disconnected RDP session from the same or a different client, or switching back to a locked desktop via Fast User Switching. Anomalously: an attacker reconnecting to a dormant RDP session left open by a prior logon — from an unexpected Client Address or outside the account's normal hours — to regain access without triggering a fresh 4624 logon or re-authentication prompt.",
+    "keyFields": [
+    {
+      "name": "Account Name (Subject)",
+      "desc": "Who reconnected — the identity to check against expected RDP/console usage patterns."
+    },
+    {
+      "name": "Session Name",
+      "desc": "Which session was resumed — RDP-Tcp#N for a typical RDP session, Console for Fast User Switching, or a GUID-style name for a Hyper-V Enhanced Session — confirms this was a reconnect to an existing session, not a fresh logon."
+    },
+    {
+      "name": "Client Address",
+      "desc": "Source IP of the reconnecting client — the primary pivot for tracing where the reconnect originated; shows 'LOCAL' for a console/Fast-User-Switching reconnect."
+    },
+    {
+      "name": "Logon ID",
+      "desc": "Correlates the reconnect back to the original 4624 logon that created the session being resumed."
+    }
+  ],
+    "example": "Logged when CORP\\jsmith reconnects to Session Name RDP-Tcp#6 from Client Address 198.51.100.42, resuming a Terminal Services session left disconnected rather than triggering a new interactive logon. Paired with a later 4779 disconnecting that same session, 4778 lets an analyst reconstruct exactly when the session was actively being used versus sitting disconnected-but-logged-on.",
+    "sampleLog": "A session was reconnected to a Window Station.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7F2A1\n\nSession:\n\tSession Name:\t\tRDP-Tcp#6\n\nAdditional Information:\n\tClient Name:\t\tWKSTN-042\n\tClient Address:\t\t198.51.100.42",
+    "relatedEventIds": ["4779","4624","4634"],
+    "attackTechniques": ["T1021.001"],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4778(S) A session was reconnected to a Window Station",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4778"
+    },
+    {
+      "name": "Audit Other Logon/Logoff Events (Microsoft Learn)",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-other-logonlogoff-events"
+    }
+  ]
+  },
+  {
+    "slug": "security-4779",
+    "id": "4779",
+    "source": "security",
+    "name": "A session was disconnected from a Window Station",
+    "channel": "Security",
+    "category": "Logon/Logoff (Audit Other Logon/Logoff Events)",
+    "what": "Generated when a user disconnects from an existing Terminal Services (RDP) session — leaving it running and logged on in the background rather than logging off — switches away from a desktop via Fast User Switching, or disconnects from a Hyper-V Enhanced Session. Records the Subject account, the Session Name that was disconnected, and — for a network session — the Client Name and Client Address it disconnected from.",
+    "why": "Marks the start of a session's dormant-but-still-logged-on window — the counterpart to 4778's resume. Together the pair let an analyst bound exactly when an RDP session was actively in use versus sitting disconnected and reachable for later reconnection without re-authentication. A disconnect with no later 4778 reconnect, and no eventual 4634/4647 logoff closing it out, is worth tracking, since the underlying session and its credentials remain live in memory the whole time.",
+    "commonTriggers": "Legitimately: a user closing an RDP window or a network interruption dropping the connection without a full logoff, or switching to another desktop via Fast User Switching. Anomalously: an attacker deliberately leaving a session disconnected rather than logging off, to preserve a live, re-connectable foothold that survives without needing fresh credentials.",
+    "keyFields": [
+    {
+      "name": "Account Name (Subject)",
+      "desc": "Who disconnected — the identity whose session remains logged on but unattended afterward."
+    },
+    {
+      "name": "Session Name",
+      "desc": "Which session was disconnected — the value to watch for in a later 4778 reconnect (or its prolonged absence)."
+    },
+    {
+      "name": "Client Address",
+      "desc": "Source IP the session disconnected from — the last-known client location before the session went dormant."
+    },
+    {
+      "name": "Logon ID",
+      "desc": "Ties the disconnect back to the originating 4624 logon and forward to the session's eventual 4778 reconnect or 4634/4647 logoff."
+    }
+  ],
+    "example": "Logged when CORP\\jsmith's RDP client at 198.51.100.42 drops the connection to Session Name RDP-Tcp#6 without a full logoff — the session stays authenticated and resident on the server. If that Session Name is never reconnected (4778) or formally logged off (4634/4647) for an extended period, the disconnected-but-live session is worth flagging as a standing foothold.",
+    "sampleLog": "A session was disconnected from a Window Station.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-1104\n\tAccount Name:\t\tjsmith\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7F2A1\n\nSession:\n\tSession Name:\t\tRDP-Tcp#6\n\nAdditional Information:\n\tClient Name:\t\tWKSTN-042\n\tClient Address:\t\t198.51.100.42",
+    "relatedEventIds": ["4778","4624","4634"],
+    "attackTechniques": ["T1021.001"],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4779(S) A session was disconnected from a Window Station",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4779"
+    },
+    {
+      "name": "Audit Other Logon/Logoff Events (Microsoft Learn)",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-other-logonlogoff-events"
+    }
+  ]
+  },
+  {
+    "slug": "security-4704",
+    "id": "4704",
+    "source": "security",
+    "name": "A user right was assigned",
+    "channel": "Security",
+    "category": "Audit Authorization Policy Change",
+    "what": "Generated every time the local user rights policy changes and a user right is assigned to an account — a separate event fires per right/account combination. Records the Subject who made the change, the Target Account the right was assigned to, and the specific privilege in the New Right\\User Right field (e.g. SeDebugPrivilege, SeServiceLogonRight).",
+    "why": "User rights (distinct from NTFS/object permissions) govern powerful, system-wide capabilities like debugging other processes, acting as part of the OS, or logging on as a service, so a 4704 granting a sensitive right like SeDebugPrivilege or SeTcbPrivilege to a non-administrative or unexpected account is a strong privilege-escalation or persistence signal. Microsoft's own guidance recommends flagging every 4704 whose Subject isn't SYSTEM, since routine GPO-driven rights assignment is normally applied by SYSTEM rather than an interactive user. Note it only covers *user* rights (the 'User Rights Assignment' privileges) — logon rights such as 'Allow log on through Remote Desktop Services' are tracked separately by events 4717/4718, not this one.",
+    "commonTriggers": "Legitimately: SYSTEM applying a Group Policy Object's User Rights Assignment settings at startup or policy refresh, or an administrator manually editing local security policy (secpol.msc). Maliciously: an attacker with sufficient privileges granting a sensitive right such as SeDebugPrivilege, SeImpersonatePrivilege, or SeServiceLogonRight to a compromised or attacker-controlled account to enable credential dumping, token impersonation, or a service-based persistence mechanism.",
+    "keyFields": [
+    {
+      "name": "Account Name (Subject)",
+      "desc": "Who made the policy change — Microsoft's own guidance is to flag every occurrence where this isn't SYSTEM."
+    },
+    {
+      "name": "Account Name (Target Account)",
+      "desc": "Which account received the right — check it against expected admin/service accounts and whether it needs that capability."
+    },
+    {
+      "name": "User Right (New Right)",
+      "desc": "The specific privilege granted (e.g. SeDebugPrivilege, SeTcbPrivilege, SeImpersonatePrivilege, SeServiceLogonRight) — the core signal for whether this is routine baselining or a dangerous grant."
+    }
+  ],
+    "example": "SYSTEM applies a Group Policy Object at startup, generating a 4704 for Target Account CORP\\svc-sql with User Right SeServiceLogonRight — routine service-account provisioning. The same event with Subject CORP\\jdoe (not SYSTEM, not a domain admin) granting Target Account tempsvc the right SeDebugPrivilege outside a documented change window looks like privilege escalation staged for a later credential-dumping step.",
+    "sampleLog": "A user right was assigned.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-18\n\tAccount Name:\t\tDC01$\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x3E7\n\nTarget Account:\n\tAccount Name:\t\tCORP\\svc-sql\n\nNew Right:\n\tUser Right:\t\tSeServiceLogonRight",
+    "relatedEventIds": ["4705","4672"],
+    "attackTechniques": ["T1098"],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4704(S) A user right was assigned",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4704"
+    },
+    {
+      "name": "Audit Authorization Policy Change (Microsoft Learn)",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-authorization-policy-change"
+    }
+  ]
+  },
+  {
+    "slug": "security-4705",
+    "id": "4705",
+    "source": "security",
+    "name": "A user right was removed",
+    "channel": "Security",
+    "category": "Audit Authorization Policy Change",
+    "what": "Generated every time the local user rights policy changes and a user right is removed from an account — a separate event fires per right/account combination. Records the Subject who made the change, the Target Account the right was removed from, and the specific privilege in the Removed Right\\User Right field.",
+    "why": "The removal counterpart to 4704 — useful both for confirming routine policy tightening (e.g. stripping SeDebugPrivilege from an over-privileged service account) and for spotting a defense-evasion move where an attacker strips a monitoring or security tool's service account of a right it depends on, such as SeSecurityPrivilege (needed to manage the audit log), to degrade its function without disabling it outright. As with 4704, it covers only user rights, not logon rights (those are 4717/4718).",
+    "commonTriggers": "Legitimately: an administrator or a GPO update tightening local security policy by removing an over-broad or no-longer-needed right from an account. Maliciously: an attacker with sufficient privileges removing a right a defensive tool's service account depends on, or stripping rights from an admin account as part of a broader access-denial or sabotage action.",
+    "keyFields": [
+    {
+      "name": "Account Name (Subject)",
+      "desc": "Who removed the right — check against expected admin/policy-management activity."
+    },
+    {
+      "name": "Account Name (Target Account)",
+      "desc": "Which account lost the right."
+    },
+    {
+      "name": "User Right (Removed Right)",
+      "desc": "The specific privilege taken away — check whether the account still needs it for its normal function before treating the removal as routine."
+    }
+  ],
+    "example": "An administrator tightening local policy removes SeRemoteInteractiveLogonRight from a decommissioned service account — Target Account CORP\\svc-legacy, User Right SeRemoteInteractiveLogonRight — a routine hardening change. The same event removing SeSecurityPrivilege from a security-tooling service account outside a change window is worth investigating as a possible attempt to quietly degrade that tool's ability to manage the audit log.",
+    "sampleLog": "A user right was removed.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-21-3623811015-3361044348-30300820-500\n\tAccount Name:\t\tadministrator\n\tAccount Domain:\t\tCORP\n\tLogon ID:\t\t0x2A9F31\n\nTarget Account:\n\tAccount Name:\t\tCORP\\svc-legacy\n\nRemoved Right:\n\tUser Right:\t\tSeRemoteInteractiveLogonRight",
+    "relatedEventIds": ["4704","4672"],
+    "attackTechniques": ["T1098"],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4705(S) A user right was removed",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4705"
+    },
+    {
+      "name": "Audit Authorization Policy Change (Microsoft Learn)",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-authorization-policy-change"
+    }
+  ]
+  },
+  {
+    "slug": "security-4616",
+    "id": "4616",
+    "source": "security",
+    "name": "The system time was changed",
+    "channel": "Security",
+    "category": "System — Audit Security State Change",
+    "what": "Generated every time the system clock is changed, and is always logged regardless of whether the Security State Change subcategory is itself audited. Records the Subject that requested the change, the Process ID and Name of the process that made it, and both the Previous Time and New Time in UTC.",
+    "why": "Direct evidence of system-clock manipulation — a known anti-forensic technique that skews the timestamps on every event subsequently written to the log, complicating timeline reconstruction and cross-log correlation. Microsoft's own guidance says this is normally the Windows Time service (running as LOCAL SERVICE, hosted in svchost.exe) making small periodic corrections, so a 4616 attributed to any other account or an unexpected Process Name is worth immediate scrutiny.",
+    "commonTriggers": "Legitimately, almost universally: the Windows Time service (w32time, hosted in svchost.exe, Subject LOCAL SERVICE) applying small periodic NTP corrections, or an automatic daylight-saving/timezone adjustment. Anomalously: an attacker or user with sufficient privilege manually changing the clock — backward to make freshly created evidence look older, or jumping it around to scatter subsequent events across a confusing timeline — to throw off timeline-based correlation.",
+    "keyFields": [
+    {
+      "name": "Account Name (Subject)",
+      "desc": "Who/what requested the change — Microsoft's guidance is to flag anything other than LOCAL SERVICE."
+    },
+    {
+      "name": "Process Name",
+      "desc": "The executable that made the change — Microsoft flags anything other than svchost.exe (the Windows Time service's host process) as worth reviewing."
+    },
+    {
+      "name": "Previous Time / New Time",
+      "desc": "The before/after UTC timestamps — the size and direction of the jump (a sub-second NTP correction vs. a large manual jump backward or forward) is the key signal for distinguishing routine sync from tampering."
+    }
+  ],
+    "example": "The Windows Time service (Subject LOCAL SERVICE, Process Name svchost.exe) applies a sub-second NTP correction, Previous Time and New Time differing by under a second — routine. The same event with Subject CORP\\jdoe, Process Name powershell.exe, and New Time set several hours behind Previous Time, immediately before a burst of file modifications, points to an attacker rolling the clock back to make new activity appear to predate the intrusion.",
+    "sampleLog": "The system time was changed.\n\nSubject:\n\tSecurity ID:\t\tS-1-5-19\n\tAccount Name:\t\tLOCAL SERVICE\n\tAccount Domain:\t\tNT AUTHORITY\n\tLogon ID:\t\t0x3E5\n\nProcess Information:\n\tProcess ID:\t\t0x358\n\tName:\t\tC:\\Windows\\System32\\svchost.exe\n\nPrevious Time:\t\t2026-07-09T04:59:59.998104200Z\nNew Time:\t\t2026-07-09T05:00:00.000000000Z",
+    "relatedEventIds": ["4673","1102"],
+    "attackTechniques": [],
+    "references": [
+    {
+      "name": "Microsoft Learn – 4616(S) The system time was changed",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4616"
+    },
+    {
+      "name": "Audit Security State Change (Microsoft Learn)",
+      "url": "https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/audit-security-state-change"
+    }
+  ]
   }
 ];
 

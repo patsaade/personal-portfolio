@@ -20,6 +20,7 @@ import TacticMatrix from '../../components/TacticMatrix.astro';
 import { tag, card } from 'styled-system/recipes';
 import { getSortedPosts, getSortedLabs, tagSlug } from '../../utils/posts';
 import { D3FEND_TECHNIQUES, D3FEND_TACTIC_ORDER, D3FEND_TACTICS, D3FEND_VERSION, d3fendById } from '../../data/d3fend';
+import { termBySlug } from '../../data/securityTerms';
 
 // Techniques explicitly covered by a post/lab (via its `d3fend` frontmatter) —
 // mirrors the ATT&CK Map's `covered` set (attack-map.astro).
@@ -174,6 +175,7 @@ const anchored = new Set<string>();
     <div class={css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', ml: { sm: 'auto' } })}>
       <FilterToggle id="d3fend-covered-toggle" icon="check" label="Covered only" tone="accent" />
       <FilterToggle id="d3fend-mapped-toggle" icon="crosshair" label="Maps to ATT&CK" tone="primary" />
+      <FilterToggle id="d3fend-gloss-toggle" icon="book-open" label="In glossary" tone="primary" />
       <CollapseAll target="[data-tactic-group]" />
       <ViewToggle listTarget="#d3fend-list-view" matrixTarget="#d3fend-matrix-view" storageKey="d3fend-map-view" />
     </div>
@@ -208,6 +210,7 @@ const anchored = new Set<string>();
             </summary>
             <div class={`card-grid ${css({ mt: '1rem' })}`}>
               {byTactic[tactic].map((t) => {
+                const gloss = t.glossarySlug ? termBySlug(t.glossarySlug) : undefined;
                 const firstHere = !anchored.has(t.id);
                 if (firstHere) anchored.add(t.id);
                 const parent = t.parentId ? d3fendById(t.parentId) : undefined;
@@ -222,6 +225,7 @@ const anchored = new Set<string>();
                     data-d3fend-card={`${t.id} ${t.name} ${parent ? parent.name : ''}`.toLowerCase()}
                     {...(mapped ? { 'data-mapped': true } : {})}
                     {...(isCovered ? { 'data-covered': true } : {})}
+                    {...(gloss ? { 'data-has-gloss': true } : {})}
                   >
                     <div class={chipTop}>
                       <span class={chipId}>{t.id}</span>
@@ -276,6 +280,7 @@ const anchored = new Set<string>();
       toggles: [
         { id: 'd3fend-covered-toggle', attr: 'data-covered' },
         { id: 'd3fend-mapped-toggle', attr: 'data-mapped' },
+        { id: 'd3fend-gloss-toggle', attr: 'data-has-gloss' },
       ],
       urlSync: { queryParam: 'q', facetParam: 'tactic' },
     }}

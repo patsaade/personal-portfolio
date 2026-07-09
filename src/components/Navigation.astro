@@ -49,6 +49,22 @@ const moreMenuOuter = css({
   right: 0,
   pt: '0.6rem', // transparent hover-bridge so the menu stays open between button and panel
   zIndex: 60,
+  // DFIR and More are two separate .nav-more groups whose panels (each
+  // min-width ~210px, right: 0) can genuinely overlap in screen space at
+  // typical nav widths. Both panels share this same base z-index, so with
+  // no further rule, plain DOM order decides the tie — the later-in-markup
+  // dropdown (More) always paints on top of the earlier one (DFIR),
+  // regardless of which one you're actually interacting with. That means
+  // moving the pointer from More back to DFIR hid DFIR's entire 1500ms
+  // opening slide behind More's still-fading-out panel — "only one slide
+  // visible at a time," and always the wrong one when going in that
+  // direction. Fix: whichever dropdown is currently open/opening (hovered,
+  // focus-within, or JS-armed via [data-open] for touch) always wins the
+  // stacking order over its sibling, so the one you're looking at is always
+  // the one you see animate.
+  '.nav-more:hover &': { zIndex: 70 },
+  '.nav-more:focus-within &': { zIndex: 70 },
+  '&[data-open]': { zIndex: 70 },
 });
 const moreMenuInner = css({
   minW: '210px',
@@ -239,11 +255,11 @@ const mobileSummary = css({
                 {d.groups.map((g, i) => (
                   <>
                     {i > 0 && <div class={menuGroupDivider} />}
-                    {g.category && <p class={menuGroupLabel}>{g.category}</p>}
+                    {g.category && <p class={`nav-declassify ${menuGroupLabel}`}>{g.category}</p>}
                     <ul class={menuGroup} aria-label={g.category ?? d.label}>
                       {g.links.map((link) => (
                         <li>
-                          <a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class={moreLink}>
+                          <a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class={`nav-declassify ${moreLink}`}>
                             {link.label}
                           </a>
                         </li>

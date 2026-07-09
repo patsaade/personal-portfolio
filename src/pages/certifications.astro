@@ -74,7 +74,11 @@ const earnedIcon = css({ color: 'accent', flexShrink: 0 });
 const pursuingIcon = css({ color: 'textMuted', flexShrink: 0 });
 const extIcon = css({ color: 'textMuted', flexShrink: 0 });
 const certFull = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45 });
-const focusTag = `${tag({ tone: 'muted' })} ${css({ alignSelf: 'flex-start', mt: 'auto' })}`;
+// maxW/overflow/textOverflow: current `focus` values are all short, but this
+// is the same ceiling event-ids.astro and tools.astro needed for their
+// variable-length tags — no reason for this one to be the exception the next
+// time a longer focus area gets added.
+const focusTag = `${tag({ tone: 'muted' })} ${css({ alignSelf: 'flex-start', mt: 'auto', maxW: '100%', overflow: 'hidden', textOverflow: 'ellipsis' })}`;
 const pursuingTag = `${tag({ tone: 'accent' })} ${css({ alignSelf: 'flex-start', mt: 'auto' })}`;
 const metaLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: 'primary', fontWeight: 600, _hover: { textDecoration: 'underline' } });
 ---
@@ -154,7 +158,7 @@ const metaLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.35r
                     <Icon name="external-link" size={14} class={extIcon} />
                   </span>
                   <span class={certFull}>{c.full}</span>
-                  {c.earned ? <span class={focusTag}>{c.focus}</span> : <span class={pursuingTag}>In pursuit of</span>}
+                  {c.earned ? <span class={focusTag} title={c.focus}>{c.focus}</span> : <span class={pursuingTag}>In pursuit of</span>}
                 </a>
               ))}
             </div>

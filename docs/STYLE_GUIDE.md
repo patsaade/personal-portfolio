@@ -114,8 +114,29 @@ and **Fira Mono** (Mozilla) for code. Both are self-hosted under `public/fonts/`
   Keep static degradation to the *medium* range (≤ 50) and to large/display text; the grades share
   metrics with grade 0. The heavier grades (70/100) are self-hosted but reserved for the decode
   animation and big one-off display, never body or small text.
-- Headings/eyebrows are **sentence case** ("DFIR deep dives", not "DFIR Deep Dives") except
-  proper nouns and the site/brand wordmark "Patrick Saade".
+- **Casing scope boundary — page titles vs. section subheadings.** These are two distinct,
+  deliberate conventions; don't cross-apply one to the other.
+  - **Page-level titles are Title Case.** This covers the `BaseLayout` `title` prop (the
+    `<title>`/SEO string), each page's own visible `<h1>` set via `PageHeader`'s `title` prop,
+    and eyebrow category labels (`PageHeader`'s/the hero's `eyebrow`) — e.g. "DFIR Deep Dives",
+    not "DFIR deep dives". This also covers the hero `<h1>` statement on the home page, e.g.
+    "SOC & Incident Response @ First American" — that's the same rule, not a separate exception.
+    Use standard English title-case rules: capitalize principal words; lowercase minor words —
+    articles, coordinating conjunctions, and short prepositions under ~4 letters (a, an, the,
+    and, but, or, for, nor, as, at, by, in, of, on, per, to) — **unless** that word is the first
+    or last word of the title, in which case it's always capitalized. A `BaseLayout`/`PageHeader`
+    title pair on the same page must match exactly (they're two renderings of one title, not two
+    independent strings). For a dynamically built title (e.g. `` `${tool.name} — DFIR Tool` ``,
+    `` `Event ${entry.id} — ${entry.name}` ``), title-case only the **static** surrounding text —
+    leave interpolated data (tool names, event names, technique IDs) exactly as authored; never
+    reflow a real proper noun into title case.
+  - **Section-level prose subheadings are sentence case — unchanged by the rule above.** Any
+    `<h2>`/`<h3>` *within* a page body (e.g. "What it records", "Common triggers" on Event ID,
+    glossary, or tool detail pages) stays sentence case, same as normal prose. This is an
+    intentional, distinct convention from page-level titles — don't title-case these, and don't
+    read the page-title rule as license to.
+  - **Exception (both scopes):** proper nouns and the site/brand wordmark "Patrick Saade" are
+    always cased correctly regardless of which rule otherwise applies.
 
 ## Emphasis & bolding (copy)
 
@@ -138,10 +159,10 @@ for scannability (e.g. "**no cookies**", "**cookieless**", does "**not**" track)
 distinct, intentional pattern; keep it to the key guarantees, not proper nouns.
 
 ### Casing in headlines vs. prose
-- **Headline lines** (the hero `<h1>` statements, eyebrows) may use title/headline case —
-  e.g. "SOC & Incident Response @ First American."
-- **Sentence prose** uses normal sentence case — e.g. "…detection-and-response and incident
-  response…" (lowercase). Don't title-case mid-sentence.
+Page-level title casing (headline `<h1>` statements, eyebrows) is covered by the single rule
+in *Typography* above. Ordinary sentence prose — the running text in paragraphs, not a title —
+still uses normal sentence case, e.g. "…detection-and-response and incident response…"
+(lowercase). Don't title-case mid-sentence.
 
 ## Language conventions
 
@@ -178,6 +199,16 @@ distinct, intentional pattern; keep it to the key guarantees, not proper nouns.
   `title` attribute for a hover tooltip, and make sure the full value is still shown
   somewhere unbounded (the item's own detail page) so truncation never destroys
   information, only the card preview's presentation of it.
+  **When a tag row holds more than one chip** (a truncating category/function tag next to
+  a fixed badge like "ATT&CK"), the row's `flexWrap` must be `'nowrap'`, never `'wrap'`.
+  With `'wrap'`, the browser decides line breaks using each item's un-shrunk hypothetical
+  width — so a long tag can push its sibling onto a second line *before* the long tag's own
+  truncation gets a chance to make room for it, growing the card even though the truncated
+  element "worked." Give the variable-length tag `flexShrink: 1` (it absorbs the squeeze)
+  and every other chip in that row `flexShrink: 0` (it never moves) — this is what actually
+  guarantees one line, not the truncation alone. Event ID Reference and Tool Catalog both
+  hit this for real (their `tagRow`s previously used `flexWrap: 'wrap'`), so treat this as
+  the default for any row combining a variable-length tag with a fixed one.
 - **Reference and Framework pages share one feature set — ship it with the page, not as a
   follow-up.** Glossary/Tools/Cheat Sheet/Event ID Reference (Reference) and ATT&CK
   Map/D3FEND Map (Framework) are siblings in `DFIR_GROUPS`, and every one of them needs: (a)
@@ -200,6 +231,25 @@ distinct, intentional pattern; keep it to the key guarantees, not proper nouns.
   badges/inline, 20 in section headings.
 - **Buttons:** primary = solid `bg: 'primary'` / `color: 'onPrimary'` / `borderRadius: 'md'`,
   hover `bg: 'primaryHover'` + lift; ghost = `border` + transparent, hover `borderColor: 'primary'`.
+  **Never compose two independently-called `css()` results as two class-name strings in the same
+  `class` attribute** (e.g. `` class={`${base} ${variant}`} ``) **when both define a conditional
+  override for the same property** (both have their own `_hover.color`, say). Each `css()` call
+  atomizes independently, so the two class names land in the compiled stylesheet in whatever order
+  Panda happens to extract them — a plain CSS specificity tie, decided by source order, not by
+  which class comes first/last in the `class` string. This is exactly what silently broke the
+  "primary" action-button variant (`actionBtn` + `primaryBtn`, used for "Use current time" and the
+  Dork Builder/IOC Extractor's own primary buttons): `actionBtn`'s hover sets `color: 'primary'`,
+  `primaryBtn`'s hover sets `color: 'onPrimary'` (the correct, contrast-safe choice for text sitting
+  on a solid `primary`-colored background) — when `actionBtn`'s rule won the tie, the button's hover
+  text color became identical to its own hover background color, so the label/icon visually
+  vanished (read as "goes white"/unreadable in light-mode palettes whose `primary` renders pale).
+  **Fix: merge the plain style *objects*, not the compiled class strings** — `css(base, variant)`
+  (see [Badge.astro](../src/components/Badge.astro)'s `css(base, variants[variant])`) deep-merges
+  the objects *before* atomization, so a later object's `_hover.color` deterministically overrides
+  an earlier object's, exactly like `{...base, ...variant}` would for plain objects. Keep the base
+  style (e.g. `actionBtn`) as its own exported class for standalone use, but build any "variant on
+  top of base" button as one `css(baseObj, variantObj)` call — never as two pre-built class strings
+  concatenated at the call site.
 - **Links:** `color: 'primary'`, underline-on-hover (or persistent underline in prose).
   External links: `target="_blank" rel="noopener"` + an `external-link` icon when it aids clarity.
 - **Internal links must end with a trailing slash** — `/blog/`, `/tools/`, `` `/blog/${id}/` ``,

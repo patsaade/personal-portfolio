@@ -103,9 +103,14 @@ const starCls = css({ display: 'inline', verticalAlign: '-2px', mr: '0.25rem', c
 const goCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 200ms ease, color 200ms ease' });
 const toolUse = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45 });
 // Function + cost tags sit in a row at the bottom of the card (shared `tag` recipe).
-// minW: 0 keeps this row from forcing the card wider than its grid column if a
-// tag's content ever runs long (see event-ids.astro, which hit this for real).
-const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto', pt: '0.15rem', minW: 0 });
+// flexWrap MUST stay 'nowrap': with 'wrap', the wrap algorithm can push the
+// cost tag onto a second line using fnTag's un-shrunk hypothetical width,
+// growing this card taller than its .card-grid neighbors even *with*
+// fnTag's own truncation in place (event-ids.astro hit exactly this — see
+// its tagRow comment for the full mechanics). fnTag (flexShrink: 1,
+// truncates) absorbs all the squeezing; costTag (flexShrink: 0) never moves.
+const tagRow = css({ display: 'flex', flexWrap: 'nowrap', gap: '0.3rem', mt: 'auto', pt: '0.15rem', minW: 0 });
+const fnTag = `${tag({ tone: 'muted' })} ${css({ minW: 0, flexShrink: 1, maxW: '100%', overflow: 'hidden', textOverflow: 'ellipsis' })}`;
 
 // Cost-tier chip row — same exclusive single-select chip pattern as Blog's category
 // chips and Labs' source chips, wired through ListFilter's chipGroup.
@@ -164,7 +169,7 @@ const spotlightChip = css({
 >
   <PageHeader
     breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Tool Catalog' }]}
-    eyebrow="Tooling"
+    eyebrow="Reference"
     title="Tool Catalog"
     description="Free and open-source tools, grouped by where they run. A star (★) marks what's in my day-to-day kit; each tool links to a short reference page. Tags mark each tool's function and cost."
   />
@@ -267,8 +272,8 @@ const spotlightChip = css({
                 </span>
                 <span class={toolUse}>{t.use}</span>
                 <span class={tagRow}>
-                  <span class={tag({ tone: 'muted' })}>{t.fn}</span>
-                  <span class={tag({ tone: costTone(t.cost) })}>{t.cost}</span>
+                  <span class={fnTag} title={t.fn}>{t.fn}</span>
+                  <span class={`${tag({ tone: costTone(t.cost) })} ${css({ flexShrink: 0 })}`}>{t.cost}</span>
                 </span>
               </a>
             ))}
@@ -293,7 +298,7 @@ const spotlightChip = css({
       emptyId: 'tools-empty',
       facetAttr: 'data-fn',
       chipGroup: { selector: '[data-filter]', attr: 'data-cost' },
-      urlSync: { queryParam: 'q', chipParam: 'cost' },
+      urlSync: { queryParam: 'q', facetParam: 'fn', chipParam: 'cost' },
       toggles: [
         { id: 'tools-writeup-toggle', attr: 'data-in-writeup' },
         { id: 'tools-core-toggle', attr: 'data-core' },

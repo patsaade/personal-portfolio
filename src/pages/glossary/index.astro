@@ -108,7 +108,7 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
   <PageHeader
     breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Glossary' }]}
     eyebrow="Reference"
-    title="Cybersecurity glossary"
+    title="Cybersecurity Glossary"
     description="A working reference for digital forensics & incident response — every concept, technique, and artifact with what it is, why it matters in an investigation, and how it links to the tools and MITRE ATT&CK techniques it relates to."
   />
 
@@ -262,6 +262,7 @@ const grpCount = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 600,
         { id: 'totd-attack-toggle', attr: 'data-has-attack' },
         { id: 'totd-writeup-toggle', attr: 'data-in-writeup' },
       ],
+      urlSync: { queryParam: 'q', facetParam: 'category' },
     }}
   />
 </BaseLayout>

@@ -35,6 +35,26 @@ const opTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.85
 const opTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)' });
 const opTd = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text' });
 const opCode = css({ fontFamily: 'mono', color: 'primary' });
+// Matches DorkBuilder.astro's exactTag exactly — same always-visible, zero-
+// interaction "Exact" chip glued onto the phrase operator's syntax fragment,
+// here and in the builder's own ingredient badge, so the two stay visually
+// consistent (see that file's comment for why the bare quote glyphs alone
+// weren't self-evident).
+const exactTag = css({
+  display: 'inline-block',
+  fontFamily: 'sans',
+  fontSize: '0.58rem',
+  fontWeight: 800,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+  color: 'accent',
+  bg: 'color-mix(in srgb, token(colors.accent) 16%, transparent)',
+  borderRadius: 'sm',
+  px: '0.3rem',
+  py: '0.05rem',
+  ml: '0.35rem',
+  verticalAlign: 'middle',
+});
 const toolChipRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', mt: '0.75rem' });
 const toolChip = css({
   display: 'inline-flex',
@@ -111,7 +131,10 @@ const toolChip = css({
           DORK_OPERATORS.map((op) => (
             <tr>
               <td class={opTd}>{op.label}</td>
-              <td class={`${opTd} ${opCode}`}>{op.kind === 'phrase' ? '"…"' : op.kind === 'exclude' ? '-term' : op.prefix}</td>
+              <td class={`${opTd} ${opCode}`}>
+                {op.kind === 'phrase' ? '"…"' : op.kind === 'exclude' ? '-term' : op.prefix}
+                {op.kind === 'phrase' && <span class={exactTag}>Exact</span>}
+              </td>
               <td class={opTd}>
                 {op.engines
                   .map((e) => SEARCH_ENGINES.find((s) => s.id === e)?.label ?? e)

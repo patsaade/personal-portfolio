@@ -31,6 +31,7 @@ const refTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', f
 const refTd = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text', verticalAlign: 'top' });
 const refTdMuted = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'textMuted', fontSize: '0.8rem', verticalAlign: 'top' });
 const refCode = css({ fontFamily: 'mono', fontSize: '0.78rem', color: 'primary' });
+const sectionText = css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', mb: '1rem', '&:last-child': { mb: 0 } });
 ---
 
 <BaseLayout
@@ -64,8 +65,9 @@ const refCode = css({ fontFamily: 'mono', fontSize: '0.78rem', color: 'primary' 
       shifts a timeline by hours, years, or centuries. Every constant below was independently researched and
       adversarially fact-checked against authoritative sources (Microsoft Learn, the relevant RFCs, Apple and
       forensic documentation) — see the reference table for citations and caveats. Two format families (FAT/
-      DOS packed date-time and legacy BSD syslog) have no timezone or year field of their own; the converter's
-      "Reference" toggle resolves those against UTC or your browser's local time.
+      DOS packed date-time and legacy BSD syslog) have no timezone or year field of their own; the zone
+      picker below the instant boxes in the converter governs which zone those formats resolve against,
+      defaulting to your browser's local zone when none is picked.
     </p>
   </aside>
 
@@ -113,4 +115,33 @@ const refCode = css({ fontFamily: 'mono', fontSize: '0.78rem', color: 'primary' 
       </tbody>
     </table>
   </div>
+
+  <h2 id="dst-and-correlation" class={sectionH2}>
+    <Icon name="globe" size={20} class={css({ color: 'primary' })} /> Daylight saving time & timeline correlation
+  </h2>
+  <p class={sectionText}>
+    Daylight saving time (DST) shifts a zone's clock forward, typically by one hour, for part of the
+    year, then back again — and both transitions create a genuinely ambiguous window. During the
+    fall-back transition, the same wall-clock hour occurs <em>twice</em> in one night, so a log entry
+    reading e.g. "01:30" could be either occurrence, an hour apart, with nothing in the timestamp
+    itself to tell you which. During the spring-forward transition, an entire hour of wall-clock time
+    is skipped and never occurs at all — a timestamp that appears to fall inside it is simply wrong.
+    Correlating a multi-source timeline across a DST boundary without accounting for this can silently
+    shift events by an hour in either direction.
+  </p>
+  <p class={sectionText}>
+    This converter always resolves a zone's offset using the runtime's real, current IANA tzdata rules
+    for that specific zone <em>and</em> date — never a fixed or naive offset baked into the tool
+    itself. That's why the Local and Converted boxes above recompute their offset every time the
+    underlying instant changes, and why the same zone name can correctly show a different offset for a
+    January timestamp than a July one; it's also what the "Daylight Saving Time" / "Standard Time"
+    label next to each zone name reflects.
+  </p>
+  <p class={sectionText}>
+    General guidance for working with dates and times in DFIR: prefer UTC as the common reference when
+    correlating any multi-source timeline — it has no DST and no ambiguity. A source system's
+    local-time log usually doesn't record which side of a DST transition it falls on, so don't assume
+    one; verify a system's configured timezone, and whether that zone observes DST at all, before
+    trusting its local timestamps at face value.
+  </p>
 </BaseLayout>
