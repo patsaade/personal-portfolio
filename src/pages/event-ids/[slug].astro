@@ -14,30 +14,77 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import Icon from '../../components/Icon.astro';
 import EntryNav from '../../components/EntryNav.astro';
 import { EVENT_IDS, eventIdBySlug } from '../../data/eventIds';
+import type { EventIdEntry } from '../../data/eventIds';
 import { resolveAttackLink } from '../../data/references';
+import { SITE } from '../../consts';
 
 export async function getStaticPaths() {
-  return EVENT_IDS.map((e) => ({ params: { slug: e.slug }, props: { entry: e } }));
+  const entryPaths = EVENT_IDS.map((e) => ({
+    params: { slug: e.slug },
+    props: { kind: 'entry' as const, entry: e, matches: null },
+  }));
+
+  // Bare-numeric direct-query redirects — /event-ids/4625/ resolves straight
+  // to /event-ids/security-4625/ — so pasting just the raw event ID number
+  // (as it usually appears in a log or ticket, with no clue which log it's
+  // from) still lands somewhere. Real slugs are always `{source}-{id}`, so a
+  // bare numeric id can never collide with one. If the same bare id existed
+  // in BOTH logs (not true today — Sysmon's own event IDs are 1-30ish,
+  // nowhere near Security's 4-5-digit numbering — but nothing guarantees
+  // that stays true forever) this renders a disambiguation list instead of
+  // silently guessing which one the visitor meant.
+  const byId = new Map<string, EventIdEntry[]>();
+  for (const e of EVENT_IDS) {
+    const list = byId.get(e.id) ?? [];
+    list.push(e);
+    byId.set(e.id, list);
+  }
+  const redirectPaths = [...byId.entries()].map(([id, matches]) => ({
+    params: { slug: id },
+    props: { kind: 'redirect' as const, entry: null, matches },
+  }));
+
+  return [...entryPaths, ...redirectPaths];
 }
 
-const { entry } = Astro.props;
+const props = Astro.props;
+const entry = props.kind === 'entry' ? props.entry : null;
+const matches = props.kind === 'redirect' ? props.matches : null;
+const dest = matches && matches.length === 1 ? `/event-ids/${matches[0].slug}/` : null;
 
-const idx = EVENT_IDS.findIndex((e) => e.slug === entry.slug);
+const idx = entry ? EVENT_IDS.findIndex((e) => e.slug === entry.slug) : -1;
 const prev = idx > 0 ? EVENT_IDS[idx - 1] : null;
-const next = idx >= 0 && idx < EVENT_IDS.length - 1 ? EVENT_IDS[idx + 1] : null;
+const next = entry && idx >= 0 && idx < EVENT_IDS.length - 1 ? EVENT_IDS[idx + 1] : null;
 
 // Related event IDs are bare numbers scoped to the SAME log (Security ids
 // correlate with other Security ids, Sysmon ids with other Sysmon ids) —
 // resolve each against this dataset; one that didn't survive fact-checking
 // (dropped rather than guessed at) just renders as plain, unlinked text.
-const related = entry.relatedEventIds.map((id) => ({ id, entry: eventIdBySlug(`${entry.source}-${id}`) }));
+const related = entry ? entry.relatedEventIds.map((id) => ({ id, entry: eventIdBySlug(`${entry.source}-${id}`) })) : [];
 
 // MITRE ATT&CK cross-links — on-site where the technique is in our own
 // dataset, otherwise straight to the authoritative MITRE page (same
 // resolve-or-fall-back-external pattern as d3fend/[id].astro's "Counters").
-const attackLinks = entry.attackTechniques.map(resolveAttackLink);
+const attackLinks = entry ? entry.attackTechniques.map(resolveAttackLink) : [];
 
 const SOURCE_LABEL: Record<string, string> = { security: 'Windows Security Log', sysmon: 'Sysmon' };
+
+// Same DefinedTerm shape as the Glossary detail page — this is the most
+// exhaustively fact-checked/cited dataset on the site (102 entries, each with
+// a real Microsoft Learn / Sysmon-docs reference) and previously had no
+// structured data at all.
+const jsonLd = entry
+  ? JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'DefinedTerm',
+      name: `${SOURCE_LABEL[entry.source]} Event ${entry.id} — ${entry.name}`,
+      termCode: entry.id,
+      description: entry.what,
+      inDefinedTermSet: `${SITE.url}/event-ids/`,
+      url: `${SITE.url}/event-ids/${entry.slug}/`,
+      ...(entry.references.length ? { sameAs: entry.references.map((r) => r.url) } : {}),
+    }).replace(/</g, '\\u003c') // escape `<` so it can't break out of the <script> tag
+  : null;
 
 const sectionH2 = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', fontWeight: 700, mt: '2.5rem', mb: '0.75rem' });
 const para = css({ color: 'text', lineHeight: 1.8, fontSize: '1.02rem' });
@@ -92,12 +139,59 @@ const chipLink = css({
   transition: 'border-color 200ms ease, color 200ms ease',
   _hover: { borderColor: 'primary', color: 'primary' },
 });
+const fieldCard = css({
+  p: '0.75rem 0.9rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+});
+const fieldName = css({ display: 'block', fontFamily: 'mono', fontSize: '0.88rem', fontWeight: 700, color: 'primary' });
+const fieldDesc = css({ display: 'block', color: 'textMuted', fontSize: '0.88rem', lineHeight: 1.55, mt: '0.25rem' });
+const exampleBox = css({
+  p: '0.9rem 1.05rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderLeft: '3px solid token(colors.primary)',
+  borderRadius: 'md',
+  color: 'text',
+  fontSize: '0.95rem',
+  lineHeight: 1.75,
+});
 ---
 
-<BaseLayout title={`Event ${entry.id} — ${entry.name}`} description={`${entry.name} (${SOURCE_LABEL[entry.source]} event ${entry.id}) — what it records, why it matters for DFIR, and common triggers.`}>
-  <Breadcrumbs
-    items={[{ label: 'Home', href: '/' }, { label: 'Event ID Reference', href: '/event-ids/' }, { label: entry.id }]}
-  />
+{matches ? (
+  <BaseLayout
+    title={dest ? `Moved — Event ${matches[0].id}` : `Event ${matches[0].id} — multiple matches`}
+    description={dest ? `This page has moved to the canonical Event ${matches[0].id} reference page.` : `Event ID ${matches[0].id} exists in more than one Windows log — pick the one you mean.`}
+    robots="noindex"
+  >
+    {/* Instant client-side redirect for the unambiguous case — a script
+        (not a <meta http-equiv="refresh"> in the head) so this stays a
+        single BaseLayout-wrapped page rather than a hand-rolled document,
+        avoiding a second, differently-shaped <html> root in this file. A
+        no-JS visitor still gets a real, clickable link below. */}
+    {dest && <script is:inline define:vars={{ dest }}>window.location.replace(dest);</script>}
+    {dest ? (
+      <p>This page has moved to <a href={dest}>Event {matches[0].id} — {matches[0].name}</a>.</p>
+    ) : (
+      <>
+        <p>Event ID {matches[0].id} exists in more than one log — pick the one you mean:</p>
+        <ul>
+          {matches.map((m) => (
+            <li>
+              <a href={`/event-ids/${m.slug}/`}>{m.source === 'security' ? 'Windows Security Log' : 'Sysmon'} — {m.name}</a>
+            </li>
+          ))}
+        </ul>
+      </>
+    )}
+  </BaseLayout>
+) : (
+  entry && (
+    <BaseLayout title={`Event ${entry.id} — ${entry.name}`} description={`${entry.name} (${SOURCE_LABEL[entry.source]} event ${entry.id}) — what it records, why it matters for DFIR, and common triggers.`}>
+      <Breadcrumbs
+        items={[{ label: 'Home', href: '/' }, { label: 'Event ID Reference', href: '/event-ids/' }, { label: entry.id }]}
+      />
 
   <header class={css({ mb: '1.5rem' })}>
     <p class={css({ fontFamily: 'sans', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'primary', mb: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' })}>
@@ -141,6 +235,34 @@ const chipLink = css({
   <p class={para}>{entry.commonTriggers}</p>
 
   {
+    entry.example && (
+      <>
+        <h2 class={sectionH2}><Icon name="file-text" size={18} class={css({ color: 'primary' })} /> Example</h2>
+        <p class={exampleBox}>{entry.example}</p>
+      </>
+    )
+  }
+
+  {
+    entry.keyFields.length > 0 && (
+      <>
+        <h2 class={sectionH2}><Icon name="crosshair" size={18} class={css({ color: 'primary' })} /> Key fields to check</h2>
+        <p class={css({ color: 'textMuted', fontSize: '0.92rem', mb: '0.85rem', lineHeight: 1.7 })}>
+          What to actually pull out of the raw event when triaging it:
+        </p>
+        <div class={css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' })}>
+          {entry.keyFields.map((f) => (
+            <div class={fieldCard}>
+              <span class={fieldName}>{f.name}</span>
+              <span class={fieldDesc}>{f.desc}</span>
+            </div>
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  {
     related.length > 0 && (
       <>
         <h2 class={sectionH2}><Icon name="link" size={18} class={css({ color: 'primary' })} /> Related event IDs</h2>
@@ -180,9 +302,13 @@ const chipLink = css({
     Microsoft for the source material.
   </p>
 
-  <EntryNav
-    ariaLabel="More event IDs"
-    prev={prev ? { href: `/event-ids/${prev.slug}/`, label: `${prev.id} — ${prev.name}` } : null}
-    next={next ? { href: `/event-ids/${next.slug}/`, label: `${next.id} — ${next.name}` } : null}
-  />
-</BaseLayout>
+      <EntryNav
+        ariaLabel="More event IDs"
+        prev={prev ? { href: `/event-ids/${prev.slug}/`, label: `${prev.id} — ${prev.name}` } : null}
+        next={next ? { href: `/event-ids/${next.slug}/`, label: `${next.id} — ${next.name}` } : null}
+      />
+
+      <script type="application/ld+json" is:inline set:html={jsonLd} />
+    </BaseLayout>
+  )
+)}

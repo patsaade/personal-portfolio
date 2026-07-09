@@ -103,7 +103,9 @@ const starCls = css({ display: 'inline', verticalAlign: '-2px', mr: '0.25rem', c
 const goCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 200ms ease, color 200ms ease' });
 const toolUse = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45 });
 // Function + cost tags sit in a row at the bottom of the card (shared `tag` recipe).
-const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto', pt: '0.15rem' });
+// minW: 0 keeps this row from forcing the card wider than its grid column if a
+// tag's content ever runs long (see event-ids.astro, which hit this for real).
+const tagRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: 'auto', pt: '0.15rem', minW: 0 });
 
 // Cost-tier chip row — same exclusive single-select chip pattern as Blog's category
 // chips and Labs' source chips, wired through ListFilter's chipGroup.

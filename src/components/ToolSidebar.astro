@@ -1,45 +1,83 @@
 ---
-// Pop-out tool-switcher: a compact icon rail docked to the left edge, letting
-// a visitor already using one interactive tool hot-swap to another without
-// going back through the nav dropdown. Only renders on the interactive tool
-// pages themselves (INTERACTIVE_TOOL_LINKS in consts.ts is the single source
-// of both the nav dropdown's "Interactive Tools" group and this rail, so the
-// two never drift apart) — showing a tool switcher on the blog or about page
-// would just be clutter with nothing to switch between.
+// Site-wide DFIR quick-access rail: a compact vertical dock on the left edge
+// so a visitor anywhere on the site can jump straight to any of the 10
+// DFIR_GROUPS links (Reference / Frameworks / Interactive Tools — consts.ts,
+// the same single source that drives the nav "DFIR" dropdown) without
+// detouring through the nav. Desktop/tablet only (`md` and up) — on narrow
+// viewports the nav's own <details> accordion already covers this, and a
+// fixed-left rail would just overlap body copy.
 //
-// Collapsed/expanded state is a plain CSS transform slide (translateX), same
-// technique as the nav dropdown (global.css's .nav-more-menu) — no motion/mini
-// needed since the slide distance is a fixed, known width, not something that
-// needs measuring at runtime. State persists across page loads via
-// localStorage, so navigating to another tool through the rail leaves it in
-// the same open/collapsed state the visitor left it in ("session resuming").
+// Three view states, cycled by two independent controls:
+//   hidden   → panel slid fully off-screen; only the edge handle remains.
+//   icons    → default. Icon-only rail, `title`/aria-label give the name.
+//   expanded → same rail widened to also show text labels.
+// The hide/show handle toggles hidden ⟷ (icons or expanded, whichever was
+// last active); the separate expand toggle (grid/list icon swap) toggles
+// icons ⟷ expanded and only matters while visible. The handle itself is a
+// small edge tab while hidden, docks flush at whichever edge is currently
+// visible (left: 0/48px/236px) and grows to the rail's full height once
+// shown — all driven, animated, by pure CSS sibling selectors reading
+// `rail`'s own data-view, no JS position math — see `handle`'s comment below.
+//
+// Up/down arrows at the rail's bottom cycle which DFIR_GROUPS category is
+// shown — all three categories' link lists are rendered server-side (so a
+// no-JS visitor still gets a real, fully labeled Reference list, the
+// server-computed default) and JS just toggles which one is unhidden.
+//
+// State (view + collapsed + category index) persists via localStorage, same
+// "session resuming" pattern as the original tool-only rail this replaces.
+//
+// Every toggle/cycle button here is debounced (see `debounceClick` in the
+// script below) — CLAUDE.md invariant 12 makes this a sitewide rule for any
+// button that drives a CSS/JS transition, not just a fix local to this file.
 import { css } from 'styled-system/css';
 import Icon from './Icon.astro';
-import { INTERACTIVE_TOOL_LINKS } from '../consts';
+import { DFIR_GROUPS } from '../consts';
 
-const isToolPage = INTERACTIVE_TOOL_LINKS.some((t) => t.href === Astro.url.pathname);
+const currentPath = Astro.url.pathname;
 
-const outer = css({ position: 'fixed', left: 0, top: '50%', zIndex: 45 });
+// Smart default: open on whichever category contains the current page, so a
+// first-time visitor lands on a relevant list instead of always Reference.
+const foundIndex = DFIR_GROUPS.findIndex((g) => g.links.some((l) => l.href === currentPath));
+const defaultCategoryIndex = foundIndex === -1 ? 0 : foundIndex;
 
-// The collapsed transform's -48px must match `rail`'s own w: '48px' below (the
-// slide distance is the rail's full width) — these are literal values rather
-// than one shared constant since Panda's static css() extraction can't
-// resolve a computed template value here, so keep the two in sync by hand.
-const panel = css({
-  display: 'flex',
-  flexDirection: 'row',
-  alignItems: 'stretch',
-  transform: 'translateY(-50%) translateX(0)',
-  transition: 'transform 500ms ease',
-  '&[data-collapsed]': { transform: 'translateY(-50%) translateX(-48px)' },
+const outer = css({
+  position: 'fixed',
+  left: 0,
+  top: '50%',
+  zIndex: 45,
+  display: { base: 'none', md: 'block' },
 });
 
+// Shared between `rail`'s own width rules and `handle`'s `left` docking
+// offsets below, so the two can never drift out of sync the way a pair of
+// hand-duplicated magic numbers eventually would.
+const RAIL_ICONS_W = '48px';
+const RAIL_EXPANDED_W = '236px';
+
+// `position: relative` purely so `handle` (now `position: absolute`, see
+// below) has something to dock against — `rail` itself stays in normal flow.
+const slideRow = css({
+  position: 'relative',
+  transform: 'translateY(-50%)',
+});
+
+// The hide/show slide is a transform on `rail` itself (translateX(-100%),
+// percentage-based — not a hardcoded px value) so it fully hides regardless
+// of which width the rail is currently at. Note `transform` doesn't shrink a
+// box's LAYOUT size, only where it paints — `rail` still occupies its full
+// width in the flex/box model while hidden. That's fine for `rail` itself
+// (nothing else needs its layout space back), but it's exactly why `handle`
+// is no longer a plain flex sibling docked by normal reflow (see `handle`'s
+// comment): that used to leave the handle stranded whatever width rail last
+// had before being hidden, instead of always docking flush at the true
+// visible edge.
 const rail = css({
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'center',
-  gap: '0.2rem',
-  w: '48px', // kept in sync with `panel`'s collapsed transform above
+  alignItems: 'stretch',
+  gap: '0.15rem',
+  w: RAIL_ICONS_W,
   p: '0.35rem',
   bg: 'bgCard',
   border: '1px solid token(colors.border)',
@@ -47,27 +85,150 @@ const rail = css({
   borderTopRightRadius: 'lg',
   borderBottomRightRadius: 'lg',
   boxShadow: 'cardHover',
+  overflow: 'hidden',
+  transition: 'width 300ms ease, transform 400ms ease',
+  // RAIL_EXPANDED_W is measured, not guessed: the longest label ("MITRE
+  // ATT&CK Coverage Map") is ~178px wide in the real Redaction font at
+  // itemLabel's 0.78rem (measured via opentype.js against the actual .otf —
+  // see git history), plus icon/gap/padding/rail-padding — sized so every
+  // label fits on one line with no ellipsis and no wrap, without ballooning
+  // the expanded width.
+  '&[data-view="expanded"]': { w: RAIL_EXPANDED_W },
+  '&[data-view="hidden"]': { transform: 'translateX(-100%)' },
 });
 
-const item = css({
+const expandBtn = css({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   w: '38px',
-  h: '38px',
+  h: '28px',
+  alignSelf: 'flex-start',
   borderRadius: 'md',
   color: 'textMuted',
-  transition: 'color 150ms ease, background 150ms ease, transform 150ms ease',
-  _hover: { color: 'text', bg: 'bgSubtle', transform: 'translateY(-1px)' },
-  '&[aria-current="page"]': { color: 'primary', bg: 'bgSubtle' },
+  cursor: 'pointer',
+  mb: '0.15rem',
+  transition: 'color 150ms ease, background 150ms ease',
+  _hover: { color: 'primary', bg: 'bgSubtle' },
+  '& .tool-sidebar-expand-full': { display: 'none' },
+  '&[aria-pressed="true"] .tool-sidebar-expand-compact': { display: 'none' },
+  '&[aria-pressed="true"] .tool-sidebar-expand-full': { display: 'inline-flex' },
 });
 
+const navGroup = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.2rem',
+  '&[hidden]': { display: 'none' },
+});
+
+const item = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.45rem',
+  w: '100%',
+  h: '38px',
+  px: '0.4rem',
+  borderRadius: 'md',
+  color: 'textMuted',
+  transition: 'color 150ms ease, background 150ms ease',
+  _hover: { color: 'text', bg: 'bgSubtle' },
+  '&[aria-current="page"]': { color: 'primary', bg: 'bgSubtle' },
+  '& svg': { flexShrink: 0 },
+});
+
+// Label only shows once the rail has widened — kept in the DOM always
+// (rather than JS-inserted) so it's there for the no-JS/expanded-by-CSS case
+// and so a screen reader always has real link text, not just aria-label.
+// No truncation: `rail`'s expanded width is sized (see its comment) so every
+// label — including the longest, "MITRE ATT&CK Coverage Map" — fits on this
+// single nowrap line with no ellipsis. Never add overflow/textOverflow here;
+// widen `rail`'s expanded width instead if a longer label is ever added.
+const itemLabel = css({
+  fontSize: '0.78rem',
+  whiteSpace: 'nowrap',
+  minW: 0,
+  display: 'none',
+  '[data-view="expanded"] &': { display: 'inline' },
+});
+
+const divider = css({ borderTop: '1px solid token(colors.border)', my: '0.3rem' });
+
+// Column (stacked arrows) at icon width — two 26px buttons don't fit side by
+// side in the ~37px interior the icons state leaves after rail padding. Row
+// only once expanded gives them, plus the label, the room to sit inline.
+const catBar = css({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '0.15rem',
+  '[data-view="expanded"] &': {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: '0.2rem',
+  },
+});
+
+const catBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '26px',
+  h: '26px',
+  borderRadius: 'md',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'color 150ms ease, background 150ms ease',
+  _hover: { color: 'primary', bg: 'bgSubtle' },
+  flexShrink: 0,
+});
+
+// No truncation here either: the longest category name ("Interactive Tools")
+// measures comfortably under the space available at `rail`'s expanded width,
+// so a plain nowrap line is enough — no overflow/ellipsis needed.
+const catLabel = css({
+  fontSize: '0.72rem',
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+  color: 'textMuted',
+  whiteSpace: 'nowrap',
+  minW: 0,
+  flex: 1,
+  textAlign: 'center',
+  display: 'none',
+  '[data-view="expanded"] &': { display: 'block' },
+});
+
+// `position: absolute` (docked against `slideRow`, not flex-adjacent to
+// `rail`) is deliberate: `left` and `height` are driven by three EXPLICIT,
+// mutually-exclusive rules keyed off `rail`'s own `data-view` attribute (the
+// `[data-tool-sidebar-rail][data-view="…"] ~ &` sibling selectors below), one
+// per real state, rather than inferring position from rail's live flex-box
+// width the way a plain flex sibling would. That's the fix for the handle
+// landing in the wrong spot: `rail`'s hide is a `transform`, which repositions
+// where it PAINTS but doesn't shrink its LAYOUT width (see `rail`'s comment),
+// so a flex-sibling handle used to dock wherever rail's width happened to be
+// *before* it was last hidden — 48px in one case, 236px in another — instead
+// of always sitting flush at the true visible edge. Three explicit states
+// sidesteps that entirely: hidden always means `left: 0`, full stop.
+//
+// Small (32px) by default/hidden — just tall enough to be a comfortable tap
+// target — and grows to the rail's full height whenever the rail is actually
+// showing (icons or expanded), animated via the same sibling-selector
+// mechanism. `height: 100%` resolves against `slideRow`'s height, which
+// (now that `handle` is out of normal flow) is dictated purely by `rail`'s
+// own intrinsic content height, so this tracks correctly if the link list
+// ever grows or shrinks.
 const handle = css({
+  position: 'absolute',
+  top: 0,
+  left: RAIL_ICONS_W,
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   w: '22px',
-  alignSelf: 'stretch',
+  h: '32px',
   bg: 'bgCard',
   color: 'textMuted',
   border: '1px solid token(colors.border)',
@@ -75,73 +236,203 @@ const handle = css({
   borderTopRightRadius: 'md',
   borderBottomRightRadius: 'md',
   cursor: 'pointer',
-  transition: 'color 150ms ease',
+  transition: 'color 150ms ease, left 300ms ease, height 350ms ease',
   _hover: { color: 'primary' },
-  '& .tool-sidebar-chev': { transition: 'transform 500ms ease' },
+  // `var(--rail-h, …)`, not a literal `100%`: `handle` is `position: absolute`
+  // against `slideRow`, whose own height is "auto" (derived purely from
+  // `rail`'s in-flow content) — per spec, a percentage `height` on an
+  // absolutely-positioned element only resolves against a containing block
+  // with a DEFINITE (non-auto) height, which slideRow doesn't have. `100%`
+  // here would silently behave as `auto` and shrink to the button's own
+  // intrinsic content size instead of matching rail. `--rail-h` is a real
+  // measured pixel value the script below keeps in sync with `rail`'s live
+  // height via ResizeObserver (rail's height itself isn't static — it
+  // differs a little between the icons and expanded catBar layouts), and
+  // `350ms` is enough for `transition: height` to still animate smoothly
+  // between two concrete px values.
+  '[data-tool-sidebar-rail]:not([data-view="hidden"]) ~ &': { h: 'var(--rail-h, 100%)' },
+  '[data-tool-sidebar-rail][data-view="expanded"] ~ &': { left: RAIL_EXPANDED_W },
+  '[data-tool-sidebar-rail][data-view="hidden"] ~ &': { left: 0, h: '32px' },
+  // Explicit rotate(0deg) base (not just the absence of a transform rule) so
+  // both endpoints of the toggle are concrete values for the transition to
+  // interpolate between, rather than relying on an implicit "no transform".
+  '& .tool-sidebar-chev': { transition: 'transform 500ms ease', transform: 'rotate(0deg)' },
   '&[aria-expanded="true"] .tool-sidebar-chev': { transform: 'rotate(180deg)' },
 });
 ---
 
-{
-  isToolPage && (
-    <div class={outer} data-tool-sidebar>
-      <div class={`tool-sidebar-slide ${panel}`} data-tool-sidebar-panel>
-        <nav class={rail} aria-label="Switch tool">
-          {INTERACTIVE_TOOL_LINKS.map((t) => (
-            <a
-              href={t.href}
-              class={item}
-              aria-label={t.label}
-              title={t.label}
-              aria-current={Astro.url.pathname === t.href ? 'page' : undefined}
-            >
-              <Icon name={t.icon} size={19} />
-            </a>
-          ))}
-        </nav>
-        <button
-          type="button"
-          class={handle}
-          data-tool-sidebar-toggle
-          aria-expanded="true"
-          aria-label="Hide tool switcher"
-        >
-          <Icon name="chevron-right" size={13} class="tool-sidebar-chev" />
+<div class={outer} data-tool-sidebar>
+  <div class={slideRow}>
+    <div class={`tool-sidebar-slide ${rail}`} data-tool-sidebar-rail data-view="icons">
+      <button
+        type="button"
+        class={expandBtn}
+        data-tool-sidebar-expand
+        aria-pressed="false"
+        aria-label="Show link titles"
+      >
+        <Icon name="grid" size={15} class="tool-sidebar-expand-compact" />
+        <Icon name="list" size={15} class="tool-sidebar-expand-full" />
+      </button>
+
+      <div class={divider} />
+
+      {
+        DFIR_GROUPS.map((group, i) => (
+          <nav
+            class={navGroup}
+            data-tool-sidebar-cat={i}
+            aria-label={group.category}
+            hidden={i !== defaultCategoryIndex}
+          >
+            {group.links.map((link) => (
+              <a
+                href={link.href}
+                class={item}
+                aria-label={link.label}
+                title={link.label}
+                aria-current={currentPath === link.href ? 'page' : undefined}
+              >
+                <Icon name={link.icon} size={19} />
+                <span class={itemLabel}>{link.label}</span>
+              </a>
+            ))}
+          </nav>
+        ))
+      }
+
+      <div class={divider} />
+
+      <div class={catBar}>
+        <button type="button" class={catBtn} data-tool-sidebar-cat-prev aria-label="Previous category">
+          <Icon name="arrow-up" size={13} />
+        </button>
+        <span class={catLabel} data-tool-sidebar-cat-label>{DFIR_GROUPS[defaultCategoryIndex].category}</span>
+        <button type="button" class={catBtn} data-tool-sidebar-cat-next aria-label="Next category">
+          <Icon name="arrow-down" size={13} />
         </button>
       </div>
     </div>
-  )
-}
+    <button
+      type="button"
+      class={`tool-sidebar-handle ${handle}`}
+      data-tool-sidebar-toggle
+      aria-expanded="true"
+      aria-label="Hide DFIR sidebar"
+    >
+      <Icon name="chevron-right" size={13} class="tool-sidebar-chev" />
+    </button>
+  </div>
+</div>
 
-<script>
+<script is:inline define:vars={{ categoryNames: DFIR_GROUPS.map((g) => g.category) }}>
   // @ts-nocheck — vanilla DOM client script
   (function () {
     var root = document.querySelector('[data-tool-sidebar]');
     if (!root) return;
-    var panel = root.querySelector('[data-tool-sidebar-panel]');
-    var toggle = root.querySelector('[data-tool-sidebar-toggle]');
-    if (!panel || !toggle) return;
+    var rail = root.querySelector('[data-tool-sidebar-rail]');
+    var hideToggle = root.querySelector('[data-tool-sidebar-toggle]');
+    var expandToggle = root.querySelector('[data-tool-sidebar-expand]');
+    var catLabelEl = root.querySelector('[data-tool-sidebar-cat-label]');
+    var catPrevBtn = root.querySelector('[data-tool-sidebar-cat-prev]');
+    var catNextBtn = root.querySelector('[data-tool-sidebar-cat-next]');
+    var groups = root.querySelectorAll('[data-tool-sidebar-cat]');
+    if (!rail || !hideToggle || !expandToggle) return;
 
-    var KEY = 'tool-sidebar-collapsed';
-    function setCollapsed(collapsed) {
-      if (collapsed) panel.setAttribute('data-collapsed', '');
-      else panel.removeAttribute('data-collapsed');
-      toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-      toggle.setAttribute('aria-label', collapsed ? 'Show tool switcher' : 'Hide tool switcher');
+    var HIDDEN_KEY = 'tool-sidebar-hidden';
+    var EXPANDED_KEY = 'tool-sidebar-expanded';
+    var CAT_KEY = 'tool-sidebar-category';
+
+    var hidden = false;
+    var expanded = false;
+    var catIndex = 0;
+    for (var i = 0; i < groups.length; i++) {
+      if (!groups[i].hidden) catIndex = Number(groups[i].getAttribute('data-tool-sidebar-cat'));
     }
 
-    var storedCollapsed = false;
-    try {
-      storedCollapsed = localStorage.getItem(KEY) === '1';
-    } catch (e) {}
-    setCollapsed(storedCollapsed);
+    function render() {
+      rail.setAttribute('data-view', hidden ? 'hidden' : expanded ? 'expanded' : 'icons');
+      hideToggle.setAttribute('aria-expanded', hidden ? 'false' : 'true');
+      hideToggle.setAttribute('aria-label', hidden ? 'Show DFIR sidebar' : 'Hide DFIR sidebar');
+      expandToggle.setAttribute('aria-pressed', String(expanded));
+      expandToggle.setAttribute('aria-label', expanded ? 'Show icons only' : 'Show link titles');
+    }
 
-    toggle.addEventListener('click', function () {
-      var collapsed = !panel.hasAttribute('data-collapsed');
-      setCollapsed(collapsed);
+    function showCategory(idx) {
+      var len = categoryNames.length;
+      catIndex = ((idx % len) + len) % len;
+      for (var i = 0; i < groups.length; i++) {
+        groups[i].hidden = Number(groups[i].getAttribute('data-tool-sidebar-cat')) !== catIndex;
+      }
+      if (catLabelEl) catLabelEl.textContent = categoryNames[catIndex];
       try {
-        localStorage.setItem(KEY, collapsed ? '1' : '0');
+        localStorage.setItem(CAT_KEY, String(catIndex));
+      } catch (e) {}
+    }
+
+    try {
+      hidden = localStorage.getItem(HIDDEN_KEY) === '1';
+      expanded = localStorage.getItem(EXPANDED_KEY) === '1';
+      var storedCat = localStorage.getItem(CAT_KEY);
+      if (storedCat !== null && !isNaN(Number(storedCat))) showCategory(Number(storedCat));
+    } catch (e) {}
+    render();
+
+    // `handle` is `position: absolute` and reads this custom property for its
+    // own height (see `handle`'s CSS comment for why a plain `height: 100%`
+    // can't work here) — keep it in sync with rail's REAL measured height,
+    // not a guess, since rail's height itself isn't perfectly constant (the
+    // catBar's column-vs-row layout differs a little between icons and
+    // expanded). ResizeObserver re-fires on every layout change (category
+    // switch, font load, viewport resize), not just once on load.
+    function syncHandleHeight() {
+      var h = rail.getBoundingClientRect().height;
+      if (h > 0) hideToggle.style.setProperty('--rail-h', h + 'px');
+    }
+    syncHandleHeight();
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(syncHandleHeight).observe(rail);
+    } else {
+      window.addEventListener('resize', syncHandleHeight);
+    }
+
+    // Debounce every toggle/cycle control in this rail: while a button's own
+    // cooldown is running, further clicks on it are ignored outright (not
+    // queued) — see CLAUDE.md invariant 12 for why this is a sitewide rule,
+    // not a one-off. `cooldownMs` should be >= the button's own longest CSS
+    // transition, so a second click can never land mid-animation and thrash
+    // the state (which is what made the hide/show handle's chevron look like
+    // it "wasn't moving" — two rapid clicks landing before the first
+    // 500ms rotation finished just reversed it back to where it started).
+    function debounceClick(el, cooldownMs, handler) {
+      var busy = false;
+      el.addEventListener('click', function () {
+        if (busy) return;
+        busy = true;
+        handler();
+        setTimeout(function () {
+          busy = false;
+        }, cooldownMs);
+      });
+    }
+
+    debounceClick(hideToggle, 550, function () {
+      hidden = !hidden;
+      render();
+      try {
+        localStorage.setItem(HIDDEN_KEY, hidden ? '1' : '0');
       } catch (e) {}
     });
+
+    debounceClick(expandToggle, 350, function () {
+      expanded = !expanded;
+      render();
+      try {
+        localStorage.setItem(EXPANDED_KEY, expanded ? '1' : '0');
+      } catch (e) {}
+    });
+
+    if (catPrevBtn) debounceClick(catPrevBtn, 250, function () { showCategory(catIndex - 1); });
+    if (catNextBtn) debounceClick(catNextBtn, 250, function () { showCategory(catIndex + 1); });
   })();
 </script>

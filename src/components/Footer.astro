@@ -14,13 +14,13 @@ const colHead = css({
   textTransform: 'uppercase',
   letterSpacing: '0.12em',
   color: 'textMuted',
-  mb: '0.9rem',
+  mb: '0.6rem',
 });
 const fLink = css({
   display: 'block',
   fontSize: '0.9rem',
   color: 'textMuted',
-  py: '0.22rem',
+  py: '0.15rem',
   transition: 'color 150ms ease',
   _hover: { color: 'primary' },
 });
@@ -40,6 +40,15 @@ const socialBtn = css({
 const dfirGroups = DFIR_GROUPS;
 const moreLinks = MORE_LINKS;
 
+// The DFIR column holds 3 subgroups (10 links total) — roughly 3x the other
+// columns' content. Left as one flat list it made the DFIR column (and so
+// the whole footer, since a CSS grid row is as tall as its tallest cell)
+// much taller than the Explore/More columns needed, leaving a lot of dead
+// white space beside them. Flowing DFIR's subgroups through a 2-column CSS
+// multi-column layout (each subgroup kept intact via breakInside: 'avoid')
+// roughly halves its height and brings all four columns close to level.
+const dfirCols = css({ columns: 2, columnGap: '1.1rem' });
+const dfirGroupBlock = css({ breakInside: 'avoid', mb: '0.7rem', '&:last-child': { mb: 0 } });
 const subHead = css({
   fontFamily: 'sans',
   fontSize: '0.68rem',
@@ -47,8 +56,7 @@ const subHead = css({
   textTransform: 'uppercase',
   letterSpacing: '0.1em',
   color: 'primary',
-  mt: '0.8rem',
-  '&:first-child': { mt: 0 },
+  mb: '0.3rem',
 });
 ---
 
@@ -56,7 +64,7 @@ const subHead = css({
   class={css({
     position: 'relative',
     borderTop: '1px solid token(colors.border)',
-    mt: '5rem',
+    mt: '4rem',
     // Translucent + frosted so the ambient node-field (and any content behind)
     // shows through as a soft blurred ghost — the page dissolves into the footer
     // instead of hitting a flat slab. Same dissolve recipe as the header (see
@@ -83,10 +91,10 @@ const subHead = css({
       maxW: '960px',
       mx: 'auto',
       px: '1.25rem',
-      py: '3rem',
+      py: { base: '2rem', sm: '2.25rem' },
       display: 'grid',
-      gridTemplateColumns: { base: '1fr', sm: '1.4fr 0.85fr 1.1fr 0.85fr' },
-      gap: { base: '2rem', sm: '2rem' },
+      gridTemplateColumns: { base: '1fr', sm: '1.3fr 0.8fr 1.3fr 0.8fr' },
+      gap: { base: '1.75rem', sm: '2rem' },
     })}
   >
     {/* Brand + social */}
@@ -118,12 +126,14 @@ const subHead = css({
     {/* DFIR */}
     <nav aria-label="Footer — DFIR">
       <p class={colHead}>DFIR</p>
-      {dfirGroups.map((g) => (
-        <>
-          <p class={subHead}>{g.category}</p>
-          {g.links.map((l) => <a href={l.href} class={fLink}>{l.label}</a>)}
-        </>
-      ))}
+      <div class={dfirCols}>
+        {dfirGroups.map((g) => (
+          <div class={dfirGroupBlock}>
+            <p class={subHead}>{g.category}</p>
+            {g.links.map((l) => <a href={l.href} class={fLink}>{l.label}</a>)}
+          </div>
+        ))}
+      </div>
     </nav>
 
     {/* More */}
@@ -140,7 +150,7 @@ const subHead = css({
         maxW: '960px',
         mx: 'auto',
         px: '1.25rem',
-        py: '1.1rem',
+        py: '0.85rem',
         display: 'flex',
         flexDirection: { base: 'column', sm: 'row' },
         justifyContent: 'space-between',

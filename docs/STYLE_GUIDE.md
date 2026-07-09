@@ -75,10 +75,19 @@ background, and the theme system:
 
 ## Color & theming
 
-- Style with the `css()` function from `styled-system/css`. **Never hard-code hex** in
-  components — reference semantic tokens so themes work.
+- Style with the `css()` function from `styled-system/css`. **Never hard-code a color** in
+  components — not hex (`#fff`), not `rgb()`/`rgba()`, and not a CSS color keyword (`white`,
+  `black`, etc.) — reference semantic tokens so every theme (10 palettes, light + dark) stays
+  correct. `test/noHardcodedColors.test.ts` enforces this; a hard-coded color value inside a
+  `css()` call fails the test suite.
 - Semantic tokens: `bg`, `bgSubtle`, `bgCard`, `border`, `text`, `textMuted`, `primary`,
   `primaryHover`, `accent`, `codeBg`.
+- **Text/icons on a `primary`-filled surface (buttons, active chips) must use `onPrimary`,
+  never a literal `white`.** Dark themes deliberately use a bright/pastel `primary` (so it pops
+  against a dark background) and override `onPrimary` to a near-black color for legibility —
+  hard-coding white text on those primaries is close to unreadable (e.g. white on the default
+  dark theme's `primary` computes to ~2:1 contrast, well under WCAG AA's 4.5:1). `onPrimary` is
+  already used correctly in `BaseLayout`'s skip-link, `BackToTop`, and `FilterBar`'s active chip.
 - Inside string values use `token(colors.x)` — e.g. `border: '1px solid token(colors.border)'`.
 - Tinted fills use `color-mix` with a token — e.g.
   `bg: 'color-mix(in srgb, token(colors.primary) 13%, transparent)'` (icon tiles, cert chips).
@@ -152,11 +161,35 @@ distinct, intentional pattern; keep it to the key guarantees, not proper nouns.
   optional `boxShadow: 'card'`. Hover: `transform: 'translateY(-2px/-3px)'` +
   `borderColor: 'primary'` (+ `boxShadow: 'cardHover'`), `transition` ~200ms.
 - **One card size across listing pages.** The Glossary, Tools, Certifications, MITRE
-  ATT&CK Coverage Map, and MITRE D3FEND Map grids all use the single shared
-  `.card-grid` class (in `global.css`: `repeat(auto-fill, minmax(min(100%, 232px), 1fr))`,
-  `gap: 0.65rem`) with `0.7rem 0.85rem` card padding — so cards are a consistent size
-  site-wide, not congested and not oversized. Don't fork per-page column widths; change
-  `.card-grid` once if the size needs tuning. Pages add only their own `mt` via `css()`.
+  ATT&CK Coverage Map, MITRE D3FEND Map, and Event ID Reference grids all use the single
+  shared `.card-grid` class (in `global.css`: `repeat(auto-fill, minmax(min(100%, 232px),
+  1fr))`, `gap: 0.65rem`) with `0.7rem 0.85rem` card padding and the `card()` recipe's
+  `minH: '4rem'` floor — so cards are a consistent size site-wide, not congested and not
+  oversized. Don't fork per-page column widths; change `.card-grid` once if the size needs
+  tuning. Pages add only their own `mt` via `css()`. `test/card-consistency.test.ts`
+  enforces every listing page composing `card()` (not hand-rolling padding/minH/etc.).
+  **Card content must never force a card taller than its neighbors in the same grid row**
+  (a CSS grid row stretches every cell to match its tallest one, so one oversized card
+  drags the whole row's white space with it). If a field's content can run long (a
+  category label, a free-text description), truncate it with `overflow: 'hidden'` +
+  `textOverflow: 'ellipsis'` on a single `whiteSpace: 'nowrap'` line (plus a `minW: 0` +
+  `flexShrink: 1` on that element so it can actually shrink to fit) rather than letting it
+  wrap — wrapping grows the card instead of bounding it. Put the untruncated value in a
+  `title` attribute for a hover tooltip, and make sure the full value is still shown
+  somewhere unbounded (the item's own detail page) so truncation never destroys
+  information, only the card preview's presentation of it.
+- **Reference and Framework pages share one feature set — ship it with the page, not as a
+  follow-up.** Glossary/Tools/Cheat Sheet/Event ID Reference (Reference) and ATT&CK
+  Map/D3FEND Map (Framework) are siblings in `DFIR_GROUPS`, and every one of them needs: (a)
+  a dedicated `z.array(z.string())` frontmatter field in `content.config.ts` (matching the
+  `tools`/`attack`/`d3fend` pattern) that feeds a "Featured/Mentioned/Covered in my
+  writeups" detail-page section plus a matching stat + `FilterToggle` on the index; (b) at
+  least one outbound cross-link into an existing dataset (a `glossarySlug`-style pointer, or
+  a `<RelatedTools>` block); (c) if its `ListFilter` config exposes a category facet through
+  `TagCombobox`, an `urlSync.facetParam` so that facet is bookmarkable, the same way ATT&CK's
+  `platform` and D3FEND's `tactic` already are; and (d) `DefinedTerm` (or equivalent)
+  structured data on the detail page. A dataset that ships with search-and-toggles but
+  without these reads as behind its siblings — that's what happened with Event ID Reference.
 - **Icon tile** (stat/section/timeline markers): rounded square (`borderRadius: 'md'`,
   ~2.25rem), `bg` = primary tint (`color-mix … 13%`), `color: 'primary'`, icon ~18px.
 - **Badges** ([Badge.astro](../src/components/Badge.astro)): variants `default` (muted),
