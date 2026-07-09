@@ -1,0 +1,437 @@
+---
+// Hash Calculator & Verifier — compute MD5/SHA-1/SHA-256/SHA-384/SHA-512 for
+// pasted text or a local file, entirely client-side (src/utils/hashes.ts):
+// the SHA family via the browser's native Web Crypto API, MD5 via a
+// from-scratch RFC 1321 implementation (verified against the RFC's own test
+// vectors — see test/hashes.test.ts). A file picked here is read locally via
+// File#arrayBuffer() and never uploaded anywhere — no network request is
+// ever made by this tool. Three panels: Compute (live results, each its own
+// copy button — same split-box-with-copy convention as the Timestamp
+// Decoder), Verify (paste an expected hash, compared case-insensitively
+// against every computed value), and Identify (paste a bare hash of unknown
+// origin and get its likely algorithm(s) — several common lengths are
+// genuinely ambiguous, e.g. MD5 and NTLM are both 32 hex chars, so results
+// carry an explicit confidence level rather than a false-certain guess).
+// Same "Scratch-inspired workspace" visual language as the site's other
+// builder tools. Genuinely requires JS (hashing has no static fallback), so
+// the workspace stays hidden until the script confirms it's running.
+import { css } from 'styled-system/css';
+import { tag } from 'styled-system/recipes';
+import Icon from './Icon.astro';
+import WorkspaceShell from './WorkspaceShell.astro';
+import { HASH_ALGORITHMS } from '../utils/hashes';
+
+const paneLabel = css({
+  fontFamily: 'sans',
+  fontSize: '0.7rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: 'textMuted',
+  mb: '0.6rem',
+});
+const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted' });
+
+const modeRow = css({ display: 'inline-flex', gap: '0.15rem', p: '0.2rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'md' });
+const modeBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  px: '0.8rem',
+  py: '0.35rem',
+  fontFamily: 'sans',
+  fontSize: '0.82rem',
+  fontWeight: 600,
+  borderRadius: 'sm',
+  border: '1px solid transparent',
+  bg: 'transparent',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { color: 'text' },
+  '&[data-active]': { bg: 'bgSubtle', color: 'primary', borderColor: 'border', boxShadow: 'card' },
+});
+
+const textarea = css({
+  fontFamily: 'mono',
+  fontSize: '0.88rem',
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  p: '0.7rem 0.85rem',
+  minH: '9rem',
+  resize: 'vertical',
+  overflowY: 'auto',
+  overflowX: 'hidden',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&::placeholder': { color: 'textMuted', opacity: 0.7 },
+});
+const fileRow = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.75rem',
+  flexWrap: 'wrap',
+  bg: 'bgCard',
+  border: '1px dashed token(colors.border)',
+  borderRadius: 'md',
+  p: '0.9rem',
+});
+const fileBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  fontFamily: 'sans',
+  fontSize: '0.85rem',
+  fontWeight: 600,
+  px: '0.8rem',
+  py: '0.45rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  bg: 'bgSubtle',
+  color: 'text',
+  cursor: 'pointer',
+  transition: 'border-color 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+const fileName = css({ fontFamily: 'mono', fontSize: '0.85rem', color: 'textMuted', wordBreak: 'break-all' });
+
+const resultStack = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' });
+const resultRow = css({ display: 'flex', alignItems: 'center', gap: '0.6rem' });
+const resultBadge = css({ flexShrink: 0, w: '5.5rem', fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 700, color: 'text' });
+const resultBox = css({
+  flex: 1,
+  minW: 0,
+  m: 0,
+  fontFamily: 'mono',
+  fontSize: '0.85rem',
+  color: 'primary',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.7rem',
+  py: '0.5rem',
+  overflowX: 'auto',
+  whiteSpace: 'pre',
+});
+const rowCopyBtn = css({
+  flexShrink: 0,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '2rem',
+  h: '2rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  bg: 'bgCard',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+
+const inlineInput = css({
+  fontFamily: 'mono',
+  fontSize: '0.88rem',
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.7rem',
+  py: '0.5rem',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&::placeholder': { color: 'textMuted', opacity: 0.7 },
+});
+const verifyResult = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  fontFamily: 'sans',
+  fontSize: '0.9rem',
+  fontWeight: 600,
+  minH: '1.6em',
+});
+
+const candidateList = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem', minH: '1.4em' });
+const candidateRow = css({
+  display: 'flex',
+  alignItems: 'flex-start',
+  gap: '0.6rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  p: '0.6rem 0.75rem',
+});
+const candidateName = css({ fontFamily: 'sans', fontSize: '0.9rem', fontWeight: 700, color: 'text' });
+const candidateNote = css({ fontSize: '0.82rem', color: 'textMuted', lineHeight: 1.5, mt: '0.15rem' });
+---
+
+<WorkspaceShell hook="data-hash-calc" noJsMessage="The hash calculator needs JavaScript enabled." gap="1.25rem">
+    {/* Compute */}
+    <div>
+      <p class={paneLabel}>Compute — text or a local file (never uploaded)</p>
+      <div class={css({ display: 'flex', flexDirection: 'column', gap: '0.75rem' })}>
+        <div class={modeRow} role="radiogroup" aria-label="Input source">
+          <button type="button" role="radio" aria-checked="true" data-active data-hash-mode="text" data-sound="tick" class={modeBtn}>Text</button>
+          <button type="button" role="radio" aria-checked="false" data-hash-mode="file" data-sound="tick" class={modeBtn}>File</button>
+        </div>
+
+        <textarea
+          class={textarea}
+          data-hash-text
+          placeholder="Paste text to hash…"
+          autocomplete="off"
+          spellcheck="false"
+        ></textarea>
+
+        <div class={fileRow} data-hash-file-row hidden>
+          <label class={fileBtn}>
+            <Icon name="download" size={15} /> Choose file
+            <input type="file" data-hash-file class={css({ display: 'none' })} />
+          </label>
+          <span class={fileName} data-hash-file-name>No file chosen — nothing is uploaded, it's read locally in your browser.</span>
+        </div>
+      </div>
+
+      <div class={`${resultStack} ${css({ mt: '1rem' })}`}>
+        {
+          HASH_ALGORITHMS.map((a) => (
+            <div class={resultRow} data-hash-result-row data-hash-algo={a.id}>
+              <span class={resultBadge}>{a.label}</span>
+              <pre class={resultBox} data-hash-output>&nbsp;</pre>
+              <button type="button" class={rowCopyBtn} data-hash-copy={a.id} data-copy-pop data-sound="copy" aria-label={`Copy ${a.label} hash`} title="Copy">
+                <Icon name="copy" size={13} />
+              </button>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    {/* Verify */}
+    <div>
+      <label class={fieldLabel} for="hash-verify-input">Verify — paste a known hash to compare against the results above</label>
+      <div class={css({ display: 'flex', flexDirection: 'column', gap: '0.4rem', mt: '0.3rem' })}>
+        <input
+          id="hash-verify-input"
+          type="text"
+          class={inlineInput}
+          placeholder="Paste a hash to check for a match…"
+          autocomplete="off"
+          spellcheck="false"
+          data-hash-verify
+        />
+        <div class={verifyResult} data-hash-verify-result role="status" aria-live="polite"></div>
+      </div>
+    </div>
+
+    {/* Identify */}
+    <div>
+      <label class={fieldLabel} for="hash-identify-input">Identify — paste a hash of unknown origin to see its likely algorithm(s)</label>
+      <div class={css({ display: 'flex', flexDirection: 'column', gap: '0.5rem', mt: '0.3rem' })}>
+        <input
+          id="hash-identify-input"
+          type="text"
+          class={inlineInput}
+          placeholder="e.g. d41d8cd98f00b204e9800998ecf8427e"
+          autocomplete="off"
+          spellcheck="false"
+          data-hash-identify
+        />
+        <div class={candidateList} data-hash-identify-results role="status" aria-live="polite"></div>
+        <template data-hash-candidate-template>
+          <div class={candidateRow}>
+            <span class={tag({ tone: 'muted' })} data-candidate-confidence></span>
+            <div>
+              <div class={candidateName} data-candidate-name></div>
+              <div class={candidateNote} data-candidate-note></div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+</WorkspaceShell>
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  import { computeAllHashes, identifyHash, HASH_ALGORITHMS } from '../utils/hashes';
+  import { pop } from '../scripts/copyPop';
+
+  (function () {
+    function init() {
+      var roots = document.querySelectorAll('[data-hash-calc]:not([data-ready])');
+      Array.prototype.forEach.call(roots, function (root) {
+        var modeBtns = Array.prototype.slice.call(root.querySelectorAll('[data-hash-mode]'));
+        var textInput = root.querySelector('[data-hash-text]');
+        var fileRow = root.querySelector('[data-hash-file-row]');
+        var fileInput = root.querySelector('[data-hash-file]');
+        var fileNameEl = root.querySelector('[data-hash-file-name]');
+        var rows = Array.prototype.slice.call(root.querySelectorAll('[data-hash-result-row]'));
+        var outputs = {};
+        rows.forEach(function (row) {
+          outputs[row.getAttribute('data-hash-algo')] = row.querySelector('[data-hash-output]');
+        });
+        var verifyInput = root.querySelector('[data-hash-verify]');
+        var verifyResult = root.querySelector('[data-hash-verify-result]');
+        var identifyInput = root.querySelector('[data-hash-identify]');
+        var identifyResults = root.querySelector('[data-hash-identify-results]');
+        var candidateTemplate = root.querySelector('[data-hash-candidate-template]');
+        if (!textInput || !fileInput) return;
+
+        var current = {}; // algorithm id -> hex digest, for the currently computed input
+
+        function renderResults(hashes) {
+          current = hashes || {};
+          HASH_ALGORITHMS.forEach(function (a) {
+            outputs[a.id].textContent = current[a.id] || ' ';
+          });
+          renderVerify();
+        }
+
+        function clearResults() {
+          renderResults({});
+        }
+
+        var computeSeq = 0;
+        async function computeFromText(text) {
+          var seq = ++computeSeq;
+          if (!text) { clearResults(); return; }
+          var bytes = new TextEncoder().encode(text);
+          var hashes = await computeAllHashes(bytes);
+          if (seq === computeSeq) renderResults(hashes); // ignore a stale in-flight compute
+        }
+
+        async function computeFromFile(file) {
+          var seq = ++computeSeq;
+          if (!file) { clearResults(); return; }
+          var buf = await file.arrayBuffer();
+          var hashes = await computeAllHashes(new Uint8Array(buf));
+          if (seq === computeSeq) renderResults(hashes);
+        }
+
+        var debounceTimer = null;
+        textInput.addEventListener('input', function () {
+          clearTimeout(debounceTimer);
+          var val = textInput.value;
+          debounceTimer = setTimeout(function () { computeFromText(val); }, 150);
+        });
+
+        fileInput.addEventListener('change', function () {
+          var file = fileInput.files && fileInput.files[0];
+          if (!file) {
+            fileNameEl.textContent = 'No file chosen — nothing is uploaded, it\'s read locally in your browser.';
+            clearResults();
+            return;
+          }
+          fileNameEl.textContent = file.name + ' (' + formatBytes(file.size) + ') — read locally, never uploaded.';
+          computeFromFile(file);
+        });
+
+        function formatBytes(n) {
+          if (n < 1024) return n + ' B';
+          if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+          return (n / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        function setMode(next) {
+          modeBtns.forEach(function (b) {
+            var active = b.getAttribute('data-hash-mode') === next;
+            if (active) b.setAttribute('data-active', ''); else b.removeAttribute('data-active');
+            b.setAttribute('aria-checked', String(active));
+          });
+          textInput.hidden = next !== 'text';
+          fileRow.hidden = next !== 'file';
+          if (next === 'text') computeFromText(textInput.value);
+          else {
+            var file = fileInput.files && fileInput.files[0];
+            if (file) computeFromFile(file); else clearResults();
+          }
+        }
+        modeBtns.forEach(function (b) {
+          b.addEventListener('click', function () { setMode(b.getAttribute('data-hash-mode')); });
+        });
+
+        // Verify: compares the pasted hash (case-insensitive) against every
+        // currently-computed digest, auto-detecting which algorithm (if any)
+        // it matches by value, not just by length.
+        function renderVerify() {
+          if (!verifyInput) return;
+          var raw = verifyInput.value.trim().toLowerCase();
+          if (!raw) { verifyResult.textContent = ''; verifyResult.removeAttribute('data-state'); return; }
+          var matchedAlgo = null;
+          HASH_ALGORITHMS.forEach(function (a) {
+            if (current[a.id] && current[a.id].toLowerCase() === raw) matchedAlgo = a.label;
+          });
+          if (matchedAlgo) {
+            verifyResult.textContent = '✓ Matches the computed ' + matchedAlgo + ' hash';
+            verifyResult.setAttribute('data-state', 'match');
+          } else if (Object.keys(current).length === 0) {
+            verifyResult.textContent = 'Compute a hash above first, then verify against it.';
+            verifyResult.setAttribute('data-state', 'neutral');
+          } else {
+            verifyResult.textContent = '✗ No match against any computed hash';
+            verifyResult.setAttribute('data-state', 'mismatch');
+          }
+        }
+        if (verifyInput) verifyInput.addEventListener('input', renderVerify);
+
+        // Identify: independent of the compute panel — purely format/length-based
+        // best-effort guessing of an arbitrary pasted hash's likely algorithm(s).
+        if (identifyInput && identifyResults && candidateTemplate) {
+          identifyInput.addEventListener('input', function () {
+            identifyResults.innerHTML = '';
+            var candidates = identifyHash(identifyInput.value);
+            candidates.forEach(function (c) {
+              var row = candidateTemplate.content.firstElementChild.cloneNode(true);
+              var badge = row.querySelector('[data-candidate-confidence]');
+              badge.textContent = c.confidence;
+              badge.setAttribute('data-confidence', c.confidence);
+              row.querySelector('[data-candidate-name]').textContent = c.algorithm;
+              row.querySelector('[data-candidate-note]').textContent = c.note;
+              identifyResults.appendChild(row);
+            });
+          });
+        }
+
+        // Copy buttons
+        Array.prototype.forEach.call(root.querySelectorAll('[data-hash-copy]'), function (btn) {
+          btn.addEventListener('click', function () {
+            var algo = btn.getAttribute('data-hash-copy');
+            var text = current[algo];
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(function () { pop(btn); }).catch(function () {});
+          });
+        });
+
+        root.setAttribute('data-ready', '');
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>
+
+<style>
+  [data-hash-verify-result][data-state='match'] {
+    color: var(--colors-primary);
+  }
+  [data-hash-verify-result][data-state='mismatch'] {
+    color: color-mix(in srgb, red 65%, var(--colors-text));
+  }
+  [data-hash-verify-result][data-state='neutral'] {
+    color: var(--colors-text-muted);
+    font-weight: 500;
+  }
+  [data-candidate-confidence][data-confidence='high'] {
+    color: var(--colors-primary);
+    background: color-mix(in srgb, var(--colors-primary) 12%, transparent);
+    border-color: color-mix(in srgb, var(--colors-primary) 30%, transparent);
+  }
+  [data-candidate-confidence][data-confidence='low'] {
+    color: var(--colors-accent);
+    background: color-mix(in srgb, var(--colors-accent) 12%, transparent);
+    border-color: color-mix(in srgb, var(--colors-accent) 35%, transparent);
+  }
+</style>

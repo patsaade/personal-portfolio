@@ -20,12 +20,13 @@ import TacticMatrix from '../components/TacticMatrix.astro';
 import { tag, card } from 'styled-system/recipes';
 import { getSortedPosts, getSortedLabs, tagSlug } from '../utils/posts';
 import { termBySlug } from '../data/securityTerms';
-import { ATTACK_TECHNIQUES, ATTACK_TACTIC_ORDER, ATTACK_VERSION } from '../data/references';
+import { ATTACK_TECHNIQUES, ATTACK_TACTIC_ORDER, ATTACK_VERSION, ATTACK_TECHNIQUE_BY_ID } from '../data/references';
 import { D3FEND_TECHNIQUES } from '../data/d3fend';
 
-// Id → technique lookup, precomputed once (sub-technique parent lookups happen
-// inside the per-tactic render loop below; avoids an O(n²) .find() per technique).
-const attackById = new Map(ATTACK_TECHNIQUES.map((t) => [t.id, t]));
+// Id → technique lookup (sub-technique parent lookups happen inside the
+// per-tactic render loop below; avoids an O(n²) .find() per technique) —
+// shared with d3fend/[id].astro and event-ids/[slug].astro's ATT&CK resolver.
+const attackById = ATTACK_TECHNIQUE_BY_ID;
 
 // Techniques explicitly covered by a post/lab (via its `attack` frontmatter).
 const [posts, labs] = await Promise.all([getSortedPosts(), getSortedLabs()]);

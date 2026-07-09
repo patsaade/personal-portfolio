@@ -10,6 +10,7 @@ import Icon from '../components/Icon.astro';
 import type { IconName } from '../components/Icon.astro';
 import { SOCIALS } from '../consts';
 import { FEATURED_CERTS, PURSUING_CERTS } from '../data/certifications';
+import { prosePara } from '../styles/prose';
 
 const expertise = [
   'Memory forensics',
@@ -131,7 +132,7 @@ const certChip = css({
   _hover: { borderColor: 'accent', transform: 'translateY(-1px)' },
 });
 
-const para = css({ color: 'textMuted', lineHeight: 1.8, mb: '1rem' });
+const para = prosePara;
 const sectionTitle = css({
   display: 'flex',
   alignItems: 'center',

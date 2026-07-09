@@ -70,16 +70,53 @@ function trimTrailingPunctuation(value: string): string {
   return value.replace(/[.,;:!?'")\]}]+$/, '');
 }
 
+// Best-effort refang of a whole block of PASTED TEXT (distinct from
+// refangValue above, which reverses a single already-extracted value) — used
+// internally so extraction also recognizes indicators that were pasted
+// already-defanged (e.g. copied straight out of a threat report). Only
+// reverses unambiguous, bracket/paren-wrapped defanging markers — never bare
+// words like "dot"/"at" in ordinary prose, which would false-positive constantly
+// (e.g. "I dot my i's"). This never touches what's displayed; it's purely an
+// internal second look so mixed fanged/defanged pastes both get recognized.
+function refangText(text: string): string {
+  return text
+    .replace(/\[\.\]|\(\.\)|\{\.\}|\[dot\]|\(dot\)/gi, '.')
+    .replace(/hxxps/gi, 'https')
+    .replace(/hxxp/gi, 'http')
+    .replace(/\[at\]|\(at\)|\[@\]/gi, '@')
+    .replace(/\[:\]/g, ':');
+}
+
+/** True if the text contains any recognized defanging marker — lets the UI
+ *  surface that its extracted indicators were recovered from defanged input. */
+export function containsDefanged(text: string): boolean {
+  return refangText(text) !== text;
+}
+
 export function extractIocs(text: string): Record<string, string[]> {
+  const refanged = refangText(text);
+  // Run extraction on the raw text AND (when it actually differs) the
+  // refanged version, unioning results per category — this is what lets a
+  // paste containing already-defanged indicators (or a mix of live and
+  // defanged) get recognized the same as fully-live text, since the matched
+  // value always ends up in its live form either way.
+  const sources = refanged === text ? [text] : [text, refanged];
   const result: Record<string, string[]> = {};
   for (const cat of IOC_CATEGORIES) {
-    const re = new RegExp(cat.pattern.source, cat.pattern.flags);
     const seen = new Set<string>();
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(text))) {
-      const value = cat.id === 'url' ? trimTrailingPunctuation(m[0]) : m[0];
-      if (value) seen.add(value);
-      if (m.index === re.lastIndex) re.lastIndex += 1; // guard a zero-width match from looping forever
+    for (const source of sources) {
+      // Reuse the category's own compiled pattern (reset to scan from the
+      // start) rather than re-compiling a fresh RegExp from its source/flags
+      // on every call — this runs on every keystroke, so avoiding needless
+      // re-compilation matters. Safe because this loop runs synchronously to
+      // completion before the next category's scan begins.
+      cat.pattern.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = cat.pattern.exec(source))) {
+        const value = cat.id === 'url' ? trimTrailingPunctuation(m[0]) : m[0];
+        if (value) seen.add(value);
+        if (m.index === cat.pattern.lastIndex) cat.pattern.lastIndex += 1; // guard a zero-width match from looping forever
+      }
     }
     result[cat.id] = Array.from(seen);
   }

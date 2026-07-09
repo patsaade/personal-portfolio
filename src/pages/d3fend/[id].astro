@@ -11,9 +11,9 @@ import Icon from '../../components/Icon.astro';
 import EntryNav from '../../components/EntryNav.astro';
 import RelatedTools from '../../components/RelatedTools.astro';
 import { D3FEND_TECHNIQUES, D3FEND_VERSION, d3fendById } from '../../data/d3fend';
-import { ATTACK_TECHNIQUES } from '../../data/references';
+import { resolveAttackLink } from '../../data/references';
 import { termBySlug } from '../../data/securityTerms';
-import { TOOLS } from '../../data/tools';
+import { toolsByGlossarySlug } from '../../data/tools';
 import { getSortedPosts, getSortedLabs } from '../../utils/posts';
 
 export async function getStaticPaths() {
@@ -38,20 +38,13 @@ const children = D3FEND_TECHNIQUES.filter((t) => t.parentId === tech.id);
 const siblings = tech.parentId ? D3FEND_TECHNIQUES.filter((t) => t.parentId === tech.parentId && t.id !== tech.id) : [];
 
 // Resolve each countered ATT&CK id to our on-site detail page where it exists.
-const attackById: Record<string, (typeof ATTACK_TECHNIQUES)[number]> = {};
-for (const a of ATTACK_TECHNIQUES) attackById[a.id] = a;
-const counters = tech.counters.map((id) => {
-  const a = attackById[id];
-  if (a) return { id, name: a.name, href: `/attack-map/${id}/`, onSite: true };
-  const [base, sub] = id.split('.');
-  return { id, name: id, href: `https://attack.mitre.org/techniques/${base}/${sub ? sub + '/' : ''}`, onSite: false };
-});
+const counters = tech.counters.map(resolveAttackLink);
 
 // Tools that implement the mapped glossary concept — same derived, zero-heuristic
 // cross-link as the ATT&CK map (dormant today: D3FEND_OVERLAY has no glossarySlug
 // entries yet, same reason "Why it matters"/"In practice" render nothing either).
 const gloss = tech.glossarySlug ? termBySlug(tech.glossarySlug) : null;
-const relatedTools = gloss ? TOOLS.filter((t) => (t.glossarySlugs ?? []).includes(gloss.slug)) : [];
+const relatedTools = gloss ? toolsByGlossarySlug(gloss.slug) : [];
 
 const sectionH2 = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', fontWeight: 700, mt: '2.5rem', mb: '0.75rem' });
 const para = css({ color: 'text', lineHeight: 1.8, fontSize: '1.02rem' });

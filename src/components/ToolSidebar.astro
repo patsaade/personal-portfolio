@@ -1,0 +1,147 @@
+---
+// Pop-out tool-switcher: a compact icon rail docked to the left edge, letting
+// a visitor already using one interactive tool hot-swap to another without
+// going back through the nav dropdown. Only renders on the interactive tool
+// pages themselves (INTERACTIVE_TOOL_LINKS in consts.ts is the single source
+// of both the nav dropdown's "Interactive Tools" group and this rail, so the
+// two never drift apart) — showing a tool switcher on the blog or about page
+// would just be clutter with nothing to switch between.
+//
+// Collapsed/expanded state is a plain CSS transform slide (translateX), same
+// technique as the nav dropdown (global.css's .nav-more-menu) — no motion/mini
+// needed since the slide distance is a fixed, known width, not something that
+// needs measuring at runtime. State persists across page loads via
+// localStorage, so navigating to another tool through the rail leaves it in
+// the same open/collapsed state the visitor left it in ("session resuming").
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+import { INTERACTIVE_TOOL_LINKS } from '../consts';
+
+const isToolPage = INTERACTIVE_TOOL_LINKS.some((t) => t.href === Astro.url.pathname);
+
+const outer = css({ position: 'fixed', left: 0, top: '50%', zIndex: 45 });
+
+// The collapsed transform's -48px must match `rail`'s own w: '48px' below (the
+// slide distance is the rail's full width) — these are literal values rather
+// than one shared constant since Panda's static css() extraction can't
+// resolve a computed template value here, so keep the two in sync by hand.
+const panel = css({
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'stretch',
+  transform: 'translateY(-50%) translateX(0)',
+  transition: 'transform 500ms ease',
+  '&[data-collapsed]': { transform: 'translateY(-50%) translateX(-48px)' },
+});
+
+const rail = css({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '0.2rem',
+  w: '48px', // kept in sync with `panel`'s collapsed transform above
+  p: '0.35rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderLeft: 'none',
+  borderTopRightRadius: 'lg',
+  borderBottomRightRadius: 'lg',
+  boxShadow: 'cardHover',
+});
+
+const item = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '38px',
+  h: '38px',
+  borderRadius: 'md',
+  color: 'textMuted',
+  transition: 'color 150ms ease, background 150ms ease, transform 150ms ease',
+  _hover: { color: 'text', bg: 'bgSubtle', transform: 'translateY(-1px)' },
+  '&[aria-current="page"]': { color: 'primary', bg: 'bgSubtle' },
+});
+
+const handle = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '22px',
+  alignSelf: 'stretch',
+  bg: 'bgCard',
+  color: 'textMuted',
+  border: '1px solid token(colors.border)',
+  borderLeft: 'none',
+  borderTopRightRadius: 'md',
+  borderBottomRightRadius: 'md',
+  cursor: 'pointer',
+  transition: 'color 150ms ease',
+  _hover: { color: 'primary' },
+  '& .tool-sidebar-chev': { transition: 'transform 500ms ease' },
+  '&[aria-expanded="true"] .tool-sidebar-chev': { transform: 'rotate(180deg)' },
+});
+---
+
+{
+  isToolPage && (
+    <div class={outer} data-tool-sidebar>
+      <div class={`tool-sidebar-slide ${panel}`} data-tool-sidebar-panel>
+        <nav class={rail} aria-label="Switch tool">
+          {INTERACTIVE_TOOL_LINKS.map((t) => (
+            <a
+              href={t.href}
+              class={item}
+              aria-label={t.label}
+              title={t.label}
+              aria-current={Astro.url.pathname === t.href ? 'page' : undefined}
+            >
+              <Icon name={t.icon} size={19} />
+            </a>
+          ))}
+        </nav>
+        <button
+          type="button"
+          class={handle}
+          data-tool-sidebar-toggle
+          aria-expanded="true"
+          aria-label="Hide tool switcher"
+        >
+          <Icon name="chevron-right" size={13} class="tool-sidebar-chev" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  (function () {
+    var root = document.querySelector('[data-tool-sidebar]');
+    if (!root) return;
+    var panel = root.querySelector('[data-tool-sidebar-panel]');
+    var toggle = root.querySelector('[data-tool-sidebar-toggle]');
+    if (!panel || !toggle) return;
+
+    var KEY = 'tool-sidebar-collapsed';
+    function setCollapsed(collapsed) {
+      if (collapsed) panel.setAttribute('data-collapsed', '');
+      else panel.removeAttribute('data-collapsed');
+      toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      toggle.setAttribute('aria-label', collapsed ? 'Show tool switcher' : 'Hide tool switcher');
+    }
+
+    var storedCollapsed = false;
+    try {
+      storedCollapsed = localStorage.getItem(KEY) === '1';
+    } catch (e) {}
+    setCollapsed(storedCollapsed);
+
+    toggle.addEventListener('click', function () {
+      var collapsed = !panel.hasAttribute('data-collapsed');
+      setCollapsed(collapsed);
+      try {
+        localStorage.setItem(KEY, collapsed ? '1' : '0');
+      } catch (e) {}
+    });
+  })();
+</script>

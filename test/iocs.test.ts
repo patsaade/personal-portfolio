@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractIocs, defangValue, refangValue, IOC_CATEGORIES } from '../src/utils/iocs';
+import { extractIocs, defangValue, refangValue, containsDefanged, IOC_CATEGORIES } from '../src/utils/iocs';
 
 describe('extractIocs', () => {
   it('extracts IPv4 addresses and ignores out-of-range octets', () => {
@@ -86,6 +86,66 @@ describe('extractIocs', () => {
   it('every category id in IOC_CATEGORIES appears as a key in the result', () => {
     const out = extractIocs('');
     for (const cat of IOC_CATEGORIES) expect(Object.prototype.hasOwnProperty.call(out, cat.id)).toBe(true);
+  });
+
+  it('recognizes a defanged IPv4 address ([.]) and extracts it in live form', () => {
+    const out = extractIocs('beaconed to 203[.]0[.]113[.]42');
+    expect(out.ipv4).toEqual(['203.0.113.42']);
+  });
+
+  it('recognizes a defanged domain and URL (hxxp + [.]) in live form', () => {
+    const out = extractIocs('phished via hxxp://evil-domain[.]example/login');
+    expect(out.url).toEqual(['http://evil-domain.example/login']);
+    expect(out.domain).toContain('evil-domain.example');
+  });
+
+  it('recognizes a defanged https URL, preserving the "s"', () => {
+    const out = extractIocs('C2 at hxxps://evil[.]example/beacon');
+    expect(out.url).toEqual(['https://evil.example/beacon']);
+  });
+
+  it('recognizes a defanged email address ([at] + [.])', () => {
+    const out = extractIocs('sender was attacker[at]evil-domain[.]example');
+    expect(out.email).toEqual(['attacker@evil-domain.example']);
+  });
+
+  it('recognizes a defanged IPv6 address ([:])', () => {
+    const out = extractIocs('loopback [:][:]1 and fe80[:][:]1');
+    expect(out.ipv6).toContain('::1');
+    expect(out.ipv6).toContain('fe80::1');
+  });
+
+  it('recognizes (dot) and (at) parenthesized defanging too', () => {
+    const out = extractIocs('contact attacker(at)evil-domain(dot)example');
+    expect(out.email).toEqual(['attacker@evil-domain.example']);
+  });
+
+  it('handles text that mixes already-live and defanged indicators together', () => {
+    const out = extractIocs('seen 203.0.113.42 and also 198[.]51[.]100[.]7');
+    expect(out.ipv4.sort()).toEqual(['198.51.100.7', '203.0.113.42']);
+  });
+
+  it('does not double-count when the same IP appears in both live and defanged form', () => {
+    const out = extractIocs('203.0.113.42 vs 203[.]0[.]113[.]42');
+    expect(out.ipv4).toEqual(['203.0.113.42']);
+  });
+});
+
+describe('containsDefanged', () => {
+  it('detects bracketed-dot defanging', () => {
+    expect(containsDefanged('203[.]0[.]113[.]42')).toBe(true);
+  });
+
+  it('detects hxxp defanging', () => {
+    expect(containsDefanged('hxxp://evil.example')).toBe(true);
+  });
+
+  it('returns false for plain live text', () => {
+    expect(containsDefanged('http://evil.example, 203.0.113.42')).toBe(false);
+  });
+
+  it('does not false-positive on ordinary prose containing the words "dot" or "at"', () => {
+    expect(containsDefanged('meet me at the dot on the map')).toBe(false);
   });
 });
 

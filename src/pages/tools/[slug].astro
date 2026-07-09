@@ -10,6 +10,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import Icon from '../../components/Icon.astro';
 import EntryNav from '../../components/EntryNav.astro';
+import { toolChip } from '../../components/RelatedTools.astro';
 import { TOOLS, costTone } from '../../data/tools';
 import { termBySlug } from '../../data/securityTerms';
 import { getSortedPosts, getSortedLabs } from '../../utils/posts';
@@ -61,8 +62,8 @@ const codeBlock = css({
   bg: 'bgSubtle',
   border: '1px solid token(colors.border)',
   borderRadius: 'md',
-  overflowX: 'auto',
-  whiteSpace: 'pre',
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
 });
 ---
 
@@ -106,6 +107,13 @@ const codeBlock = css({
     </>
   )}
 
+  {tool.install && (
+    <>
+      <h2 class={sectionH2}><Icon name="download" size={18} class={css({ color: 'primary' })} /> Install</h2>
+      <p class={para}>{tool.install}</p>
+    </>
+  )}
+
   {tool.commands && tool.commands.length > 0 && (
     <>
       <h2 class={sectionH2}><Icon name="terminal" size={18} class={css({ color: 'primary' })} /> Usage</h2>
@@ -117,15 +125,13 @@ const codeBlock = css({
           </div>
         ))}
       </div>
+      <p class={css({ color: 'textMuted', fontSize: '0.85rem', mt: '0.75rem' })}>
+        More usage examples across the whole toolkit are on the{' '}
+        <a href="/tools/cheatsheet/" class={css({ color: 'primary', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', _hover: { textDecoration: 'underline' } })}>
+          DFIR Command Cheat Sheet <Icon name="arrow-right" size={13} />
+        </a>.
+      </p>
     </>
-  )}
-
-  {tool.install && (
-    <p class={css({ color: 'textMuted', fontSize: '0.92rem', mt: '0.75rem' })}>
-      <a href="/tools/cheatsheet/" class={css({ color: 'primary', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', _hover: { textDecoration: 'underline' } })}>
-        Install instructions <Icon name="arrow-right" size={13} />
-      </a>{' '}are on the DFIR Command Cheat Sheet.
-    </p>
   )}
 
   {tool.why && (
@@ -164,7 +170,7 @@ const codeBlock = css({
       <ul class={css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' })}>
         {writeups.map((w) => (
           <li>
-            <a href={w.href} class={`${refLink} ${css({ gap: '0.5rem' })}`}>
+            <a href={w.href} class={refLink}>
               <Icon name="arrow-right" size={14} class={css({ color: 'primary', flexShrink: 0 })} />
               <span>{w.title}</span>
               <span class={css({ fontFamily: 'sans', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'textMuted' })}>{w.kind}</span>
@@ -183,23 +189,7 @@ const codeBlock = css({
       </p>
       <div class={css({ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' })}>
         {similar.map((s) => (
-          <a
-            href={`/tools/${s.slug}/`}
-            class={css({
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              px: '0.8rem',
-              py: '0.45rem',
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              bg: 'bgCard',
-              border: '1px solid token(colors.border)',
-              borderRadius: 'md',
-              transition: 'border-color 200ms ease, color 200ms ease',
-              _hover: { borderColor: 'primary', color: 'primary' },
-            })}
-          >
+          <a href={`/tools/${s.slug}/`} class={toolChip}>
             {s.core && <Icon name="star" size={12} strokeWidth={0} class={css({ color: 'accent', fill: 'token(colors.accent)' })} label="In my kit" />}
             {s.name}
             <Icon name="arrow-right" size={13} />

@@ -1,0 +1,113 @@
+---
+// Hash Calculator & Verifier — compute MD5/SHA-1/SHA-256/SHA-384/SHA-512 for
+// pasted text or a local file, verify against an expected hash, and identify
+// a bare hash of unknown origin with a confidence-scored guess. Same page
+// shape as the IOC Extractor / Timestamp Decoder (intro aside -> interactive
+// tool -> reference notes). Static page — prerender to HTML served from the CDN.
+export const prerender = true;
+import { css } from 'styled-system/css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import Icon from '../../components/Icon.astro';
+import HashCalculator from '../../components/HashCalculator.astro';
+import { HASH_ALGORITHMS } from '../../utils/hashes';
+
+const sectionH2 = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  fontSize: '1.3rem',
+  fontWeight: 700,
+  mt: '2.5rem',
+  mb: '1rem',
+  pt: '1.5rem',
+  borderTop: '1px solid token(colors.border)',
+  scrollMarginTop: '90px',
+});
+const refTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' });
+const refTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)' });
+const refTd = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text', verticalAlign: 'top' });
+const refTdMuted = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'textMuted', fontSize: '0.8rem', verticalAlign: 'top' });
+
+const NOTES: Record<string, string> = {
+  md5: 'Deprecated for security use (collision attacks are practical), but still ubiquitous in DFIR for quick file-identity/triage checks.',
+  sha1: 'Also deprecated for security use; still widely seen in existing tooling and threat-intel feeds.',
+  sha256: 'The current default for file-identity hashing in most DFIR tooling and threat-intel feeds.',
+  sha384: 'Less commonly seen than SHA-256/512, but a valid SHA-2 family member.',
+  sha512: 'Common alongside SHA-256 in modern tooling; no known practical collision attacks.',
+};
+---
+
+<BaseLayout
+  title="Hash Calculator & Verifier"
+  description="Compute MD5/SHA-1/SHA-256/SHA-384/SHA-512 for text or a local file, verify against a known hash, and identify a bare hash's likely algorithm(s) with a confidence level — entirely in your browser, nothing uploaded."
+>
+  <PageHeader
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Tool Catalog', href: '/tools/' }, { label: 'Hash Calculator' }]}
+    eyebrow="Triage & Correlation"
+    title="Hash Calculator & Verifier"
+    description="Compute file/text hashes, verify against a known value, or identify a bare hash's likely algorithm — entirely local."
+  />
+
+  <aside
+    class={css({
+      bg: 'bgSubtle',
+      border: '1px solid token(colors.border)',
+      borderLeftWidth: '3px',
+      borderLeftColor: 'primary',
+      borderRadius: 'md',
+      p: '1rem 1.25rem',
+      mb: '1.5rem',
+    })}
+  >
+    <p class={css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', m: 0 })}>
+      Everything here runs entirely in your browser — <strong class={css({ color: 'text' })}>no external APIs, no
+      upload, nothing you paste or select ever leaves your machine</strong>. The SHA family uses the browser's
+      native Web Crypto API; MD5 (which browsers don't implement natively) is computed with a from-scratch
+      implementation verified against the algorithm's own published test vectors. A file you choose is read
+      locally via the File API — never transmitted anywhere, and never touches a server.
+    </p>
+  </aside>
+
+  <h2 id="calculator" class={css({ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.3rem', fontWeight: 700, mb: '1rem', scrollMarginTop: '90px' })}>
+    <Icon name="lock" size={20} class={css({ color: 'primary' })} /> Calculator
+  </h2>
+  <HashCalculator />
+
+  <h2 id="reference" class={sectionH2}>
+    <Icon name="list" size={20} class={css({ color: 'primary' })} /> Algorithm reference
+  </h2>
+  <div class={css({ overflowX: 'auto' })}>
+    <table class={refTable}>
+      <thead>
+        <tr>
+          <th class={refTh}>Algorithm</th>
+          <th class={refTh}>Digest length</th>
+          <th class={refTh}>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          HASH_ALGORITHMS.map((a) => (
+            <tr>
+              <td class={refTd}>
+                <strong class={css({ color: 'text' })}>{a.label}</strong>
+              </td>
+              <td class={refTd}>{a.bits}-bit ({a.hexLength} hex chars)</td>
+              <td class={refTdMuted}>{NOTES[a.id] ?? ''}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p class={css({ color: 'textMuted', fontSize: '0.88rem', mt: '1.5rem', lineHeight: 1.7 })}>
+    The <strong class={css({ color: 'text' })}>Identify</strong> panel's confidence levels reflect a real
+    limitation, not a hedge: several common hash lengths are genuinely produced by more than one algorithm —
+    a bare 32-hex-character string is exactly as consistent with an MD5 digest as it is with a Windows NTLM
+    password hash, and format alone can't tell them apart. Where a length has one overwhelmingly common
+    source (e.g. 64 hex characters is almost always SHA-256), that candidate is marked high confidence; a
+    genuine tie (MD5 vs. NTLM) is marked medium for both; rare or legacy alternatives are marked low.
+  </p>
+</BaseLayout>

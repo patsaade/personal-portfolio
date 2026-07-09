@@ -18,7 +18,11 @@ interface Props {
 const { tools, conceptTerm, relevantTo } = Astro.props;
 
 const sectionH2 = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', fontWeight: 700, mt: '2.5rem', mb: '0.75rem' });
-const toolChip = css({
+// Exported so tools/[slug].astro's "Similar tools" section (a different
+// relationship — same function tag, not "implements this glossary concept" —
+// so it can't just reuse this whole component) can still share this exact
+// chip style instead of redeclaring it.
+export const toolChip = css({
   display: 'inline-flex',
   alignItems: 'center',
   gap: '0.4rem',
