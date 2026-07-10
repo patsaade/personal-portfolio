@@ -19,12 +19,26 @@ coverage/
 .env
 .env.*
 .envrc
+.netrc
 *.pem
 *.key
+*.gpg
 *.p12
 *.pfx
 id_rsa*
+id_ed25519*
+id_ecdsa*
 secrets*.json
+# Cloud CLI credential caches — never legitimately part of this repo's own
+# working tree, ignored defensively in case a tool ever writes here.
+.aws/
+.azure/
+.gcloud/
+# Infrastructure-as-code state can embed resource secrets/outputs; this repo
+# has no IaC, but the pattern costs nothing and closes a common leak vector.
+*.tfstate
+*.tfstate.*
+.terraform/
 
 # ── Logs ──────────────────────────────────────────────────
 *.log
@@ -38,6 +52,9 @@ yarn-error.log*
 CLAUDE.md
 # Maintenance/freshness process is merged into CLAUDE.md; ignore any stray standalone copy.
 docs/MAINTENANCE.md
+# graphify's generated knowledge graph (graph.html/GRAPH_REPORT.md/graph.json) —
+# local analysis output, regenerated on demand, never part of the site.
+graphify-out/
 .vscode/
 .idea/
 *.swp
@@ -61,18 +78,34 @@ evidence/
 # ── Forensic artifacts — never commit (large + may be sensitive) ──
 # Acquisitions, dumps, and captures from labs/CTFs stay on the local machine.
 *.raw
+*.dd
+*.img
 *.mem
 *.vmem
 *.vmsn
 *.vmdk
+*.vhd
+*.vhdx
+*.vdi
+*.qcow2
+*.ova
+*.ovf
 *.dmp
 *.lime
 *.bin
 *.e01
 *.ex01
+*.l01
+*.lx01
+*.ad1
 *.aff4
 *.pcap
 *.pcapng
+*.cap
+*.evtx
+# Browser network captures — can embed session tokens/cookies/auth headers,
+# a well-known accidental-secret-leak vector when testing web-facing tools.
+*.har
 
 # ── Archives (usually downloaded lab/evidence bundles) ────
 *.zip
@@ -80,3 +113,9 @@ evidence/
 *.tar.gz
 *.tgz
 *.rar
+
+# ── Editor/merge backup artifacts — stale content, sometimes a secret from
+# before it was rotated out of the live file ───────────────
+*.bak
+*.orig
+*.rej
