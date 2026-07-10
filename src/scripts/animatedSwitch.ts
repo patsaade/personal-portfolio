@@ -35,8 +35,10 @@
 // that background is the only indicator reduced-motion/no-JS visitors ever
 // see (this script returns before creating anything under reduced motion —
 // see below), so removing it would break that fallback. Instead, once the
-// thumb is successfully created, this script sets `data-switch-armed` on the
-// GROUP; each consuming component adds one small CSS override —
+// thumb has actually been placed at a real position for the first time —
+// inside place(), past its `if (!w) return` guard, NOT unconditionally right
+// after the thumb element is created — this script sets `data-switch-armed`
+// on the GROUP; each consuming component adds one small CSS override —
 // `'[data-switch-armed] &[data-active]': { bg: 'transparent', borderColor:
 // 'transparent', boxShadow: 'none' }` — that suppresses ONLY the background/
 // border/shadow (never the active-state text/icon `color`, which stays a
@@ -65,15 +67,22 @@
 // AnimatedSwitch.astro), a future switch needs nothing beyond
 // `position: 'relative', zIndex: 0` on its track.
 //
-// Groups can be hidden (`display: none`) at the moment this runs — the
-// ViewToggle/HashCalculator (WorkspaceShell) tracks both stay hidden until
-// their OWN script marks them ready, and this script's mount point in
-// BaseLayout runs before either of those, so `place()` reads 0 for
+// Groups can be hidden (`display: none`) at the moment this runs — every
+// WorkspaceShell-based tool (Hash Calculator, IOC Extractor, Dork Builder)
+// stays hidden until its OWN script marks it ready, and this script's mount
+// point in BaseLayout runs before any of those, so `place()` reads 0 for
 // offsetLeft/offsetWidth on the first pass. A ResizeObserver on the group
 // re-places the thumb (unanimated) whenever its size changes — including the
 // display:none → flex flip — so the thumb self-corrects the instant the
 // track actually becomes visible, without this script needing to run after
-// every consumer's own script.
+// every consumer's own script. This is exactly why `data-switch-armed` is
+// set inside `place()` on its first SUCCESSFUL placement rather than
+// unconditionally at setup: if it were set up front, a group still hidden
+// at that point would have its fallback indicator suppressed with nothing
+// yet in its place — neither indicator visible — for however long the
+// ResizeObserver takes to fire. Gating the attribute on real placement
+// means the fallback stays visible right up until the thumb has something
+// real to show, so there is never a frame with no visible indicator at all.
 //
 // motion/mini: the smaller WAAPI-only build (see CLAUDE.md invariant 5).
 import { animate } from 'motion/mini';
@@ -106,11 +115,6 @@ export function animateSwitch(group) {
   // group is the first (and only) insertion point this script requires on
   // every consuming component — see file header.
   group.insertBefore(thumb, group.firstChild);
-  // Suppresses each button's own (now-redundant) [data-active] background —
-  // see file header's "IMPORTANT" section. Only reached once a thumb has
-  // actually been created, so no-JS/reduced-motion visitors never see this
-  // attribute and keep the original, unsuppressed per-button indicator.
-  group.setAttribute('data-switch-armed', '');
 
   function activeButton() {
     for (let i = 0; i < buttons.length; i++) {
@@ -162,6 +166,19 @@ export function animateSwitch(group) {
     if (!w) return; // group is currently hidden (display:none) — ResizeObserver retries
     const x = btn.offsetLeft;
     syncColors(btn);
+    // Suppresses each button's own (now-redundant) [data-active] background —
+    // see file header's "IMPORTANT" section. Set only here, on the thumb's
+    // FIRST successful placement — not unconditionally at setup time above —
+    // so a group that's still hidden (WorkspaceShell tools stay display:none
+    // until their own script marks them ready) never has its fallback
+    // indicator suppressed before the thumb has an actual position to show
+    // in its place. Setting this unconditionally at setup previously left a
+    // real "neither indicator visible" gap whenever a switch's group was
+    // still hidden when this script ran (its own component script hadn't
+    // revealed it yet) and something (a fast reflow, a hidden-tab throttle)
+    // caused the ResizeObserver retry to be delayed — this is what made the
+    // IOC Extractor's fang switch render with no visible active indicator.
+    group.setAttribute('data-switch-armed', '');
 
     if (animated) {
       const fromX = currentTranslateX();
