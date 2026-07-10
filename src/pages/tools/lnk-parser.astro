@@ -9,6 +9,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import Icon from '../../components/Icon.astro';
 import LnkParser from '../../components/LnkParser.astro';
+import Term from '../../components/Term.astro';
+import { toolChip } from '../../components/RelatedTools.astro';
 
 const sectionH2 = css({
   display: 'flex',
@@ -26,12 +28,17 @@ const refTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.8
 const refTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)' });
 const refTd = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text', verticalAlign: 'top' });
 const refTdMuted = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'textMuted', fontSize: '0.8rem', verticalAlign: 'top' });
+const relatedList = css({ display: 'flex', flexDirection: 'column', gap: '0.85rem' });
+const relatedReason = css({ color: 'textMuted', fontSize: '0.85rem', mt: '0.35rem', lineHeight: 1.6 });
 
 const REFERENCE_ROWS: { field: string; note: string }[] = [
   { field: 'ShellLinkHeader', note: 'Fixed 76 bytes. Validated against HeaderSize (must be 0x4C) and the LinkCLSID GUID before anything else is trusted.' },
   { field: 'LinkFlags / FileAttributes', note: 'Two 32-bit bitmasks decoded into their named flags — LinkFlags also gates which optional sections below are even present.' },
   { field: 'CreationTime / AccessTime / WriteTime', note: 'Windows FILETIME (100-ns ticks since 1601-01-01). A raw value of 0 means "not set", shown as such rather than the 1601 epoch.' },
-  { field: 'LinkTargetIDList', note: 'A shell-item breadcrumb path (e.g. drive root -> folders -> file), gated on the HasLinkTargetIDList flag. Only common item types are decoded into text; anything else is explicitly labeled unrecognized.' },
+  {
+    field: 'LinkTargetIDList',
+    note: 'A shell-item breadcrumb path (e.g. drive root -> folders -> file), gated on the HasLinkTargetIDList flag. Only two item classes are decoded into text — file-entry items (class type 0x30–0x3F: folders/files in the target path, with their own size/name/last-modified fields) and named volume items (class type 0x20–0x2E: drive roots like "C:\\"); every other class type is explicitly labeled "unrecognized item type (0xNN)" rather than guessed at.',
+  },
   { field: 'LinkInfo', note: 'Volume info (drive type + serial) plus either a local base path or a network share (UNC) path, gated on LinkInfo’s own internal flags.' },
   { field: 'StringData', note: 'Description, RelativePath, WorkingDir, CommandLineArguments, IconLocation — each a length-prefixed string, present only when its own LinkFlags bit is set.' },
 ];
@@ -100,12 +107,28 @@ const REFERENCE_ROWS: { field: string; note: string }[] = [
   </div>
 
   <p class={css({ color: 'textMuted', fontSize: '0.88rem', mt: '1.5rem', lineHeight: 1.7 })}>
-    <strong class={css({ color: 'text' })}>Why LNK files matter in DFIR:</strong> Windows creates shortcut files
-    automatically for recently-opened documents (Jump Lists and the Recent Items folder), so a system's
+    <strong class={css({ color: 'text' })}>Why LNK files matter in DFIR:</strong> Windows creates{' '}
+    <Term slug="lnk-files">shortcut files</Term> automatically for recently-opened documents (
+    <Term slug="jump-lists">Jump Lists</Term> and the Recent Items folder), so a system's
     <code class={css({ fontFamily: 'mono', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'sm', px: '0.3rem' })}>.lnk</code>
     files are a durable record of files a user opened — including files on removable media or network shares
     that may no longer be present. Because the embedded volume serial number and target timestamps are written
     at shortcut-creation time, they can outlive the original file or device, making LNK parsing a standard step
-    in timeline reconstruction and removable-media/lateral-movement analysis.
+    in timeline reconstruction and removable-media/<Term slug="lateral-movement">lateral-movement</Term> analysis.
   </p>
+
+  <h2 id="related" class={sectionH2}>
+    <Icon name="wrench" size={20} class={css({ color: 'primary' })} /> Related tools
+  </h2>
+  <div class={relatedList}>
+    <div>
+      <a href="/tools/mft-usn-analyzer/" class={toolChip}>
+        <Icon name="hard-drive" size={13} /> MFT &amp; USN Analyzer <Icon name="arrow-right" size={13} />
+      </a>
+      <p class={relatedReason}>
+        Corroborate a shortcut's embedded timestamps against the target file's own $STANDARD_INFORMATION/
+        $FILE_NAME pair to spot timestomping.
+      </p>
+    </div>
+  </div>
 </BaseLayout>

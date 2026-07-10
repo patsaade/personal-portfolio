@@ -10,6 +10,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import Icon from '../../components/Icon.astro';
 import PeExplorer from '../../components/PeExplorer.astro';
+import Term from '../../components/Term.astro';
+import { toolChip } from '../../components/RelatedTools.astro';
 
 const sectionH2 = css({
   display: 'flex',
@@ -27,6 +29,8 @@ const refTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.8
 const refTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)' });
 const refTd = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text', verticalAlign: 'top' });
 const refTdMuted = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'textMuted', fontSize: '0.8rem', verticalAlign: 'top' });
+const relatedList = css({ display: 'flex', flexDirection: 'column', gap: '0.85rem' });
+const relatedReason = css({ color: 'textMuted', fontSize: '0.85rem', mt: '0.35rem', lineHeight: 1.6 });
 
 const STRUCTURES: { name: string; note: string }[] = [
   { name: 'DOS header', note: "The legacy MS-DOS stub every PE still carries — its only fields that matter to a modern loader are the 'MZ' magic and e_lfanew, the file offset of the real PE header." },
@@ -71,6 +75,19 @@ const STRUCTURES: { name: string; note: string }[] = [
     </p>
   </aside>
 
+  <p class={css({ color: 'text', lineHeight: 1.8, fontSize: '1rem', mb: '1.5rem' })}>
+    Static PE analysis is usually the first thing worth reaching for on an unknown or suspicious binary — before
+    it's safe, or necessary, to detonate it in a sandbox. The COFF header's machine type and link timestamp tell
+    you what you're looking at and roughly when it was built (though a build timestamp is trivially forged and
+    shouldn't be trusted on its own — it's a linker-set field, not a signed one); the Section Table's
+    Characteristics flags surface anything unusual, like a section marked both writable and executable; and the
+    Import Directory Table is often the fastest way to form a hypothesis about what a binary does, since it lists
+    every external function the file calls. The imphash computed alongside the parse exists for the same reason{' '}
+    <Term slug="malware-family">malware family</Term> clustering tools use it: two samples built from the same
+    source tree tend to share an import order — and therefore an imphash — even when their raw file hashes, or
+    even their observable behavior, differ completely.
+  </p>
+
   <h2 id="explorer" class={css({ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.3rem', fontWeight: 700, mb: '1rem', scrollMarginTop: '90px' })}>
     <Icon name="layers" size={20} class={css({ color: 'primary' })} /> Explorer
   </h2>
@@ -108,4 +125,28 @@ const STRUCTURES: { name: string; note: string }[] = [
     guessing a name — resolving an ordinal to a name needs the exporting DLL's own export table, which this tool
     doesn't fetch or assume.
   </p>
+
+  <h2 id="related" class={sectionH2}>
+    <Icon name="wrench" size={20} class={css({ color: 'primary' })} /> Related tools
+  </h2>
+  <div class={relatedList}>
+    <div>
+      <a href="/tools/hash-calculator/" class={toolChip}>
+        <Icon name="lock" size={13} /> Hash Calculator <Icon name="arrow-right" size={13} />
+      </a>
+      <p class={relatedReason}>
+        Compute an MD5/SHA-256 of the same file alongside the header parse — the bytes you just inspected, ready
+        for a threat-intel or known-bad lookup.
+      </p>
+    </div>
+    <div>
+      <a href="/tools/ioc-extractor/" class={toolChip}>
+        <Icon name="search" size={13} /> IOC Extractor <Icon name="arrow-right" size={13} />
+      </a>
+      <p class={relatedReason}>
+        Pull structured indicators — IPs, domains, hashes — out of any strings, notes, or command line you're
+        pasting alongside a PE analysis.
+      </p>
+    </div>
+  </div>
 </BaseLayout>

@@ -1267,7 +1267,7 @@ export interface AttackTechnique {
 // (summary / significance / example) for the techniques covered in depth.
 
 /** MITRE ATT&CK Enterprise tactics in kill-chain order (only populated render). */
-export { ATTACK_TACTIC_ORDER, ATTACK_VERSION } from './attack-techniques.generated';
+export { ATTACK_TACTIC_ORDER, ATTACK_TACTIC_DEFINITIONS, ATTACK_VERSION } from './attack-techniques.generated';
 
 /** Every Enterprise technique — MITRE data enriched with the curated overlay. */
 export const ATTACK_TECHNIQUES: AttackTechnique[] = ATTACK_GENERATED.map((t) => {

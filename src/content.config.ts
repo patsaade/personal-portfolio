@@ -30,6 +30,9 @@ const blog = defineCollection({
     attack: z.array(z.string()).default([]),
     // MITRE D3FEND technique IDs this post demonstrates (e.g. ['D3-FH','D3-PM']); feeds the D3FEND map.
     d3fend: z.array(z.string()).default([]),
+    // Windows Event ID / Sysmon slugs this post discusses (e.g. ['security-4624','sysmon-1']);
+    // feeds the Event ID Reference's "featured in writeups" filter.
+    eventIds: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
     featured: z.boolean().default(false),
   }),
@@ -54,6 +57,9 @@ const labs = defineCollection({
     seriesOrder: z.number().optional(),
     attack: z.array(z.string()).default([]),
     d3fend: z.array(z.string()).default([]),
+    // Windows Event ID / Sysmon slugs this lab discusses (e.g. ['security-4624','sysmon-1']);
+    // feeds the Event ID Reference's "featured in writeups" filter.
+    eventIds: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
   }),
 });

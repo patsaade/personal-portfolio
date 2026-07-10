@@ -10,6 +10,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import Icon from '../../components/Icon.astro';
 import SigmaTester from '../../components/SigmaTester.astro';
+import Term from '../../components/Term.astro';
+import { toolChip } from '../../components/RelatedTools.astro';
 import { SIGMA_MODIFIERS, CONDITION_UI_TYPES } from '../../utils/sigma';
 
 const sectionH2 = css({
@@ -30,6 +32,8 @@ const refTdBase = { p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.bo
 const refTd = css(refTdBase);
 const refTdMuted = css({ ...refTdBase, color: 'textMuted', fontSize: '0.8rem' });
 const refTdCode = css(refTdBase, { fontFamily: 'mono', fontSize: '0.78rem', color: 'primary' });
+const relatedList = css({ display: 'flex', flexDirection: 'column', gap: '0.85rem' });
+const relatedReason = css({ color: 'textMuted', fontSize: '0.85rem', mt: '0.35rem', lineHeight: 1.6 });
 
 const CONDITION_NOTES: Record<string, string> = {
   'list-and': 'Only the selections you check must all match — everything else in the rule is ignored for this condition.',
@@ -71,6 +75,17 @@ const CONDITION_NOTES: Record<string, string> = {
       YAML tab is a read-only, generated view of the builder's current state, not a general-purpose Sigma editor.
     </p>
   </aside>
+
+  <p class={css({ color: 'text', lineHeight: 1.8, fontSize: '1rem', mb: '1.5rem' })}>
+    Sigma is a generic, YAML-based syntax for describing <Term slug="detection-rule">detection logic</Term> once,
+    independent of any specific SIEM or query language — the community's own converters translate a Sigma rule
+    into a given backend's native query syntax. The goal is portability and shareability: a rule written as
+    plain field-value matches against a normalized event can be published, reviewed, and reused across
+    organizations and tooling instead of rewritten from scratch every time the underlying{' '}
+    <Term slug="siem">SIEM</Term> changes. This tool doesn't do that translation itself — it's for building or
+    pasting a rule and testing it live against a sample event, so the field-matching and condition logic are
+    validated before the rule goes anywhere near a converter or a production SIEM.
+  </p>
 
   <h2 id="tester" class={css({ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.3rem', fontWeight: 700, mb: '1rem', scrollMarginTop: '90px' })}>
     <Icon name="target" size={20} class={css({ color: 'primary' })} /> Rule tester
@@ -138,4 +153,36 @@ const CONDITION_NOTES: Record<string, string> = {
     model Sigma's list-of-values-under-one-key OR shorthand. Mixing "and" and "or" in a single condition also
     isn't supported; build separate selections instead.
   </p>
+  <p class={css({ color: 'textMuted', fontSize: '0.88rem', mt: '1rem', lineHeight: 1.7 })}>
+    Real-world Sigma rules typically also carry a <code class={css({ fontFamily: 'mono', color: 'primary' })}>tags:</code>{' '}
+    field mapping each rule to one or more <Term slug="mitre-attack">MITRE ATT&amp;CK</Term> technique IDs (e.g.{' '}
+    <code class={css({ fontFamily: 'mono', color: 'primary' })}>attack.t1059.001</code>) — metadata this tool's
+    scope deliberately excludes (see above), but worth cross-referencing by hand against the{' '}
+    <a href="/attack-map/" class={css({ color: 'primary' })}>ATT&amp;CK coverage map</a> when building a rule for
+    real use.
+  </p>
+
+  <h2 id="related" class={sectionH2}>
+    <Icon name="wrench" size={20} class={css({ color: 'primary' })} /> Related tools
+  </h2>
+  <div class={relatedList}>
+    <div>
+      <a href="/tools/deobfuscator/" class={toolChip}>
+        <Icon name="key" size={13} /> Deobfuscation Recipe Builder <Icon name="arrow-right" size={13} />
+      </a>
+      <p class={relatedReason}>
+        Building a detection for an obfuscated command line? Decode a sample first to see what you're actually
+        matching.
+      </p>
+    </div>
+    <div>
+      <a href="/tools/regex-tester/" class={toolChip}>
+        <Icon name="search" size={13} /> Regex Tester <Icon name="arrow-right" size={13} />
+      </a>
+      <p class={relatedReason}>
+        Validate a field pattern here before dropping it into a Sigma rule's |re modifier — both evaluate with
+        JavaScript's own RegExp engine.
+      </p>
+    </div>
+  </div>
 </BaseLayout>

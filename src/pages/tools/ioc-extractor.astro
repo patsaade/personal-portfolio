@@ -11,6 +11,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import Icon from '../../components/Icon.astro';
 import IocExtractor from '../../components/IocExtractor.astro';
+import { toolChip } from '../../components/RelatedTools.astro';
 import { IOC_CATEGORIES } from '../../utils/iocs';
 
 const sectionH2 = css({
@@ -39,6 +40,8 @@ const refTd = css(refTdBase);
 const refTdMuted = css({ ...refTdBase, color: 'textMuted', fontSize: '0.8rem' });
 const refCode = css({ fontFamily: 'mono', fontSize: '0.78rem', color: 'primary' });
 const refTdCode = css(refTdBase, { fontFamily: 'mono', fontSize: '0.78rem', color: 'primary' });
+const relatedList = css({ display: 'flex', flexDirection: 'column', gap: '0.85rem' });
+const relatedReason = css({ color: 'textMuted', fontSize: '0.85rem', mt: '0.35rem', lineHeight: 1.6 });
 
 // Short, factual notes on each category's known false-positive risk / matching
 // scope — shown in the reference table so an analyst knows what to double-check.
@@ -124,5 +127,37 @@ const CATEGORY_NOTES: Record<string, string> = {
         }
       </tbody>
     </table>
+  </div>
+  <p class={css({ color: 'textMuted', fontSize: '0.85rem', mt: '0.85rem', lineHeight: 1.7 })}>
+    A hit in the <strong class={css({ color: 'text' })}>ATT&amp;CK</strong> category is a shape match (uppercase
+    T + digits), not a confirmed reference — cross-check it against the{' '}
+    <a href="/attack-map/" class={css({ color: 'primary' })}>ATT&amp;CK coverage map</a> before treating it as one.
+  </p>
+
+  <h2 id="related" class={sectionH2}>
+    <Icon name="wrench" size={20} class={css({ color: 'primary' })} /> Related tools
+  </h2>
+  <div class={relatedList}>
+    <div>
+      <a href="/tools/pe-explorer/" class={toolChip}>
+        <Icon name="layers" size={13} /> PE Header Explorer <Icon name="arrow-right" size={13} />
+      </a>
+      <p class={relatedReason}>Investigating a suspicious EXE or DLL? Parse its PE headers, import table, and imphash.</p>
+    </div>
+    <div>
+      <a href="/tools/deobfuscator/" class={toolChip}>
+        <Icon name="key" size={13} /> Deobfuscation Recipe Builder <Icon name="arrow-right" size={13} />
+      </a>
+      <p class={relatedReason}>An extracted indicator that's still Base64/hex/XOR-wrapped? Peel it back here before treating it as a real IOC.</p>
+    </div>
+    <div>
+      <a href="/tools/regex-tester/" class={toolChip}>
+        <Icon name="search" size={13} /> Regex Tester <Icon name="arrow-right" size={13} />
+      </a>
+      <p class={relatedReason}>
+        Both pull structured data out of raw text — this one via a fixed set of IOC categories, the Regex Tester
+        for anything you can describe with a pattern.
+      </p>
+    </div>
   </div>
 </BaseLayout>

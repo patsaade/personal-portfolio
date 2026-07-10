@@ -129,7 +129,20 @@ export function animateSwitch(group) {
   // with no per-component color code and no drift if a theme's tokens
   // change. Colors swap instantly (matching the flat, non-animated
   // `[data-active]` convention) — only position/size animate.
+  //
+  // Must read the button's color with `data-switch-armed` temporarily OFF.
+  // That attribute is what suppresses the active button's own (redundant)
+  // background via each consumer's `'[data-switch-armed] &'` CSS rule — so
+  // once the group is armed (true for every call after the first), reading
+  // getComputedStyle(btn) straight would read back that already-suppressed
+  // *transparent* value instead of the real color the thumb is supposed to
+  // clone, permanently blanking the thumb on the very next reposition (any
+  // click, ResizeObserver fire, or theme change). getComputedStyle() forces
+  // a synchronous style recalc, so remove/read/restore here never paints an
+  // intermediate frame — no flicker, just an accurate read.
   function syncColors(btn) {
+    const wasArmed = group.hasAttribute('data-switch-armed');
+    if (wasArmed) group.removeAttribute('data-switch-armed');
     const s = getComputedStyle(btn);
     thumb.style.backgroundColor = s.backgroundColor;
     thumb.style.borderRadius = s.borderRadius;
@@ -137,6 +150,7 @@ export function animateSwitch(group) {
     thumb.style.borderStyle = s.borderStyle;
     thumb.style.borderColor = s.borderColor;
     thumb.style.boxShadow = s.boxShadow;
+    if (wasArmed) group.setAttribute('data-switch-armed', '');
   }
 
   // Reads the thumb's own live rendered position/width — including
