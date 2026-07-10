@@ -28,9 +28,17 @@ const sectionH2 = css({
 });
 const refTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' });
 const refTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)' });
-const refTd = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text', verticalAlign: 'top' });
-const refTdMuted = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'textMuted', fontSize: '0.8rem', verticalAlign: 'top' });
-const refCode = css({ fontFamily: 'mono', fontSize: '0.78rem', color: 'primary' });
+// Kept as a plain object (not a pre-atomized css() call) so refTdCode below
+// can css(refTdBase, ...) — a deep object merge that deterministically
+// overrides refTdBase's own color, unlike concatenating two independently-
+// atomized class strings (see STYLE_GUIDE.md "Buttons" for the exact
+// failure mode this avoids — this cell was previously composed as
+// `${refTd} ${refCode}`, which left the winning color up to Panda's atomic-
+// class ordering rather than the intended mono/primary styling).
+const refTdBase = { p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text', verticalAlign: 'top' } as const;
+const refTd = css(refTdBase);
+const refTdMuted = css({ ...refTdBase, color: 'textMuted', fontSize: '0.8rem' });
+const refTdCode = css(refTdBase, { fontFamily: 'mono', fontSize: '0.78rem', color: 'primary' });
 const sectionText = css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', mb: '1rem', '&:last-child': { mb: 0 } });
 ---
 
@@ -105,7 +113,7 @@ const sectionText = css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', m
                   <div class={css({ fontSize: '0.72rem', color: 'accent', mt: '0.15rem' })}>live field above</div>
                 )}
               </td>
-              <td class={`${refTd} ${refCode}`}>{f.epochOrigin}</td>
+              <td class={refTdCode}>{f.epochOrigin}</td>
               <td class={refTdMuted}>{f.unit}</td>
               <td class={refTdMuted}>{f.whereSeenInDFIR}</td>
               <td class={refTdMuted}>{f.note ?? ''}</td>

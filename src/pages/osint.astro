@@ -33,8 +33,19 @@ const sectionH2 = css({
 });
 const opTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' });
 const opTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)' });
-const opTd = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text' });
-const opCode = css({ fontFamily: 'mono', color: 'primary' });
+// Kept as a plain object (not a pre-atomized css() call) so the two variant
+// cells below can css(opTdBase, variant) — a deep object merge that
+// deterministically overrides opTdBase's own color, unlike concatenating two
+// independently-atomized class strings (see STYLE_GUIDE.md "Buttons" for the
+// exact failure mode this avoids — these two cells were previously composed
+// as `${opTd} ${...}`, which left the winning color up to Panda's atomic-
+// class ordering: the Syntax column was rendering full-contrast `text`
+// instead of the intended `primary` mono styling, purely by chance of
+// ordering, and the notes column likewise wasn't reliably muted).
+const opTdBase = { p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text' } as const;
+const opTd = css(opTdBase);
+const opTdCode = css(opTdBase, { fontFamily: 'mono', color: 'primary' });
+const opTdNote = css(opTdBase, { color: 'textMuted', fontSize: '0.78rem' });
 // Matches DorkBuilder.astro's exactTag exactly — same always-visible, zero-
 // interaction "Exact" chip glued onto the phrase operator's syntax fragment,
 // here and in the builder's own ingredient badge, so the two stay visually
@@ -131,7 +142,7 @@ const toolChip = css({
           DORK_OPERATORS.map((op) => (
             <tr>
               <td class={opTd}>{op.label}</td>
-              <td class={`${opTd} ${opCode}`}>
+              <td class={opTdCode}>
                 {op.kind === 'phrase' ? '"…"' : op.kind === 'exclude' ? '-term' : op.prefix}
                 {op.kind === 'phrase' && <span class={exactTag}>Exact</span>}
               </td>
@@ -141,7 +152,7 @@ const toolChip = css({
                   .join(', ')}
               </td>
               <td class={opTd}>{op.description}</td>
-              <td class={`${opTd} ${css({ color: 'textMuted', fontSize: '0.78rem' })}`}>{op.note}</td>
+              <td class={opTdNote}>{op.note}</td>
             </tr>
           ))
         }

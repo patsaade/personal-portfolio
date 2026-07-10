@@ -6,7 +6,7 @@ import { css } from 'styled-system/css';
 import { tag } from 'styled-system/recipes';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
-import { prosePara, proseH2, proseLink } from '../styles/prose';
+import { prosePara, proseH2, proseLink, proseLinkBase } from '../styles/prose';
 
 const para = prosePara;
 const h2 = proseH2;
@@ -20,7 +20,15 @@ const stackCard = css({ listStyle: 'none', m: 0, p: '0.25rem 1.25rem', bg: 'bgCa
 const stackRowBase = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem', py: '0.85rem' });
 const stackRowDivider = css({ borderTop: '1px solid token(colors.border)' });
 const stackHead = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.2rem 1rem' });
-const stackName = css({ color: 'text', fontWeight: 600 });
+// css(proseLinkBase, { color: 'text', ... }) — a deep object merge — so the
+// stack-item name reads as bold normal text (matching a heading, not a wall
+// of blue links) while keeping proseLink's underline/hover behavior. This
+// used to be composed as `${link} ${stackName}`, which left proseLinkBase's
+// color: 'primary' racing stackName's color: 'text' for the win — primary
+// was winning, so stack-item names rendered as ordinary blue links instead
+// of the intended bold "heading" look (see STYLE_GUIDE.md "Buttons" for the
+// general failure mode).
+const stackName = css(proseLinkBase, { color: 'text', fontWeight: 600 });
 const stackNote = css({ color: 'textMuted', fontSize: '0.9rem', lineHeight: 1.7 });
 
 const STACK = [
@@ -96,7 +104,7 @@ const STACK = [
       STACK.map((s, i) => (
         <li class={`${stackRowBase} ${i === 0 ? '' : stackRowDivider}`}>
           <span class={stackHead}>
-            <a class={`${link} ${stackName}`} href={s.url} target="_blank" rel="noopener">{s.name}</a>
+            <a class={stackName} href={s.url} target="_blank" rel="noopener">{s.name}</a>
             <span class={tag({ tone: 'muted' })}>{s.role}</span>
           </span>
           <span class={stackNote}>{s.note}</span>
@@ -105,7 +113,7 @@ const STACK = [
     }
     <li class={`${stackRowBase} ${stackRowDivider}`}>
       <span class={stackHead}>
-        <a class={`${link} ${stackName}`} href="https://www.redaction.us" target="_blank" rel="noopener">Redaction</a>
+        <a class={stackName} href="https://www.redaction.us" target="_blank" rel="noopener">Redaction</a>
         <span class={tag({ tone: 'muted' })}>Display type</span>
       </span>
       <span class={stackNote}>
@@ -117,7 +125,7 @@ const STACK = [
     </li>
     <li class={`${stackRowBase} ${stackRowDivider}`}>
       <span class={stackHead}>
-        <a class={`${link} ${stackName}`} href="https://github.com/mozilla/Fira" target="_blank" rel="noopener">Fira Mono</a>
+        <a class={stackName} href="https://github.com/mozilla/Fira" target="_blank" rel="noopener">Fira Mono</a>
         <span class={tag({ tone: 'muted' })}>Code type</span>
       </span>
       <span class={stackNote}>
