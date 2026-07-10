@@ -1,0 +1,134 @@
+---
+// MFT & USN Journal Timestomp Analyzer — parse a single, already-carved-out
+// NTFS MFT FILE record or USN_RECORD_V2 entirely client-side, and put
+// $STANDARD_INFORMATION vs $FILE_NAME timestamps side by side to flag the
+// classic timestomping/anti-forensics indicator. Same page shape as the
+// Hash Calculator / IOC Extractor (intro aside -> interactive tool ->
+// reference notes). Static page — prerender to HTML served from the CDN.
+export const prerender = true;
+import { css } from 'styled-system/css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import Icon from '../../components/Icon.astro';
+import MftUsnAnalyzer from '../../components/MftUsnAnalyzer.astro';
+import { USN_REASON_FLAGS } from '../../utils/mftUsn';
+
+const sectionH2 = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  fontSize: '1.3rem',
+  fontWeight: 700,
+  mt: '2.5rem',
+  mb: '1rem',
+  pt: '1.5rem',
+  borderTop: '1px solid token(colors.border)',
+  scrollMarginTop: '90px',
+});
+const refTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' });
+const refTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)' });
+// Kept as a plain object (not a pre-atomized css() call) so refTdCode below
+// can css(refTdBase, ...) — a deep object merge that deterministically
+// overrides refTdBase's own color, unlike concatenating two independently-
+// atomized class strings (see STYLE_GUIDE.md "Buttons" for the exact
+// failure mode this avoids).
+const refTdBase = { p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text', verticalAlign: 'top' } as const;
+const refTdMuted = css({ ...refTdBase, color: 'textMuted', fontSize: '0.8rem' });
+const refTdCode = css(refTdBase, { fontFamily: 'mono', fontSize: '0.78rem', color: 'primary' });
+---
+
+<BaseLayout
+  title="MFT & USN Journal Timestomp Analyzer"
+  description="Parse a single, already-carved-out NTFS MFT FILE record or USN journal record and compare $STANDARD_INFORMATION vs $FILE_NAME timestamps to flag timestomping — entirely in your browser, nothing uploaded."
+>
+  <PageHeader
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Tool Catalog', href: '/tools/' }, { label: 'MFT & USN Journal Timestomp Analyzer' }]}
+    eyebrow="Host Forensics"
+    title="MFT & USN Journal Timestomp Analyzer"
+    description="Parse one already-carved-out MFT FILE record or USN journal record and compare $STANDARD_INFORMATION against $FILE_NAME to spot the classic timestomping indicator — entirely local."
+  />
+
+  <aside
+    class={css({
+      bg: 'bgSubtle',
+      border: '1px solid token(colors.border)',
+      borderLeftWidth: '3px',
+      borderLeftColor: 'primary',
+      borderRadius: 'md',
+      p: '1rem 1.25rem',
+      mb: '1.5rem',
+    })}
+  >
+    <p class={css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', m: 0 })}>
+      Everything here runs entirely in your browser — <strong class={css({ color: 'text' })}>no external APIs, no
+      upload, nothing you paste or select ever leaves your machine</strong>. Paste hex bytes or choose a local file
+      and it's parsed with the File API in-page. This tool works on <strong class={css({ color: 'text' })}>one
+      already-carved-out record at a time</strong> — a single 1024-byte (or otherwise fixed-size) MFT FILE record,
+      or a single USN_RECORD_V2, as extracted by a tool like MFTECmd, a hex editor, or a $UsnJrnl carver.
+      Bulk/whole-$MFT parsing and $LogFile transaction-log parsing are both out of scope.
+    </p>
+  </aside>
+
+  <h2 id="analyzer" class={css({ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.3rem', fontWeight: 700, mb: '1rem', scrollMarginTop: '90px' })}>
+    <Icon name="hard-drive" size={20} class={css({ color: 'primary' })} /> Analyzer
+  </h2>
+  <MftUsnAnalyzer />
+
+  <h2 id="how-it-works" class={sectionH2}>
+    <Icon name="alert-triangle" size={20} class={css({ color: 'primary' })} /> Why $SI vs $FN matters
+  </h2>
+  <p class={css({ color: 'textMuted', fontSize: '0.9rem', lineHeight: 1.75, m: 0 })}>
+    Every NTFS file carries two independent sets of the same four timestamps (Created, Modified, MFT Modified,
+    Accessed): one inside the <strong class={css({ color: 'text' })}>$STANDARD_INFORMATION</strong> attribute
+    (what tools like Windows Explorer show you, and what common "timestomping" utilities target), and a second,
+    separate set inside the <strong class={css({ color: 'text' })}>$FILE_NAME</strong> attribute (updated by NTFS
+    itself on rename/move, and much less commonly forged). When an attacker sets $STANDARD_INFORMATION to an
+    innocuous-looking date but leaves $FILE_NAME at its true value, the two disagree — this tool parses both,
+    lines all four pairs up side by side, and flags any pair that differs by more than a couple of seconds as a
+    likely anti-forensics indicator. Before either attribute is read, the record's per-sector Update Sequence
+    Array "fixup" is verified and applied — reading raw, un-fixed-up sector-tail bytes would corrupt every
+    attribute that happens to straddle a 512-byte sector boundary.
+  </p>
+
+  <h2 id="usn-reasons" class={sectionH2}>
+    <Icon name="list" size={20} class={css({ color: 'primary' })} /> USN Reason flag reference
+  </h2>
+  <p class={css({ color: 'textMuted', fontSize: '0.88rem', lineHeight: 1.7, mb: '1rem' })}>
+    A USN_RECORD_V2's <code class={css({ fontFamily: 'mono', color: 'primary' })}>Reason</code> field is a
+    bitmask — a single journal entry commonly sets several of these flags at once (e.g. a rename sets both
+    <code class={css({ fontFamily: 'mono', color: 'primary' })}>RENAME_OLD_NAME</code> and a following record
+    sets <code class={css({ fontFamily: 'mono', color: 'primary' })}>RENAME_NEW_NAME</code>). Full canonical
+    list per Microsoft's own <code class={css({ fontFamily: 'mono', fontSize: '0.82rem' })}>USN_RECORD_V2</code>
+    documentation (winioctl.h <code class={css({ fontFamily: 'mono', fontSize: '0.82rem' })}>USN_REASON_*</code>
+    constants).
+  </p>
+  <div class={css({ overflowX: 'auto' })}>
+    <table class={refTable}>
+      <thead>
+        <tr>
+          <th class={refTh}>Flag</th>
+          <th class={refTh}>Bit</th>
+          <th class={refTh}>Meaning</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          USN_REASON_FLAGS.map((f) => (
+            <tr>
+              <td class={refTdCode}>USN_REASON_{f.name}</td>
+              <td class={refTdCode}>0x{f.bit.toString(16).toUpperCase().padStart(8, '0')}</td>
+              <td class={refTdMuted}>{f.description}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p class={css({ color: 'textMuted', fontSize: '0.85rem', mt: '1.5rem', lineHeight: 1.7 })}>
+    Scope is deliberately narrow: this parses <strong class={css({ color: 'text' })}>one record you already
+    extracted</strong>, not a raw $MFT or $UsnJrnl:$J stream. It doesn't walk sector data looking for record
+    boundaries, and it only supports USN_RECORD_V2 (the version every modern Windows journal writes) — V3/V4's
+    128-bit file IDs use a different layout and aren't parsed here.
+  </p>
+</BaseLayout>

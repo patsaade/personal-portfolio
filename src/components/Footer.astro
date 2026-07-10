@@ -37,27 +37,19 @@ const socialBtn = css({
   _hover: { color: 'primary', borderColor: 'primary', transform: 'translateY(-2px)' },
 });
 
-const dfirGroups = DFIR_GROUPS;
 const moreLinks = MORE_LINKS;
 
-// The DFIR column holds 3 subgroups (10 links total) — roughly 3x the other
-// columns' content. Left as one flat list it made the DFIR column (and so
-// the whole footer, since a CSS grid row is as tall as its tallest cell)
-// much taller than the Explore/More columns needed, leaving a lot of dead
-// white space beside them. Flowing DFIR's subgroups through a 2-column CSS
-// multi-column layout (each subgroup kept intact via breakInside: 'avoid')
-// roughly halves its height and brings all four columns close to level.
-const dfirCols = css({ columns: 2, columnGap: '1.1rem' });
-const dfirGroupBlock = css({ breakInside: 'avoid', mb: '0.7rem', '&:last-child': { mb: 0 } });
-const subHead = css({
-  fontFamily: 'sans',
-  fontSize: '0.68rem',
-  fontWeight: 700,
-  textTransform: 'uppercase',
-  letterSpacing: '0.1em',
-  color: 'primary',
-  mb: '0.3rem',
-});
+// The DFIR column used to flat-dump all 6 DFIR_GROUPS subgroups (17 links)
+// through a 2-column CSS multicol hack — 3x the Explore/More columns' size
+// and still growing every time a tool was added. Now that /dfir/ exists as
+// the single "browse everything" landing page (src/pages/dfir.astro), this
+// column just points there: one overview link + one link per category
+// anchor (`/dfir/#${id}`), 7 flat rows total — comparable to Explore/More's
+// 3 each, same fLink treatment, no multicol layout needed.
+const dfirFooterLinks = [
+  { href: '/dfir/', label: 'Overview' },
+  ...DFIR_GROUPS.map((g) => ({ href: `/dfir/#${g.id}`, label: g.category })),
+];
 ---
 
 <footer
@@ -126,14 +118,7 @@ const subHead = css({
     {/* DFIR */}
     <nav aria-label="Footer — DFIR">
       <p class={colHead}>DFIR</p>
-      <div class={dfirCols}>
-        {dfirGroups.map((g) => (
-          <div class={dfirGroupBlock}>
-            <p class={subHead}>{g.category}</p>
-            {g.links.map((l) => <a href={l.href} class={fLink}>{l.label}</a>)}
-          </div>
-        ))}
-      </div>
+      {dfirFooterLinks.map((l) => <a href={l.href} class={fLink}>{l.label}</a>)}
     </nav>
 
     {/* More */}

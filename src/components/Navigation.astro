@@ -20,6 +20,11 @@ const dropdowns = [
 ] as const;
 const isAnyActive = (groups: readonly { links: readonly { href: string }[] }[]) =>
   groups.some((g) => g.links.some((l) => isActive(l.href)));
+// /dfir/ itself isn't inside any DFIR_GROUPS category's links (it's the
+// landing page those categories point AT), so isAnyActive alone would leave
+// the "DFIR" trigger looking unselected while actually on that page.
+const isDropdownActive = (d: (typeof dropdowns)[number]) =>
+  isAnyActive(d.groups) || (d.id === 'dfir' && isActive('/dfir/'));
 
 // Desktop nav "More" dropdown (mirrors the footer's More column). Opens on
 // hover/focus via CSS (the `.nav-more` ancestor) and on click/tap via JS.
@@ -245,13 +250,21 @@ const mobileSummary = css({
               aria-controls={`nav-${d.id}-menu`}
               aria-label={`${d.label} links`}
               data-sound="tick"
-              class={`nav-more-btn ${moreBtn} ${isAnyActive(d.groups) ? moreBtnActive : ''}`}
+              class={`nav-more-btn ${moreBtn} ${isDropdownActive(d) ? moreBtnActive : ''}`}
             >
               {d.label}
               <Icon name="chevron-down" size={13} strokeWidth={2.5} class="nav-more-chev" />
             </button>
             <div id={`nav-${d.id}-menu`} class={`nav-more-menu ${moreMenuOuter}`}>
               <div class={moreMenuInner}>
+                {d.id === 'dfir' && (
+                  <>
+                    <a href="/dfir/" aria-current={isActive('/dfir/') ? 'page' : undefined} class={`nav-declassify ${moreLink}`}>
+                      Browse all DFIR pages →
+                    </a>
+                    <div class={menuGroupDivider} />
+                  </>
+                )}
                 {d.groups.map((g, i) => (
                   <>
                     {i > 0 && <div class={menuGroupDivider} />}
@@ -399,6 +412,11 @@ const mobileSummary = css({
               <Icon name="chevron-down" size={15} class="mobile-section-chev" />
             </summary>
             <div class={css({ display: 'flex', flexDirection: 'column', pl: '0.5rem', pb: '0.3rem' })}>
+              {d.id === 'dfir' && (
+                <a href="/dfir/" aria-current={isActive('/dfir/') ? 'page' : undefined} class={mobileLink}>
+                  Browse all DFIR pages →
+                </a>
+              )}
               {d.groups.map((g) => (
                 <>
                   {g.category && <p class={mobileGroupLabel}>{g.category}</p>}

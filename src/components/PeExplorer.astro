@@ -1,0 +1,584 @@
+---
+// PE Header Explorer — pick (or drag/drop) a local EXE/DLL and parse its
+// Windows PE headers entirely client-side (src/utils/pe.ts): DOS header, PE
+// signature + COFF File Header, Optional Header (PE32/PE32+), Section Table,
+// Import & Export Directory Tables, and a computed imphash. A file chosen
+// here is read locally via File#arrayBuffer() and never uploaded anywhere —
+// same file-read pattern as the Hash Calculator, including the monotonic
+// sequence-counter guard against a stale async parse landing after a newer
+// file was already chosen. Same "Scratch-inspired workspace" visual language
+// as the site's other builder tools. Genuinely requires JS (parsing has no
+// static fallback), so the workspace stays hidden until the script confirms
+// it's running.
+//
+// Disassembly, resource-section (.rsrc) rendering, .NET/CLR metadata, and
+// digital-signature verification are explicitly out of scope — a parsed file
+// that has any of those surfaces a plain note rather than silently omitting
+// them (pe.ts's PeInfo.notes).
+import { css } from 'styled-system/css';
+import { tag } from 'styled-system/recipes';
+import Icon from './Icon.astro';
+import WorkspaceShell from './WorkspaceShell.astro';
+
+const paneLabel = css({
+  fontFamily: 'sans',
+  fontSize: '0.7rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: 'textMuted',
+  mb: '0.6rem',
+});
+const sectionLabel = css({
+  fontFamily: 'sans',
+  fontSize: '0.78rem',
+  fontWeight: 700,
+  color: 'text',
+  mb: '0.5rem',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+});
+
+const fileRowBase = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.75rem',
+  flexWrap: 'wrap',
+  bg: 'bgCard',
+  border: '1px dashed token(colors.border)',
+  borderRadius: 'md',
+  p: '0.9rem',
+  transition: 'border-color 150ms ease, background 150ms ease',
+} as const;
+const fileRowDragOver = {
+  '&[data-dragover]': {
+    borderColor: 'primary',
+    bg: 'color-mix(in srgb, token(colors.primary) 8%, transparent)',
+  },
+} as const;
+const fileRow = css(fileRowBase, fileRowDragOver);
+const fileBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  fontFamily: 'sans',
+  fontSize: '0.85rem',
+  fontWeight: 600,
+  px: '0.8rem',
+  py: '0.45rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  bg: 'bgSubtle',
+  color: 'text',
+  cursor: 'pointer',
+  transition: 'border-color 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+const fileName = css({ fontFamily: 'mono', fontSize: '0.85rem', color: 'textMuted', wordBreak: 'break-all' });
+const dropHint = css({ fontFamily: 'sans', fontSize: '0.78rem', color: 'textMuted' });
+
+const errorBanner = css({
+  display: 'none',
+  fontFamily: 'sans',
+  fontSize: '0.88rem',
+  fontWeight: 600,
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderLeftWidth: '3px',
+  borderRadius: 'md',
+  p: '0.75rem 1rem',
+  lineHeight: 1.5,
+  '&[data-visible]': { display: 'block' },
+});
+
+const results = css({
+  display: 'none',
+  flexDirection: 'column',
+  gap: '1.25rem',
+  '&[data-visible]': { display: 'flex' },
+});
+
+const kvGrid = css({
+  display: 'grid',
+  gridTemplateColumns: { base: '1fr', sm: 'repeat(2, 1fr)' },
+  gap: '0.5rem 1.25rem',
+});
+const kvRow = css({ display: 'flex', justifyContent: 'space-between', gap: '0.6rem', fontSize: '0.85rem', borderBottom: '1px solid token(colors.border)', py: '0.3rem' });
+const kvKey = css({ color: 'textMuted', fontFamily: 'sans', flexShrink: 0 });
+const kvVal = css({ color: 'text', fontFamily: 'mono', textAlign: 'right', wordBreak: 'break-all', minW: 0 });
+
+const flagsRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', mt: '0.5rem' });
+
+const scrollBox = css({
+  maxH: '16rem',
+  overflowY: 'auto',
+  overflowX: 'auto',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  bg: 'bgCard',
+});
+
+const table = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' });
+const th = css({
+  position: 'sticky',
+  top: 0,
+  textAlign: 'left',
+  color: 'textMuted',
+  fontFamily: 'sans',
+  fontWeight: 600,
+  fontSize: '0.68rem',
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  bg: 'bgCard',
+  p: '0.5rem 0.7rem',
+  borderBottom: '1px solid token(colors.border)',
+  whiteSpace: 'nowrap',
+});
+const td = css({ p: '0.45rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text', fontFamily: 'mono', verticalAlign: 'top', wordBreak: 'break-word' });
+
+const dllGroup = css({ borderBottom: '1px solid token(colors.border)', p: '0.6rem 0.85rem', '&:last-child': { borderBottom: 'none' } });
+const dllName = css({ fontFamily: 'mono', fontSize: '0.85rem', fontWeight: 700, color: 'primary', mb: '0.3rem' });
+const fnList = css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.15rem' });
+const fnItemBase = { fontFamily: 'mono', fontSize: '0.78rem', color: 'textMuted', wordBreak: 'break-all' } as const;
+const fnItem = css(fnItemBase);
+// By-ordinal imports (no name recorded, just a numeric ordinal — see pe.ts's
+// ImportedFunction.isOrdinal) render in accent so they're visually distinct
+// from by-name imports at a glance, matching the "ordinal N" callout in
+// pe-explorer.astro's structure-reference note below.
+const fnOrdinal = css(fnItemBase, { color: 'accent' });
+
+const notesList = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' });
+const noteItem = css({
+  display: 'flex',
+  gap: '0.5rem',
+  alignItems: 'flex-start',
+  fontSize: '0.82rem',
+  color: 'textMuted',
+  lineHeight: 1.6,
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  p: '0.6rem 0.75rem',
+});
+
+const imphashRow = css({ display: 'flex', alignItems: 'center', gap: '0.6rem' });
+const imphashBox = css({
+  flex: 1,
+  minW: 0,
+  m: 0,
+  fontFamily: 'mono',
+  fontSize: '0.85rem',
+  color: 'primary',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.7rem',
+  py: '0.5rem',
+  overflowX: 'auto',
+  whiteSpace: 'pre',
+});
+const imphashCopyBtn = css({
+  flexShrink: 0,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '2rem',
+  h: '2rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  bg: 'bgCard',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+
+const emptyNote = css({ color: 'textMuted', fontSize: '0.82rem', fontStyle: 'italic', p: '0.75rem 0.85rem' });
+---
+
+<WorkspaceShell hook="data-pe-explorer" noJsMessage="The PE Header Explorer needs JavaScript enabled." gap="1.25rem">
+  <div>
+    <p class={paneLabel}>Load a file — a local EXE/DLL (never uploaded)</p>
+    <div class={fileRow} data-pe-drop-zone>
+      <label class={fileBtn}>
+        <Icon name="download" size={15} /> Choose file
+        <input type="file" data-pe-file class={css({ display: 'none' })} accept=".exe,.dll,.sys,.ocx,.scr,.cpl,.efi" />
+      </label>
+      <span class={fileName} data-pe-file-name>No file chosen — nothing is uploaded, it's read locally in your browser.</span>
+      <span class={dropHint}>or drag a file here</span>
+    </div>
+  </div>
+
+  <p class={errorBanner} data-pe-error role="status" aria-live="polite"></p>
+
+  <div class={results} data-pe-results>
+    {/* DOS header */}
+    <div>
+      <p class={sectionLabel}><Icon name="lock" size={15} /> DOS header</p>
+      <div class={kvGrid}>
+        <div class={kvRow}><span class={kvKey}>Magic (e_magic)</span><span class={kvVal} data-pe-dos-magic></span></div>
+        <div class={kvRow}><span class={kvKey}>PE header offset (e_lfanew)</span><span class={kvVal} data-pe-dos-lfanew></span></div>
+      </div>
+    </div>
+
+    {/* COFF File Header */}
+    <div>
+      <p class={sectionLabel}><Icon name="list" size={15} /> COFF File Header</p>
+      <div class={kvGrid}>
+        <div class={kvRow}><span class={kvKey}>Machine</span><span class={kvVal} data-pe-coff-machine></span></div>
+        <div class={kvRow}><span class={kvKey}>Number of sections</span><span class={kvVal} data-pe-coff-sections></span></div>
+        <div class={kvRow}><span class={kvKey}>Timestamp (UTC)</span><span class={kvVal} data-pe-coff-time></span></div>
+        <div class={kvRow}><span class={kvKey}>Type</span><span class={kvVal} data-pe-coff-type></span></div>
+      </div>
+      <div class={flagsRow} data-pe-coff-flags></div>
+    </div>
+
+    {/* Optional Header */}
+    <div>
+      <p class={sectionLabel}><Icon name="layers" size={15} /> Optional Header</p>
+      <div class={kvGrid}>
+        <div class={kvRow}><span class={kvKey}>Magic</span><span class={kvVal} data-pe-opt-magic></span></div>
+        <div class={kvRow}><span class={kvKey}>Address of entry point (RVA)</span><span class={kvVal} data-pe-opt-entry></span></div>
+        <div class={kvRow}><span class={kvKey}>Image base</span><span class={kvVal} data-pe-opt-imagebase></span></div>
+        <div class={kvRow}><span class={kvKey}>Subsystem</span><span class={kvVal} data-pe-opt-subsystem></span></div>
+      </div>
+    </div>
+
+    {/* Section table */}
+    <div>
+      <p class={sectionLabel}><Icon name="layers" size={15} /> Section table</p>
+      <div class={scrollBox}>
+        <table class={table}>
+          <thead>
+            <tr>
+              <th class={th}>Name</th>
+              <th class={th}>Virtual size</th>
+              <th class={th}>Virtual address</th>
+              <th class={th}>Raw size</th>
+              <th class={th}>Characteristics</th>
+            </tr>
+          </thead>
+          <tbody data-pe-sections-body></tbody>
+        </table>
+      </div>
+    </div>
+
+    {/* Imports */}
+    <div>
+      <p class={sectionLabel}><Icon name="download" size={15} /> Import directory table</p>
+      <div class={scrollBox} data-pe-imports-box>
+        <div data-pe-imports-list></div>
+        <p class={emptyNote} data-pe-imports-empty hidden>No import directory table found.</p>
+      </div>
+    </div>
+
+    {/* Exports */}
+    <div>
+      <p class={sectionLabel}><Icon name="list" size={15} /> Export table</p>
+      <div class={scrollBox} data-pe-exports-box>
+        <table class={table} data-pe-exports-table hidden>
+          <thead>
+            <tr>
+              <th class={th}>Ordinal</th>
+              <th class={th}>Name</th>
+              <th class={th}>RVA</th>
+            </tr>
+          </thead>
+          <tbody data-pe-exports-body></tbody>
+        </table>
+        <p class={emptyNote} data-pe-exports-empty>This file has no export data directory entry.</p>
+      </div>
+    </div>
+
+    {/* Imphash */}
+    <div>
+      <p class={sectionLabel}><Icon name="lock" size={15} /> Imphash</p>
+      <div class={imphashRow}>
+        <pre class={imphashBox} data-pe-imphash>&nbsp;</pre>
+        <button type="button" class={imphashCopyBtn} data-pe-imphash-copy data-copy-pop data-sound="copy" aria-label="Copy imphash" title="Copy">
+          <Icon name="copy" size={13} />
+        </button>
+      </div>
+    </div>
+
+    {/* Notes */}
+    <div data-pe-notes-wrap hidden>
+      <p class={sectionLabel}>Notes</p>
+      <div class={notesList} data-pe-notes></div>
+    </div>
+  </div>
+
+  {/* Cloned per section-table row */}
+  <template data-pe-section-row-template>
+    <tr>
+      <td class={td} data-cell="name"></td>
+      <td class={td} data-cell="vsize"></td>
+      <td class={td} data-cell="vaddr"></td>
+      <td class={td} data-cell="rsize"></td>
+      <td class={td}><div class={flagsRow} data-cell="flags"></div></td>
+    </tr>
+  </template>
+
+  {/* Cloned per imported DLL */}
+  <template data-pe-dll-template>
+    <div class={dllGroup}>
+      <p class={dllName} data-dll-name></p>
+      <ul class={fnList} data-dll-fns></ul>
+    </div>
+  </template>
+
+  {/* Cloned per imported function (by name) */}
+  <template data-pe-fn-template>
+    <li class={fnItem}></li>
+  </template>
+
+  {/* Cloned per imported function (by ordinal only — no name in the import table) */}
+  <template data-pe-fn-ordinal-template>
+    <li class={fnOrdinal}></li>
+  </template>
+
+  {/* Cloned per exported function row */}
+  <template data-pe-export-row-template>
+    <tr>
+      <td class={td} data-cell="ordinal"></td>
+      <td class={td} data-cell="name"></td>
+      <td class={td} data-cell="rva"></td>
+    </tr>
+  </template>
+
+  {/* Cloned per flag chip */}
+  <template data-pe-flag-chip-template>
+    <span class={tag({ tone: 'muted', mono: true })}></span>
+  </template>
+
+  {/* Cloned per note */}
+  <template data-pe-note-template>
+    <p class={noteItem}></p>
+  </template>
+</WorkspaceShell>
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  import { parsePe } from '../utils/pe';
+  import { pop } from '../scripts/copyPop';
+
+  (function () {
+    function init() {
+      var roots = document.querySelectorAll('[data-pe-explorer]:not([data-ready])');
+      Array.prototype.forEach.call(roots, function (root) {
+        var dropZone = root.querySelector('[data-pe-drop-zone]');
+        var fileInput = root.querySelector('[data-pe-file]');
+        var fileNameEl = root.querySelector('[data-pe-file-name]');
+        var errorEl = root.querySelector('[data-pe-error]');
+        var resultsEl = root.querySelector('[data-pe-results]');
+        if (!dropZone || !fileInput || !errorEl || !resultsEl) return;
+
+        var sectionRowTemplate = root.querySelector('[data-pe-section-row-template]');
+        var dllTemplate = root.querySelector('[data-pe-dll-template]');
+        var fnTemplate = root.querySelector('[data-pe-fn-template]');
+        var fnOrdinalTemplate = root.querySelector('[data-pe-fn-ordinal-template]');
+        var exportRowTemplate = root.querySelector('[data-pe-export-row-template]');
+        var flagChipTemplate = root.querySelector('[data-pe-flag-chip-template]');
+        var noteTemplate = root.querySelector('[data-pe-note-template]');
+
+        function formatBytes(n) {
+          if (n < 1024) return n + ' B';
+          if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+          return (n / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        function hex(n) {
+          return '0x' + n.toString(16).toUpperCase().padStart(8, '0');
+        }
+
+        function makeFlagChips(container, flags) {
+          container.innerHTML = '';
+          if (!flags.length) return;
+          flags.forEach(function (f) {
+            var chip = flagChipTemplate.content.firstElementChild.cloneNode(true);
+            chip.textContent = f;
+            container.appendChild(chip);
+          });
+        }
+
+        function showError(message) {
+          errorEl.textContent = message;
+          errorEl.setAttribute('data-visible', '');
+          resultsEl.removeAttribute('data-visible');
+        }
+
+        function clearError() {
+          errorEl.textContent = '';
+          errorEl.removeAttribute('data-visible');
+        }
+
+        function render(info) {
+          clearError();
+          resultsEl.setAttribute('data-visible', '');
+
+          // DOS header
+          root.querySelector('[data-pe-dos-magic]').textContent = info.dos.magic;
+          root.querySelector('[data-pe-dos-lfanew]').textContent = hex(info.dos.e_lfanew);
+
+          // COFF header
+          root.querySelector('[data-pe-coff-machine]').textContent = info.coff.machineName + ' (0x' + info.coff.machine.toString(16) + ')';
+          root.querySelector('[data-pe-coff-sections]').textContent = String(info.coff.numberOfSections);
+          root.querySelector('[data-pe-coff-time]').textContent = info.coff.timeDateStampIso
+            ? info.coff.timeDateStampIso.replace('T', ' ').replace('.000Z', ' UTC')
+            : '(unset)';
+          root.querySelector('[data-pe-coff-type]').textContent = info.isDll ? 'DLL' : 'Executable image';
+          makeFlagChips(root.querySelector('[data-pe-coff-flags]'), info.coff.characteristicsFlags);
+
+          // Optional header
+          root.querySelector('[data-pe-opt-magic]').textContent =
+            info.optional.magicName + ' (0x' + info.optional.magic.toString(16) + ')';
+          root.querySelector('[data-pe-opt-entry]').textContent = hex(info.optional.addressOfEntryPoint);
+          root.querySelector('[data-pe-opt-imagebase]').textContent = '0x' + info.optional.imageBase.toString(16).toUpperCase();
+          root.querySelector('[data-pe-opt-subsystem]').textContent =
+            info.optional.subsystemName + ' (' + info.optional.subsystem + ')';
+
+          // Section table
+          var sectionsBody = root.querySelector('[data-pe-sections-body]');
+          sectionsBody.innerHTML = '';
+          info.sections.forEach(function (s) {
+            var row = sectionRowTemplate.content.firstElementChild.cloneNode(true);
+            row.querySelector('[data-cell="name"]').textContent = s.name;
+            row.querySelector('[data-cell="vsize"]').textContent = hex(s.virtualSize);
+            row.querySelector('[data-cell="vaddr"]').textContent = hex(s.virtualAddress);
+            row.querySelector('[data-cell="rsize"]').textContent = hex(s.sizeOfRawData);
+            makeFlagChips(row.querySelector('[data-cell="flags"]'), s.characteristicsFlags);
+            sectionsBody.appendChild(row);
+          });
+
+          // Imports
+          var importsList = root.querySelector('[data-pe-imports-list]');
+          var importsEmpty = root.querySelector('[data-pe-imports-empty]');
+          importsList.innerHTML = '';
+          if (!info.imports.length) {
+            importsEmpty.hidden = false;
+          } else {
+            importsEmpty.hidden = true;
+            info.imports.forEach(function (dll) {
+              var group = dllTemplate.content.firstElementChild.cloneNode(true);
+              group.querySelector('[data-dll-name]').textContent = dll.name + ' (' + dll.functions.length + ')';
+              var list = group.querySelector('[data-dll-fns]');
+              dll.functions.forEach(function (fn) {
+                var template = fn.isOrdinal ? fnOrdinalTemplate : fnTemplate;
+                var li = template.content.firstElementChild.cloneNode(true);
+                li.textContent = fn.name;
+                list.appendChild(li);
+              });
+              importsList.appendChild(group);
+            });
+          }
+
+          // Exports
+          var exportsTable = root.querySelector('[data-pe-exports-table]');
+          var exportsBody = root.querySelector('[data-pe-exports-body]');
+          var exportsEmpty = root.querySelector('[data-pe-exports-empty]');
+          exportsBody.innerHTML = '';
+          if (!info.exports || !info.exports.length) {
+            exportsTable.hidden = true;
+            exportsEmpty.hidden = false;
+          } else {
+            exportsTable.hidden = false;
+            exportsEmpty.hidden = true;
+            info.exports.forEach(function (fn) {
+              var row = exportRowTemplate.content.firstElementChild.cloneNode(true);
+              row.querySelector('[data-cell="ordinal"]').textContent = String(fn.ordinal);
+              row.querySelector('[data-cell="name"]').textContent = fn.name || '(ordinal only)';
+              row.querySelector('[data-cell="rva"]').textContent = hex(fn.rva);
+              exportsBody.appendChild(row);
+            });
+          }
+
+          // Imphash
+          var imphashEl = root.querySelector('[data-pe-imphash]');
+          imphashEl.textContent = info.imphash || '(no imports to hash)';
+
+          // Notes
+          var notesWrap = root.querySelector('[data-pe-notes-wrap]');
+          var notesList = root.querySelector('[data-pe-notes]');
+          notesList.innerHTML = '';
+          if (info.notes && info.notes.length) {
+            notesWrap.hidden = false;
+            info.notes.forEach(function (n) {
+              var p = noteTemplate.content.firstElementChild.cloneNode(true);
+              p.textContent = n;
+              notesList.appendChild(p);
+            });
+          } else {
+            notesWrap.hidden = true;
+          }
+        }
+
+        var currentImphash = '';
+        var parseSeq = 0;
+        async function handleFile(file) {
+          var seq = ++parseSeq;
+          fileNameEl.textContent = file.name + ' (' + formatBytes(file.size) + ') — read locally, never uploaded.';
+          var buf;
+          try {
+            buf = await file.arrayBuffer();
+          } catch (e) {
+            if (seq !== parseSeq) return;
+            showError('Could not read the selected file.');
+            return;
+          }
+          if (seq !== parseSeq) return; // a newer file was chosen while this one was being read
+          var bytes = new Uint8Array(buf);
+          var result = parsePe(bytes);
+          if (seq !== parseSeq) return;
+          if (!result.ok) {
+            currentImphash = '';
+            showError(result.error);
+            return;
+          }
+          currentImphash = result.info.imphash || '';
+          render(result.info);
+        }
+
+        fileInput.addEventListener('change', function () {
+          var file = fileInput.files && fileInput.files[0];
+          if (file) handleFile(file);
+        });
+
+        dropZone.addEventListener('dragover', function (e) {
+          e.preventDefault();
+          dropZone.setAttribute('data-dragover', '');
+        });
+        dropZone.addEventListener('dragleave', function () {
+          dropZone.removeAttribute('data-dragover');
+        });
+        dropZone.addEventListener('drop', function (e) {
+          e.preventDefault();
+          dropZone.removeAttribute('data-dragover');
+          var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+          if (file) handleFile(file);
+        });
+
+        var imphashCopyBtn = root.querySelector('[data-pe-imphash-copy]');
+        if (imphashCopyBtn) {
+          imphashCopyBtn.addEventListener('click', function () {
+            if (!currentImphash) return;
+            navigator.clipboard.writeText(currentImphash).then(function () {
+              pop(imphashCopyBtn);
+            }).catch(function () {});
+          });
+        }
+
+        root.setAttribute('data-ready', '');
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>
+
+<style>
+  [data-pe-error][data-visible] {
+    border-left-color: color-mix(in srgb, red 65%, var(--colors-text));
+    color: color-mix(in srgb, red 65%, var(--colors-text));
+  }
+</style>

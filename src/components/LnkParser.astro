@@ -1,0 +1,577 @@
+---
+// LNK (Shell Link) Forensic Parser — parse a Windows .lnk shortcut file per
+// [MS-SHLLINK] entirely client-side (src/utils/lnk.ts): a chosen file is
+// read locally via File#arrayBuffer() and never uploaded — same file-read
+// pattern as the Hash Calculator. Header validation (HeaderSize + LinkCLSID)
+// fails with a specific message on a non-LNK file rather than a generic
+// error. Results cover the ShellLinkHeader (timestamps, attributes, flags),
+// the resolved target path (from LinkInfo and/or the LinkTargetIDList
+// breadcrumb), every StringData field, and LinkInfo's volume/network info —
+// each field explicitly shows when it's genuinely absent (a LinkFlags bit
+// unset) rather than leaving a blank that could read as a parsing miss.
+// Same "Scratch-inspired workspace" visual language as the site's other
+// builder tools. Genuinely requires JS (parsing has no static fallback), so
+// the workspace stays hidden until the script confirms it's running.
+import { css } from 'styled-system/css';
+import { tag } from 'styled-system/recipes';
+import Icon from './Icon.astro';
+import WorkspaceShell from './WorkspaceShell.astro';
+
+const paneLabel = css({
+  fontFamily: 'sans',
+  fontSize: '0.7rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: 'textMuted',
+  mb: '0.6rem',
+});
+
+const fileRow = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.75rem',
+  flexWrap: 'wrap',
+  bg: 'bgCard',
+  border: '1px dashed token(colors.border)',
+  borderRadius: 'md',
+  p: '0.9rem',
+});
+const fileBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  fontFamily: 'sans',
+  fontSize: '0.85rem',
+  fontWeight: 600,
+  px: '0.8rem',
+  py: '0.45rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  bg: 'bgSubtle',
+  color: 'text',
+  cursor: 'pointer',
+  transition: 'border-color 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+const fileName = css({ fontFamily: 'mono', fontSize: '0.85rem', color: 'textMuted', wordBreak: 'break-all' });
+
+const summary = css({ color: 'textMuted', fontSize: '0.85rem', m: 0, lineHeight: 1.6 });
+
+const resultStack = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' });
+const resultRow = css({ display: 'flex', alignItems: 'center', gap: '0.6rem' });
+const resultBadge = css({ flexShrink: 0, w: '9.5rem', fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 700, color: 'text' });
+const resultBox = css({
+  flex: 1,
+  minW: 0,
+  m: 0,
+  fontFamily: 'mono',
+  fontSize: '0.85rem',
+  color: 'primary',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.7rem',
+  py: '0.5rem',
+  overflowX: 'auto',
+  overflowY: 'hidden',
+  wordBreak: 'break-word',
+  whiteSpace: 'pre-wrap',
+});
+const resultBoxTarget = css({
+  flex: 1,
+  minW: 0,
+  m: 0,
+  fontFamily: 'mono',
+  fontSize: '0.92rem',
+  fontWeight: 700,
+  color: 'primary',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.8rem',
+  py: '0.6rem',
+  overflowX: 'auto',
+  wordBreak: 'break-word',
+  whiteSpace: 'pre-wrap',
+});
+const rowCopyBtn = css({
+  flexShrink: 0,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '2rem',
+  h: '2rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  bg: 'bgCard',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+
+const itemListBox = css({
+  listStyle: 'none',
+  m: 0,
+  p: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.3rem',
+  maxH: '11rem',
+  overflowY: 'auto',
+  overflowX: 'hidden',
+});
+const itemRow = css({
+  display: 'flex',
+  alignItems: 'baseline',
+  gap: '0.5rem',
+  fontFamily: 'mono',
+  fontSize: '0.8rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'sm',
+  px: '0.6rem',
+  py: '0.35rem',
+  wordBreak: 'break-word',
+});
+const itemIndex = css({ flexShrink: 0, color: 'textMuted', fontSize: '0.72rem' });
+const itemText = css({ color: 'text' });
+const emptyNote = css({ color: 'textMuted', fontSize: '0.82rem', fontStyle: 'italic' });
+
+const chipRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' });
+
+const detailsBlock = css({
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  bg: 'bgCard',
+  overflow: 'hidden',
+});
+const detailsSummary = css({
+  cursor: 'pointer',
+  fontFamily: 'sans',
+  fontSize: '0.85rem',
+  fontWeight: 700,
+  color: 'text',
+  px: '0.9rem',
+  py: '0.65rem',
+  listStyle: 'none',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  userSelect: 'none',
+  '&::-webkit-details-marker': { display: 'none' },
+});
+const detailsBody = css({ px: '0.9rem', pb: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' });
+
+const actionRow = css({ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' });
+// Kept as plain objects (not pre-atomized css() calls) so the primary variant
+// below can css(actionBtnBase, primaryBtnBase) — a deep object merge, not a
+// concatenation of two independently-atomized class strings (see
+// STYLE_GUIDE.md "Buttons").
+const actionBtnBase = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  fontSize: '0.82rem',
+  fontFamily: 'sans',
+  fontWeight: 600,
+  px: '0.7rem',
+  py: '0.4rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  color: 'text',
+  cursor: 'pointer',
+  bg: 'bgCard',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+} as const;
+const primaryBtnBase = { bg: 'primary', color: 'onPrimary', borderColor: 'primary', _hover: { opacity: 0.9, color: 'onPrimary' } } as const;
+const actionBtn = css(actionBtnBase);
+const primaryActionBtn = css(actionBtnBase, primaryBtnBase);
+
+const errorBox = css({
+  color: 'accent',
+  fontSize: '0.88rem',
+  lineHeight: 1.6,
+  bg: 'color-mix(in srgb, token(colors.accent) 8%, transparent)',
+  border: '1px solid color-mix(in srgb, token(colors.accent) 30%, transparent)',
+  borderRadius: 'md',
+  px: '0.9rem',
+  py: '0.7rem',
+});
+
+const TIMESTAMP_FIELDS = [
+  { id: 'created', label: 'Created' },
+  { id: 'accessed', label: 'Accessed' },
+  { id: 'modified', label: 'Modified' },
+] as const;
+
+const STRING_FIELDS = [
+  { id: 'description', label: 'Description' },
+  { id: 'relativePath', label: 'Relative path' },
+  { id: 'workingDir', label: 'Working directory' },
+  { id: 'arguments', label: 'Command-line arguments' },
+  { id: 'iconLocation', label: 'Icon location' },
+] as const;
+
+const LINKINFO_FIELDS = [
+  { id: 'driveType', label: 'Drive type' },
+  { id: 'driveSerial', label: 'Volume serial' },
+  { id: 'volumeLabel', label: 'Volume label' },
+  { id: 'localBasePath', label: 'Local base path' },
+  { id: 'networkShare', label: 'Network share (UNC)' },
+  { id: 'deviceName', label: 'Mapped device' },
+] as const;
+
+const RAW_FIELDS = [
+  { id: 'fileSize', label: 'FileSize' },
+  { id: 'iconIndex', label: 'IconIndex' },
+  { id: 'showCommand', label: 'ShowCommand' },
+  { id: 'hotKey', label: 'HotKey' },
+] as const;
+---
+
+<WorkspaceShell hook="data-lnk-parser" noJsMessage="The LNK parser needs JavaScript enabled." gap="1.25rem">
+  <div>
+    <p class={paneLabel}>Upload — a local .lnk shortcut file (never uploaded anywhere)</p>
+    <div class={fileRow}>
+      <label class={fileBtn}>
+        <Icon name="download" size={15} /> Choose .lnk file
+        <input type="file" accept=".lnk" data-lnk-file class={css({ display: 'none' })} />
+      </label>
+      <span class={fileName} data-lnk-file-name>No file chosen — nothing is uploaded, it's read locally in your browser.</span>
+    </div>
+  </div>
+
+  <p class={summary} data-lnk-summary role="status" aria-live="polite">Choose a .lnk file above to parse it.</p>
+  <p class={errorBox} data-lnk-error hidden role="alert"></p>
+
+  <div data-lnk-results hidden class={css({ display: 'flex', flexDirection: 'column', gap: '1.25rem' })}>
+    {/* Resolved target */}
+    <div>
+      <p class={paneLabel}>Resolved target</p>
+      <div class={resultRow}>
+        <pre class={resultBoxTarget} data-lnk-value="target">&nbsp;</pre>
+        <button type="button" class={rowCopyBtn} data-lnk-copy="target" data-copy-pop data-sound="copy" aria-label="Copy resolved target path" title="Copy">
+          <Icon name="copy" size={13} />
+        </button>
+      </div>
+    </div>
+
+    {/* Timestamps */}
+    <div>
+      <p class={paneLabel}>Timestamps (UTC)</p>
+      <div class={resultStack}>
+        {
+          TIMESTAMP_FIELDS.map((f) => (
+            <div class={resultRow}>
+              <span class={resultBadge}>{f.label}</span>
+              <pre class={resultBox} data-lnk-value={f.id}>&nbsp;</pre>
+              <button type="button" class={rowCopyBtn} data-lnk-copy={f.id} data-copy-pop data-sound="copy" aria-label={`Copy ${f.label} timestamp`} title="Copy">
+                <Icon name="copy" size={13} />
+              </button>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    {/* StringData */}
+    <div>
+      <p class={paneLabel}>Embedded strings (StringData)</p>
+      <div class={resultStack}>
+        {
+          STRING_FIELDS.map((f) => (
+            <div class={resultRow}>
+              <span class={resultBadge}>{f.label}</span>
+              <pre class={resultBox} data-lnk-value={f.id}>&nbsp;</pre>
+              <button type="button" class={rowCopyBtn} data-lnk-copy={f.id} data-copy-pop data-sound="copy" aria-label={`Copy ${f.label}`} title="Copy">
+                <Icon name="copy" size={13} />
+              </button>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    {/* LinkInfo */}
+    <div>
+      <p class={paneLabel}>Volume &amp; path info (LinkInfo)</p>
+      <div class={resultStack}>
+        {
+          LINKINFO_FIELDS.map((f) => (
+            <div class={resultRow}>
+              <span class={resultBadge}>{f.label}</span>
+              <pre class={resultBox} data-lnk-value={f.id}>&nbsp;</pre>
+              <button type="button" class={rowCopyBtn} data-lnk-copy={f.id} data-copy-pop data-sound="copy" aria-label={`Copy ${f.label}`} title="Copy">
+                <Icon name="copy" size={13} />
+              </button>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    {/* LinkTargetIDList / Shell Items */}
+    <div>
+      <p class={paneLabel}>Target ID List — Shell Items (best-effort breadcrumb)</p>
+      <ul class={itemListBox} data-lnk-item-list></ul>
+      <p class={emptyNote} data-lnk-item-empty hidden>No LinkTargetIDList present — HasLinkTargetIDList flag not set.</p>
+      <template data-lnk-item-template>
+        <li class={itemRow}>
+          <span class={itemIndex} data-lnk-item-index></span>
+          <span class={itemText} data-lnk-item-text></span>
+        </li>
+      </template>
+    </div>
+
+    {/* Advanced / raw header fields */}
+    <details class={detailsBlock}>
+      <summary class={detailsSummary}>
+        <Icon name="list" size={15} /> Advanced — raw header fields
+      </summary>
+      <div class={detailsBody}>
+        {
+          RAW_FIELDS.map((f) => (
+            <div class={resultRow}>
+              <span class={resultBadge}>{f.label}</span>
+              <pre class={resultBox} data-lnk-value={f.id}>&nbsp;</pre>
+              <button type="button" class={rowCopyBtn} data-lnk-copy={f.id} data-copy-pop data-sound="copy" aria-label={`Copy ${f.label}`} title="Copy">
+                <Icon name="copy" size={13} />
+              </button>
+            </div>
+          ))
+        }
+        <div>
+          <p class={css({ fontFamily: 'sans', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'textMuted', mb: '0.35rem' })}>
+            LinkFlags
+          </p>
+          <div class={chipRow} data-lnk-flag-chips></div>
+        </div>
+        <div>
+          <p class={css({ fontFamily: 'sans', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'textMuted', mb: '0.35rem' })}>
+            FileAttributes
+          </p>
+          <div class={chipRow} data-lnk-attr-chips></div>
+        </div>
+        <template data-lnk-chip-template><span class={tag({ tone: 'muted', mono: true })}></span></template>
+      </div>
+    </details>
+
+    <div class={actionRow}>
+      <button type="button" class={primaryActionBtn} data-lnk-copy-json data-copy-pop data-sound="copy">
+        <Icon name="copy" size={14} /> Copy full result as JSON
+      </button>
+      <button type="button" class={actionBtn} data-lnk-clear data-sound="tick">
+        <Icon name="x" size={14} /> Clear
+      </button>
+    </div>
+  </div>
+</WorkspaceShell>
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  import { parseLnk } from '../utils/lnk';
+  import { pop } from '../scripts/copyPop';
+
+  (function () {
+    function init() {
+      var roots = document.querySelectorAll('[data-lnk-parser]:not([data-ready])');
+      Array.prototype.forEach.call(roots, function (root) {
+        var fileInput = root.querySelector('[data-lnk-file]');
+        var fileNameEl = root.querySelector('[data-lnk-file-name]');
+        var summaryEl = root.querySelector('[data-lnk-summary]');
+        var errorEl = root.querySelector('[data-lnk-error]');
+        var resultsEl = root.querySelector('[data-lnk-results]');
+        var itemListEl = root.querySelector('[data-lnk-item-list]');
+        var itemEmptyEl = root.querySelector('[data-lnk-item-empty]');
+        var itemTemplate = root.querySelector('[data-lnk-item-template]');
+        var flagChipsEl = root.querySelector('[data-lnk-flag-chips]');
+        var attrChipsEl = root.querySelector('[data-lnk-attr-chips]');
+        var chipTemplate = root.querySelector('[data-lnk-chip-template]');
+        var copyJsonBtn = root.querySelector('[data-lnk-copy-json]');
+        var clearBtn = root.querySelector('[data-lnk-clear]');
+        if (!fileInput || !summaryEl || !resultsEl || !itemTemplate || !chipTemplate) return;
+
+        var valueEls = {};
+        Array.prototype.forEach.call(root.querySelectorAll('[data-lnk-value]'), function (el) {
+          valueEls[el.getAttribute('data-lnk-value')] = el;
+        });
+        var currentValues = {};
+        var currentResult = null;
+
+        function setField(id, displayText, copyText) {
+          var el = valueEls[id];
+          if (el) el.textContent = displayText || ' ';
+          currentValues[id] = copyText || '';
+        }
+
+        function formatBytes(n) {
+          if (n < 1024) return n + ' B';
+          if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+          return (n / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        function renderChips(container, names) {
+          container.innerHTML = '';
+          if (!names.length) {
+            container.textContent = 'None set.';
+            return;
+          }
+          names.forEach(function (name) {
+            var chip = chipTemplate.content.firstElementChild.cloneNode(true);
+            chip.textContent = name;
+            container.appendChild(chip);
+          });
+        }
+
+        function renderShellItems(list) {
+          itemListEl.innerHTML = '';
+          if (!list || !list.items.length) {
+            itemEmptyEl.hidden = false;
+            return;
+          }
+          itemEmptyEl.hidden = true;
+          list.items.forEach(function (item, i) {
+            var li = itemTemplate.content.firstElementChild.cloneNode(true);
+            li.querySelector('[data-lnk-item-index]').textContent = '#' + (i + 1) + ' (' + item.kind + ')';
+            li.querySelector('[data-lnk-item-text]').textContent = item.text;
+            itemListEl.appendChild(li);
+          });
+        }
+
+        function renderResult(data) {
+          currentResult = data;
+          resultsEl.hidden = false;
+          errorEl.hidden = true;
+
+          var target =
+            (data.linkInfo && data.linkInfo.fullPath) ||
+            data.strings.relativePath ||
+            (data.targetIdList && data.targetIdList.breadcrumb) ||
+            '(no target path recorded in this file)';
+          setField('target', target, typeof target === 'string' ? target : '');
+
+          setField('created', data.header.creationTime || '(not set)', data.header.creationTime || '');
+          setField('accessed', data.header.accessTime || '(not set)', data.header.accessTime || '');
+          setField('modified', data.header.writeTime || '(not set)', data.header.writeTime || '');
+
+          setField('description', data.strings.description ?? '(not present — HasName flag not set)', data.strings.description || '');
+          setField('relativePath', data.strings.relativePath ?? '(not present — HasRelativePath flag not set)', data.strings.relativePath || '');
+          setField('workingDir', data.strings.workingDir ?? '(not present — HasWorkingDir flag not set)', data.strings.workingDir || '');
+          setField(
+            'arguments',
+            data.strings.commandLineArguments ?? '(not present — HasArguments flag not set)',
+            data.strings.commandLineArguments || '',
+          );
+          setField('iconLocation', data.strings.iconLocation ?? '(not present — HasIconLocation flag not set)', data.strings.iconLocation || '');
+
+          if (data.linkInfo) {
+            var vol = data.linkInfo.volume;
+            setField('driveType', vol ? vol.driveTypeLabel : '(no VolumeID)', vol ? vol.driveTypeLabel : '');
+            setField('driveSerial', vol ? vol.driveSerialNumber : '(no VolumeID)', vol ? vol.driveSerialNumber : '');
+            setField('volumeLabel', (vol && vol.volumeLabel) || '(not set)', (vol && vol.volumeLabel) || '');
+            setField('localBasePath', data.linkInfo.localBasePath || '(not present)', data.linkInfo.localBasePath || '');
+            var net = data.linkInfo.network;
+            setField('networkShare', (net && net.netName) || '(not present)', (net && net.netName) || '');
+            setField('deviceName', (net && net.deviceName) || '(not present)', (net && net.deviceName) || '');
+          } else {
+            ['driveType', 'driveSerial', 'volumeLabel', 'localBasePath', 'networkShare', 'deviceName'].forEach(function (id) {
+              setField(id, '(no LinkInfo section — HasLinkInfo flag not set)', '');
+            });
+          }
+
+          setField('fileSize', data.header.fileSize + ' bytes', String(data.header.fileSize));
+          setField('iconIndex', String(data.header.iconIndex), String(data.header.iconIndex));
+          setField('showCommand', data.header.showCommandLabel, data.header.showCommandLabel);
+          setField('hotKey', data.header.hotKeyLabel, data.header.hotKeyLabel);
+
+          renderShellItems(data.targetIdList);
+          renderChips(flagChipsEl, data.header.linkFlagNames);
+          renderChips(attrChipsEl, data.header.fileAttributeNames);
+
+          var sections = [];
+          if (data.targetIdList) sections.push(data.targetIdList.items.length + ' shell item(s)');
+          if (data.linkInfo) sections.push('LinkInfo');
+          summaryEl.textContent = 'Parsed successfully' + (sections.length ? ' — ' + sections.join(', ') + '.' : '.');
+        }
+
+        function showError(message) {
+          resultsEl.hidden = true;
+          errorEl.hidden = false;
+          errorEl.textContent = message;
+          summaryEl.textContent = 'Could not parse this file.';
+          currentResult = null;
+        }
+
+        function clearResults() {
+          resultsEl.hidden = true;
+          errorEl.hidden = true;
+          summaryEl.textContent = 'Choose a .lnk file above to parse it.';
+          currentResult = null;
+        }
+
+        var readSeq = 0;
+        async function handleFile(file) {
+          var seq = ++readSeq;
+          if (!file) {
+            clearResults();
+            return;
+          }
+          fileNameEl.textContent = file.name + ' (' + formatBytes(file.size) + ') — read locally, never uploaded.';
+          var buf;
+          try {
+            buf = await file.arrayBuffer();
+          } catch (e) {
+            if (seq === readSeq) showError('Could not read this file from disk.');
+            return;
+          }
+          if (seq !== readSeq) return; // a newer file was chosen while this read was in flight
+          var result = parseLnk(new Uint8Array(buf));
+          if (seq !== readSeq) return;
+          if (!result.ok) {
+            showError(result.error);
+            return;
+          }
+          renderResult(result.data);
+        }
+
+        fileInput.addEventListener('change', function () {
+          var file = fileInput.files && fileInput.files[0];
+          handleFile(file);
+        });
+
+        function copyText(btn, text) {
+          if (!text) return;
+          navigator.clipboard.writeText(text).then(function () { pop(btn); }).catch(function () {});
+        }
+
+        Array.prototype.forEach.call(root.querySelectorAll('[data-lnk-copy]'), function (btn) {
+          btn.addEventListener('click', function () {
+            copyText(btn, currentValues[btn.getAttribute('data-lnk-copy')]);
+          });
+        });
+
+        if (copyJsonBtn) {
+          copyJsonBtn.addEventListener('click', function () {
+            if (!currentResult) return;
+            copyText(copyJsonBtn, JSON.stringify(currentResult, null, 2));
+          });
+        }
+
+        if (clearBtn) {
+          clearBtn.addEventListener('click', function () {
+            fileInput.value = '';
+            fileNameEl.textContent = "No file chosen — nothing is uploaded, it's read locally in your browser.";
+            clearResults();
+          });
+        }
+
+        root.setAttribute('data-ready', '');
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>

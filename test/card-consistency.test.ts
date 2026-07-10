@@ -13,6 +13,7 @@ import { resolve } from 'node:path';
 const root = resolve(__dirname, '..');
 
 const PAGES = [
+  { name: 'DFIR landing page', path: 'src/pages/dfir.astro' },
   { name: 'Glossary', path: 'src/pages/glossary/index.astro' },
   { name: 'Tools', path: 'src/pages/tools.astro' },
   { name: 'Certifications', path: 'src/pages/certifications.astro' },

@@ -1,0 +1,750 @@
+---
+// Sigma Rule Tester & Builder — build a detection rule with a guided,
+// field-by-field builder (src/utils/sigma.ts owns all the matching/condition
+// logic, unit-tested in test/sigma.test.ts) and test it live against pasted
+// sample events (one per line, JSON or key=value — auto-detected). A second
+// tab renders the same rule as Sigma-flavored YAML, generated read-only from
+// the builder's current state — there is no YAML *parser* here, editing only
+// happens in the Builder tab (see sigma.ts's file header for the full list
+// of what this tool's Sigma subset does and doesn't cover).
+// Same "Scratch-inspired workspace" visual language as this site's other
+// builder tools. Genuinely requires JS (there's no meaningful static rule
+// tester), so the workspace stays hidden until the script confirms it's
+// running — same JS-armed, no-JS-safe philosophy as DorkBuilder/HashCalculator.
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+import WorkspaceShell from './WorkspaceShell.astro';
+import { SIGMA_MODIFIERS, CONDITION_UI_TYPES, STARTER_RULE, STARTER_EVENTS } from '../utils/sigma';
+
+const paneLabel = css({
+  fontFamily: 'sans',
+  fontSize: '0.7rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: 'textMuted',
+  mb: '0.6rem',
+});
+const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted' });
+const scopeNote = css({ color: 'textMuted', fontSize: '0.84rem', lineHeight: 1.6, m: 0 });
+
+const viewRow = css({
+  position: 'relative', // containing block + stacking context for the animated switch thumb (see AnimatedSwitch)
+  zIndex: 0,
+  display: 'inline-flex',
+  gap: '0.15rem',
+  p: '0.2rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  alignSelf: 'flex-start',
+});
+const viewBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  px: '0.8rem',
+  py: '0.35rem',
+  fontFamily: 'sans',
+  fontSize: '0.82rem',
+  fontWeight: 600,
+  borderRadius: 'sm',
+  border: '1px solid transparent',
+  bg: 'transparent',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { color: 'text' },
+  '&[data-active]': { bg: 'bgSubtle', color: 'primary', borderColor: 'border', boxShadow: 'card' },
+  // See ModeToggle.astro's identical rule for why: once AnimatedSwitch arms
+  // a sliding thumb underneath, suppress this button's own bg/border/shadow
+  // so the two don't animate against each other on separate clocks. No-JS/
+  // reduced-motion visitors never get data-switch-armed, so their indicator
+  // is untouched.
+  '[data-switch-armed] &': {
+    '&[data-active]': { bg: 'transparent', borderColor: 'transparent', boxShadow: 'none' },
+  },
+});
+
+const titleInput = css({
+  fontFamily: 'sans',
+  fontSize: '0.9rem',
+  fontWeight: 600,
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.7rem',
+  py: '0.5rem',
+  width: '100%',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+});
+
+const selectionsStack = css({ display: 'flex', flexDirection: 'column', gap: '0.65rem' });
+const selectionCard = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'md', p: '0.7rem 0.75rem' });
+const selectionHeader = css({ display: 'flex', alignItems: 'center', gap: '0.5rem' });
+const selectionNameInput = css({
+  flex: 1,
+  minW: 0,
+  fontFamily: 'mono',
+  fontSize: '0.85rem',
+  fontWeight: 700,
+  color: 'primary',
+  bg: 'transparent',
+  border: '1px solid transparent',
+  borderRadius: 'sm',
+  px: '0.4rem',
+  py: '0.25rem',
+  transition: 'border-color 150ms ease',
+  _hover: { borderColor: 'border' },
+  _focus: { outline: 'none', borderColor: 'primary', bg: 'bgSubtle' },
+});
+const iconBtn = css({
+  flexShrink: 0,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '1.75rem',
+  h: '1.75rem',
+  borderRadius: 'sm',
+  border: '1px solid token(colors.border)',
+  bg: 'transparent',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+
+const fieldRows = css({ display: 'flex', flexDirection: 'column', gap: '0.4rem' });
+const fieldRow = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4rem' });
+const fieldNameInput = css({
+  flex: '1 1 110px',
+  minW: '90px',
+  fontFamily: 'mono',
+  fontSize: '0.82rem',
+  color: 'text',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'sm',
+  px: '0.55rem',
+  py: '0.4rem',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&::placeholder': { color: 'textMuted', opacity: 0.7 },
+});
+const modifierSelect = css({
+  flex: '0 0 auto',
+  minW: '130px',
+  fontFamily: 'sans',
+  fontSize: '0.8rem',
+  color: 'text',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'sm',
+  px: '0.5rem',
+  py: '0.4rem',
+  cursor: 'pointer',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+});
+const fieldValueInput = css({
+  flex: '2 1 140px',
+  minW: '110px',
+  fontFamily: 'mono',
+  fontSize: '0.82rem',
+  color: 'text',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'sm',
+  px: '0.55rem',
+  py: '0.4rem',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&::placeholder': { color: 'textMuted', opacity: 0.7 },
+});
+
+const smallGhostBtn = css({
+  alignSelf: 'flex-start',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.3rem',
+  fontFamily: 'sans',
+  fontSize: '0.78rem',
+  fontWeight: 600,
+  color: 'textMuted',
+  bg: 'transparent',
+  border: '1px dashed token(colors.border)',
+  borderRadius: 'sm',
+  px: '0.6rem',
+  py: '0.3rem',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { color: 'primary', borderColor: 'primary' },
+});
+const addSelectionBtn = css({
+  alignSelf: 'flex-start',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.35rem',
+  fontFamily: 'sans',
+  fontSize: '0.82rem',
+  fontWeight: 600,
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.7rem',
+  py: '0.4rem',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+
+const conditionBox = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' });
+const selectInput = css({
+  fontFamily: 'sans',
+  fontSize: '0.85rem',
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.6rem',
+  py: '0.45rem',
+  cursor: 'pointer',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  alignSelf: 'flex-start',
+  minW: '260px',
+});
+const inlineInput = css({
+  fontFamily: 'mono',
+  fontSize: '0.85rem',
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.6rem',
+  py: '0.4rem',
+  alignSelf: 'flex-start',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&::placeholder': { color: 'textMuted', opacity: 0.7 },
+});
+const conditionNames = css({ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' });
+const conditionCheckboxLabel = css({ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontFamily: 'mono', fontSize: '0.8rem', color: 'text', cursor: 'pointer' });
+const conditionPreview = css({ m: 0, fontSize: '0.82rem', color: 'textMuted', display: 'flex', alignItems: 'baseline', gap: '0.4rem', flexWrap: 'wrap' });
+const conditionPreviewCode = css({ fontFamily: 'mono', fontSize: '0.82rem', color: 'primary', wordBreak: 'break-word' });
+
+const textarea = css({
+  width: '100%',
+  minH: '6.5rem',
+  fontFamily: 'mono',
+  fontSize: '0.83rem',
+  lineHeight: 1.5,
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.75rem',
+  py: '0.6rem',
+  resize: 'vertical',
+  overflowY: 'auto',
+  overflowX: 'hidden',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&::placeholder': { color: 'textMuted', opacity: 0.7 },
+});
+const hintCaption = css({ color: 'textMuted', fontSize: '0.78rem', lineHeight: 1.5, m: 0, mt: '0.3rem' });
+
+const eventResults = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxH: '24rem', overflowY: 'auto' });
+const eventRow = css({ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'md', p: '0.6rem 0.75rem' });
+const eventBadge = css({
+  flexShrink: 0,
+  fontFamily: 'sans',
+  fontSize: '0.66rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+  borderRadius: 'sm',
+  px: '0.4rem',
+  py: '0.2rem',
+  mt: '0.1rem',
+  color: 'textMuted',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+});
+const eventBody = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem', minW: 0, flex: 1 });
+const eventLine = css({ m: 0, fontFamily: 'mono', fontSize: '0.78rem', color: 'text', whiteSpace: 'pre-wrap', wordBreak: 'break-word' });
+const eventDetail = css({ m: 0, fontSize: '0.78rem', color: 'textMuted', lineHeight: 1.5, wordBreak: 'break-word' });
+
+const yamlNote = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.6, m: 0 });
+// Kept as a plain object (not a pre-atomized css() call) so the spaced
+// variant below can css(yamlBoxBase, { mt, mb }) — a deep object merge that
+// deterministically overrides yamlBoxBase's own margin, unlike concatenating
+// two independently-atomized class strings (see STYLE_GUIDE.md "Buttons" for
+// the general failure mode). Margins are spelled out as explicit longhands
+// (mt/mr/mb/ml), not the `m` shorthand: Panda's css(base, variant) merge only
+// collapses same-KEY collisions before atomization — verified empirically
+// that `m: 0` composed against a separate `mt`/`mb` override still emits
+// independent `m_...`/`mt_...` atomic classes (identical output whether
+// merged via css(base, variant) or naively string-concatenated), so the
+// override would silently depend on Panda's atomic-class stylesheet order
+// rather than authorial intent. Using the same `mt`/`mb` keys in both objects
+// makes the JS-level merge (and therefore the override) actually apply.
+const yamlBoxBase = {
+  mt: 0,
+  mr: 0,
+  mb: 0,
+  ml: 0,
+  p: '0.85rem 0.95rem',
+  fontFamily: 'mono',
+  fontSize: '0.82rem',
+  lineHeight: 1.6,
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  maxH: '22rem',
+  overflowY: 'auto',
+  overflowX: 'auto',
+  whiteSpace: 'pre',
+} as const;
+const yamlBoxSpaced = css(yamlBoxBase, { mt: '0.6rem', mb: '0.6rem' });
+// Kept as plain objects (not pre-atomized css() calls) so a variant can
+// css(base, variant) — a deep object merge that deterministically overrides
+// base's own _hover, unlike concatenating two independently-atomized class
+// strings (see STYLE_GUIDE.md "Buttons" for why that pattern silently broke
+// a hover state elsewhere in this codebase).
+const actionBtnBase = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  fontSize: '0.82rem',
+  fontFamily: 'sans',
+  fontWeight: 600,
+  px: '0.7rem',
+  py: '0.4rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  color: 'text',
+  cursor: 'pointer',
+  bg: 'bgCard',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+} as const;
+const actionBtn = css(actionBtnBase);
+---
+
+<WorkspaceShell hook="data-sigma-tester" noJsMessage="The Sigma rule tester needs JavaScript enabled." gap="1.25rem">
+  <p class={scopeNote}>
+    This tester covers a focused slice of Sigma: field-value matching (equals, contains, startswith, endswith, regex)
+    and five ways selections can combine in a condition. It's not a full Sigma implementation — the reference table
+    on this page spells out exactly what's supported.
+  </p>
+
+  <div class={viewRow} role="radiogroup" aria-label="Rule view">
+    <button type="button" role="radio" aria-checked="true" data-active data-sigma-view="builder" data-sound="tick" class={viewBtn}>Builder</button>
+    <button type="button" role="radio" aria-checked="false" data-sigma-view="yaml" data-sound="tick" class={viewBtn}>YAML</button>
+  </div>
+
+  {/* Builder pane */}
+  <div data-sigma-pane="builder">
+    <div class={css({ display: 'flex', flexDirection: 'column', gap: '1.1rem' })}>
+      <div>
+        <label class={fieldLabel} for="sigma-title">Rule title</label>
+        <input
+          id="sigma-title"
+          type="text"
+          class={titleInput}
+          value={STARTER_RULE.title}
+          autocomplete="off"
+          spellcheck="false"
+          data-sigma-title
+        />
+      </div>
+
+      <div>
+        <p class={paneLabel}>Selections</p>
+        <div class={selectionsStack} data-sigma-selections>
+          {
+            STARTER_RULE.selections.map((sel) => (
+              <div class={selectionCard} data-sigma-selection>
+                <div class={selectionHeader}>
+                  <input type="text" class={selectionNameInput} value={sel.name} aria-label="Selection name" data-sigma-selection-name autocomplete="off" spellcheck="false" />
+                  <button type="button" class={iconBtn} data-sigma-remove-selection aria-label="Remove this selection" title="Remove selection">
+                    <Icon name="x" size={14} />
+                  </button>
+                </div>
+                <div class={fieldRows} data-sigma-field-rows>
+                  {
+                    sel.fields.map((f) => (
+                      <div class={fieldRow} data-sigma-field-row>
+                        <input type="text" class={fieldNameInput} placeholder="Field name" aria-label="Field name" value={f.field} data-sigma-field-name autocomplete="off" spellcheck="false" />
+                        <select class={modifierSelect} aria-label="Modifier" data-sigma-field-modifier>
+                          {SIGMA_MODIFIERS.map((m) => <option value={m.id} selected={m.id === f.modifier}>{m.label}</option>)}
+                        </select>
+                        <input type="text" class={fieldValueInput} placeholder="Value" aria-label="Value" value={f.value} data-sigma-field-value autocomplete="off" spellcheck="false" />
+                        <button type="button" class={iconBtn} data-sigma-remove-field aria-label="Remove this field" title="Remove field">
+                          <Icon name="x" size={13} />
+                        </button>
+                      </div>
+                    ))
+                  }
+                </div>
+                <button type="button" class={smallGhostBtn} data-sigma-add-field>+ Add field</button>
+              </div>
+            ))
+          }
+        </div>
+        <button type="button" class={`${addSelectionBtn} ${css({ mt: '0.65rem' })}`} data-sigma-add-selection>+ Add selection</button>
+      </div>
+
+      <div class={conditionBox}>
+        <label class={fieldLabel} for="sigma-condition-type">Combination logic — how the selections above combine in detection.condition</label>
+        <select id="sigma-condition-type" class={selectInput} data-sigma-condition-type>
+          {CONDITION_UI_TYPES.map((t) => <option value={t.id} selected={t.id === 'list-and'}>{t.label}</option>)}
+        </select>
+        <input type="text" class={inlineInput} placeholder="selection" aria-label="Selection-name prefix" data-sigma-condition-prefix hidden />
+        <div class={conditionNames} data-sigma-condition-names></div>
+        <p class={conditionPreview}>
+          Condition: <code class={conditionPreviewCode} data-sigma-condition-preview></code>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  {/* YAML pane (read-only, generated from the Builder pane's current state) */}
+  <div data-sigma-pane="yaml" hidden>
+    <p class={yamlNote}>
+      Read-only — generated live from the Builder tab's current state. This isn't a YAML editor; make changes in
+      Builder and they'll show up here.
+    </p>
+    <pre class={yamlBoxSpaced}><code data-sigma-yaml>&nbsp;</code></pre>
+    <button type="button" class={actionBtn} data-sigma-copy-yaml data-copy-pop data-sound="copy">
+      <Icon name="copy" size={14} /> Copy YAML
+    </button>
+  </div>
+
+  <div>
+    <label class={fieldLabel} for="sigma-events">Sample events — one per line, JSON or key=value (auto-detected)</label>
+    <textarea id="sigma-events" class={`${textarea} ${css({ mt: '0.3rem' })}`} rows={4} spellcheck="false" data-sigma-events>{STARTER_EVENTS}</textarea>
+    <p class={hintCaption}>Fabricated example events for illustration — not captured telemetry from a real investigation.</p>
+  </div>
+
+  <div>
+    <p class={paneLabel}>Results</p>
+    <div class={eventResults} data-sigma-event-results role="status" aria-live="polite"></div>
+  </div>
+
+  {/* Cloned per event line by the client script */}
+  <template data-sigma-event-row-template>
+    <div class={eventRow} data-sigma-event-row>
+      <span class={eventBadge} data-sigma-event-badge></span>
+      <div class={eventBody}>
+        <pre class={eventLine} data-sigma-event-line></pre>
+        <p class={eventDetail} data-sigma-event-detail></p>
+      </div>
+    </div>
+  </template>
+
+  {/* Cloned per checkbox in the "and"/"or" list combination modes */}
+  <template data-sigma-condition-name-template>
+    <label class={conditionCheckboxLabel}>
+      <input type="checkbox" data-sigma-condition-name-checkbox />
+      <span data-sigma-condition-name-label></span>
+    </label>
+  </template>
+
+  {/* Cloned per "+ Add field" click */}
+  <template data-sigma-field-row-template>
+    <div class={fieldRow} data-sigma-field-row>
+      <input type="text" class={fieldNameInput} placeholder="Field name" aria-label="Field name" data-sigma-field-name autocomplete="off" spellcheck="false" />
+      <select class={modifierSelect} aria-label="Modifier" data-sigma-field-modifier>
+        {SIGMA_MODIFIERS.map((m) => <option value={m.id}>{m.label}</option>)}
+      </select>
+      <input type="text" class={fieldValueInput} placeholder="Value" aria-label="Value" data-sigma-field-value autocomplete="off" spellcheck="false" />
+      <button type="button" class={iconBtn} data-sigma-remove-field aria-label="Remove this field" title="Remove field">
+        <Icon name="x" size={13} />
+      </button>
+    </div>
+  </template>
+
+  {/* Cloned per "+ Add selection" click */}
+  <template data-sigma-selection-template>
+    <div class={selectionCard} data-sigma-selection>
+      <div class={selectionHeader}>
+        <input type="text" class={selectionNameInput} aria-label="Selection name" data-sigma-selection-name autocomplete="off" spellcheck="false" />
+        <button type="button" class={iconBtn} data-sigma-remove-selection aria-label="Remove this selection" title="Remove selection">
+          <Icon name="x" size={14} />
+        </button>
+      </div>
+      <div class={fieldRows} data-sigma-field-rows></div>
+      <button type="button" class={smallGhostBtn} data-sigma-add-field>+ Add field</button>
+    </div>
+  </template>
+</WorkspaceShell>
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  import { evaluateRule, parseEventLine, generateYaml, buildConditionString } from '../utils/sigma';
+  import { pop } from '../scripts/copyPop';
+
+  (function () {
+    var CONDITION_TYPE_NEEDS_PREFIX = { 'wildcard-any': true, 'wildcard-all': true };
+    var CONDITION_TYPE_NEEDS_NAMES = { 'list-and': true, 'list-or': true };
+
+    function init() {
+      var roots = document.querySelectorAll('[data-sigma-tester]:not([data-ready])');
+      Array.prototype.forEach.call(roots, function (root) {
+        var viewBtns = Array.prototype.slice.call(root.querySelectorAll('[data-sigma-view]'));
+        var panes = {
+          builder: root.querySelector('[data-sigma-pane="builder"]'),
+          yaml: root.querySelector('[data-sigma-pane="yaml"]'),
+        };
+        var titleInput = root.querySelector('[data-sigma-title]');
+        var selectionsEl = root.querySelector('[data-sigma-selections]');
+        var addSelectionBtn = root.querySelector('[data-sigma-add-selection]');
+        var selectionTemplate = root.querySelector('[data-sigma-selection-template]');
+        var fieldRowTemplate = root.querySelector('[data-sigma-field-row-template]');
+        var conditionNameTemplate = root.querySelector('[data-sigma-condition-name-template]');
+        var conditionTypeSelect = root.querySelector('[data-sigma-condition-type]');
+        var conditionPrefixInput = root.querySelector('[data-sigma-condition-prefix]');
+        var conditionNamesEl = root.querySelector('[data-sigma-condition-names]');
+        var conditionPreviewEl = root.querySelector('[data-sigma-condition-preview]');
+        var eventsInput = root.querySelector('[data-sigma-events]');
+        var eventResultsEl = root.querySelector('[data-sigma-event-results]');
+        var eventRowTemplate = root.querySelector('[data-sigma-event-row-template]');
+        var yamlOutput = root.querySelector('[data-sigma-yaml]');
+        var copyYamlBtn = root.querySelector('[data-sigma-copy-yaml]');
+        if (!titleInput || !selectionsEl || !selectionTemplate || !fieldRowTemplate || !conditionTypeSelect || !eventsInput || !eventResultsEl || !eventRowTemplate) return;
+
+        var currentView = 'builder';
+        var selectionCounter = root.querySelectorAll('[data-sigma-selection]').length;
+
+        function addFieldRow(card) {
+          var rowsEl = card.querySelector('[data-sigma-field-rows]');
+          var row = fieldRowTemplate.content.firstElementChild.cloneNode(true);
+          rowsEl.appendChild(row);
+          return row;
+        }
+
+        function addSelection() {
+          selectionCounter += 1;
+          var card = selectionTemplate.content.firstElementChild.cloneNode(true);
+          card.querySelector('[data-sigma-selection-name]').value = 'selection' + selectionCounter;
+          selectionsEl.appendChild(card);
+          addFieldRow(card);
+          syncAll();
+        }
+
+        root.addEventListener('click', function (e) {
+          var addFieldBtn = e.target.closest('[data-sigma-add-field]');
+          if (addFieldBtn) {
+            addFieldRow(addFieldBtn.closest('[data-sigma-selection]'));
+            syncAll();
+            return;
+          }
+          var removeFieldBtn = e.target.closest('[data-sigma-remove-field]');
+          if (removeFieldBtn) {
+            removeFieldBtn.closest('[data-sigma-field-row]').remove();
+            syncAll();
+            return;
+          }
+          var removeSelBtn = e.target.closest('[data-sigma-remove-selection]');
+          if (removeSelBtn) {
+            removeSelBtn.closest('[data-sigma-selection]').remove();
+            syncAll();
+            return;
+          }
+        });
+
+        if (addSelectionBtn) addSelectionBtn.addEventListener('click', addSelection);
+
+        root.addEventListener('input', function (e) {
+          if (e.target === titleInput || e.target.closest('[data-sigma-selection]')) syncAll();
+        });
+        root.addEventListener('change', function (e) {
+          if (e.target.closest('[data-sigma-selection]')) syncAll();
+        });
+
+        function updateConditionVisibility() {
+          var type = conditionTypeSelect.value;
+          if (conditionPrefixInput) conditionPrefixInput.hidden = !CONDITION_TYPE_NEEDS_PREFIX[type];
+          if (conditionNamesEl) conditionNamesEl.hidden = !CONDITION_TYPE_NEEDS_NAMES[type];
+        }
+        conditionTypeSelect.addEventListener('change', function () {
+          updateConditionVisibility();
+          syncAll();
+        });
+        if (conditionPrefixInput) conditionPrefixInput.addEventListener('input', syncAll);
+
+        function readSelections() {
+          var cards = Array.prototype.slice.call(selectionsEl.querySelectorAll('[data-sigma-selection]'));
+          return cards.map(function (card) {
+            var name = (card.querySelector('[data-sigma-selection-name]').value || '').trim() || 'selection';
+            var rows = Array.prototype.slice.call(card.querySelectorAll('[data-sigma-field-row]'));
+            var fields = [];
+            rows.forEach(function (row) {
+              var field = (row.querySelector('[data-sigma-field-name]').value || '').trim();
+              var modifier = row.querySelector('[data-sigma-field-modifier]').value;
+              var value = row.querySelector('[data-sigma-field-value]').value || '';
+              // Incomplete rows (blank field name or value) are dropped from
+              // evaluation/YAML — they're mid-edit, not a real constraint yet.
+              if (field && value) fields.push({ field: field, modifier: modifier, value: value });
+            });
+            return { name: name, fields: fields };
+          });
+        }
+
+        function getCheckedConditionNames() {
+          if (!conditionNamesEl) return [];
+          return Array.prototype.slice.call(conditionNamesEl.querySelectorAll('[data-sigma-condition-name-checkbox]:checked')).map(function (cb) {
+            return cb.value;
+          });
+        }
+
+        // Rebuilds the "and"/"or" checklist to match the current selections,
+        // preserving which names were checked when possible (falls back to
+        // "all checked" the first time, or after a rename it can't match).
+        function syncConditionNames(selections, previouslyChecked) {
+          if (!conditionNamesEl || !conditionNameTemplate) return;
+          conditionNamesEl.innerHTML = '';
+          selections.forEach(function (sel) {
+            var node = conditionNameTemplate.content.firstElementChild.cloneNode(true);
+            var cb = node.querySelector('[data-sigma-condition-name-checkbox]');
+            cb.value = sel.name;
+            cb.checked = previouslyChecked ? previouslyChecked.indexOf(sel.name) !== -1 : true;
+            cb.addEventListener('change', syncAll);
+            node.querySelector('[data-sigma-condition-name-label]').textContent = sel.name;
+            conditionNamesEl.appendChild(node);
+          });
+        }
+
+        function computeConditionString(selections) {
+          var type = conditionTypeSelect.value;
+          if (CONDITION_TYPE_NEEDS_PREFIX[type]) {
+            var prefix = conditionPrefixInput ? conditionPrefixInput.value.trim() : '';
+            return buildConditionString(type, { prefix: prefix });
+          }
+          if (CONDITION_TYPE_NEEDS_NAMES[type]) {
+            var checked = getCheckedConditionNames();
+            var names = checked.length ? checked : selections.map(function (s) { return s.name; });
+            return buildConditionString(type, { names: names });
+          }
+          return buildConditionString(type, {});
+        }
+
+        function renderConditionPreview(conditionStr) {
+          if (conditionPreviewEl) conditionPreviewEl.textContent = conditionStr || '(no selections yet)';
+        }
+
+        function renderYaml(rule) {
+          if (yamlOutput) yamlOutput.textContent = generateYaml(rule);
+        }
+
+        function evaluateEvents(rule) {
+          eventResultsEl.innerHTML = '';
+          var lines = eventsInput.value.split('\n');
+          var any = false;
+          lines.forEach(function (line, i) {
+            if (!line.trim()) return;
+            any = true;
+            var node = eventRowTemplate.content.firstElementChild.cloneNode(true);
+            var badge = node.querySelector('[data-sigma-event-badge]');
+            var lineEl = node.querySelector('[data-sigma-event-line]');
+            var detailEl = node.querySelector('[data-sigma-event-detail]');
+            lineEl.textContent = line.trim();
+            var event = parseEventLine(line);
+            if (!event) {
+              badge.textContent = 'Unparsed';
+              badge.setAttribute('data-state', 'error');
+              detailEl.textContent = 'Line ' + (i + 1) + ' isn’t valid JSON or key=value pairs — skipped.';
+            } else {
+              var result = evaluateRule(rule, event);
+              if (result.conditionError) {
+                badge.textContent = 'Error';
+                badge.setAttribute('data-state', 'error');
+                detailEl.textContent = result.conditionError;
+              } else if (result.matched) {
+                badge.textContent = 'Match';
+                badge.setAttribute('data-state', 'match');
+                detailEl.textContent = 'Condition "' + rule.condition + '" matched via: ' + result.matchedSelections.join(', ');
+              } else {
+                badge.textContent = 'No match';
+                badge.setAttribute('data-state', 'no-match');
+                detailEl.textContent = 'Condition "' + rule.condition + '" did not match this event.';
+              }
+            }
+            eventResultsEl.appendChild(node);
+          });
+          if (!any) eventResultsEl.textContent = 'Paste one or more sample events above (one per line) to test them against the rule.';
+        }
+
+        function syncAll() {
+          var selections = readSelections();
+          var previouslyChecked = getCheckedConditionNames();
+          syncConditionNames(selections, previouslyChecked.length ? previouslyChecked : null);
+          var rule = {
+            title: (titleInput.value || '').trim() || 'Untitled rule',
+            selections: selections,
+            condition: computeConditionString(selections),
+          };
+          renderConditionPreview(rule.condition);
+          if (currentView === 'yaml') renderYaml(rule);
+          evaluateEvents(rule);
+        }
+
+        function setView(view) {
+          currentView = view;
+          viewBtns.forEach(function (b) {
+            var active = b.getAttribute('data-sigma-view') === view;
+            if (active) b.setAttribute('data-active', ''); else b.removeAttribute('data-active');
+            b.setAttribute('aria-checked', String(active));
+          });
+          if (panes.builder) panes.builder.hidden = view !== 'builder';
+          if (panes.yaml) panes.yaml.hidden = view !== 'yaml';
+          syncAll();
+        }
+        viewBtns.forEach(function (b) {
+          b.addEventListener('click', function () { setView(b.getAttribute('data-sigma-view')); });
+        });
+
+        var debounceTimer = null;
+        eventsInput.addEventListener('input', function () {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(syncAll, 150);
+        });
+
+        if (copyYamlBtn) {
+          copyYamlBtn.addEventListener('click', function () {
+            var text = yamlOutput ? yamlOutput.textContent : '';
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(function () { pop(copyYamlBtn); }).catch(function () {});
+          });
+        }
+
+        updateConditionVisibility();
+        setView('builder');
+        root.setAttribute('data-ready', '');
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>
+
+<style>
+  [data-sigma-event-badge][data-state='match'] {
+    color: var(--colors-primary);
+    background: color-mix(in srgb, var(--colors-primary) 12%, transparent);
+    border-color: color-mix(in srgb, var(--colors-primary) 30%, transparent);
+  }
+  [data-sigma-event-badge][data-state='no-match'] {
+    color: var(--colors-text-muted);
+  }
+  [data-sigma-event-badge][data-state='error'] {
+    color: color-mix(in srgb, red 65%, var(--colors-text));
+    background: color-mix(in srgb, red 12%, transparent);
+    border-color: color-mix(in srgb, red 30%, transparent);
+  }
+</style>

@@ -1,0 +1,114 @@
+---
+// Deobfuscation Recipe Builder — chain reversible transforms (Base64/hex/URL
+// encode+decode, ROT13/ROT47, single-byte XOR, Gzip/Deflate inflate) to peel
+// back an obfuscated loader/dropper payload one step at a time. Same page
+// shape as the other interactive tools (intro aside -> tool -> reference
+// notes). Static page — prerender to HTML served from the CDN.
+export const prerender = true;
+import { css } from 'styled-system/css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import Icon from '../../components/Icon.astro';
+import DeobfuscatorBuilder from '../../components/DeobfuscatorBuilder.astro';
+import { DEOBFUSCATE_STEPS } from '../../utils/deobfuscate';
+
+const sectionH2 = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  fontSize: '1.3rem',
+  fontWeight: 700,
+  mt: '2.5rem',
+  mb: '1rem',
+  pt: '1.5rem',
+  borderTop: '1px solid token(colors.border)',
+  scrollMarginTop: '90px',
+});
+const refTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' });
+const refTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)' });
+const refTd = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text', verticalAlign: 'top' });
+const refTdMuted = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'textMuted', fontSize: '0.8rem', verticalAlign: 'top' });
+
+const STEP_NOTES: Record<string, string> = {
+  'base64-decode': 'The single most common wrapper on a dropped script or embedded payload — often the first step in a chain.',
+  'base64-encode': 'Useful for re-encoding a step\'s output to compare against a sample, or to build a chain in reverse.',
+  'hex-decode': 'Common for shellcode blobs and registry-stashed payloads; tolerates a leading 0x and space/colon/dash byte separators.',
+  'hex-encode': 'Turns binary output into a safe, copyable hex string for the next step or for a report.',
+  'url-decode': 'Seen in phishing redirect chains and C2 beacon query strings; percent-escapes are decoded byte-for-byte.',
+  'url-encode': 'Re-encodes bytes back to percent-escaped form (RFC 3986 unreserved set), including non-ASCII bytes.',
+  rot13: 'A trivial, fully reversible letter rotation — mostly seen as a cheap obfuscation layer over another encoding.',
+  rot47: 'Like ROT13 but rotates the full printable-ASCII range, so it also scrambles digits and punctuation.',
+  xor: 'A single repeating byte key. Enter a known key directly, or brute-force all 256 keys and rank the results by printable-ASCII ratio.',
+  'gzip-inflate': 'For a gzip-wrapped payload (the 1f 8b magic bytes) — needs the browser\'s Decompression Streams API.',
+  'deflate-inflate': 'For a raw zlib-wrapped Deflate stream — also needs the Decompression Streams API.',
+};
+---
+
+<BaseLayout
+  title="Deobfuscation Recipe Builder"
+  description="Chain Base64/hex/URL decode, ROT13/ROT47, single-byte XOR, and Gzip/Deflate inflate to peel back an obfuscated loader or dropper payload one step at a time — entirely in your browser, nothing uploaded."
+>
+  <PageHeader
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Tool Catalog', href: '/tools/' }, { label: 'Deobfuscation Recipe Builder' }]}
+    eyebrow="Malware & Static Analysis"
+    title="Deobfuscation Recipe Builder"
+    description="Chain reversible transforms — encode/decode, rotate, XOR, inflate — to peel back an obfuscated payload one step at a time, entirely local."
+  />
+
+  <aside
+    class={css({
+      bg: 'bgSubtle',
+      border: '1px solid token(colors.border)',
+      borderLeftWidth: '3px',
+      borderLeftColor: 'primary',
+      borderRadius: 'md',
+      p: '1rem 1.25rem',
+      mb: '1.5rem',
+    })}
+  >
+    <p class={css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', m: 0 })}>
+      Everything here runs entirely in your browser — <strong class={css({ color: 'text' })}>no external APIs, no
+      upload, nothing you paste ever leaves your machine</strong>. Each step reads the previous step's raw bytes and
+      feeds its own output to the next, so a chain that breaks partway through still shows exactly where and why.
+      Gzip and Deflate inflate use the browser's native Decompression Streams API; everything else is a from-scratch
+      implementation.
+    </p>
+  </aside>
+
+  <h2 id="builder" class={css({ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.3rem', fontWeight: 700, mb: '1rem', scrollMarginTop: '90px' })}>
+    <Icon name="key" size={20} class={css({ color: 'primary' })} /> Recipe builder
+  </h2>
+  <DeobfuscatorBuilder />
+
+  <h2 id="reference" class={sectionH2}>
+    <Icon name="list" size={20} class={css({ color: 'primary' })} /> Step reference
+  </h2>
+  <div class={css({ overflowX: 'auto' })}>
+    <table class={refTable}>
+      <thead>
+        <tr>
+          <th class={refTh}>Step</th>
+          <th class={refTh}>When to reach for it</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          DEOBFUSCATE_STEPS.map((s) => (
+            <tr>
+              <td class={refTd}>
+                <strong class={css({ color: 'text' })}>{s.label}</strong>
+              </td>
+              <td class={refTdMuted}>{STEP_NOTES[s.id] ?? ''}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p class={css({ color: 'textMuted', fontSize: '0.88rem', mt: '1.5rem', lineHeight: 1.7 })}>
+    Scope is deliberately fixed to the steps above — no multi-byte XOR with an unknown key length, and no exotic or
+    custom ciphers. For anything past that, reach for a dedicated tool like{' '}
+    <strong class={css({ color: 'text' })}>CyberChef</strong>.
+  </p>
+</BaseLayout>

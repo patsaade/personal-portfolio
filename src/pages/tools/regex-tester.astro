@@ -1,0 +1,108 @@
+---
+// DFIR Regex Tester & Pattern Library — live regex evaluation against pasted
+// sample text, with inline match highlighting and a capture-group
+// breakdown, plus a library of common DFIR-relevant patterns. Same page
+// shape as the Hash Calculator / IOC Extractor (intro aside -> interactive
+// tool -> reference notes). Static page — prerender to HTML served from the CDN.
+export const prerender = true;
+import { css } from 'styled-system/css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import Icon from '../../components/Icon.astro';
+import RegexTester from '../../components/RegexTester.astro';
+import { DFIR_REGEX_PATTERNS } from '../../utils/regexPatterns';
+
+const sectionH2 = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  fontSize: '1.3rem',
+  fontWeight: 700,
+  mt: '2.5rem',
+  mb: '1rem',
+  pt: '1.5rem',
+  borderTop: '1px solid token(colors.border)',
+  scrollMarginTop: '90px',
+});
+const refTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' });
+const refTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)' });
+const refTd = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text', verticalAlign: 'top' });
+const refTdMuted = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'textMuted', fontSize: '0.8rem', verticalAlign: 'top' });
+const refCode = css({ fontFamily: 'mono', fontSize: '0.78rem', color: 'primary', wordBreak: 'break-word' });
+---
+
+<BaseLayout
+  title="DFIR Regex Tester & Pattern Library"
+  description="Live regex playground with inline match highlighting, a capture-group breakdown, and a library of common DFIR patterns — IPv4/IPv6, Windows SIDs, GUIDs, file paths, registry keys, and more — entirely in your browser."
+>
+  <PageHeader
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Tool Catalog', href: '/tools/' }, { label: 'Regex Tester' }]}
+    eyebrow="Triage & Correlation"
+    title="DFIR Regex Tester & Pattern Library"
+    description="Test a pattern against sample text with live match highlighting and a capture-group breakdown, or start from a library of common DFIR patterns."
+  />
+
+  <aside
+    class={css({
+      bg: 'bgSubtle',
+      border: '1px solid token(colors.border)',
+      borderLeftWidth: '3px',
+      borderLeftColor: 'primary',
+      borderRadius: 'md',
+      p: '1rem 1.25rem',
+      mb: '1.5rem',
+    })}
+  >
+    <p class={css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', m: 0 })}>
+      Everything here runs entirely in your browser — <strong class={css({ color: 'text' })}>no external APIs, no
+      upload, nothing you type or paste ever leaves your machine</strong>. The pattern, flags, and sample text are
+      evaluated locally with JavaScript's own regex engine as you type.
+    </p>
+  </aside>
+
+  <h2 id="tester" class={css({ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.3rem', fontWeight: 700, mb: '1rem', scrollMarginTop: '90px' })}>
+    <Icon name="search" size={20} class={css({ color: 'primary' })} /> Tester
+  </h2>
+  <RegexTester />
+
+  <h2 id="reference" class={sectionH2}>
+    <Icon name="list" size={20} class={css({ color: 'primary' })} /> Pattern library reference
+  </h2>
+  <div class={css({ overflowX: 'auto' })}>
+    <table class={refTable}>
+      <thead>
+        <tr>
+          <th class={refTh}>Pattern</th>
+          <th class={refTh}>Regex</th>
+          <th class={refTh}>Flags</th>
+          <th class={refTh}>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          DFIR_REGEX_PATTERNS.map((p) => (
+            <tr>
+              <td class={refTd}>
+                <strong class={css({ color: 'text' })}>{p.label}</strong>
+              </td>
+              <td class={refTd}>
+                <code class={refCode}>{p.pattern}</code>
+              </td>
+              <td class={refTd}>
+                <code class={refCode}>{p.flags || '—'}</code>
+              </td>
+              <td class={refTdMuted}>{p.description}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p class={css({ color: 'textMuted', fontSize: '0.88rem', mt: '1.5rem', lineHeight: 1.7 })}>
+    Every pattern above is a reasonable, general-purpose heuristic, not an exhaustive spec-perfect grammar — the
+    Base64 pattern, for instance, can't tell a genuine base64 blob from 32+ characters of coincidentally
+    base64-alphabet text, and the registry-key pattern doesn't validate against the real hive/key namespace. Treat
+    a match as a lead worth reviewing, not a guarantee.
+  </p>
+</BaseLayout>
