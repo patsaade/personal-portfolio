@@ -5,15 +5,17 @@
 // group: Tools, Glossary, Certifications, ATT&CK/D3FEND maps, the Cheat
 // Sheet, and the mobile nav accordion.
 //
-// 1s — deliberately slow/dramatic (see CLAUDE.md invariant 12), matching the
-// nav dropdown's own reveal (global.css's .nav-more-menu). On expand, the
-// group's own <summary> heading additionally "declassifies" (motion.css's
-// `declassify` keyframe) in step with the height reveal, reusing the exact
-// same visual language as post/section titles rather than inventing a new
-// one — every collapsible group opening reads as a small reveal, matching
-// the nav dropdown's own font-decode. `:scope > summary > h2, h3` is a plain
-// structural selector (every page happens to put its group heading directly
-// there) so this works site-wide with no markup changes on any page.
+// 0.45s — snappy but smooth (see CLAUDE.md invariant 12), matching
+// `.declassify`'s own duration (motion.css) so the two finish together. On
+// expand, the group's own <summary> heading additionally "declassifies" in
+// step with the height reveal, reusing the exact same visual language as
+// post/section titles rather than inventing a new one — every collapsible
+// group opening reads as a small reveal, matching the nav dropdown's own
+// font-decode. `:scope > summary > h2, h3` is a plain structural selector
+// (every page happens to put its group heading directly there) so this
+// works site-wide with no markup changes on any page. (This used to run at
+// 1s, deliberately slow/dramatic — sped up because it read as sluggish
+// rather than dramatic; still noticeably eased, not an instant snap.)
 //
 // No-ops under prefers-reduced-motion — the native instant toggle is already
 // a fully visible, settled state, satisfying motion.css's reduced-motion
@@ -28,7 +30,7 @@
 // avoided).
 import { animate } from 'motion/mini';
 
-const DURATION = 1; // seconds — see file header for why
+const DURATION = 0.45; // seconds — see file header for why
 
 export function animateDetails(details) {
   if (details.__animatedDetails) return;

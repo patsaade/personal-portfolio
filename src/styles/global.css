@@ -31,18 +31,19 @@ html {
    absolute, so no layout shift) but invisible/non-interactive at rest —
    visibility flips to hidden only after the fade/slide-out finishes
    (transition-delay), so it stays visible while closing instead of vanishing
-   mid-animation; opening flips it back instantly. 1500ms — deliberately slow
-   and dramatic (matches `declassify-hero`'s own duration below, which is
-   exactly why that timing was picked rather than an arbitrary new number) —
-   it's a slide (translateY) that fades alongside it, never a bare fade.
-   "Functional" despite the length: motion starts immediately on hover (the
-   perceived response is instant even though settling takes over a second),
-   and it degrades to a no-op under reduced motion (see motion.css). */
+   mid-animation; opening flips it back instantly. 500ms — a slide (translateY)
+   that fades alongside it, never a bare fade; matches `declassify-hero`'s own
+   duration below, which is exactly why that timing was picked rather than an
+   arbitrary new number. Snappier than the ~1.5s this used to run at, which
+   read as sluggish rather than dramatic, while still settling smoothly rather
+   than snapping. Motion starts immediately on hover (the perceived response
+   is instant), and it degrades to a no-op under reduced motion (see
+   motion.css). */
 .nav-more-menu {
   opacity: 0;
   visibility: hidden;
   transform: translateY(-6px);
-  transition: opacity 1500ms ease, transform 1500ms ease, visibility 0s linear 1500ms;
+  transition: opacity 500ms ease, transform 500ms ease, visibility 0s linear 500ms;
 }
 .nav-more:hover .nav-more-menu,
 .nav-more:focus-within .nav-more-menu,
@@ -50,7 +51,7 @@ html {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
-  transition: opacity 1500ms ease, transform 1500ms ease, visibility 0s linear 0s;
+  transition: opacity 500ms ease, transform 500ms ease, visibility 0s linear 0s;
 }
 .nav-more:hover .nav-more-chev,
 .nav-more-btn[aria-expanded='true'] .nav-more-chev {
@@ -71,7 +72,7 @@ html {
 .nav-more:hover .nav-more-menu .nav-declassify,
 .nav-more:focus-within .nav-more-menu .nav-declassify,
 .nav-more-menu[data-open] .nav-declassify {
-  animation: declassify-hero 1.5s ease-out both;
+  animation: declassify-hero 0.5s ease-out both;
 }
 
 /* Mobile nav collapsible sections (Analyst / More): rotate the chevron when open. */

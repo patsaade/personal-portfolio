@@ -10,8 +10,8 @@
 //
 // 150ms/ease-out — deliberately snappy (matches this codebase's existing
 // "fast UI feedback" rhythm — segBtn/modeBtn/engineBtn's own `transition:
-// all 150ms ease` hover states use the exact same duration), NOT the 1s/1.5s
-// dramatic timing this codebase uses elsewhere for reveals (animatedDetails.ts,
+// all 150ms ease` hover states use the exact same duration), NOT the
+// ~0.45-0.5s timing this codebase uses elsewhere for reveals (animatedDetails.ts,
 // the nav dropdown's `.nav-more-menu`, `declassify-hero`). Those are staged,
 // once-per-load (or once-per-open) reveals meant to read as a decode. A
 // switch thumb is direct-manipulation UI feedback tracking a click that
@@ -78,7 +78,7 @@
 // motion/mini: the smaller WAAPI-only build (see CLAUDE.md invariant 5).
 import { animate } from 'motion/mini';
 
-const DURATION = 0.15; // seconds — see file header for why this differs from the 1s/1.5s reveals
+const DURATION = 0.15; // seconds — see file header for why this differs from the ~0.45-0.5s reveals
 const EASING = 'ease-out';
 
 export function animateSwitch(group) {
