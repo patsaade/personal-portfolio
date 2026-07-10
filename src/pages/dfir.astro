@@ -32,6 +32,52 @@ const groupTiles = DFIR_GROUPS.map((g) => ({
   count: g.links.length,
 }));
 
+// Live stats line — same role="status" aria-live="polite" pattern as
+// tools.astro/glossary/index.astro/event-ids.astro's result-count lines.
+// Nothing here is filtered client-side (this page has no search/facet
+// controls), so the numbers are fixed at build time rather than updated by
+// ListFilter — but the convention (and the accessibility semantics) still
+// apply: it's the page's own summary of what's below it.
+const allLinks = DFIR_GROUPS.flatMap((g) => g.links);
+const totalLinks = allLinks.length;
+
+// "Start here" spotlight — a small, curated subset of allLinks (not new
+// data) covering four distinct first-visit use cases: browse the toolkit,
+// look up a term, extract indicators from something in hand, or check
+// technique coverage. Mirrors tools.astro's "core kit" spotlight chip row.
+const START_HERE_HREFS = ['/tools/', '/glossary/', '/tools/ioc-extractor/', '/attack-map/'] as const;
+const startHereLinks = START_HERE_HREFS.map((href) => allLinks.find((l) => l.href === href)).filter(
+  (l): l is NonNullable<typeof l> => Boolean(l)
+);
+const spotlightWrap = css({ mb: '2rem' });
+const spotlightLabel = css({
+  display: 'block',
+  fontFamily: 'sans',
+  fontSize: '0.75rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: 'textMuted',
+  mb: '0.7rem',
+});
+const spotlightRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' });
+const spotlightChip = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.3rem',
+  px: '0.6rem',
+  py: '0.35rem',
+  fontFamily: 'sans',
+  fontSize: '0.8rem',
+  fontWeight: 600,
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'full',
+  transition: 'border-color 200ms ease, color 200ms ease',
+  _hover: { borderColor: 'accent', color: 'accent', '& svg': { transform: 'translateX(2px)' } },
+});
+
 const sectionWrap = css({ borderTop: '1px solid token(colors.border)', py: '1.25rem', scrollMarginTop: '90px' });
 const sectionHead = css({ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', m: 0, fontSize: '1.25rem', fontWeight: 700 });
 const sectionCount = css({
@@ -58,14 +104,34 @@ const cardDesc = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45
 
 <BaseLayout
   title="DFIR"
-  description="Every DFIR reference and tool on this site, organized by what you're trying to do — from browsing the catalog to parsing a raw binary artifact."
+  description="A DFIR reference and tools hub — the tool catalog, command cheat sheet, glossary, MITRE ATT&CK/D3FEND maps, and browser-based forensics tools, all in one place."
 >
   <PageHeader
     breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'DFIR' }]}
     eyebrow="Reference & Tools"
     title="DFIR"
-    description="Everything for digital forensics & incident response work, in one place — reference material, the MITRE framework maps, and the browser-based tools below, organized by what you're trying to do."
+    description="Everything for digital forensics & incident response work, organized by what you're trying to do — reference material if you need to look something up, the MITRE framework maps if you're mapping technique to defense, or the browser-based tools below if you're extracting, converting, or parsing something you already have in hand."
   />
+
+  <p role="status" aria-live="polite" class={css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.3rem 0.6rem', color: 'textMuted', fontSize: '0.9rem', mt: '-0.5rem', mb: '1.5rem' })}>
+    <span>{totalLinks} destinations across {DFIR_GROUPS.length} categories</span>
+  </p>
+
+  {/* ── Start here spotlight — a curated first-visit path, one link per broad use case ── */}
+  <div class={spotlightWrap}>
+    <span class={spotlightLabel}>New here? Start with one of these</span>
+    <div class={spotlightRow}>
+      {
+        startHereLinks.map((link) => (
+          <a href={link.href} class={spotlightChip}>
+            <Icon name={link.icon} size={13} class={css({ color: 'accent' })} />
+            {link.label}
+            <Icon name="arrow-right" size={12} class={css({ transition: 'transform 200ms ease' })} />
+          </a>
+        ))
+      }
+    </div>
+  </div>
 
   <GroupOverview items={groupTiles} heading="Browse by category" />
 
@@ -77,7 +143,7 @@ const cardDesc = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45
           <span>{g.category}</span>
           <span class={sectionCount}>{g.links.length}</span>
         </h2>
-        <p class={sectionBlurb}>{g.blurb}</p>
+        <p class={sectionBlurb}>{g.intro}</p>
         <div class={`card-grid ${cardsGrid}`}>
           {g.links.map((link) => (
             <a href={link.href} class={linkCard}>

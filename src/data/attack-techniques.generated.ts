@@ -23,6 +23,31 @@ export const ATTACK_TACTIC_ORDER: string[] = [
   "Impact"
 ];
 
+// Manually synced from https://attack.mitre.org/tactics/enterprise/ (verified live,
+// matches ATTACK_TACTIC_ORDER above 1:1) — gen-attack-map.mjs now captures this from
+// the STIX bundle's own x-mitre-tactic descriptions going forward (see its
+// tacticDefinitions block), so a future `npm run` of the generator reproduces this
+// automatically; this entry was added by hand because no local STIX bundle was
+// available to safely re-run the full generator without risking an unrelated
+// ATT&CK-version bump. Same shape as D3FEND_TACTICS in d3fend-techniques.generated.ts.
+export const ATTACK_TACTIC_DEFINITIONS: { name: string; definition: string }[] = [
+  { "name": "Reconnaissance", "definition": "The adversary is trying to gather information they can use to plan future operations." },
+  { "name": "Resource Development", "definition": "The adversary is trying to establish resources they can use to support operations." },
+  { "name": "Initial Access", "definition": "The adversary is trying to get into your network." },
+  { "name": "Execution", "definition": "The adversary is trying to run malicious code." },
+  { "name": "Persistence", "definition": "The adversary is trying to maintain their foothold." },
+  { "name": "Privilege Escalation", "definition": "The adversary is trying to gain higher-level permissions." },
+  { "name": "Stealth", "definition": "The adversary is trying to hide and conceal their actions, appearing as normal behavior." },
+  { "name": "Defense Impairment", "definition": "The adversary is trying to break security mechanisms, pipelines, and tooling so defenders can't see or trust what's happening." },
+  { "name": "Credential Access", "definition": "The adversary is trying to steal account names and passwords." },
+  { "name": "Discovery", "definition": "The adversary is trying to figure out your environment." },
+  { "name": "Lateral Movement", "definition": "The adversary is trying to move through your environment." },
+  { "name": "Collection", "definition": "The adversary is trying to gather data of interest to their goal." },
+  { "name": "Command and Control", "definition": "The adversary is trying to communicate with compromised systems to control them." },
+  { "name": "Exfiltration", "definition": "The adversary is trying to steal data." },
+  { "name": "Impact", "definition": "The adversary is trying to manipulate, interrupt, or destroy your systems and data." }
+];
+
 export interface GeneratedTechnique {
   id: string;
   name: string;

@@ -14,10 +14,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
 import Icon from '../components/Icon.astro';
 import DorkBuilder from '../components/DorkBuilder.astro';
+import Term from '../components/Term.astro';
 import { SEARCH_ENGINES, DORK_OPERATORS, DORK_FOCUSES } from '../data/osint';
 import { TOOLS } from '../data/tools';
+import { resolveAttackLink } from '../data/references';
 
 const osintTools = TOOLS.filter((t) => t.fn === 'OSINT');
+const reconTechniques = ['T1593', 'T1596'].map(resolveAttackLink);
 
 const sectionH2 = css({
   display: 'flex',
@@ -108,10 +111,17 @@ const toolChip = css({
     })}
   >
     <p class={css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', m: 0 })}>
-      <strong class={css({ color: 'text' })}>OSINT</strong> — <em>open-source intelligence</em> — is
+      <strong class={css({ color: 'text' })}>OSINT</strong> —{' '}
+      <Term slug="open-source-intelligence"><em>open-source intelligence</em></Term> — is
       information gathered from publicly available sources: search engines, DNS, certificate logs,
       code repositories, social platforms. For a defender, the same techniques an attacker uses to
-      scope a target double as a fast way to check your own (or an authorized client's) exposure, or
+      scope a target (MITRE ATT&amp;CK's{' '}
+      {reconTechniques.map((t, i) => (
+        <>
+          <a href={t.href} class={css({ color: 'primary' })}>{t.id} {t.name}</a>
+          {i < reconTechniques.length - 1 ? ' and ' : ''}
+        </>
+      ))}) double as a fast way to check your own (or an authorized client's) exposure, or
       to verify a claimed identity during an authorized investigation. Everything below is meant for
       infrastructure you own or are authorized to test, and people/organizations you have a
       legitimate reason to research.
@@ -171,8 +181,8 @@ const toolChip = css({
     <Icon name="wrench" size={20} class={css({ color: 'primary' })} /> OSINT tools in the kit
   </h2>
   <p class={css({ color: 'textMuted', fontSize: '0.9rem' })}>
-    Certificate transparency, IP reputation, internet-wide scan data, and more — the toolkit already
-    covers several free/open OSINT lookups.
+    <Term slug="certificate-transparency">Certificate transparency</Term>, IP reputation, internet-wide scan
+    data, and more — the toolkit already covers several free/open OSINT lookups.
   </p>
   <div class={toolChipRow}>
     {

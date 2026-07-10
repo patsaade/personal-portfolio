@@ -12,6 +12,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import Icon from '../../components/Icon.astro';
 import TimestampConverter from '../../components/TimestampConverter.astro';
+import Term from '../../components/Term.astro';
+import { toolChip } from '../../components/RelatedTools.astro';
 import { TIMESTAMP_FORMAT_REFERENCE } from '../../data/timestampFormats';
 
 const sectionH2 = css({
@@ -40,6 +42,8 @@ const refTd = css(refTdBase);
 const refTdMuted = css({ ...refTdBase, color: 'textMuted', fontSize: '0.8rem' });
 const refTdCode = css(refTdBase, { fontFamily: 'mono', fontSize: '0.78rem', color: 'primary' });
 const sectionText = css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', mb: '1rem', '&:last-child': { mb: 0 } });
+const relatedList = css({ display: 'flex', flexDirection: 'column', gap: '0.85rem' });
+const relatedReason = css({ color: 'textMuted', fontSize: '0.85rem', mt: '0.35rem', lineHeight: 1.6 });
 ---
 
 <BaseLayout
@@ -147,9 +151,24 @@ const sectionText = css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', m
   </p>
   <p class={sectionText}>
     General guidance for working with dates and times in DFIR: prefer UTC as the common reference when
-    correlating any multi-source timeline — it has no DST and no ambiguity. A source system's
-    local-time log usually doesn't record which side of a DST transition it falls on, so don't assume
-    one; verify a system's configured timezone, and whether that zone observes DST at all, before
-    trusting its local timestamps at face value.
+    correlating any <Term slug="timeline-analysis">multi-source timeline</Term> — it has no DST and no
+    ambiguity. A source system's local-time log usually doesn't record which side of a DST transition it
+    falls on, so don't assume one; verify a system's configured timezone, and whether that zone observes
+    DST at all, before trusting its local timestamps at face value.
   </p>
+
+  <h2 id="related" class={sectionH2}>
+    <Icon name="wrench" size={20} class={css({ color: 'primary' })} /> Related tools
+  </h2>
+  <div class={relatedList}>
+    <div>
+      <a href="/tools/mft-usn-analyzer/" class={toolChip}>
+        <Icon name="hard-drive" size={13} /> MFT &amp; USN Analyzer <Icon name="arrow-right" size={13} />
+      </a>
+      <p class={relatedReason}>
+        Comparing $STANDARD_INFORMATION against $FILE_NAME on a carved-out MFT record or USN journal entry? This
+        flags the mismatch for you directly.
+      </p>
+    </div>
+  </div>
 </BaseLayout>

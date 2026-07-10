@@ -203,8 +203,10 @@ const spotlightChip = css({
   </div>
 
   <div class={css({ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', mb: '0.75rem' })}>
-    <p role="status" aria-live="polite" class={css({ color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
-      <span id="cheat-result-count">{totalEntries}</span> tools shown
+    <p role="status" aria-live="polite" class={css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.3rem 0.6rem', color: 'textMuted', fontSize: '0.9rem', m: 0 })}>
+      <span><span id="cheat-result-count">{totalEntries}</span> tools shown</span>
+      <span aria-hidden="true">·</span>
+      <span>{totalCommands} commands</span>
     </p>
     <div class={css({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', ml: { sm: 'auto' } })}>
       <FilterToggle id="cheat-writeup-toggle" icon="file-text" label="In a writeup" tone="primary" />

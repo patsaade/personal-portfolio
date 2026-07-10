@@ -10,6 +10,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import Icon from '../../components/Icon.astro';
 import RegexTester from '../../components/RegexTester.astro';
+import Term from '../../components/Term.astro';
+import { toolChip } from '../../components/RelatedTools.astro';
 import { DFIR_REGEX_PATTERNS } from '../../utils/regexPatterns';
 
 const sectionH2 = css({
@@ -29,6 +31,8 @@ const refTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', f
 const refTd = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text', verticalAlign: 'top' });
 const refTdMuted = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'textMuted', fontSize: '0.8rem', verticalAlign: 'top' });
 const refCode = css({ fontFamily: 'mono', fontSize: '0.78rem', color: 'primary', wordBreak: 'break-word' });
+const relatedList = css({ display: 'flex', flexDirection: 'column', gap: '0.85rem' });
+const relatedReason = css({ color: 'textMuted', fontSize: '0.85rem', mt: '0.35rem', lineHeight: 1.6 });
 ---
 
 <BaseLayout
@@ -59,6 +63,17 @@ const refCode = css({ fontFamily: 'mono', fontSize: '0.78rem', color: 'primary',
       evaluated locally with JavaScript's own regex engine as you type.
     </p>
   </aside>
+
+  <p class={css({ color: 'text', lineHeight: 1.8, fontSize: '1rem', mb: '1.5rem' })}>
+    A regex tester earns its keep in two very different DFIR moments: hunting a raw log dump or console-output
+    paste for anything matching a known shape — an internal IP range, a suspicious registry key pattern, a GUID
+    that keeps recurring — before reaching for a dedicated extractor; and validating a pattern before it ships in
+    a detection rule. That second use case isn't a coincidence: a <Term slug="sigma-rule">Sigma rule</Term>'s{' '}
+    <code class={css({ fontFamily: 'mono', fontSize: '0.9rem', color: 'primary' })}>|re</code> modifier is
+    evaluated with JavaScript's own <code class={css({ fontFamily: 'mono', fontSize: '0.9rem', color: 'primary' })}>RegExp</code>{' '}
+    engine here too (see the Sigma Rule Tester), so a pattern you get working in this tester will behave
+    identically once it's pasted into a rule's <code class={css({ fontFamily: 'mono', fontSize: '0.9rem', color: 'primary' })}>|re</code> field.
+  </p>
 
   <h2 id="tester" class={css({ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.3rem', fontWeight: 700, mb: '1rem', scrollMarginTop: '90px' })}>
     <Icon name="search" size={20} class={css({ color: 'primary' })} /> Tester
@@ -105,4 +120,34 @@ const refCode = css({ fontFamily: 'mono', fontSize: '0.78rem', color: 'primary',
     base64-alphabet text, and the registry-key pattern doesn't validate against the real hive/key namespace. Treat
     a match as a lead worth reviewing, not a guarantee.
   </p>
+
+  <h2 id="related" class={sectionH2}>
+    <Icon name="wrench" size={20} class={css({ color: 'primary' })} /> Related tools
+  </h2>
+  <div class={relatedList}>
+    <div>
+      <a href="/tools/deobfuscator/" class={toolChip}>
+        <Icon name="key" size={13} /> Deobfuscation Recipe Builder <Icon name="arrow-right" size={13} />
+      </a>
+      <p class={relatedReason}>Working with an obfuscated blob? Peel it back here before you go pattern-hunting.</p>
+    </div>
+    <div>
+      <a href="/tools/ioc-extractor/" class={toolChip}>
+        <Icon name="search" size={13} /> IOC Extractor <Icon name="arrow-right" size={13} />
+      </a>
+      <p class={relatedReason}>
+        Need a fixed set of IOC categories (IPs, hashes, CVEs, ATT&amp;CK IDs) extracted in one pass instead of a
+        hand-written pattern? Use the IOC Extractor.
+      </p>
+    </div>
+    <div>
+      <a href="/tools/sigma-tester/" class={toolChip}>
+        <Icon name="target" size={13} /> Sigma Rule Tester <Icon name="arrow-right" size={13} />
+      </a>
+      <p class={relatedReason}>
+        Once a pattern is solid, drop it straight into a Sigma rule's |re modifier and test it live against
+        sample events.
+      </p>
+    </div>
+  </div>
 </BaseLayout>

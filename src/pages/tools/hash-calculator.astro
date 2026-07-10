@@ -10,6 +10,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import Icon from '../../components/Icon.astro';
 import HashCalculator from '../../components/HashCalculator.astro';
+import Term from '../../components/Term.astro';
+import { toolChip } from '../../components/RelatedTools.astro';
 import { HASH_ALGORITHMS } from '../../utils/hashes';
 
 const sectionH2 = css({
@@ -36,6 +38,8 @@ const NOTES: Record<string, string> = {
   sha384: 'Less commonly seen than SHA-256/512, but a valid SHA-2 family member.',
   sha512: 'Common alongside SHA-256 in modern tooling; no known practical collision attacks.',
 };
+const relatedList = css({ display: 'flex', flexDirection: 'column', gap: '0.85rem' });
+const relatedReason = css({ color: 'textMuted', fontSize: '0.85rem', mt: '0.35rem', lineHeight: 1.6 });
 ---
 
 <BaseLayout
@@ -68,6 +72,16 @@ const NOTES: Record<string, string> = {
       locally via the File API — never transmitted anywhere, and never touches a server.
     </p>
   </aside>
+
+  <p class={css({ color: 'text', lineHeight: 1.8, fontSize: '1rem', mb: '1.5rem' })}>
+    Hashing shows up everywhere in DFIR, for reasons well beyond confirming two files match. A hash is what
+    proves a piece of evidence — a disk image, an exported log, a collected file — hasn't changed since it was
+    acquired, which is the technical backbone of a defensible <Term slug="chain-of-custody">chain of custody</Term>.
+    It's also the fastest triage step on an unknown file: hash it and check that hash against a known-bad list or
+    a threat-intel feed, and you often have an answer before you've opened the file at all. And in practice,
+    analysts regularly run into a bare hash with no context — pasted into a ticket, buried in a log line — which
+    is exactly what the Identify panel below is for.
+  </p>
 
   <h2 id="calculator" class={css({ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.3rem', fontWeight: 700, mb: '1rem', scrollMarginTop: '90px' })}>
     <Icon name="lock" size={20} class={css({ color: 'primary' })} /> Calculator
@@ -110,4 +124,18 @@ const NOTES: Record<string, string> = {
     source (e.g. 64 hex characters is almost always SHA-256), that candidate is marked high confidence; a
     genuine tie (MD5 vs. NTLM) is marked medium for both; rare or legacy alternatives are marked low.
   </p>
+
+  <h2 id="related" class={sectionH2}>
+    <Icon name="wrench" size={20} class={css({ color: 'primary' })} /> Related tools
+  </h2>
+  <div class={relatedList}>
+    <div>
+      <a href="/tools/pe-explorer/" class={toolChip}>
+        <Icon name="layers" size={13} /> PE Header Explorer <Icon name="arrow-right" size={13} />
+      </a>
+      <p class={relatedReason}>
+        Hashing an EXE or DLL? Pull its DOS/COFF/Optional headers, import table, and imphash apart too.
+      </p>
+    </div>
+  </div>
 </BaseLayout>

@@ -60,15 +60,25 @@ function ref(o) {
 }
 
 // ── tactics + kill-chain order ────────────────────────────────────────────────
-const tacticName = {}, tacticById = {};
+const tacticName = {}, tacticById = {}, tacticDescById = {};
 for (const o of objects) {
   if (o.type === 'x-mitre-tactic' && !o.revoked) {
     if (o.x_mitre_shortname) tacticName[o.x_mitre_shortname] = o.name;
     tacticById[o.id] = o.name;
+    if (o.description) tacticDescById[o.id] = o.description;
   }
 }
 const matrix = objects.find((o) => o.type === 'x-mitre-matrix' && !o.revoked);
 const tacticOrder = matrix ? (matrix.tactic_refs || []).map((id) => tacticById[id]).filter(Boolean) : [];
+// Same kill-chain order as tacticOrder, paired with each tactic's own MITRE
+// description (mirrors D3FEND_TACTICS' {name,definition}[] shape in
+// gen-d3fend-map.mjs, so attack-map.astro/d3fend/index.astro can both build
+// their per-tactic definition Map the same way).
+const tacticDefinitions = matrix
+  ? (matrix.tactic_refs || [])
+      .filter((id) => tacticById[id] && tacticDescById[id])
+      .map((id) => ({ name: tacticById[id], definition: tacticDescById[id] }))
+  : [];
 
 // ── lookups for relationship resolution ───────────────────────────────────────
 // v19 detection model: technique ← detects ← detection-strategy → analytics →
@@ -189,6 +199,8 @@ const genFile =
   `/** The ATT&CK Enterprise version this dataset was generated from. */\nexport const ATTACK_VERSION = '${attackVer}';\n\n` +
   '/** Tactics in kill-chain order, straight from the ATT&CK matrix definition. */\n' +
   'export const ATTACK_TACTIC_ORDER: string[] = ' + JSON.stringify(tacticOrder, null, 2) + ';\n\n' +
+  '/** Per-tactic MITRE definitions, same order as ATTACK_TACTIC_ORDER. */\n' +
+  'export const ATTACK_TACTIC_DEFINITIONS: { name: string; definition: string }[] = ' + JSON.stringify(tacticDefinitions) + ';\n\n' +
   iface +
   '// Compact one-line array (generated; not meant to be hand-reviewed).\n' +
   'export const ATTACK_GENERATED: GeneratedTechnique[] = ' + JSON.stringify(out) + ';\n';
