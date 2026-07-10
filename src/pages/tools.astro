@@ -101,7 +101,12 @@ const toolHead = css({ display: 'flex', alignItems: 'center', justifyContent: 's
 const toolName = css({ flex: 1, minW: 0, fontFamily: 'sans', fontWeight: 700, fontSize: '0.9rem', color: 'text', lineHeight: 1.3 });
 const starCls = css({ display: 'inline', verticalAlign: '-2px', mr: '0.25rem', color: 'accent', fill: 'token(colors.accent)' });
 const goCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 200ms ease, color 200ms ease' });
-const toolUse = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45 });
+// t.use ranges 24-65 chars. totd-clamp2 caps growth at 2 lines; the fixed `h` (not minH
+// — a page-local minH is what card-consistency.test.ts forbids, and isn't what's needed
+// here anyway) reserves that same 2-line box for every card regardless of actual text
+// length, so a short one-liner doesn't get stretched into a dead gap by its longer
+// .card-grid row-mate — see certifications.astro's certFull for the full mechanics.
+const toolUse = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45, h: '2.4rem' });
 // Function + cost tags sit in a row at the bottom of the card (shared `tag` recipe).
 // flexWrap MUST stay 'nowrap': with 'wrap', the wrap algorithm can push the
 // cost tag onto a second line using fnTag's un-shrunk hypothetical width,
@@ -270,7 +275,7 @@ const spotlightChip = css({
                   </span>
                   <Icon name="arrow-right" size={14} class={`tool-go ${goCls}`} />
                 </span>
-                <span class={toolUse}>{t.use}</span>
+                <span class={`${toolUse} totd-clamp2`}>{t.use}</span>
                 <span class={tagRow}>
                   <span class={fnTag} title={t.fn}>{t.fn}</span>
                   <span class={`${tag({ tone: costTone(t.cost) })} ${css({ flexShrink: 0 })}`}>{t.cost}</span>

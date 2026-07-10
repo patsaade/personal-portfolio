@@ -99,7 +99,11 @@ const cardsGrid = css({ mt: '1rem' }); // columns/gap come from the shared .card
 const linkCard = `${card()} ${css({ _hover: { boxShadow: 'card' } })}`;
 const cardHead = css({ display: 'flex', alignItems: 'center', gap: '0.5rem' });
 const cardTitle = css({ fontFamily: 'sans', fontWeight: 700, fontSize: '0.9rem', color: 'text', lineHeight: 1.3 });
-const cardDesc = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45, mt: '0.3rem' });
+// link.description ranges 32-65 chars. totd-clamp2 caps growth at 2 lines; the fixed `h`
+// reserves that same 2-line box for every card so a short description doesn't get
+// stretched into a dead gap by a longer .card-grid row-mate — see certifications.astro's
+// certFull for the full mechanics.
+const cardDesc = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45, mt: '0.3rem', h: '2.4rem' });
 ---
 
 <BaseLayout
@@ -151,7 +155,7 @@ const cardDesc = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45
                 <Icon name={link.icon} size={16} class={css({ color: 'primary', flexShrink: 0 })} />
                 <span class={cardTitle}>{link.label}</span>
               </span>
-              <p class={cardDesc}>{link.description}</p>
+              <p class={`${cardDesc} totd-clamp2`}>{link.description}</p>
             </a>
           ))}
         </div>
