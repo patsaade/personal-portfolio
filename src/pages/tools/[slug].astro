@@ -40,8 +40,18 @@ const similar = TOOLS.filter((t) => t.fn === tool.fn && t.slug !== tool.slug);
 const glossaryTerms = (tool.glossarySlugs ?? []).map((s) => termBySlug(s)).filter(Boolean);
 
 const sectionH2 = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', fontWeight: 700, mt: '2.5rem', mb: '0.75rem' });
-const para = css({ color: 'text', lineHeight: 1.8, fontSize: '1.02rem' });
-const exampleP = css({ borderLeft: '3px solid token(colors.primary)', pl: '1rem', color: 'textMuted', fontStyle: 'italic' });
+const paraBase = { color: 'text', lineHeight: 1.8, fontSize: '1.02rem' } as const;
+const para = css(paraBase);
+// css(paraBase, exampleParaBase) — a plain object merge, not string
+// concatenation of two independently-atomized classes — so exampleParaBase's
+// color: 'textMuted' deterministically overrides paraBase's color: 'text'.
+// The two used to be composed as `${para} ${exampleP}`, which left the
+// winning color up to Panda's atomic-class ordering rather than authorial
+// intent (see STYLE_GUIDE.md "Buttons" for the exact failure mode — this was
+// a live instance of it: `text` was winning, so the example callout rendered
+// in full-contrast text instead of the intended muted/italic treatment).
+const exampleParaBase = { borderLeft: '3px solid token(colors.primary)', pl: '1rem', color: 'textMuted', fontStyle: 'italic' } as const;
+const exampleP = css(paraBase, exampleParaBase);
 const refLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', color: 'text', transition: 'color 150ms ease', _hover: { color: 'primary' } });
 const glossCard = css({
   display: 'flex',
@@ -156,7 +166,7 @@ const jsonLd = JSON.stringify({
   {tool.example && (
     <>
       <h2 class={sectionH2}><Icon name="terminal" size={18} class={css({ color: 'primary' })} /> In practice</h2>
-      <p class={`${para} ${exampleP}`}>{tool.example}</p>
+      <p class={exampleP}>{tool.example}</p>
     </>
   )}
 
