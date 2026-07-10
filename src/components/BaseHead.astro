@@ -206,17 +206,39 @@ const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': grap
     function reducedMotion() {
       try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
     }
+    // Tracks the in-flight view transition (if any) so a second theme change fired
+    // before the first one settles doesn't overlap two transitions on the same
+    // document — observed to leave the browser's view-transition state (and any
+    // CSS transition triggered on a themed element inside the same click, like the
+    // ModeToggle segmented switch's own background-color transition) stuck
+    // mid-flight rather than settling normally.
+    var activeTransition = null;
     function applyAnimated() {
       if (!document.startViewTransition || reducedMotion()) { apply(); return; }
+      if (activeTransition) {
+        try { activeTransition.skipTransition(); } catch (e) {}
+      }
       var o = wipeOrigin || { x: window.innerWidth / 2, y: 0 };
       // Freeze element transitions so the circular reveal is the only motion —
       // theme-preload disables all transitions; restore once it settles.
       root.classList.add('theme-preload');
-      var done = function () { root.classList.remove('theme-preload'); };
+      var doneCalled = false;
+      var done = function () {
+        if (doneCalled) return;
+        doneCalled = true;
+        root.classList.remove('theme-preload');
+        if (activeTransition === vt) activeTransition = null;
+      };
+      // Failsafe: if `vt.finished` never settles (observed on rare clicks — the
+      // transition never resolves or rejects), theme-preload would otherwise
+      // disable every CSS transition site-wide forever. Bound it to comfortably
+      // longer than the 500ms wipe.
+      setTimeout(done, 1200);
       var vt;
       try {
         vt = document.startViewTransition(function () { apply(); });
       } catch (e) { apply(); done(); return; }
+      activeTransition = vt;
       // Drive the wipe in JS — animate the ::view-transition-new(root) snapshot —
       // instead of a CSS keyframe reading custom props. The snapshot is
       // viewport-aligned, so the click point (clientX/Y) maps 1:1 and the circle
@@ -263,10 +285,21 @@ const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': grap
     // The <html> ships with class "theme-preload", which disables all transitions
     // so applying the correct theme above never animates (no dark/light flash on
     // load). Drop it after the first paint — via double rAF — so manual theme
-    // toggles still animate smoothly afterward.
+    // toggles still animate smoothly afterward. Same failsafe as applyAnimated()'s
+    // own theme-preload handling: if rAF is starved (a backgrounded/inactive tab,
+    // or a slow main thread on load), don't leave transitions disabled site-wide
+    // indefinitely — this is the only removal on the page's very first paint, so
+    // it has no other backstop.
+    var removedInitialPreload = false;
+    var removeInitialPreload = function () {
+      if (removedInitialPreload) return;
+      removedInitialPreload = true;
+      root.classList.remove('theme-preload');
+    };
+    setTimeout(removeInitialPreload, 1200);
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
-        root.classList.remove('theme-preload');
+        removeInitialPreload();
       });
     });
   })();

@@ -140,7 +140,26 @@ export function animateSwitch(group) {
   // click, ResizeObserver fire, or theme change). getComputedStyle() forces
   // a synchronous style recalc, so remove/read/restore here never paints an
   // intermediate frame — no flicker, just an accurate read.
+  //
+  // Also finish any in-flight animations on the button before reading. A
+  // click that goes through BaseHead's applyAnimated() (the theme wipe) can
+  // start this button's own `transition: all 150ms` background-color change
+  // *inside* the View Transition's synchronous capture callback — and on
+  // some clicks that transition gets orphaned mid-flight (observed stuck at
+  // localTime 0 via getAnimations(), permanently rendering its *start*
+  // color instead of its end color: the mode-toggle thumb went transparent
+  // — same visible symptom as the armed-suppression bug above, different
+  // cause). getAnimations()[].finish() jumps any such stuck transition to
+  // its end state before we read, so we never clone a frozen intermediate
+  // (or reversed) color onto the thumb. No-op when nothing is animating.
   function syncColors(btn) {
+    btn.getAnimations().forEach(function (a) {
+      try {
+        a.finish();
+      } catch (e) {
+        /* ignore */
+      }
+    });
     const wasArmed = group.hasAttribute('data-switch-armed');
     if (wasArmed) group.removeAttribute('data-switch-armed');
     const s = getComputedStyle(btn);

@@ -741,6 +741,17 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
         example: 'Parsing the logs reveals process launches around the time of a suspected compromise.',
         glossarySlugs: ['unified-logging'],
       },
+      {
+        name: 'CAPE Sandbox', slug: 'cape-sandbox', use: 'Self-hosted automated malware sandbox', fn: 'Sandbox', cost: 'Open source',
+        tags: ['malware', 'sandbox', 'dynamic-analysis', 'self-hosted', 'config-extraction'],
+        url: 'https://github.com/kevoreilly/CAPEv2',
+        install: 'sudo ./installer/cape2.sh base 2>&1 | tee cape.log — the maintained installer script, run on a fresh Ubuntu host',
+        references: [{ name: 'CAPE Sandbox Documentation', url: 'https://capev2.readthedocs.io/' }],
+        what: 'A self-hosted, open-source automated malware sandbox — the actively maintained successor to Cuckoo Sandbox.',
+        why: 'It runs a sample in an isolated, instrumented environment and automates dynamic unpacking, YARA-based classification, and static/dynamic configuration extraction — a free option for analysts who need to stand up their own detonation environment rather than submit to a third-party service.',
+        example: 'Detonating a packed sample yields its unpacked payload, extracted C2 configuration, and a full behavioral report in one pass.',
+        glossarySlugs: ['sandboxing'],
+      },
     ],
   },
   {
@@ -1011,7 +1022,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
           { desc: 'Extract GPS coordinates and timestamp for every file in a directory', cmd: "exiftool -ee3 -p '$gpslatitude, $gpslongitude, $gpstimestamp' dir" },
           { desc: 'Delete all metadata from an image (e.g. before sharing a screenshot or exhibit)', cmd: 'exiftool -all= dst.jpg' },
         ],
-        references: [{ name: 'ExifTool Official Documentation', url: 'https://exiftool.org/exiftool_pod.html' }],
+        references: [{ name: 'ExifTool Official Documentation', url: 'https://exiftool.sourceforge.net/exiftool_pod.html' }],
         what: 'A cross-platform command-line application (and Perl library) for reading, writing, and removing metadata — EXIF, GPS, IPTC, XMP, and manufacturer maker-notes — from images, documents, and hundreds of other file types.',
         why: "Embedded metadata routinely reveals a file's true origin — GPS location, device model, author, editing history — making it a core step in verifying evidence or scrubbing sensitive data before disclosure.",
         example: 'Pulling GPS tags from an image submitted with a report pinpoints the exact coordinates where the photo was taken, corroborating (or contradicting) the claimed location.',
@@ -1019,7 +1030,7 @@ export const TOOL_PLATFORMS: ToolPlatform[] = [
       {
         name: 'Wayback Machine', slug: 'wayback-machine', use: 'Look up archived snapshots of a URL over time', fn: 'OSINT', cost: 'Free',
         tags: ['osint', 'archive', 'historical-data'],
-        url: 'https://archive.org/web/',
+        url: 'https://web.archive.org/',
         install: 'No install — public REST endpoints under archive.org and web.archive.org, no key required',
         commands: [
           { desc: 'Check whether a URL has an archived, available snapshot and get the closest match', cmd: 'curl "https://archive.org/wayback/available?url=example.com"' },

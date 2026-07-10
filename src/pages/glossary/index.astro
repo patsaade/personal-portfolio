@@ -74,7 +74,14 @@ const cardLink = css({
 const cardHead = css({ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.4rem' });
 const cardTerm = css({ fontFamily: 'sans', fontWeight: 700, fontSize: '0.86rem', color: 'text', lineHeight: 1.3, minW: 0 });
 const goArrow = css({ color: 'textMuted', flexShrink: 0, mt: '0.1rem', transition: 'transform 200ms ease, color 200ms ease' });
-const cardShort = css({ fontSize: '0.79rem', color: 'textMuted', lineHeight: 1.4 });
+// t.short is ≤90 chars (test/securityTerms.test.ts caps it) but varies widely in
+// practice. totd-clamp2 (applied below) caps growth at 2 lines; the fixed `h` reserves
+// that same 2-line box for every card so a short definition doesn't get stretched into a
+// dead gap by a longer .card-grid row-mate — CSS grid stretches every card in a row to
+// match its tallest sibling regardless, so without this the outer heights match but the
+// inner content looks visibly uneven. See certifications.astro's certFull for the same
+// fix applied site-wide.
+const cardShort = css({ fontSize: '0.79rem', color: 'textMuted', lineHeight: 1.4, h: '2.25rem' });
 const cardAka = css({ fontSize: '0.7rem', color: 'textMuted', fontStyle: 'italic' });
 // Footer pinned to the bottom: the ATT&CK chip (when the term maps to a technique).
 const cardFooter = css({ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', mt: 'auto', pt: '0.2rem' });

@@ -70,10 +70,23 @@ const certCard = `${card()} ${css({
 })}`;
 const certHead = css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' });
 const certName = css({ flex: 1, minW: 0, display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, fontSize: '0.9rem', color: 'text', lineHeight: 1.3 });
+// c.name ranges from 2-char codes ('A+') up to 18-char compounds ('SecurityX (CASP+)') —
+// truncate to one line so a long name can't wrap and grow this card taller than its
+// .card-grid neighbors (same technique as focusTag below: minW:0 + flexShrink:1 so it
+// actually shrinks inside the certName flex row, per STYLE_GUIDE's card-sizing rule).
+const certNameText = css({ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minW: 0, flexShrink: 1 });
 const earnedIcon = css({ color: 'accent', flexShrink: 0 });
 const pursuingIcon = css({ color: 'textMuted', flexShrink: 0 });
 const extIcon = css({ color: 'textMuted', flexShrink: 0 });
-const certFull = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45 });
+// c.full ranges from 'CompTIA A+' (11 chars) to 'Certified Information Systems Security
+// Professional' (52 chars). totd-clamp2 caps growth at 2 lines, but a fixed `h` (not
+// minH — CSS grid already stretches every card in a row to match its tallest sibling
+// regardless) is what actually matters here: without it, a short 1-line description next
+// to a 2-line one gets stretched to match by the grid but leaves a dead gap above its
+// focusTag, while the 2-line card's text fills the same space — same outer height, visibly
+// inconsistent inner layout. Reserving the full 2-line box up front makes every card's
+// description area identically sized regardless of actual text length.
+const certFull = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.45, h: '2.4rem' });
 // maxW/overflow/textOverflow: current `focus` values are all short, but this
 // is the same ceiling event-ids.astro and tools.astro needed for their
 // variable-length tags — no reason for this one to be the exception the next
@@ -153,11 +166,11 @@ const metaLink = css({ display: 'inline-flex', alignItems: 'center', gap: '0.35r
                         class={c.earned ? earnedIcon : pursuingIcon}
                         label={c.earned ? 'Earned' : 'In pursuit of'}
                       />
-                      {c.name}
+                      <span class={certNameText}>{c.name}</span>
                     </span>
                     <Icon name="external-link" size={14} class={extIcon} />
                   </span>
-                  <span class={certFull}>{c.full}</span>
+                  <span class={`${certFull} totd-clamp2`}>{c.full}</span>
                   {c.earned ? <span class={focusTag} title={c.focus}>{c.focus}</span> : <span class={pursuingTag}>In pursuit of</span>}
                 </a>
               ))}

@@ -174,7 +174,7 @@ export const categoryIcon = (category: string): IconName =>
 
 // Headline stats for the home page
 export const STATS = [
-  { icon: 'shield', title: 'Live incident response', desc: 'Containment at Red Canary' },
+  { icon: 'shield', title: 'Live incident response', desc: 'Across SOC & IR roles' },
   { icon: 'clock', title: '3+ years hands-on', desc: 'Detection & response' },
   { icon: 'cpu', title: 'Endpoint forensics', desc: 'EDR, host & memory' },
   { icon: 'award', title: 'CISSP certified', desc: 'In pursuit of GCFA / GCFE / GCIH' },

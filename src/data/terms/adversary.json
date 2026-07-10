@@ -466,5 +466,25 @@
       "windows-event-log",
       "data-exfiltration"
     ]
+  },
+  {
+    "term": "ClickFix",
+    "slug": "clickfix",
+    "aka": ["Fake CAPTCHA Attack", "Paste and Run"],
+    "short": "A fake error page that tricks a user into pasting and running attacker code themselves.",
+    "definition": "A social-engineering technique that shows a fabricated error, CAPTCHA, or verification page instructing the victim to open the Windows Run dialog (or a terminal) and paste a clipboard-copied command to \"fix\" the problem — the command actually downloads and executes attacker malware.",
+    "significance": "Because the victim manually pastes and runs the command themselves, it sidesteps browser download warnings, macro-blocking, and many endpoint controls that assume execution follows a file download rather than a deliberate user action, making it one of the fastest-growing initial-access vectors.",
+    "example": "A visitor to a compromised site sees a fake \"verify you are human\" page telling them to press Win+R, paste the provided text, and press Enter — unknowingly launching a PowerShell downloader.",
+    "related": ["drive-by-compromise", "spearphishing"]
+  },
+  {
+    "term": "EDR Killer",
+    "slug": "edr-killer",
+    "aka": ["EDR Killer Tool"],
+    "short": "A commodified, usually BYOVD-based tool built to blind or terminate EDR agents.",
+    "definition": "A purpose-built utility — typically loading a vulnerable signed driver to reach the kernel — that terminates, unhooks, or blinds endpoint detection and response agents just before a payload like ransomware is deployed. Unlike a one-off technique, these tools are increasingly shared or sold as reusable, off-the-shelf utilities across multiple, otherwise unrelated intrusion sets.",
+    "significance": "Its commoditization means the same tool now shows up across many unrelated ransomware operations, so detecting its specific loader or driver becomes a high-value signature that can catch multiple threat actors at once, and its use is a strong precursor signal for imminent ransomware deployment.",
+    "example": "Responders find the same signed-but-vulnerable driver and killer binary on hosts hit by two different ransomware groups months apart, tying both back to the same shared criminal tooling.",
+    "related": ["bring-your-own-vulnerable-driver", "disabling-security-tools", "ransomware"]
   }
 ]

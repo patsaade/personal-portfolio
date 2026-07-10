@@ -199,6 +199,21 @@ still uses normal sentence case, e.g. "…detection-and-response and incident re
   `title` attribute for a hover tooltip, and make sure the full value is still shown
   somewhere unbounded (the item's own detail page) so truncation never destroys
   information, only the card preview's presentation of it.
+  **A multi-line free-text field (a description/definition paragraph) needs a fixed
+  height, not just a line-clamp.** `overflow: 'hidden'` + the `.totd-clamp2` utility
+  class (`global.css`) caps *growth* at 2 lines, but a CSS grid row always stretches
+  every card to match its tallest sibling regardless — so a short 1-line description
+  next to a clamped 2-line one ends up the same *outer* height but with a visibly dead
+  gap above its tag row, while the 2-line card's text fills that same space. That reads
+  as "these cards aren't actually the same size" even though the boxes line up exactly.
+  Fix it by also giving the field its own fixed `h` (e.g. `h: '2.4rem'` for a 2-line box
+  at `fontSize: '0.82rem'`/`lineHeight: 1.45` — recompute for a different size) so every
+  card's content area is identically sized up front, independent of its row-mates. Don't
+  reach for `minH` here — `test/card-consistency.test.ts` bans it outright at the page
+  level, and it wouldn't fix the gap anyway (`min-height` still lets a short block sit
+  shorter than a fixed `h` unless something else stretches it). See `certFull` in
+  `certifications.astro` for the reference implementation, also applied to `toolUse`
+  (`tools.astro`), `cardDesc` (`dfir.astro`), and `cardShort` (`glossary/index.astro`).
   **When a tag row holds more than one chip** (a truncating category/function tag next to
   a fixed badge like "ATT&CK"), the row's `flexWrap` must be `'nowrap'`, never `'wrap'`.
   With `'wrap'`, the browser decides line breaks using each item's un-shrunk hypothetical

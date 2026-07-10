@@ -601,5 +601,15 @@
     "significance": "It preys on ordinary typing mistakes rather than tricking users into clicking anything, so it's a persistent, low-effort background threat that defenders address through proactive domain monitoring rather than by warning users about a single email.",
     "example": "A user typing a common misspelling of a popular webmail domain lands on a lookalike page built to harvest their credentials.",
     "related": ["lookalike-domain", "phishing", "dependency-confusion"]
+  },
+  {
+    "term": "Slopsquatting",
+    "slug": "slopsquatting",
+    "aka": ["AI Package Hallucination Squatting"],
+    "short": "Registering a malicious package under a name an AI coding tool hallucinates.",
+    "definition": "A supply-chain technique where an attacker registers a package under a name that large language models commonly hallucinate when generating code, so AI-assisted or agentic coding tools that trust the model's suggested import unknowingly install the attacker's malicious package instead of a real dependency.",
+    "significance": "It shifts the trust boundary from a human choosing a dependency to a model confidently inventing one, and as AI-assisted and agentic coding tools install packages with less human review, it becomes a viable, scalable new path into a build pipeline.",
+    "example": "An AI coding assistant suggests importing a plausible-sounding but nonexistent library; an attacker had already registered that exact name, so the auto-installed package is malicious.",
+    "related": ["dependency-confusion", "typosquatting", "supply-chain-compromise"]
   }
 ]
