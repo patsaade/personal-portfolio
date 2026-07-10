@@ -9,7 +9,7 @@
 // MITRE's own (Angular) Navigator app.
 import { css } from 'styled-system/css';
 
-export interface MatrixCell {
+interface MatrixCell {
   id: string;
   name: string;
   href: string;
@@ -18,7 +18,7 @@ export interface MatrixCell {
   /** Primary highlight (e.g. "covered in a writeup" / "maps to ATT&CK"). */
   accent?: boolean;
 }
-export interface MatrixColumn {
+interface MatrixColumn {
   tactic: string;
   /** Anchor-safe id — no leading '#'. */
   id: string;

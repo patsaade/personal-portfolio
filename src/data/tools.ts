@@ -21,7 +21,7 @@ import type { Reference } from './references';
 
 export type ToolCost = 'Open source' | 'Free' | 'Freemium';
 
-export interface Tool {
+interface Tool {
   name: string;
   slug: string;
   use: string; // short one-liner for the card

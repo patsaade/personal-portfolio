@@ -1,0 +1,9 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignore": [
+    "public/sw.js",
+    "scripts/gen-attack-map.mjs",
+    "scripts/gen-d3fend-map.mjs"
+  ],
+  "ignoreBinaries": ["gh"]
+}

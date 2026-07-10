@@ -6,13 +6,13 @@
 // attrs / toggles via `config`, so the feature is identical everywhere instead of
 // re-implemented per page. Pairs with `TagCombobox` (search + facet tokens) and
 // `FilterToggle` (the pill toggles).
-export interface ListFilterToggle {
+interface ListFilterToggle {
   /** Button id (rendered by FilterToggle). */
   id: string;
   /** A card is kept (while pressed) only if it carries this attribute. */
   attr: string;
 }
-export interface ListFilterChipGroup {
+interface ListFilterChipGroup {
   /** Selector for the exclusive single-select chip buttons (each carries data-filter="value"). */
   selector: string;
   /** Card attribute compared against the active chip's data-filter value. */
@@ -20,7 +20,7 @@ export interface ListFilterChipGroup {
   /** data-filter value meaning "no filter" (default 'all'). */
   allValue?: string;
 }
-export interface ListFilterUrlSync {
+interface ListFilterUrlSync {
   /** URL param for the free-text query (default 'q'). */
   queryParam?: string;
   /** URL param for the combobox facet tokens, comma-joined (default 'tag'). */
@@ -28,7 +28,7 @@ export interface ListFilterUrlSync {
   /** URL param for the chip-group selection, when chipGroup is set (default 'chip'). */
   chipParam?: string;
 }
-export interface ListFilterConfig {
+interface ListFilterConfig {
   /** TagCombobox id — its `comboboxchange` drives free-text + facet filtering. */
   comboboxId?: string;
   /** Card selector; its attribute (same name) holds the lowercased search text. */

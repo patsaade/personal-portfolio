@@ -155,5 +155,3 @@ export async function renderMarkPng(size) {
   // Render large for crisp pixels, downscale with sharp.
   return sharp(Buffer.from(markSvg(512, { bleed: true }))).resize(size, size).png().toBuffer();
 }
-
-export { C as OG_PALETTE };

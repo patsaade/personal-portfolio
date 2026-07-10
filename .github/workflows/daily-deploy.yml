@@ -21,6 +21,12 @@ concurrency:
   group: daily-deploy
   cancel-in-progress: false
 
+# This job only curls an external deploy-hook URL — no checkout, no GitHub API
+# calls — so it needs zero GITHUB_TOKEN scope. Explicit here rather than
+# inheriting the repo/org default, so a later edit that adds a step can't
+# silently pick up more access than it asked for.
+permissions: {}
+
 jobs:
   redeploy:
     runs-on: ubuntu-latest
