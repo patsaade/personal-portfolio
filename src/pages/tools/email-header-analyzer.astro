@@ -1,0 +1,131 @@
+---
+// Email Header & Auth-Chain Analyzer — paste a raw RFC 5322 header block and
+// walk the Received chain, read SPF/DKIM/DMARC verdicts straight out of an
+// existing Authentication-Results header (no live lookups), flag From/
+// Reply-To/Return-Path domain mismatches, and optionally decode M365/
+// Exchange-specific headers. Same page shape as the IOC Extractor / Hash
+// Calculator (intro aside -> interactive tool -> reference notes). Static
+// page — prerender to HTML served from the CDN.
+export const prerender = true;
+import { css } from 'styled-system/css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import Icon from '../../components/Icon.astro';
+import EmailHeaderAnalyzer from '../../components/EmailHeaderAnalyzer.astro';
+
+const sectionH2 = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  fontSize: '1.3rem',
+  fontWeight: 700,
+  mt: '2.5rem',
+  mb: '1rem',
+  pt: '1.5rem',
+  borderTop: '1px solid token(colors.border)',
+  scrollMarginTop: '90px',
+});
+const refTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' });
+const refTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)' });
+// Kept as a plain object (not a pre-atomized css() call) so refTdCode below
+// can css(refTdBase, ...) — a deep object merge that deterministically
+// overrides refTdBase's own color, unlike concatenating two independently-
+// atomized class strings (see STYLE_GUIDE.md "Buttons" for the failure mode this avoids).
+const refTdBase = { p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text', verticalAlign: 'top' } as const;
+const refTd = css(refTdBase);
+const refTdMuted = css({ ...refTdBase, color: 'textMuted', fontSize: '0.8rem' });
+const refTdCode = css(refTdBase, { fontFamily: 'mono', fontSize: '0.78rem', color: 'primary' });
+
+// SPF (RFC 7208), DKIM (RFC 6376, result names per RFC 8601), and DMARC
+// (RFC 7489) verdict meanings — standard, publicly documented result codes,
+// shown here purely as a reference; this tool never evaluates these itself.
+const VERDICT_NOTES: { mechanism: string; verdict: string; meaning: string }[] = [
+  { mechanism: 'SPF', verdict: 'pass', meaning: "The sending server's IP is authorized by the domain's published SPF record." },
+  { mechanism: 'SPF', verdict: 'fail', meaning: "The sending server's IP is explicitly NOT authorized (SPF \"-all\")." },
+  { mechanism: 'SPF', verdict: 'softfail', meaning: 'Probably not authorized, but the domain stops short of a hard fail (SPF "~all").' },
+  { mechanism: 'SPF', verdict: 'neutral', meaning: 'The domain explicitly declines to state a policy for this sender ("?all").' },
+  { mechanism: 'SPF', verdict: 'none', meaning: 'No SPF record was published for the domain at all.' },
+  { mechanism: 'DKIM', verdict: 'pass', meaning: 'The cryptographic signature validated against the published public key.' },
+  { mechanism: 'DKIM', verdict: 'fail', meaning: 'A signature was present but did not validate — the message (or signature) was likely altered in transit.' },
+  { mechanism: 'DKIM', verdict: 'none', meaning: 'No DKIM signature was present on the message.' },
+  { mechanism: 'DMARC', verdict: 'pass', meaning: "The message aligned with the domain's DMARC policy via SPF and/or DKIM." },
+  { mechanism: 'DMARC', verdict: 'fail', meaning: "The message failed to align with either SPF or DKIM under the domain's policy." },
+  { mechanism: 'Any', verdict: 'temperror', meaning: 'A transient error (e.g. a DNS timeout) prevented evaluation — often worth re-checking later.' },
+  { mechanism: 'Any', verdict: 'permerror', meaning: "A permanent error — the domain's own record is malformed or otherwise unusable." },
+];
+---
+
+<BaseLayout
+  title="Email Header & Auth-Chain Analyzer"
+  description="Paste raw email headers to walk the Received chain, read SPF/DKIM/DMARC verdicts, and flag From/Reply-To mismatches — entirely local."
+>
+  <PageHeader
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Tool Catalog', href: '/tools/' }, { label: 'Email Header Analyzer' }]}
+    eyebrow="Triage & Correlation"
+    title="Email Header & Auth-Chain Analyzer"
+    description="Paste a raw header block and get the Received chain (oldest hop first, with timing), SPF/DKIM/DMARC verdicts, and From/Reply-To/Return-Path mismatch flags — entirely in your browser."
+  />
+
+  <aside
+    class={css({
+      bg: 'bgSubtle',
+      border: '1px solid token(colors.border)',
+      borderLeftWidth: '3px',
+      borderLeftColor: 'primary',
+      borderRadius: 'md',
+      p: '1rem 1.25rem',
+      mb: '1.5rem',
+    })}
+  >
+    <p class={css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', m: 0 })}>
+      Reading a raw header block by hand — counting <code class={css({ fontFamily: 'mono', fontSize: '0.85rem', color: 'primary' })}>Received:</code> hops,
+      spotting a Reply-To that doesn't match From — is slow and easy to get wrong. This runs entirely in your
+      browser — <strong class={css({ color: 'text' })}>nothing you paste here is sent anywhere</strong> — and
+      it never performs a live SPF/DKIM/DMARC lookup of its own; it only reads back what a mail server already
+      decided and wrote into an existing <code class={css({ fontFamily: 'mono', fontSize: '0.85rem', color: 'primary' })}>Authentication-Results</code>{' '}
+      header, if one is present. Parsing is best-effort pattern matching over real-world header formats — review
+      results before acting on them.
+    </p>
+  </aside>
+
+  <h2 id="analyzer" class={css({ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.3rem', fontWeight: 700, mb: '1rem', scrollMarginTop: '90px' })}>
+    <Icon name="mail" size={20} class={css({ color: 'primary' })} /> Analyzer
+  </h2>
+  <EmailHeaderAnalyzer />
+
+  <h2 id="reference" class={sectionH2}>
+    <Icon name="list" size={20} class={css({ color: 'primary' })} /> SPF / DKIM / DMARC verdict reference
+  </h2>
+  <div class={css({ overflowX: 'auto' })}>
+    <table class={refTable}>
+      <thead>
+        <tr>
+          <th class={refTh}>Mechanism</th>
+          <th class={refTh}>Verdict</th>
+          <th class={refTh}>Meaning</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          VERDICT_NOTES.map((v) => (
+            <tr>
+              <td class={refTd}>
+                <strong class={css({ color: 'text' })}>{v.mechanism}</strong>
+              </td>
+              <td class={refTdCode}>{v.verdict}</td>
+              <td class={refTdMuted}>{v.meaning}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p class={css({ color: 'textMuted', fontSize: '0.88rem', mt: '1.5rem', lineHeight: 1.7 })}>
+    A <strong class={css({ color: 'text' })}>passing</strong> SPF/DKIM/DMARC verdict only proves the message is
+    properly authenticated <em>for the domain in its own From header</em> — it says nothing about whether that
+    domain itself is trustworthy. A convincing look-alike domain with correctly configured SPF/DKIM/DMARC records
+    of its own will pass every check here and still be a phishing attempt; that's exactly what the Reply-To /
+    Return-Path mismatch check above is for.
+  </p>
+</BaseLayout>

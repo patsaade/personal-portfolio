@@ -17,6 +17,8 @@
     "test:watch": "vitest",
     "gen:brand": "node scripts/gen-brand.mjs",
     "check:freshness": "node scripts/check-freshness.mjs",
+    "check:security": "node scripts/check-security.mjs",
+    "audit:deadcode": "knip",
     "prepare": "panda codegen"
   },
   "dependencies": {
@@ -32,6 +34,8 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
     "@pandacss/dev": "^1.11.3",
+    "knip": "^6.25.0",
+    "postcss": "^8.5.15",
     "satori": "^0.26.0",
     "sharp": "^0.35.1",
     "typescript": "^6.0.3",

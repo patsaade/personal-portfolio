@@ -60,7 +60,7 @@
 //     operators below to support correctly — left out for the same reason
 //     as Yandex, not because its index isn't independent.)
 
-export type EngineId = 'google' | 'bing' | 'duckduckgo' | 'brave';
+type EngineId = 'google' | 'bing' | 'duckduckgo' | 'brave';
 
 export interface SearchEngine {
   id: EngineId;
@@ -76,7 +76,7 @@ export const SEARCH_ENGINES: SearchEngine[] = [
   { id: 'brave', label: 'Brave', searchUrl: 'https://search.brave.com/search?q=' },
 ];
 
-export type DorkOperatorKind = 'prefix' | 'phrase' | 'exclude' | 'or';
+type DorkOperatorKind = 'prefix' | 'phrase' | 'exclude' | 'or';
 
 export interface DorkOperator {
   /** Also the builder's form-field id. */
@@ -193,7 +193,7 @@ export const DORK_OPERATORS: DorkOperator[] = [
   },
 ];
 
-export interface DorkPreset {
+interface DorkPreset {
   title: string;
   desc: string;
   /** The full, literal, verified query — a `<domain>`/`<name>` placeholder shown as a reference caption. */

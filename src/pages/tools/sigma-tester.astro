@@ -1,0 +1,141 @@
+---
+// Sigma Rule Tester & Builder — build a detection rule with a guided
+// field-by-field builder, or read its generated YAML, and test it live
+// against pasted sample events. Same page shape as the other interactive
+// tools (intro aside -> interactive tool -> reference notes). Static page —
+// prerender to HTML served from the CDN.
+export const prerender = true;
+import { css } from 'styled-system/css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import Icon from '../../components/Icon.astro';
+import SigmaTester from '../../components/SigmaTester.astro';
+import { SIGMA_MODIFIERS, CONDITION_UI_TYPES } from '../../utils/sigma';
+
+const sectionH2 = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  fontSize: '1.3rem',
+  fontWeight: 700,
+  mt: '2.5rem',
+  mb: '1rem',
+  pt: '1.5rem',
+  borderTop: '1px solid token(colors.border)',
+  scrollMarginTop: '90px',
+});
+const refTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' });
+const refTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)' });
+const refTdBase = { p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text', verticalAlign: 'top' } as const;
+const refTd = css(refTdBase);
+const refTdMuted = css({ ...refTdBase, color: 'textMuted', fontSize: '0.8rem' });
+const refTdCode = css(refTdBase, { fontFamily: 'mono', fontSize: '0.78rem', color: 'primary' });
+
+const CONDITION_NOTES: Record<string, string> = {
+  'list-and': 'Only the selections you check must all match — everything else in the rule is ignored for this condition.',
+  'list-or': 'Any one of the selections you check is enough to match.',
+  'them-all': 'Every selection currently in the rule must match.',
+  'them-any': 'Any single selection currently in the rule is enough to match.',
+  'wildcard-all': 'Every selection whose name starts with the prefix must match — a shorthand for "all of them" when you name selections consistently.',
+  'wildcard-any': 'Any selection whose name starts with the prefix is enough to match.',
+};
+---
+
+<BaseLayout
+  title="Sigma Rule Tester & Builder"
+  description="Build or paste a Sigma detection rule and test it live against sample log events, with per-condition match highlighting — entirely in your browser, nothing uploaded."
+>
+  <PageHeader
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Tool Catalog', href: '/tools/' }, { label: 'Sigma Rule Tester' }]}
+    eyebrow="Detection Engineering"
+    title="Sigma Rule Tester & Builder"
+    description="Build a Sigma detection rule field by field, or read its generated YAML, and test it live against sample log events — entirely local."
+  />
+
+  <aside
+    class={css({
+      bg: 'bgSubtle',
+      border: '1px solid token(colors.border)',
+      borderLeftWidth: '3px',
+      borderLeftColor: 'primary',
+      borderRadius: 'md',
+      p: '1rem 1.25rem',
+      mb: '1.5rem',
+    })}
+  >
+    <p class={css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', m: 0 })}>
+      Everything here runs entirely in your browser — <strong class={css({ color: 'text' })}>no external APIs, no
+      upload, nothing you build or paste ever leaves your machine</strong>. This tool implements a defined subset of
+      the <a href="https://github.com/SigmaHQ/sigma-specification" target="_blank" rel="noopener" class={css({ color: 'primary' })}>Sigma detection-rule spec</a> —
+      field-value matching and five ways selections can combine in a condition — not the full specification. The
+      YAML tab is a read-only, generated view of the builder's current state, not a general-purpose Sigma editor.
+    </p>
+  </aside>
+
+  <h2 id="tester" class={css({ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.3rem', fontWeight: 700, mb: '1rem', scrollMarginTop: '90px' })}>
+    <Icon name="target" size={20} class={css({ color: 'primary' })} /> Rule tester
+  </h2>
+  <SigmaTester />
+
+  <h2 id="modifiers" class={sectionH2}>
+    <Icon name="list" size={20} class={css({ color: 'primary' })} /> Supported field modifiers
+  </h2>
+  <div class={css({ overflowX: 'auto' })}>
+    <table class={refTable}>
+      <thead>
+        <tr>
+          <th class={refTh}>Modifier</th>
+          <th class={refTh}>Sigma syntax</th>
+          <th class={refTh}>Behavior</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          SIGMA_MODIFIERS.map((m) => (
+            <tr>
+              <td class={refTd}>
+                <strong class={css({ color: 'text' })}>{m.label}</strong>
+              </td>
+              <td class={refTdCode}>{m.syntax}</td>
+              <td class={refTdMuted}>{m.hint}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="conditions" class={sectionH2}>
+    <Icon name="link" size={20} class={css({ color: 'primary' })} /> Supported condition forms
+  </h2>
+  <div class={css({ overflowX: 'auto' })}>
+    <table class={refTable}>
+      <thead>
+        <tr>
+          <th class={refTh}>Combination logic</th>
+          <th class={refTh}>Behavior</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          CONDITION_UI_TYPES.map((t) => (
+            <tr>
+              <td class={refTd}>
+                <strong class={css({ color: 'text' })}>{t.label}</strong>
+              </td>
+              <td class={refTdMuted}>{CONDITION_NOTES[t.id] ?? ''}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p class={css({ color: 'textMuted', fontSize: '0.88rem', mt: '1.5rem', lineHeight: 1.7 })}>
+    A couple of deliberate scope cuts, not gaps: field <strong class={css({ color: 'text' })}>names</strong> match
+    exactly (no glob/wildcard support there — the only wildcard this tool understands is on a selection-name
+    prefix, e.g. "1 of selection*"), and a selection's field rows are always AND'd together — this tool doesn't
+    model Sigma's list-of-values-under-one-key OR shorthand. Mixing "and" and "or" in a single condition also
+    isn't supported; build separate selections instead.
+  </p>
+</BaseLayout>

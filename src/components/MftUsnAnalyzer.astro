@@ -1,0 +1,797 @@
+---
+// MFT & USN Journal Timestomp Analyzer — parse a single, already-carved-out
+// NTFS MFT FILE record or USN_RECORD_V2 (src/utils/mftUsn.ts), entirely
+// client-side. A record type switch ("MFT FILE record" / "USN journal
+// record") interprets the SAME pasted-hex-or-file bytes two different ways —
+// same shared-input pattern as the Dork Builder's engine switch reusing one
+// set of ingredient fields. The MFT path applies the Update Sequence Array
+// "fixup" correction before reading any attribute (never trusts the raw
+// on-disk sector-tail bytes), then extracts $STANDARD_INFORMATION and
+// $FILE_NAME and puts their 4 timestamp pairs side by side — a pair
+// disagreeing by more than a couple of seconds is the classic
+// timestomping/anti-forensics indicator, and this tool makes that visually
+// unmissable. The USN path decodes the Reason bitmask into its named flags.
+// Same "Scratch-inspired workspace" visual language and file-read pattern as
+// the Hash Calculator (a file picked here is read locally via
+// File#arrayBuffer() and never uploaded). Genuinely requires JS (parsing has
+// no static fallback), so the workspace stays hidden until the script
+// confirms it's running.
+import { css } from 'styled-system/css';
+import { tag } from 'styled-system/recipes';
+import Icon from './Icon.astro';
+import WorkspaceShell from './WorkspaceShell.astro';
+
+const paneLabel = css({
+  fontFamily: 'sans',
+  fontSize: '0.7rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: 'textMuted',
+  mb: '0.6rem',
+});
+const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted' });
+
+// Both switches (record type + input source) share this shape — matches
+// ModeToggle.astro/HashCalculator's Input source switch exactly (position:
+// relative + zIndex: 0 is the whole retrofit contract for
+// src/scripts/animatedSwitch.ts's site-wide sliding-thumb switch).
+const switchRow = css({
+  position: 'relative',
+  zIndex: 0,
+  display: 'inline-flex',
+  gap: '0.15rem',
+  p: '0.2rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+});
+const switchBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  px: '0.8rem',
+  py: '0.35rem',
+  fontFamily: 'sans',
+  fontSize: '0.82rem',
+  fontWeight: 600,
+  borderRadius: 'sm',
+  border: '1px solid transparent',
+  bg: 'transparent',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { color: 'text' },
+  '&[data-active]': { bg: 'bgSubtle', color: 'primary', borderColor: 'border', boxShadow: 'card' },
+  // Once AnimatedSwitch arms a sliding thumb underneath (CLAUDE.md invariant
+  // 12), suppress this button's own bg/border/shadow so the two don't
+  // animate against each other on separate clocks. No-JS/reduced-motion
+  // visitors never get data-switch-armed, so their indicator is untouched.
+  '[data-switch-armed] &': {
+    '&[data-active]': { bg: 'transparent', borderColor: 'transparent', boxShadow: 'none' },
+  },
+});
+const switchesRow = css({ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' });
+const switchField = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem' });
+
+const textarea = css({
+  fontFamily: 'mono',
+  fontSize: '0.85rem',
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  p: '0.7rem 0.85rem',
+  minH: '8rem',
+  resize: 'vertical',
+  overflowY: 'auto',
+  overflowX: 'hidden',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&::placeholder': { color: 'textMuted', opacity: 0.7 },
+});
+const fileRow = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.75rem',
+  flexWrap: 'wrap',
+  bg: 'bgCard',
+  border: '1px dashed token(colors.border)',
+  borderRadius: 'md',
+  p: '0.9rem',
+});
+const fileBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  fontFamily: 'sans',
+  fontSize: '0.85rem',
+  fontWeight: 600,
+  px: '0.8rem',
+  py: '0.45rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  bg: 'bgSubtle',
+  color: 'text',
+  cursor: 'pointer',
+  transition: 'border-color 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+const fileName = css({ fontFamily: 'mono', fontSize: '0.85rem', color: 'textMuted', wordBreak: 'break-all' });
+
+const statusBox = css({ color: 'textMuted', fontSize: '0.85rem', lineHeight: 1.6, m: 0 });
+
+const filenameCallout = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  fontFamily: 'mono',
+  fontSize: '0.95rem',
+  fontWeight: 700,
+  color: 'text',
+  wordBreak: 'break-all',
+});
+
+const notesList = css({ m: 0, p: 0, pl: '1.1rem', color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.6 });
+
+const fieldGrid = css({ display: 'flex', flexDirection: 'column', gap: '0.4rem' });
+const fieldRow = css({ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' });
+const fieldRowLabel = css({ flexShrink: 0, w: '12rem', fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 700, color: 'textMuted' });
+const fieldRowValue = css({ flex: 1, minW: '10rem', fontFamily: 'mono', fontSize: '0.85rem', color: 'text', wordBreak: 'break-word' });
+
+const banner = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  p: '0.85rem 1rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  fontFamily: 'sans',
+  fontWeight: 700,
+  fontSize: '0.92rem',
+});
+
+const tableWrap = css({ overflowX: 'auto' });
+const compareTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' });
+const compareTh = css({
+  textAlign: 'left',
+  color: 'textMuted',
+  fontFamily: 'sans',
+  fontWeight: 600,
+  fontSize: '0.68rem',
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  p: '0.4rem 0.6rem',
+  borderBottom: '1px solid token(colors.border)',
+});
+const compareTdLabel = css({
+  p: '0.5rem 0.6rem',
+  borderBottom: '1px solid token(colors.border)',
+  color: 'text',
+  fontFamily: 'sans',
+  fontWeight: 700,
+  fontSize: '0.82rem',
+  verticalAlign: 'top',
+  whiteSpace: 'nowrap',
+});
+const compareTd = css({
+  p: '0.5rem 0.6rem',
+  borderBottom: '1px solid token(colors.border)',
+  color: 'text',
+  verticalAlign: 'top',
+  fontFamily: 'mono',
+  fontSize: '0.78rem',
+});
+const compareCellInner = css({ display: 'flex', alignItems: 'center', gap: '0.35rem', wordBreak: 'break-word' });
+const compareStatus = css({ fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 700 });
+
+const miniCopyBtn = css({
+  flexShrink: 0,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '1.5rem',
+  h: '1.5rem',
+  borderRadius: 'sm',
+  border: '1px solid token(colors.border)',
+  bg: 'bgCard',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+
+const reasonList = css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', listStyle: 'none', m: 0, p: 0 });
+
+const actionRow = css({ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', mt: '0.75rem' });
+// Kept as plain objects (not pre-atomized css() calls) so the primary variant
+// below can css(actionBtnBase, primaryBtnBase) — a deep object merge that
+// deterministically overrides actionBtnBase's own _hover.color, unlike
+// concatenating two independently-atomized class strings (see STYLE_GUIDE.md
+// "Buttons" for why that pattern silently broke a hover state elsewhere).
+const actionBtnBase = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  fontSize: '0.82rem',
+  fontFamily: 'sans',
+  fontWeight: 600,
+  px: '0.7rem',
+  py: '0.4rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  color: 'text',
+  cursor: 'pointer',
+  bg: 'bgCard',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+} as const;
+const primaryBtnBase = { bg: 'primary', color: 'onPrimary', borderColor: 'primary', _hover: { opacity: 0.9, color: 'onPrimary' } } as const;
+const primaryActionBtn = css(actionBtnBase, primaryBtnBase);
+
+const sectionGap = css({ display: 'flex', flexDirection: 'column', gap: '0.6rem' });
+---
+
+<WorkspaceShell hook="data-mftusn-analyzer" noJsMessage="The MFT & USN journal analyzer needs JavaScript enabled." gap="1.25rem">
+  <div class={switchesRow}>
+    <div class={switchField}>
+      <span class={fieldLabel} id="mftusn-record-type-label">Record type</span>
+      <div class={switchRow} role="radiogroup" aria-labelledby="mftusn-record-type-label">
+        <button type="button" role="radio" aria-checked="true" data-active data-mftusn-record-type="mft" data-sound="tick" class={switchBtn}>MFT FILE record</button>
+        <button type="button" role="radio" aria-checked="false" data-mftusn-record-type="usn" data-sound="tick" class={switchBtn}>USN journal record</button>
+      </div>
+    </div>
+    <div class={switchField}>
+      <span class={fieldLabel} id="mftusn-input-mode-label">Input source</span>
+      <div class={switchRow} role="radiogroup" aria-labelledby="mftusn-input-mode-label">
+        <button type="button" role="radio" aria-checked="true" data-active data-mftusn-input-mode="hex" data-sound="tick" class={switchBtn}>Hex text</button>
+        <button type="button" role="radio" aria-checked="false" data-mftusn-input-mode="file" data-sound="tick" class={switchBtn}>File</button>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <label class={fieldLabel} for="mftusn-hex-input">Paste the raw bytes of ONE already-carved-out record, as hex</label>
+    <div class={css({ mt: '0.4rem' })}>
+      <textarea
+        id="mftusn-hex-input"
+        class={textarea}
+        placeholder="e.g. 46 49 4C 45 30 00 03 00 … — spaces, 0x prefixes, and newlines are all fine"
+        autocomplete="off"
+        spellcheck="false"
+        data-mftusn-hex
+      ></textarea>
+
+      <div class={fileRow} data-mftusn-file-row hidden>
+        <label class={fileBtn}>
+          <Icon name="download" size={15} /> Choose file
+          <input type="file" data-mftusn-file class={css({ display: 'none' })} />
+        </label>
+        <span class={fileName} data-mftusn-file-name>No file chosen — nothing is uploaded, it's read locally in your browser.</span>
+      </div>
+    </div>
+  </div>
+
+  <p class={statusBox} data-mftusn-status role="status" aria-live="polite">Paste hex or choose a file above to parse a record.</p>
+
+  {/* ------------------------------------------------------------------ */}
+  {/* MFT FILE record results                                            */}
+  {/* ------------------------------------------------------------------ */}
+  <div class={sectionGap} data-mftusn-mft-panel hidden>
+    <p class={filenameCallout} data-mftusn-mft-filename hidden></p>
+    <ul class={notesList} data-mftusn-mft-notes hidden></ul>
+
+    <div>
+      <p class={paneLabel}>Record header</p>
+      <div class={fieldGrid}>
+        <div class={fieldRow}><span class={fieldRowLabel}>Sequence number</span><span class={fieldRowValue} data-mftusn-mft-field="sequenceNumber"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>Hard link count</span><span class={fieldRowValue} data-mftusn-mft-field="hardLinkCount"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>In use</span><span class={fieldRowValue} data-mftusn-mft-field="inUse"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>Is directory</span><span class={fieldRowValue} data-mftusn-mft-field="isDirectory"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>Used / allocated size</span><span class={fieldRowValue} data-mftusn-mft-field="sizes"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>MFT record number</span><span class={fieldRowValue} data-mftusn-mft-field="mftRecordNumber"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>Base file record</span><span class={fieldRowValue} data-mftusn-mft-field="baseFileRecord"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>Fixup USN / sectors verified</span><span class={fieldRowValue} data-mftusn-mft-field="fixup"></span></div>
+      </div>
+    </div>
+
+    <div class={banner} data-mftusn-mft-banner role="status" aria-live="polite">
+      <Icon name="alert-triangle" size={18} data-mftusn-mft-banner-icon />
+      <span data-mftusn-mft-banner-text></span>
+    </div>
+
+    <div>
+      <p class={paneLabel}>$STANDARD_INFORMATION vs $FILE_NAME</p>
+      <div class={tableWrap} data-mftusn-mft-compare-wrap>
+        <table class={compareTable}>
+          <thead>
+            <tr>
+              <th class={compareTh}>Field</th>
+              <th class={compareTh}>$STANDARD_INFORMATION</th>
+              <th class={compareTh}>$FILE_NAME</th>
+              <th class={compareTh}>Δ</th>
+              <th class={compareTh}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              [
+                { field: 'created', label: 'Created' },
+                { field: 'modified', label: 'Modified' },
+                { field: 'mftModified', label: 'MFT Modified' },
+                { field: 'accessed', label: 'Accessed' },
+              ].map((row) => (
+                <tr data-mftusn-compare-row data-mftusn-compare-field={row.field}>
+                  <td class={compareTdLabel}>{row.label}</td>
+                  <td class={compareTd}>
+                    <span class={compareCellInner}>
+                      <span data-mftusn-compare-si></span>
+                      <button type="button" class={miniCopyBtn} data-mftusn-compare-copy-si data-copy-pop data-sound="copy" aria-label={`Copy $STANDARD_INFORMATION ${row.label}`} title="Copy">
+                        <Icon name="copy" size={11} />
+                      </button>
+                    </span>
+                  </td>
+                  <td class={compareTd}>
+                    <span class={compareCellInner}>
+                      <span data-mftusn-compare-fn></span>
+                      <button type="button" class={miniCopyBtn} data-mftusn-compare-copy-fn data-copy-pop data-sound="copy" aria-label={`Copy $FILE_NAME ${row.label}`} title="Copy">
+                        <Icon name="copy" size={11} />
+                      </button>
+                    </span>
+                  </td>
+                  <td class={compareTd} data-mftusn-compare-delta></td>
+                  <td class={compareTd}><span class={compareStatus} data-mftusn-compare-status></span></td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class={statusBox} data-mftusn-mft-compare-unavailable hidden>
+        Comparing $STANDARD_INFORMATION against $FILE_NAME needs both attributes present and resident — see the notes above for why one is missing.
+      </p>
+    </div>
+
+    <div>
+      <p class={paneLabel}>Additional $FILE_NAME / $STANDARD_INFORMATION details</p>
+      <div class={fieldGrid}>
+        <div class={fieldRow}><span class={fieldRowLabel}>File name</span><span class={fieldRowValue} data-mftusn-mft-field="fileName"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>Namespace</span><span class={fieldRowValue} data-mftusn-mft-field="namespace"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>Parent directory</span><span class={fieldRowValue} data-mftusn-mft-field="parentDirectory"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>Allocated / real size</span><span class={fieldRowValue} data-mftusn-mft-field="fnSizes"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>File attributes (SI)</span><span class={fieldRowValue} data-mftusn-mft-field="fileAttributes"></span></div>
+      </div>
+    </div>
+
+    <div class={actionRow}>
+      <button type="button" class={primaryActionBtn} data-mftusn-mft-copy-all data-copy-pop data-sound="copy">
+        <Icon name="copy" size={14} /> Copy full result as JSON
+      </button>
+    </div>
+  </div>
+
+  {/* ------------------------------------------------------------------ */}
+  {/* USN_RECORD_V2 results                                              */}
+  {/* ------------------------------------------------------------------ */}
+  <div class={sectionGap} data-mftusn-usn-panel hidden>
+    <p class={filenameCallout} data-mftusn-usn-filename hidden></p>
+
+    <div>
+      <p class={paneLabel}>Record fields</p>
+      <div class={fieldGrid}>
+        <div class={fieldRow}><span class={fieldRowLabel}>Record length</span><span class={fieldRowValue} data-mftusn-usn-field="recordLength"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>Version</span><span class={fieldRowValue} data-mftusn-usn-field="version"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>File reference</span><span class={fieldRowValue} data-mftusn-usn-field="fileReference"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>Parent file reference</span><span class={fieldRowValue} data-mftusn-usn-field="parentFileReference"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>USN</span><span class={fieldRowValue} data-mftusn-usn-field="usn"></span></div>
+        <div class={fieldRow}>
+          <span class={fieldRowLabel}>Timestamp</span>
+          <span class={compareCellInner}>
+            <span class={fieldRowValue} data-mftusn-usn-field="timeStamp"></span>
+            <button type="button" class={miniCopyBtn} data-mftusn-usn-copy-timestamp data-copy-pop data-sound="copy" aria-label="Copy timestamp" title="Copy">
+              <Icon name="copy" size={11} />
+            </button>
+          </span>
+        </div>
+        <div class={fieldRow}><span class={fieldRowLabel}>Source info</span><span class={fieldRowValue} data-mftusn-usn-field="sourceInfo"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>Security ID</span><span class={fieldRowValue} data-mftusn-usn-field="securityId"></span></div>
+        <div class={fieldRow}><span class={fieldRowLabel}>File attributes</span><span class={fieldRowValue} data-mftusn-usn-field="fileAttributes"></span></div>
+      </div>
+    </div>
+
+    <div>
+      <p class={paneLabel}>Reason — <span data-mftusn-usn-reason-hex></span></p>
+      <ul class={reasonList} data-mftusn-usn-reason-list></ul>
+      <p class={statusBox} data-mftusn-usn-reason-empty hidden>No Reason flags set.</p>
+      <template data-mftusn-usn-reason-template>
+        <li>
+          <span class={tag({ tone: 'primary', mono: true })} data-mftusn-usn-reason-name title=""></span>
+        </li>
+      </template>
+    </div>
+
+    <div class={actionRow}>
+      <button type="button" class={primaryActionBtn} data-mftusn-usn-copy-all data-copy-pop data-sound="copy">
+        <Icon name="copy" size={14} /> Copy full result as JSON
+      </button>
+    </div>
+  </div>
+</WorkspaceShell>
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  import { parseMftRecord, parseUsnRecord, hexToBytes } from '../utils/mftUsn';
+  import { pop } from '../scripts/copyPop';
+
+  (function () {
+    function init() {
+      var roots = document.querySelectorAll('[data-mftusn-analyzer]:not([data-ready])');
+      Array.prototype.forEach.call(roots, function (root) {
+        var recordTypeBtns = Array.prototype.slice.call(root.querySelectorAll('[data-mftusn-record-type]'));
+        var inputModeBtns = Array.prototype.slice.call(root.querySelectorAll('[data-mftusn-input-mode]'));
+        var hexInput = root.querySelector('[data-mftusn-hex]');
+        var fileRowEl = root.querySelector('[data-mftusn-file-row]');
+        var fileInput = root.querySelector('[data-mftusn-file]');
+        var fileNameEl = root.querySelector('[data-mftusn-file-name]');
+        var statusEl = root.querySelector('[data-mftusn-status]');
+        var mftPanel = root.querySelector('[data-mftusn-mft-panel]');
+        var usnPanel = root.querySelector('[data-mftusn-usn-panel]');
+        if (!hexInput || !fileInput || !statusEl || !mftPanel || !usnPanel) return;
+
+        var mftFilenameEl = mftPanel.querySelector('[data-mftusn-mft-filename]');
+        var mftNotesEl = mftPanel.querySelector('[data-mftusn-mft-notes]');
+        var mftFieldEls = {};
+        Array.prototype.forEach.call(mftPanel.querySelectorAll('[data-mftusn-mft-field]'), function (el) {
+          mftFieldEls[el.getAttribute('data-mftusn-mft-field')] = el;
+        });
+        var mftBanner = mftPanel.querySelector('[data-mftusn-mft-banner]');
+        var mftBannerText = mftPanel.querySelector('[data-mftusn-mft-banner-text]');
+        var mftCompareWrap = mftPanel.querySelector('[data-mftusn-mft-compare-wrap]');
+        var mftCompareUnavailable = mftPanel.querySelector('[data-mftusn-mft-compare-unavailable]');
+        var mftCompareRows = {};
+        Array.prototype.forEach.call(mftPanel.querySelectorAll('[data-mftusn-compare-row]'), function (row) {
+          mftCompareRows[row.getAttribute('data-mftusn-compare-field')] = {
+            row: row,
+            si: row.querySelector('[data-mftusn-compare-si]'),
+            fn: row.querySelector('[data-mftusn-compare-fn]'),
+            delta: row.querySelector('[data-mftusn-compare-delta]'),
+            status: row.querySelector('[data-mftusn-compare-status]'),
+            copySi: row.querySelector('[data-mftusn-compare-copy-si]'),
+            copyFn: row.querySelector('[data-mftusn-compare-copy-fn]'),
+          };
+        });
+        var mftCopyAllBtn = mftPanel.querySelector('[data-mftusn-mft-copy-all]');
+
+        var usnFilenameEl = usnPanel.querySelector('[data-mftusn-usn-filename]');
+        var usnFieldEls = {};
+        Array.prototype.forEach.call(usnPanel.querySelectorAll('[data-mftusn-usn-field]'), function (el) {
+          usnFieldEls[el.getAttribute('data-mftusn-usn-field')] = el;
+        });
+        var usnCopyTimestampBtn = usnPanel.querySelector('[data-mftusn-usn-copy-timestamp]');
+        var usnReasonHex = usnPanel.querySelector('[data-mftusn-usn-reason-hex]');
+        var usnReasonList = usnPanel.querySelector('[data-mftusn-usn-reason-list]');
+        var usnReasonEmpty = usnPanel.querySelector('[data-mftusn-usn-reason-empty]');
+        var usnReasonTemplate = usnPanel.querySelector('[data-mftusn-usn-reason-template]');
+        var usnCopyAllBtn = usnPanel.querySelector('[data-mftusn-usn-copy-all]');
+
+        var recordType = 'mft'; // 'mft' | 'usn'
+        var inputMode = 'hex'; // 'hex' | 'file'
+        var currentBytes = null; // Uint8Array | null
+        var lastMftRecord = null;
+        var lastUsnRecord = null;
+
+        function formatBytes(n) {
+          if (n < 1024) return n + ' B';
+          if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+          return (n / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        function fmtRef(ref) {
+          if (!ref) return '';
+          return 'record #' + ref.recordNumber.toString() + ', sequence ' + ref.sequenceNumber;
+        }
+
+        function fmtHex(n, width) {
+          return '0x' + n.toString(16).toUpperCase().padStart(width || 2, '0');
+        }
+
+        function jsonReplacer(_key, value) {
+          return typeof value === 'bigint' ? value.toString() : value;
+        }
+
+        function copyText(btn, text) {
+          if (!text) return;
+          navigator.clipboard.writeText(text).then(function () { pop(btn); }).catch(function () {});
+        }
+
+        // --- MFT rendering -------------------------------------------------
+
+        function renderMft(record) {
+          lastMftRecord = record;
+
+          if (record.fileName && record.fileName.fileName) {
+            mftFilenameEl.textContent = 'File: ' + record.fileName.fileName;
+            mftFilenameEl.hidden = false;
+          } else {
+            mftFilenameEl.hidden = true;
+          }
+
+          mftNotesEl.innerHTML = '';
+          if (record.notes.length) {
+            record.notes.forEach(function (note) {
+              var li = document.createElement('li');
+              li.textContent = note;
+              mftNotesEl.appendChild(li);
+            });
+            mftNotesEl.hidden = false;
+          } else {
+            mftNotesEl.hidden = true;
+          }
+
+          mftFieldEls.sequenceNumber.textContent = String(record.header.sequenceNumber);
+          mftFieldEls.hardLinkCount.textContent = String(record.header.hardLinkCount);
+          mftFieldEls.inUse.textContent = record.header.inUse ? 'Yes' : 'No';
+          mftFieldEls.isDirectory.textContent = record.header.isDirectory ? 'Yes' : 'No';
+          mftFieldEls.sizes.textContent = record.header.usedSize + ' / ' + record.header.allocatedSize + ' bytes';
+          mftFieldEls.mftRecordNumber.textContent =
+            record.header.mftRecordNumber !== null ? String(record.header.mftRecordNumber) : 'Unavailable (short/legacy-style header)';
+          mftFieldEls.baseFileRecord.textContent =
+            record.header.baseFileRecord.raw === 0n ? '0 — this is the base record' : fmtRef(record.header.baseFileRecord);
+          mftFieldEls.fixup.textContent = fmtHex(record.fixup.usn, 4) + ' / ' + record.fixup.sectorsChecked + ' sector(s) verified';
+
+          if (record.standardInformation) {
+            mftFieldEls.fileAttributes.textContent = fmtHex(record.standardInformation.fileAttributes, 8);
+          } else {
+            mftFieldEls.fileAttributes.textContent = 'Not available';
+          }
+          if (record.fileName) {
+            mftFieldEls.fileName.textContent = record.fileName.fileName;
+            mftFieldEls.namespace.textContent = record.fileName.namespaceLabel;
+            mftFieldEls.parentDirectory.textContent = fmtRef(record.fileName.parentDirectory);
+            mftFieldEls.fnSizes.textContent = record.fileName.allocatedSize.toString() + ' / ' + record.fileName.realSize.toString() + ' bytes';
+          } else {
+            mftFieldEls.fileName.textContent = 'Not available';
+            mftFieldEls.namespace.textContent = 'Not available';
+            mftFieldEls.parentDirectory.textContent = 'Not available';
+            mftFieldEls.fnSizes.textContent = 'Not available';
+          }
+
+          if (record.comparisons.length) {
+            mftCompareWrap.hidden = false;
+            mftCompareUnavailable.hidden = true;
+            record.comparisons.forEach(function (cmp) {
+              var els = mftCompareRows[cmp.field];
+              if (!els) return;
+              els.si.textContent = cmp.standardInformation.display;
+              els.fn.textContent = cmp.fileName.display;
+              els.delta.textContent = cmp.deltaSeconds !== null ? cmp.deltaSeconds.toFixed(3) + 's' : 'n/a';
+              if (cmp.mismatch) {
+                els.row.setAttribute('data-mismatch', '');
+                els.status.textContent = 'MISMATCH';
+              } else {
+                els.row.removeAttribute('data-mismatch');
+                els.status.textContent = 'Match';
+              }
+              els.copySi.onclick = function () { copyText(els.copySi, cmp.standardInformation.display); };
+              els.copyFn.onclick = function () { copyText(els.copyFn, cmp.fileName.display); };
+            });
+            mftBanner.hidden = false;
+            if (record.timestompDetected) {
+              mftBanner.setAttribute('data-state', 'detected');
+              var flagged = record.comparisons.filter(function (c) { return c.mismatch; }).map(function (c) { return c.label; });
+              mftBannerText.textContent =
+                'Timestomping indicator: $STANDARD_INFORMATION and $FILE_NAME disagree on ' + flagged.join(', ') + '.';
+            } else {
+              mftBanner.setAttribute('data-state', 'clean');
+              mftBannerText.textContent = '$STANDARD_INFORMATION and $FILE_NAME timestamps agree — no timestomping indicator.';
+            }
+          } else {
+            mftCompareWrap.hidden = true;
+            mftCompareUnavailable.hidden = false;
+            mftBanner.hidden = false;
+            mftBanner.setAttribute('data-state', 'unavailable');
+            mftBannerText.textContent = 'Comparison unavailable — this record is missing $STANDARD_INFORMATION or $FILE_NAME.';
+          }
+        }
+
+        // --- USN rendering ---------------------------------------------
+
+        function renderUsn(record) {
+          lastUsnRecord = record;
+
+          if (record.fileName) {
+            usnFilenameEl.textContent = 'File: ' + record.fileName;
+            usnFilenameEl.hidden = false;
+          } else {
+            usnFilenameEl.hidden = true;
+          }
+
+          usnFieldEls.recordLength.textContent = record.recordLength + ' bytes';
+          usnFieldEls.version.textContent = record.majorVersion + '.' + record.minorVersion;
+          usnFieldEls.fileReference.textContent = fmtRef(record.fileReferenceNumber);
+          usnFieldEls.parentFileReference.textContent = fmtRef(record.parentFileReferenceNumber);
+          usnFieldEls.usn.textContent = record.usn.toString();
+          usnFieldEls.timeStamp.textContent = record.timeStamp.display;
+          usnFieldEls.sourceInfo.textContent = fmtHex(record.sourceInfo, 8);
+          usnFieldEls.securityId.textContent = fmtHex(record.securityId, 8);
+          usnFieldEls.fileAttributes.textContent = fmtHex(record.fileAttributes, 8);
+          usnCopyTimestampBtn.onclick = function () { copyText(usnCopyTimestampBtn, record.timeStamp.display); };
+
+          usnReasonHex.textContent = fmtHex(record.reason, 8);
+          usnReasonList.innerHTML = '';
+          if (record.reasonFlags.length && usnReasonTemplate) {
+            usnReasonEmpty.hidden = true;
+            record.reasonFlags.forEach(function (flag) {
+              var li = usnReasonTemplate.content.firstElementChild.cloneNode(true);
+              var nameEl = li.querySelector('[data-mftusn-usn-reason-name]');
+              nameEl.textContent = flag.name;
+              nameEl.title = flag.description;
+              usnReasonList.appendChild(li);
+            });
+          } else {
+            usnReasonEmpty.hidden = false;
+          }
+        }
+
+        // --- Parse pipeline --------------------------------------------
+
+        function runParse() {
+          mftPanel.hidden = recordType !== 'mft';
+          usnPanel.hidden = recordType !== 'usn';
+
+          if (!currentBytes || currentBytes.length === 0) {
+            statusEl.textContent = 'Paste hex or choose a file above to parse a record.';
+            statusEl.removeAttribute('data-state');
+            mftPanel.hidden = true;
+            usnPanel.hidden = true;
+            return;
+          }
+
+          if (recordType === 'mft') {
+            var mResult = parseMftRecord(currentBytes);
+            if (!mResult.ok) {
+              statusEl.textContent = mResult.error;
+              statusEl.setAttribute('data-state', 'error');
+              mftPanel.hidden = true;
+              return;
+            }
+            statusEl.textContent = 'Parsed a valid MFT FILE record.';
+            statusEl.setAttribute('data-state', 'ok');
+            mftPanel.hidden = false;
+            renderMft(mResult.record);
+          } else {
+            var uResult = parseUsnRecord(currentBytes);
+            if (!uResult.ok) {
+              statusEl.textContent = uResult.error;
+              statusEl.setAttribute('data-state', 'error');
+              usnPanel.hidden = true;
+              return;
+            }
+            statusEl.textContent = 'Parsed a valid USN_RECORD_V2.';
+            statusEl.setAttribute('data-state', 'ok');
+            usnPanel.hidden = false;
+            renderUsn(uResult.record);
+          }
+        }
+
+        function setBytes(bytes) {
+          currentBytes = bytes;
+          runParse();
+        }
+
+        // --- Input wiring ------------------------------------------------
+
+        var debounceTimer = null;
+        hexInput.addEventListener('input', function () {
+          clearTimeout(debounceTimer);
+          var val = hexInput.value;
+          debounceTimer = setTimeout(function () {
+            if (!val.trim()) { setBytes(null); return; }
+            var bytes = hexToBytes(val);
+            if (!bytes) {
+              statusEl.textContent = 'Could not read that as hex — expected an even number of hex digits (0-9, a-f), optionally separated by spaces, newlines, commas, or "0x" prefixes.';
+              statusEl.setAttribute('data-state', 'error');
+              mftPanel.hidden = true;
+              usnPanel.hidden = true;
+              currentBytes = null;
+              return;
+            }
+            setBytes(bytes);
+          }, 150);
+        });
+
+        fileInput.addEventListener('change', function () {
+          var file = fileInput.files && fileInput.files[0];
+          if (!file) {
+            fileNameEl.textContent = 'No file chosen — nothing is uploaded, it\'s read locally in your browser.';
+            setBytes(null);
+            return;
+          }
+          fileNameEl.textContent = file.name + ' (' + formatBytes(file.size) + ') — read locally, never uploaded.';
+          file.arrayBuffer().then(function (buf) {
+            setBytes(new Uint8Array(buf));
+          });
+        });
+
+        function setInputMode(next) {
+          inputMode = next;
+          inputModeBtns.forEach(function (b) {
+            var active = b.getAttribute('data-mftusn-input-mode') === next;
+            if (active) b.setAttribute('data-active', ''); else b.removeAttribute('data-active');
+            b.setAttribute('aria-checked', String(active));
+          });
+          hexInput.hidden = next !== 'hex';
+          fileRowEl.hidden = next !== 'file';
+        }
+        inputModeBtns.forEach(function (b) {
+          b.addEventListener('click', function () { setInputMode(b.getAttribute('data-mftusn-input-mode')); });
+        });
+
+        function setRecordType(next) {
+          recordType = next;
+          recordTypeBtns.forEach(function (b) {
+            var active = b.getAttribute('data-mftusn-record-type') === next;
+            if (active) b.setAttribute('data-active', ''); else b.removeAttribute('data-active');
+            b.setAttribute('aria-checked', String(active));
+          });
+          runParse();
+        }
+        recordTypeBtns.forEach(function (b) {
+          b.addEventListener('click', function () { setRecordType(b.getAttribute('data-mftusn-record-type')); });
+        });
+
+        if (mftCopyAllBtn) {
+          mftCopyAllBtn.addEventListener('click', function () {
+            if (!lastMftRecord) return;
+            copyText(mftCopyAllBtn, JSON.stringify(lastMftRecord, jsonReplacer, 2));
+          });
+        }
+        if (usnCopyAllBtn) {
+          usnCopyAllBtn.addEventListener('click', function () {
+            if (!lastUsnRecord) return;
+            copyText(usnCopyAllBtn, JSON.stringify(lastUsnRecord, jsonReplacer, 2));
+          });
+        }
+
+        root.setAttribute('data-ready', '');
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>
+
+<style>
+  [data-mftusn-status][data-state='error'] {
+    color: color-mix(in srgb, red 65%, var(--colors-text));
+  }
+  [data-mftusn-status][data-state='ok'] {
+    color: var(--colors-primary);
+  }
+  [data-mftusn-mft-banner][data-state='detected'] {
+    color: color-mix(in srgb, red 70%, var(--colors-text));
+    border-color: color-mix(in srgb, red 40%, transparent);
+    background: color-mix(in srgb, red 8%, transparent);
+  }
+  [data-mftusn-mft-banner][data-state='clean'] {
+    color: var(--colors-primary);
+    border-color: color-mix(in srgb, var(--colors-primary) 35%, transparent);
+    background: color-mix(in srgb, var(--colors-primary) 8%, transparent);
+  }
+  [data-mftusn-mft-banner][data-state='unavailable'] {
+    color: var(--colors-text-muted);
+  }
+  [data-mftusn-mft-banner]:not([data-state='detected']) [data-mftusn-mft-banner-icon] {
+    display: none;
+  }
+  [data-mftusn-compare-row][data-mismatch] {
+    background: color-mix(in srgb, red 10%, transparent);
+  }
+  [data-mftusn-compare-row][data-mismatch] [data-mftusn-compare-status] {
+    color: color-mix(in srgb, red 65%, var(--colors-text));
+  }
+  [data-mftusn-compare-row]:not([data-mismatch]) [data-mftusn-compare-status] {
+    color: var(--colors-text-muted);
+    font-weight: 500;
+  }
+</style>

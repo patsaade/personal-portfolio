@@ -30,9 +30,9 @@
 // IPs only) so it never reads as a real captured event.
 import type { Reference } from './references';
 
-export type EventIdSource = 'security' | 'sysmon';
+type EventIdSource = 'security' | 'sysmon';
 
-export interface EventIdField {
+interface EventIdField {
   name: string;
   desc: string;
 }

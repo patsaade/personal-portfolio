@@ -1,0 +1,558 @@
+---
+// Email Header & Auth-Chain Analyzer — paste a raw RFC 5322 header block
+// (e.g. copied from a mail client's "Show original" / "View source" view)
+// and get, entirely client-side (src/utils/emailHeaders.ts):
+//   1. The Received: chain, walked oldest-hop-first with an inter-hop time
+//      delta (each new hop is PREPENDED by the server that adds it, so the
+//      raw pasted order is newest-first — this reverses that for display).
+//   2. SPF/DKIM/DMARC verdicts read straight out of an existing
+//      Authentication-Results: header via plain string/regex parsing — this
+//      tool performs NO live DNS/SPF/DKIM/DMARC lookups of its own, which is
+//      called out explicitly next to the results, not just in this comment.
+//   3. From/Reply-To/Return-Path domain-mismatch flags — a classic phishing
+//      tell (the visible sender domain doesn't match where a reply or a
+//      bounce actually goes).
+//   4. An optional, collapsible decode of the M365/Exchange-specific
+//      headers analysts see most often (X-MS-Exchange-Organization-*,
+//      X-Forefront-Antispam-Report's SCL/BCL/PCL fields) against a small
+//      static reference table (see emailHeaders.ts for sourcing).
+// Same paste-text-blob -> live-parsed-results UX as the IOC Extractor, same
+// "Scratch-inspired workspace" visual language as the site's other builder
+// tools. Genuinely requires JS (parsing has no meaningful static fallback),
+// so the workspace stays hidden until the script confirms it's running.
+import { css } from 'styled-system/css';
+import { tag } from 'styled-system/recipes';
+import Icon from './Icon.astro';
+import WorkspaceShell from './WorkspaceShell.astro';
+
+// A hand-built, clearly FABRICATED example header block — RFC 5737
+// documentation-range IPs (203.0.113.0/24, 198.51.100.0/24, 192.0.2.0/24),
+// obviously-fake example.* domains, a fake Message-ID. Never a real captured
+// email (see CLAUDE.md's Content accuracy section). Deliberately modeled on
+// a classic invoice-fraud pattern (From/Return-Path share a domain, but
+// Reply-To is quietly routed to a different attacker-controlled domain) so
+// the mismatch detector has something real to demonstrate on load.
+const FABRICATED_EXAMPLE = `Delivered-To: analyst@example.com
+Received: from EXAMPLE-MBX02.corp.example.org (192.0.2.11) by
+\tEXAMPLE-MBX01.corp.example.org (192.0.2.10) with Microsoft SMTP Server
+\t(version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.0000.000;
+\tWed, 1 Jan 2025 08:15:58 -0800
+Received: from mail-relay.example.net (mail-relay.example.net [198.51.100.23])
+\tby EXAMPLE-MBX02.corp.example.org with Microsoft SMTP Server id 15.20.0000.000
+\tfor <analyst@example.com>;
+\tWed, 1 Jan 2025 08:15:40 -0800
+Received: from smtp-out.example.org (smtp-out.example.org [203.0.113.45])
+\tby mail-relay.example.net with ESMTP id 4example00;
+\tWed, 1 Jan 2025 08:15:12 -0800
+Authentication-Results: mx.example.com;
+\tdkim=pass header.i=@example.org header.s=selector1 header.b=xyz789;
+\tspf=pass (example.com: domain of billing@example.org designates 203.0.113.45 as permitted sender) smtp.mailfrom=billing@example.org;
+\tdmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=example.org
+X-MS-Exchange-Organization-AuthAs: Internal
+X-MS-Exchange-Organization-AuthMechanism: 04
+X-MS-Exchange-Organization-AuthSource: EXAMPLE-MBX01.corp.example.org
+X-MS-Exchange-Organization-SCL: 1
+X-Forefront-Antispam-Report: CIP:203.0.113.45;CTRY:US;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:smtp-out.example.org;PTR:smtp-out.example.org;CAT:NONE;SFTY:;
+From: "Billing Department" <billing@example.org>
+Reply-To: payments-support@notexample-billing.net
+Return-Path: <bounce@example.org>
+To: Analyst <analyst@example.com>
+Subject: Invoice #4471 - Payment Confirmation Required
+Date: Wed, 1 Jan 2025 08:15:10 -0800
+Message-ID: <fake-example-id-0001@example.org>
+`;
+
+const paneLabel = css({
+  fontFamily: 'sans',
+  fontSize: '0.7rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: 'textMuted',
+  mb: '0.6rem',
+});
+const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted', mb: '0.3rem', display: 'block' });
+const caption = css({ color: 'textMuted', fontSize: '0.85rem', m: 0, lineHeight: 1.5 });
+
+const textarea = css({
+  width: '100%',
+  fontFamily: 'mono',
+  fontSize: '0.8rem',
+  lineHeight: 1.5,
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.75rem',
+  py: '0.6rem',
+  minH: '11rem',
+  maxH: '22rem',
+  resize: 'vertical',
+  overflowY: 'auto',
+  overflowX: 'auto',
+  whiteSpace: 'pre',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+});
+const exampleNote = css({ color: 'textMuted', fontSize: '0.78rem', lineHeight: 1.5, mt: '0.4rem', m: 0 });
+const inlineCode = css({ fontFamily: 'mono', fontSize: '0.76rem', color: 'primary' });
+
+const actionRow = css({ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', mt: '0.6rem' });
+// Kept as plain objects (not pre-atomized css() calls) so a variant can be
+// built as css(actionBtnBase, variant) — a deep object merge that
+// deterministically overrides actionBtnBase's own _hover, unlike
+// concatenating two independently-atomized class strings (see
+// STYLE_GUIDE.md "Buttons" for the exact failure mode this avoids).
+const actionBtnBase = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  fontSize: '0.82rem',
+  fontFamily: 'sans',
+  fontWeight: 600,
+  px: '0.7rem',
+  py: '0.4rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  color: 'text',
+  cursor: 'pointer',
+  bg: 'bgCard',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+} as const;
+const actionBtn = css(actionBtnBase);
+
+// ── Received chain ──────────────────────────────────────────────────────
+const hopList = css({
+  listStyle: 'none',
+  m: 0,
+  p: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.5rem',
+  maxH: '26rem',
+  overflowY: 'auto',
+  overflowX: 'hidden',
+});
+const hopRow = css({
+  display: 'flex',
+  gap: '0.7rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  p: '0.65rem 0.8rem',
+});
+const hopIndex = css({
+  flexShrink: 0,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '1.6rem',
+  h: '1.6rem',
+  borderRadius: 'full',
+  bg: 'color-mix(in srgb, token(colors.primary) 14%, transparent)',
+  color: 'primary',
+  fontFamily: 'sans',
+  fontSize: '0.72rem',
+  fontWeight: 700,
+});
+const hopBody = css({ display: 'flex', flexDirection: 'column', gap: '0.2rem', minW: 0, flex: 1 });
+const hopLine = css({ display: 'flex', gap: '0.5rem', fontSize: '0.8rem', lineHeight: 1.5 });
+const hopLineLabel = css({ flexShrink: 0, w: '3rem', fontFamily: 'sans', fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'textMuted', pt: '0.1rem' });
+const hopLineValue = css({ fontFamily: 'mono', color: 'text', wordBreak: 'break-word', overflowWrap: 'break-word' });
+const hopMeta = css({ display: 'flex', alignItems: 'center', gap: '0.6rem', mt: '0.25rem', flexWrap: 'wrap' });
+const hopTimestamp = css({ fontFamily: 'mono', fontSize: '0.74rem', color: 'textMuted' });
+const hopDeltaBase = { fontFamily: 'mono', fontSize: '0.72rem', fontWeight: 700, borderRadius: 'sm', px: '0.4rem', py: '0.05rem' } as const;
+const hopDelta = css(hopDeltaBase);
+
+// ── Authentication-Results ──────────────────────────────────────────────
+const disclaimer = css({
+  color: 'textMuted',
+  fontSize: '0.82rem',
+  lineHeight: 1.6,
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  p: '0.6rem 0.8rem',
+  m: 0,
+});
+const authGrid = css({ display: 'grid', gridTemplateColumns: { base: '1fr', sm: 'repeat(3, 1fr)' }, gap: '0.6rem' });
+const authCard = css({ display: 'flex', flexDirection: 'column', gap: '0.4rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'md', p: '0.65rem 0.8rem' });
+const authCardHead = css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' });
+const authLabel = css({ fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 700, color: 'text' });
+const authDetail = css({ fontFamily: 'mono', fontSize: '0.72rem', color: 'textMuted', lineHeight: 1.5, wordBreak: 'break-word', overflowWrap: 'break-word', maxH: '4.5rem', overflowY: 'auto' });
+
+// ── From / Reply-To / Return-Path ───────────────────────────────────────
+const mismatchList = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' });
+const mismatchRow = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.6rem', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'md', p: '0.6rem 0.8rem' });
+const mismatchLabel = css({ flexShrink: 0, fontFamily: 'sans', fontSize: '0.78rem', fontWeight: 700, color: 'text', minW: '10rem' });
+const mismatchDomains = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4rem', flex: 1, minW: '10rem' });
+const domainChip = css({ fontFamily: 'mono', fontSize: '0.76rem', color: 'text', bg: 'bgSubtle', border: '1px solid token(colors.border)', borderRadius: 'sm', px: '0.4rem', py: '0.1rem', wordBreak: 'break-word' });
+const domainArrow = css({ color: 'textMuted', fontSize: '0.76rem' });
+
+// ── M365 / Exchange (collapsible) ───────────────────────────────────────
+const detailsBox = css({ border: '1px solid token(colors.border)', borderRadius: 'md', bg: 'bgCard', overflow: 'hidden' });
+const detailsSummary = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  cursor: 'pointer',
+  listStyle: 'none',
+  userSelect: 'none',
+  p: '0.7rem 0.85rem',
+  '&::-webkit-details-marker': { display: 'none' },
+  '&::marker': { display: 'none' },
+  _hover: { '& span': { color: 'primary' } },
+});
+const chevCls = css({ color: 'textMuted', flexShrink: 0, transition: 'transform 200ms ease', 'details[open] &': { transform: 'rotate(90deg)' } });
+const summaryLabel = css({ fontFamily: 'sans', fontSize: '0.85rem', fontWeight: 700, color: 'text', transition: 'color 150ms ease' });
+const detailsBody = css({ display: 'flex', flexDirection: 'column', gap: '0.85rem', p: '0 0.85rem 0.85rem' });
+const miniLabel = css({ fontFamily: 'sans', fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'textMuted', mb: '0.4rem' });
+const fieldList = css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem', maxH: '14rem', overflowY: 'auto', overflowX: 'hidden' });
+const fieldRow = css({ bg: 'bgSubtle', border: '1px solid token(colors.border)', borderRadius: 'sm', p: '0.5rem 0.65rem' });
+const fieldKeyLine = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '0.5rem' });
+const fieldKey = css({ fontFamily: 'mono', fontSize: '0.76rem', fontWeight: 700, color: 'primary' });
+const fieldValue = css({ fontFamily: 'mono', fontSize: '0.76rem', color: 'text', wordBreak: 'break-word', overflowWrap: 'break-word' });
+const fieldDesc = css({ fontSize: '0.78rem', color: 'textMuted', lineHeight: 1.5, m: '0.2rem 0 0' });
+---
+
+<WorkspaceShell hook="data-email-header-analyzer" noJsMessage="The email header analyzer needs JavaScript enabled." gap="1.25rem">
+    {/* Paste box */}
+    <div>
+      <label class={fieldLabel} for="eha-input">Paste raw headers — a full RFC 5322 header block (e.g. your mail client's "Show original" / "View source")</label>
+      <textarea id="eha-input" class={textarea} spellcheck="false" autocomplete="off" data-eha-input>{FABRICATED_EXAMPLE}</textarea>
+      <p class={exampleNote}>
+        The text above is a <strong class={css({ color: 'text' })}>fabricated demo</strong> — RFC 5737
+        documentation-range IPs (<code class={inlineCode}>203.0.113.0/24</code> etc.) and{' '}
+        <code class={inlineCode}>example.*</code> domains only, never a real captured email. Replace it with
+        your own headers to analyze; nothing you paste here is ever transmitted anywhere.
+      </p>
+      <div class={actionRow}>
+        <button type="button" class={actionBtn} data-eha-clear data-sound="tick">
+          <Icon name="x" size={14} /> Clear
+        </button>
+        <button type="button" class={actionBtn} data-eha-reset data-sound="tick">
+          <Icon name="rotate-cw" size={14} /> Reload example
+        </button>
+      </div>
+    </div>
+
+    {/* Received chain */}
+    <div>
+      <p class={paneLabel}>Received chain — oldest hop first</p>
+      <p class={caption} data-eha-hop-summary role="status" aria-live="polite">Paste headers above to see the delivery path.</p>
+      <ol class={hopList} data-eha-hop-list></ol>
+      <template data-eha-hop-template>
+        <li class={hopRow}>
+          <span class={hopIndex} data-hop-index-el aria-hidden="true"></span>
+          <div class={hopBody}>
+            <div class={hopLine}><span class={hopLineLabel}>From</span><span class={hopLineValue} data-hop-from></span></div>
+            <div class={hopLine}><span class={hopLineLabel}>By</span><span class={hopLineValue} data-hop-by></span></div>
+            <div class={hopLine}><span class={hopLineLabel}>With</span><span class={hopLineValue} data-hop-with></span></div>
+            <div class={hopMeta}>
+              <span class={hopTimestamp} data-hop-time></span>
+              <span class={hopDelta} data-hop-delta></span>
+            </div>
+          </div>
+        </li>
+      </template>
+    </div>
+
+    {/* Authentication-Results */}
+    <div>
+      <p class={paneLabel}>Authentication-Results — SPF / DKIM / DMARC</p>
+      <p class={disclaimer}>
+        <strong class={css({ color: 'text' })}>No live lookups.</strong> This reads the verdict a mail server
+        already wrote into an existing <code class={inlineCode}>Authentication-Results</code> header — it never
+        performs its own DNS, SPF, DKIM, or DMARC check.
+      </p>
+      <div class={`${authGrid} ${css({ mt: '0.6rem' })}`}>
+        {
+          (['spf', 'dkim', 'dmarc'] as const).map((mech) => (
+            <div class={authCard} data-auth-card={mech}>
+              <div class={authCardHead}>
+                <span class={authLabel}>{mech.toUpperCase()}</span>
+                <span class={tag({ tone: 'muted' })} data-auth-verdict data-verdict="unknown">
+                  no header
+                </span>
+              </div>
+              <p class={authDetail} data-auth-detail></p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    {/* From / Reply-To / Return-Path */}
+    <div>
+      <p class={paneLabel}>From / Reply-To / Return-Path</p>
+      <p class={caption}>A mismatched Reply-To or Return-Path domain — mail that replies or bounces somewhere other than where it claims to be from — is a classic phishing tell.</p>
+      <div class={`${mismatchList} ${css({ mt: '0.6rem' })}`} role="status" aria-live="polite">
+        <div class={mismatchRow} data-mismatch-row="From vs. Reply-To">
+          <span class={mismatchLabel}>From vs. Reply-To</span>
+          <div class={mismatchDomains}>
+            <span class={domainChip} data-mismatch-a>—</span>
+            <span class={domainArrow} aria-hidden="true">vs.</span>
+            <span class={domainChip} data-mismatch-b>—</span>
+          </div>
+          <span class={tag({ tone: 'muted' })} data-mismatch-flag data-state="unknown">n/a</span>
+        </div>
+        <div class={mismatchRow} data-mismatch-row="From vs. Return-Path">
+          <span class={mismatchLabel}>From vs. Return-Path</span>
+          <div class={mismatchDomains}>
+            <span class={domainChip} data-mismatch-a>—</span>
+            <span class={domainArrow} aria-hidden="true">vs.</span>
+            <span class={domainChip} data-mismatch-b>—</span>
+          </div>
+          <span class={tag({ tone: 'muted' })} data-mismatch-flag data-state="unknown">n/a</span>
+        </div>
+      </div>
+    </div>
+
+    {/* M365 / Exchange (collapsible) */}
+    <details class={detailsBox} data-eha-m365>
+      <summary class={detailsSummary}>
+        <Icon name="chevron-down" size={16} class={chevCls} />
+        <span class={summaryLabel}>Microsoft 365 / Exchange headers (optional)</span>
+      </summary>
+      <div class={detailsBody}>
+        <p class={caption} data-eha-m365-empty>No Microsoft 365 / Exchange-specific headers were found in the pasted text.</p>
+        <div data-eha-m365-content hidden>
+          <div>
+            <p class={miniLabel}>Organization headers</p>
+            <ul class={fieldList} data-eha-org-list></ul>
+          </div>
+          <div class={css({ mt: '0.85rem' })}>
+            <p class={miniLabel}>Anti-spam report fields (X-Forefront-Antispam-Report)</p>
+            <ul class={fieldList} data-eha-antispam-list></ul>
+          </div>
+        </div>
+      </div>
+    </details>
+    <template data-eha-field-template>
+      <li class={fieldRow}>
+        <div class={fieldKeyLine}>
+          <code class={fieldKey} data-field-key></code>
+          <span class={fieldValue} data-field-value></span>
+        </div>
+        <p class={fieldDesc} data-field-desc></p>
+      </li>
+    </template>
+</WorkspaceShell>
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  import {
+    parseReceivedChain,
+    formatDeltaMs,
+    parseAuthenticationResults,
+    summarizeAuthResults,
+    extractAddressFields,
+    detectMismatches,
+    decodeM365Headers,
+  } from '../utils/emailHeaders';
+
+  (function () {
+    function init() {
+      var roots = document.querySelectorAll('[data-email-header-analyzer]:not([data-ready])');
+      Array.prototype.forEach.call(roots, function (root) {
+        var input = root.querySelector('[data-eha-input]');
+        var clearBtn = root.querySelector('[data-eha-clear]');
+        var resetBtn = root.querySelector('[data-eha-reset]');
+        if (!input) return;
+        var initialValue = input.value;
+
+        // Received chain
+        var hopSummaryEl = root.querySelector('[data-eha-hop-summary]');
+        var hopListEl = root.querySelector('[data-eha-hop-list]');
+        var hopTemplate = root.querySelector('[data-eha-hop-template]');
+
+        // Authentication-Results
+        var authCards = {};
+        ['spf', 'dkim', 'dmarc'].forEach(function (mech) {
+          var card = root.querySelector('[data-auth-card="' + mech + '"]');
+          authCards[mech] = {
+            verdictEl: card ? card.querySelector('[data-auth-verdict]') : null,
+            detailEl: card ? card.querySelector('[data-auth-detail]') : null,
+          };
+        });
+
+        // From / Reply-To / Return-Path
+        var mismatchRows = {};
+        Array.prototype.forEach.call(root.querySelectorAll('[data-mismatch-row]'), function (row) {
+          mismatchRows[row.getAttribute('data-mismatch-row')] = {
+            row: row,
+            aEl: row.querySelector('[data-mismatch-a]'),
+            bEl: row.querySelector('[data-mismatch-b]'),
+            flagEl: row.querySelector('[data-mismatch-flag]'),
+          };
+        });
+
+        // M365 / Exchange
+        var m365EmptyEl = root.querySelector('[data-eha-m365-empty]');
+        var m365ContentEl = root.querySelector('[data-eha-m365-content]');
+        var orgListEl = root.querySelector('[data-eha-org-list]');
+        var antispamListEl = root.querySelector('[data-eha-antispam-list]');
+        var fieldTemplate = root.querySelector('[data-eha-field-template]');
+
+        function renderHops(hops) {
+          if (!hopListEl || !hopTemplate) return;
+          hopListEl.innerHTML = '';
+          if (!hops.length) {
+            hopSummaryEl.textContent = input.value.trim()
+              ? 'No Received: headers found in the pasted text.'
+              : 'Paste headers above to see the delivery path.';
+            return;
+          }
+          hopSummaryEl.textContent = hops.length + ' hop' + (hops.length === 1 ? '' : 's') + ' found, oldest first.';
+          hops.forEach(function (hop) {
+            var li = hopTemplate.content.firstElementChild.cloneNode(true);
+            li.querySelector('[data-hop-index-el]').textContent = String(hop.index);
+            li.querySelector('[data-hop-from]').textContent = hop.from || '(unknown)';
+            li.querySelector('[data-hop-by]').textContent = hop.by || '(unknown)';
+            li.querySelector('[data-hop-with]').textContent = hop.withProtocol || '(unknown)';
+            li.querySelector('[data-hop-time]').textContent = hop.timestampRaw || 'no timestamp found';
+            var deltaEl = li.querySelector('[data-hop-delta]');
+            if (hop.deltaMs === null) {
+              deltaEl.textContent = hop.index === 1 ? 'origin' : 'unknown gap';
+              deltaEl.setAttribute('data-delta-state', 'unknown');
+            } else {
+              deltaEl.textContent = formatDeltaMs(hop.deltaMs);
+              deltaEl.setAttribute('data-delta-state', hop.deltaMs < 0 ? 'negative' : 'normal');
+            }
+            hopListEl.appendChild(li);
+          });
+        }
+
+        function renderAuth(summary) {
+          ['spf', 'dkim', 'dmarc'].forEach(function (mech) {
+            var refs = authCards[mech];
+            if (!refs.verdictEl) return;
+            var result = summary[mech];
+            if (!result) {
+              refs.verdictEl.textContent = 'no header';
+              refs.verdictEl.setAttribute('data-verdict', 'unknown');
+              refs.detailEl.textContent = '';
+              return;
+            }
+            refs.verdictEl.textContent = result.verdict;
+            refs.verdictEl.setAttribute('data-verdict', result.verdict);
+            refs.detailEl.textContent = result.detail || '';
+          });
+        }
+
+        function renderMismatches(flags) {
+          flags.forEach(function (flag) {
+            var refs = mismatchRows[flag.label];
+            if (!refs) return;
+            refs.aEl.textContent = flag.a.domain || (flag.a.raw === null ? '(no ' + flag.a.header + ' header)' : '(no address found)');
+            refs.bEl.textContent = flag.b.domain || (flag.b.raw === null ? '(no ' + flag.b.header + ' header)' : '(no address found)');
+            var state = !flag.a.domain || !flag.b.domain ? 'unknown' : flag.mismatch ? 'mismatch' : 'match';
+            refs.flagEl.setAttribute('data-state', state);
+            refs.flagEl.textContent = state === 'mismatch' ? '✗ Mismatch' : state === 'match' ? '✓ Match' : 'n/a';
+          });
+        }
+
+        function renderFieldList(listEl, entries, keyProp, valueProp, descProp) {
+          if (!listEl || !fieldTemplate) return;
+          listEl.innerHTML = '';
+          entries.forEach(function (entry) {
+            var li = fieldTemplate.content.firstElementChild.cloneNode(true);
+            li.querySelector('[data-field-key]').textContent = entry[keyProp];
+            li.querySelector('[data-field-value]').textContent = entry[valueProp];
+            li.querySelector('[data-field-desc]').textContent = entry[descProp];
+            listEl.appendChild(li);
+          });
+        }
+
+        function renderM365(decoded) {
+          if (!m365EmptyEl || !m365ContentEl) return;
+          m365EmptyEl.hidden = decoded.present;
+          m365ContentEl.hidden = !decoded.present;
+          if (!decoded.present) return;
+          renderFieldList(orgListEl, decoded.orgHeaders, 'name', 'value', 'description');
+          renderFieldList(antispamListEl, decoded.antispam, 'key', 'value', 'description');
+        }
+
+        function run() {
+          var text = input.value;
+          renderHops(parseReceivedChain(text));
+          renderAuth(summarizeAuthResults(parseAuthenticationResults(text)));
+          renderMismatches(detectMismatches(extractAddressFields(text)));
+          renderM365(decodeM365Headers(text));
+        }
+
+        input.addEventListener('input', run);
+
+        if (clearBtn) {
+          clearBtn.addEventListener('click', function () {
+            input.value = '';
+            run();
+            input.focus();
+          });
+        }
+        if (resetBtn) {
+          resetBtn.addEventListener('click', function () {
+            input.value = initialValue;
+            run();
+            input.focus();
+          });
+        }
+
+        run();
+        root.setAttribute('data-ready', '');
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>
+
+<style>
+  [data-hop-delta][data-delta-state='normal'] {
+    color: var(--colors-primary);
+    background: color-mix(in srgb, var(--colors-primary) 12%, transparent);
+  }
+  [data-hop-delta][data-delta-state='negative'] {
+    color: color-mix(in srgb, red 65%, var(--colors-text));
+    background: color-mix(in srgb, red 12%, transparent);
+  }
+  [data-hop-delta][data-delta-state='unknown'] {
+    color: var(--colors-text-muted);
+    background: var(--colors-bg-subtle);
+  }
+
+  [data-auth-verdict][data-verdict='pass'] {
+    color: var(--colors-primary);
+    background: color-mix(in srgb, var(--colors-primary) 12%, transparent);
+    border-color: color-mix(in srgb, var(--colors-primary) 30%, transparent);
+  }
+  [data-auth-verdict][data-verdict='fail'] {
+    color: color-mix(in srgb, red 65%, var(--colors-text));
+    background: color-mix(in srgb, red 12%, transparent);
+    border-color: color-mix(in srgb, red 30%, transparent);
+  }
+  [data-auth-verdict][data-verdict='softfail'],
+  [data-auth-verdict][data-verdict='neutral'],
+  [data-auth-verdict][data-verdict='policy'],
+  [data-auth-verdict][data-verdict='temperror'],
+  [data-auth-verdict][data-verdict='permerror'] {
+    color: var(--colors-accent);
+    background: color-mix(in srgb, var(--colors-accent) 12%, transparent);
+    border-color: color-mix(in srgb, var(--colors-accent) 35%, transparent);
+  }
+
+  [data-mismatch-flag][data-state='match'] {
+    color: var(--colors-primary);
+    background: color-mix(in srgb, var(--colors-primary) 12%, transparent);
+    border-color: color-mix(in srgb, var(--colors-primary) 30%, transparent);
+  }
+  [data-mismatch-flag][data-state='mismatch'] {
+    color: color-mix(in srgb, red 65%, var(--colors-text));
+    background: color-mix(in srgb, red 12%, transparent);
+    border-color: color-mix(in srgb, red 30%, transparent);
+  }
+  [data-mismatch-flag][data-state='unknown'] {
+    color: var(--colors-text-muted);
+  }
+</style>

@@ -1,0 +1,433 @@
+---
+// DFIR Regex Tester & Pattern Library — a live regex playground
+// (src/utils/regexPatterns.ts) with inline match highlighting and a
+// capture-group breakdown, plus a library of common DFIR-relevant patterns
+// (IPv4/IPv6, Windows SID, GUID, escaped file paths, registry keys, base64,
+// email, hex hashes) rendered as clickable chips that populate the
+// pattern/flags inputs. Everything recomputes on a short debounce as you
+// type — the pattern, the flags, and the sample text all feed the same
+// pipeline. Match highlighting builds the DOM directly (text nodes + cloned
+// <mark> elements from a <template>, per this codebase's no-innerHTML rule)
+// rather than ever concatenating user-supplied text into an HTML string.
+// Same "Scratch-inspired workspace" visual language as the site's other
+// builder tools. Genuinely requires JS (there's no meaningful static
+// fallback for live regex evaluation), so the workspace stays hidden until
+// the script confirms it's running.
+import { css } from 'styled-system/css';
+import WorkspaceShell from './WorkspaceShell.astro';
+import { tag } from 'styled-system/recipes';
+import { DFIR_REGEX_PATTERNS } from '../utils/regexPatterns';
+
+const paneLabel = css({
+  fontFamily: 'sans',
+  fontSize: '0.7rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: 'textMuted',
+  mb: '0.6rem',
+});
+const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted', mb: '0.3rem', display: 'block' });
+
+const patternRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'flex-end' });
+const patternField = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: '1 1 260px', minW: '200px' });
+const patternInput = css({
+  fontFamily: 'mono',
+  fontSize: '0.88rem',
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.7rem',
+  py: '0.5rem',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&::placeholder': { color: 'textMuted', opacity: 0.7 },
+});
+
+const flagField = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem' });
+const flagGroup = css({ display: 'inline-flex', gap: '0.3rem' });
+const flagBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '2.1rem',
+  h: '2.1rem',
+  fontFamily: 'mono',
+  fontSize: '0.85rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  bg: 'bgCard',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+  '&[aria-pressed=true]': {
+    color: 'primary',
+    borderColor: 'primary',
+    bg: 'color-mix(in srgb, token(colors.primary) 12%, transparent)',
+  },
+});
+
+const errorBox = css({
+  fontFamily: 'mono',
+  fontSize: '0.82rem',
+  lineHeight: 1.5,
+  minH: '1.4em',
+  wordBreak: 'break-word',
+});
+
+const libraryGrid = css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' });
+const libraryCaption = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.5, m: 0, mt: '0.5rem', minH: '1.3em' });
+
+const textarea = css({
+  width: '100%',
+  minH: '7rem',
+  fontFamily: 'mono',
+  fontSize: '0.85rem',
+  lineHeight: 1.5,
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.75rem',
+  py: '0.6rem',
+  resize: 'vertical',
+  overflowY: 'auto',
+  overflowX: 'hidden',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&::placeholder': { color: 'textMuted', opacity: 0.7 },
+});
+
+const summary = css({ color: 'textMuted', fontSize: '0.85rem', m: 0, mb: '0.5rem' });
+const highlightBox = css({
+  m: 0,
+  fontFamily: 'mono',
+  fontSize: '0.84rem',
+  lineHeight: 1.6,
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  p: '0.75rem 0.9rem',
+  maxH: '14rem',
+  overflowY: 'auto',
+  overflowX: 'auto',
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+});
+const markStyle = css({
+  bg: 'color-mix(in srgb, token(colors.primary) 30%, transparent)',
+  color: 'text',
+  borderRadius: 'sm',
+  px: '0.05rem',
+});
+
+const groupsWrap = css({ maxH: '14rem', overflowY: 'auto', overflowX: 'auto', border: '1px solid token(colors.border)', borderRadius: 'md' });
+const groupsTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' });
+const groupsTh = css({
+  position: 'sticky',
+  top: 0,
+  textAlign: 'left',
+  color: 'textMuted',
+  fontFamily: 'sans',
+  fontWeight: 600,
+  fontSize: '0.68rem',
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  bg: 'bgCard',
+  p: '0.45rem 0.65rem',
+  borderBottom: '1px solid token(colors.border)',
+});
+const groupsTd = css({
+  fontFamily: 'mono',
+  fontSize: '0.8rem',
+  color: 'text',
+  p: '0.4rem 0.65rem',
+  borderBottom: '1px solid token(colors.border)',
+  verticalAlign: 'top',
+  wordBreak: 'break-word',
+});
+const groupsEmpty = css({ color: 'textMuted', fontSize: '0.85rem', m: 0 });
+---
+
+<WorkspaceShell hook="data-regex-tester" noJsMessage="The interactive regex tester needs JavaScript enabled." gap="1.25rem">
+  {/* Pattern + flags */}
+  <div>
+    <p class={paneLabel}>Pattern</p>
+    <div class={patternRow}>
+      <div class={patternField}>
+        <label class={fieldLabel} for="regex-pattern-input">Regular expression</label>
+        <input
+          id="regex-pattern-input"
+          type="text"
+          class={patternInput}
+          placeholder="e.g. \b\d{1,3}(\.\d{1,3}){3}\b"
+          autocomplete="off"
+          spellcheck="false"
+          data-regex-pattern
+        />
+      </div>
+      <div class={flagField}>
+        <span class={fieldLabel} id="regex-flags-label">Flags</span>
+        <div class={flagGroup} role="group" aria-labelledby="regex-flags-label">
+          <button type="button" class={flagBtn} aria-pressed="true" data-regex-flag="g" data-sound="tick" title="Global — find all matches, not just the first">g</button>
+          <button type="button" class={flagBtn} aria-pressed="false" data-regex-flag="i" data-sound="tick" title="Case-insensitive">i</button>
+          <button type="button" class={flagBtn} aria-pressed="false" data-regex-flag="m" data-sound="tick" title="Multiline — ^ and $ match at line breaks">m</button>
+          <button type="button" class={flagBtn} aria-pressed="false" data-regex-flag="s" data-sound="tick" title="Dot-all — . also matches newlines">s</button>
+        </div>
+      </div>
+    </div>
+    <p class={errorBox} data-regex-error role="status" aria-live="polite"></p>
+  </div>
+
+  {/* Pattern library */}
+  <div>
+    <p class={paneLabel}>Pattern library — click to load</p>
+    <div class={libraryGrid}>
+      {
+        DFIR_REGEX_PATTERNS.map((p) => (
+          <button type="button" class={tag({ tone: 'muted' })} data-regex-lib-id={p.id} data-sound="tick" title={p.description}>
+            {p.label}
+          </button>
+        ))
+      }
+    </div>
+    <p class={libraryCaption} data-regex-lib-caption role="status" aria-live="polite"></p>
+  </div>
+
+  {/* Sample text */}
+  <div>
+    <label class={fieldLabel} for="regex-sample-input">Sample text</label>
+    <textarea
+      id="regex-sample-input"
+      class={textarea}
+      rows={6}
+      placeholder="Paste sample text here — matches highlight live as you type a pattern above."
+      spellcheck="false"
+      data-regex-sample
+    ></textarea>
+  </div>
+
+  {/* Matches */}
+  <div>
+    <p class={paneLabel}>Matches</p>
+    <p class={summary} data-regex-summary role="status" aria-live="polite">Enter a pattern and some sample text above.</p>
+    <div class={highlightBox} data-regex-highlight></div>
+  </div>
+
+  {/* Capture groups */}
+  <div>
+    <p class={paneLabel}>Capture groups</p>
+    <p class={groupsEmpty} data-regex-groups-empty>No capture groups to show yet.</p>
+    <div class={groupsWrap} data-regex-groups-wrap hidden>
+      <table class={groupsTable}>
+        <thead>
+          <tr>
+            <th class={groupsTh}>Match</th>
+            <th class={groupsTh}>Group</th>
+            <th class={groupsTh}>Value</th>
+          </tr>
+        </thead>
+        <tbody data-regex-groups-body></tbody>
+      </table>
+    </div>
+  </div>
+
+  <template data-regex-mark-template><mark class={markStyle}></mark></template>
+  <template data-regex-group-row-template>
+    <tr>
+      <td class={groupsTd} data-regex-group-match></td>
+      <td class={groupsTd} data-regex-group-name></td>
+      <td class={groupsTd} data-regex-group-value></td>
+    </tr>
+  </template>
+</WorkspaceShell>
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  import { DFIR_REGEX_PATTERNS, compileRegexSafely, findAllMatches } from '../utils/regexPatterns';
+
+  (function () {
+    function init() {
+      var roots = document.querySelectorAll('[data-regex-tester]:not([data-ready])');
+      Array.prototype.forEach.call(roots, function (root) {
+        var patternInput = root.querySelector('[data-regex-pattern]');
+        var flagBtns = Array.prototype.slice.call(root.querySelectorAll('[data-regex-flag]'));
+        var errorEl = root.querySelector('[data-regex-error]');
+        var libBtns = Array.prototype.slice.call(root.querySelectorAll('[data-regex-lib-id]'));
+        var libCaption = root.querySelector('[data-regex-lib-caption]');
+        var sampleInput = root.querySelector('[data-regex-sample]');
+        var summaryEl = root.querySelector('[data-regex-summary]');
+        var highlightEl = root.querySelector('[data-regex-highlight]');
+        var groupsEmptyEl = root.querySelector('[data-regex-groups-empty]');
+        var groupsWrapEl = root.querySelector('[data-regex-groups-wrap]');
+        var groupsBodyEl = root.querySelector('[data-regex-groups-body]');
+        var markTemplate = root.querySelector('[data-regex-mark-template]');
+        var rowTemplate = root.querySelector('[data-regex-group-row-template]');
+        if (!patternInput || !sampleInput || !highlightEl || !markTemplate || !rowTemplate) return;
+
+        function currentFlags() {
+          return flagBtns
+            .filter(function (b) { return b.getAttribute('aria-pressed') === 'true'; })
+            .map(function (b) { return b.getAttribute('data-regex-flag'); })
+            .join('');
+        }
+
+        function setFlags(flagsStr) {
+          flagBtns.forEach(function (b) {
+            var active = flagsStr.indexOf(b.getAttribute('data-regex-flag')) !== -1;
+            b.setAttribute('aria-pressed', String(active));
+          });
+        }
+
+        // Safely render `text` into `container` with every match wrapped in a
+        // cloned <mark> — plain text nodes for the untouched spans, never a
+        // string built into innerHTML.
+        function renderHighlight(text, matches) {
+          highlightEl.textContent = '';
+          if (!text) return;
+          var cursor = 0;
+          matches.forEach(function (m) {
+            if (m.index > cursor) {
+              highlightEl.appendChild(document.createTextNode(text.slice(cursor, m.index)));
+            }
+            if (m.match.length > 0) {
+              var mark = markTemplate.content.firstElementChild.cloneNode(true);
+              mark.textContent = m.match;
+              highlightEl.appendChild(mark);
+            }
+            cursor = Math.max(cursor, m.index + m.match.length);
+          });
+          if (cursor < text.length) {
+            highlightEl.appendChild(document.createTextNode(text.slice(cursor)));
+          }
+        }
+
+        function renderGroups(matches) {
+          groupsBodyEl.innerHTML = '';
+          var rows = [];
+          matches.forEach(function (m, matchIdx) {
+            m.groups.forEach(function (g) {
+              rows.push({ matchLabel: 'Match ' + (matchIdx + 1), groupLabel: g.name ? g.index + ' (' + g.name + ')' : String(g.index), value: g.value === undefined ? '(did not participate)' : g.value });
+            });
+          });
+          if (!rows.length) {
+            groupsEmptyEl.hidden = false;
+            groupsEmptyEl.textContent = matches.length ? 'This pattern has no capture groups.' : 'No capture groups to show yet.';
+            groupsWrapEl.hidden = true;
+            return;
+          }
+          groupsEmptyEl.hidden = true;
+          groupsWrapEl.hidden = false;
+          rows.forEach(function (r) {
+            var row = rowTemplate.content.firstElementChild.cloneNode(true);
+            row.querySelector('[data-regex-group-match]').textContent = r.matchLabel;
+            row.querySelector('[data-regex-group-name]').textContent = r.groupLabel;
+            row.querySelector('[data-regex-group-value]').textContent = r.value;
+            groupsBodyEl.appendChild(row);
+          });
+        }
+
+        function setError(message) {
+          if (!errorEl) return;
+          errorEl.textContent = message || '';
+          if (message) errorEl.setAttribute('data-state', 'error');
+          else errorEl.removeAttribute('data-state');
+        }
+
+        function recompute() {
+          var patternStr = patternInput.value;
+          var sampleText = sampleInput.value;
+
+          if (!patternStr) {
+            setError('');
+            renderHighlight(sampleText, []);
+            renderGroups([]);
+            summaryEl.textContent = 'Enter a pattern and some sample text above.';
+            return;
+          }
+
+          var result = compileRegexSafely(patternStr, currentFlags());
+          if (!result.ok) {
+            setError(result.error);
+            renderHighlight(sampleText, []);
+            renderGroups([]);
+            summaryEl.textContent = 'Fix the pattern above to see matches.';
+            return;
+          }
+          setError('');
+
+          var matches = findAllMatches(result.regex, sampleText);
+          renderHighlight(sampleText, matches);
+          renderGroups(matches);
+
+          if (!sampleText.trim()) {
+            summaryEl.textContent = 'Paste sample text above to test this pattern against it.';
+          } else if (matches.length === 0) {
+            summaryEl.textContent = 'No matches found in the sample text.';
+          } else {
+            summaryEl.textContent = matches.length + ' match' + (matches.length === 1 ? '' : 'es') + ' found.';
+          }
+        }
+
+        var debounceTimer = null;
+        function scheduleRecompute() {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(recompute, 200);
+        }
+
+        patternInput.addEventListener('input', scheduleRecompute);
+        sampleInput.addEventListener('input', scheduleRecompute);
+        flagBtns.forEach(function (b) {
+          b.addEventListener('click', function () {
+            b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+            scheduleRecompute();
+          });
+        });
+
+        libBtns.forEach(function (b) {
+          b.addEventListener('click', function () {
+            var id = b.getAttribute('data-regex-lib-id');
+            var p = DFIR_REGEX_PATTERNS.find(function (x) { return x.id === id; });
+            if (!p) return;
+            libBtns.forEach(function (o) {
+              if (o === b) o.setAttribute('data-active', ''); else o.removeAttribute('data-active');
+            });
+            patternInput.value = p.pattern;
+            setFlags(p.flags);
+            if (libCaption) libCaption.textContent = p.label + ' — ' + p.description;
+            recompute();
+          });
+        });
+
+        recompute();
+        root.setAttribute('data-ready', '');
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>
+
+<style>
+  [data-regex-error][data-state='error'] {
+    color: color-mix(in srgb, red 65%, var(--colors-text));
+  }
+  [data-regex-lib-id] {
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+  [data-regex-lib-id]:hover {
+    border-color: var(--colors-primary);
+    color: var(--colors-primary);
+  }
+  [data-regex-lib-id][data-active] {
+    color: var(--colors-primary);
+    background: color-mix(in srgb, var(--colors-primary) 12%, transparent);
+    border-color: color-mix(in srgb, var(--colors-primary) 30%, transparent);
+  }
+</style>

@@ -54,6 +54,11 @@ export default defineConfig({
       // etc.) keeps Vite's normal inlining behavior.
       assetsInlineLimit: (filePath) =>
         /\.astro_astro_type_script_index_\d+_lang/.test(filePath) ? false : undefined,
+      // No source maps in the deployed build — Vite already defaults to this,
+      // but stated explicitly so a future Vite default change can't silently
+      // start shipping maps (a minor recon aid for an attacker, no upside for
+      // a static site with no minified-in-prod-only bug reports to debug).
+      sourcemap: false,
     },
   },
 });

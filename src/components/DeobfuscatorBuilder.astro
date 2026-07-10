@@ -1,0 +1,716 @@
+---
+// Deobfuscation Recipe Builder — an ordered, growable chain of reversible
+// transforms (src/utils/deobfuscate.ts): Base64/hex/URL encode+decode,
+// ROT13/ROT47, single-byte XOR (manual key or a 256-key brute-force ranked
+// by printable-ASCII ratio), and Gzip/Deflate inflate (native
+// DecompressionStream — feature-detected below; those two options are
+// disabled with an inline note if the browser lacks it). Each step's output
+// feeds the next step's input, same "Scratch-inspired workspace" language as
+// the site's other builder tools, but the rail here is a dynamic, reorderable
+// list of pipeline steps rather than a fixed set of named fields — steps are
+// added/removed/reordered client-side, so (unlike DorkBuilder's static
+// ingredient rows) each step row is built from a <template> and cloned in.
+// Every intermediate step's own output is shown (collapsed by default, an
+// AnimatedDetails-driven <details>/<summary>) so a broken chain is visible at
+// the exact step it broke, not just as a final failure. Genuinely requires
+// JS (there's no static fallback for any of this), so the workspace stays
+// hidden until the script confirms it's running.
+import { css } from 'styled-system/css';
+import { tag } from 'styled-system/recipes';
+import Icon from './Icon.astro';
+import WorkspaceShell from './WorkspaceShell.astro';
+import { DEOBFUSCATE_STEPS } from '../utils/deobfuscate';
+
+const paneLabel = css({
+  fontFamily: 'sans',
+  fontSize: '0.7rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: 'textMuted',
+  mb: '0.6rem',
+});
+const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted' });
+
+const textarea = css({
+  width: '100%',
+  fontFamily: 'mono',
+  fontSize: '0.85rem',
+  lineHeight: 1.5,
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.75rem',
+  py: '0.6rem',
+  minH: '7rem',
+  resize: 'vertical',
+  overflowY: 'auto',
+  overflowX: 'hidden',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&::placeholder': { color: 'textMuted', opacity: 0.7 },
+});
+
+const addStepRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-end' });
+const selectorField = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: '1 1 220px', minW: '180px' });
+const selectInput = css({
+  fontFamily: 'sans',
+  fontSize: '0.85rem',
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.6rem',
+  py: '0.45rem',
+  cursor: 'pointer',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+});
+const inlineInput = css({
+  fontFamily: 'mono',
+  fontSize: '0.85rem',
+  color: 'text',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  px: '0.6rem',
+  py: '0.4rem',
+  transition: 'border-color 150ms ease',
+  _focus: { outline: 'none', borderColor: 'primary' },
+  '&::placeholder': { color: 'textMuted', opacity: 0.7 },
+});
+
+// Kept as plain objects (not pre-atomized css() calls) so a primary variant
+// can css(actionBtnBase, primaryBtnBase) — a deep object merge that
+// deterministically overrides actionBtnBase's own _hover.color, unlike
+// concatenating two independently-atomized class strings (see STYLE_GUIDE.md
+// "Buttons" for why that pattern silently broke a hover state elsewhere).
+const actionBtnBase = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '0.4rem',
+  fontSize: '0.85rem',
+  fontFamily: 'sans',
+  fontWeight: 600,
+  px: '0.8rem',
+  py: '0.5rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  color: 'text',
+  cursor: 'pointer',
+  bg: 'bgCard',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+  '&:disabled': { opacity: 0.5, cursor: 'not-allowed', _hover: { borderColor: 'token(colors.border)', color: 'text' } },
+} as const;
+const primaryBtnBase = { bg: 'primary', color: 'onPrimary', borderColor: 'primary', _hover: { opacity: 0.9, color: 'onPrimary' } } as const;
+const actionBtn = css(actionBtnBase);
+const primaryActionBtn = css(actionBtnBase, primaryBtnBase);
+
+const featureNote = css({ fontSize: '0.78rem', color: 'accent', lineHeight: 1.5, m: 0 });
+
+const workspaceGrid = css({ display: 'grid', gridTemplateColumns: { base: '1fr', lg: 'minmax(0, 1fr) 300px' }, gap: '1.5rem', alignItems: 'start' });
+const emptyNote = css({ color: 'textMuted', fontSize: '0.85rem', m: 0 });
+
+// Vertical "timeline" of step blocks, same rail language as DorkBuilder's
+// Ingredients list — a dot per step that colors by that step's own status
+// (ok / error / pending / skipped) rather than just filled-or-not.
+const stepList = css({ listStyle: 'none', m: 0, display: 'flex', flexDirection: 'column', gap: '0.6rem', borderLeft: '2px solid token(colors.border)', ml: '0.4rem', pl: '1.1rem' });
+const stepItem = css({
+  position: 'relative',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.5rem',
+  p: '0.55rem 0.65rem',
+  borderRadius: 'md',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    left: '-1.5rem',
+    top: '1.05rem',
+    w: '8px',
+    h: '8px',
+    borderRadius: 'full',
+    bg: 'border',
+    transition: 'background 150ms ease',
+  },
+  '&[data-step-status="ok"]::before': { bg: 'primary' },
+  '&[data-step-status="skipped"]::before': { bg: 'border', opacity: 0.5 },
+});
+const stepHeaderRow = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' });
+const stepIndexBadge = css({ flexShrink: 0, fontFamily: 'mono', fontSize: '0.78rem', fontWeight: 700, color: 'textMuted', minW: '1.3rem' });
+const stepControls = css({ display: 'flex', gap: '0.25rem', ml: 'auto' });
+const iconBtn = css({
+  flexShrink: 0,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '1.6rem',
+  h: '1.6rem',
+  borderRadius: 'sm',
+  border: '1px solid token(colors.border)',
+  bg: 'transparent',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+  '&:disabled': { opacity: 0.35, cursor: 'not-allowed', _hover: { borderColor: 'token(colors.border)', color: 'textMuted' } },
+});
+
+// XOR-only sub-panel: a Manual key / Brute-force segmented switch (same
+// role="radiogroup" shape as ModeToggle/HashCalculator's Input source switch
+// — see AnimatedSwitch's retrofit contract in CLAUDE.md invariant 12). Steps
+// are created dynamically after page load, after the site-wide
+// AnimatedSwitch.astro's one-time DOMContentLoaded scan, so this component's
+// own script imports animateSwitch() directly and arms each new group itself
+// (the function is idempotent/reduced-motion-safe either way).
+const xorPanel = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem', pt: '0.5rem', borderTop: '1px solid token(colors.border)' });
+const modeRow = css({
+  position: 'relative',
+  zIndex: 0,
+  display: 'inline-flex',
+  gap: '0.15rem',
+  p: '0.2rem',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  alignSelf: 'flex-start',
+});
+const modeBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  px: '0.7rem',
+  py: '0.3rem',
+  fontFamily: 'sans',
+  fontSize: '0.78rem',
+  fontWeight: 600,
+  borderRadius: 'sm',
+  border: '1px solid transparent',
+  bg: 'transparent',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { color: 'text' },
+  '&[data-active]': { bg: 'bgCard', color: 'primary', borderColor: 'border', boxShadow: 'card' },
+  '[data-switch-armed] &': {
+    '&[data-active]': { bg: 'transparent', borderColor: 'transparent', boxShadow: 'none' },
+  },
+});
+const xorManualWrap = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem' });
+const xorHint = css({ fontSize: '0.76rem', color: 'textMuted', m: 0 });
+const candidateList = css({ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: '0.3rem' });
+const candidateBtn = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  width: '100%',
+  textAlign: 'left',
+  fontFamily: 'mono',
+  fontSize: '0.78rem',
+  color: 'text',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'sm',
+  px: '0.55rem',
+  py: '0.35rem',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
+const candidateKey = css({ flexShrink: 0, fontWeight: 700, color: 'primary', minW: '3.4rem' });
+const candidateRatio = css({ flexShrink: 0, color: 'textMuted', minW: '3rem' });
+const candidatePreview = css({ minW: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'textMuted' });
+
+const stepSummary = css({ cursor: 'pointer', fontFamily: 'sans', fontSize: '0.82rem', fontWeight: 600, color: 'text', listStyle: 'none', '&::-webkit-details-marker': { display: 'none' } });
+const stepBody = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem', mt: '0.5rem' });
+// "Scroll, don't grow" output box — content can be arbitrarily long (a large
+// Base64 blob), so it scrolls vertically inside a capped height rather than
+// pushing the rest of the page down; overflowX + wordBreak keep it from ever
+// forcing horizontal scroll either. Kept as a plain object (not a
+// pre-atomized css() call) so the stage's own larger/primary-tinted variant
+// can css(outputBoxBase, variant) — a deep object merge that deterministically
+// overrides outputBoxBase's own color, unlike concatenating two independently-
+// atomized class strings (see STYLE_GUIDE.md "Buttons" for why that pattern
+// silently broke a hover state elsewhere in this codebase).
+const outputBoxBase = {
+  m: 0,
+  p: '0.6rem 0.75rem',
+  fontFamily: 'mono',
+  fontSize: '0.8rem',
+  color: 'text',
+  bg: 'bgSubtle',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  maxH: '10rem',
+  overflowY: 'auto',
+  overflowX: 'auto',
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+} as const;
+const outputBox = css(outputBoxBase);
+
+const stage = css({ display: 'flex', flexDirection: 'column', gap: '0.6rem', position: { lg: 'sticky' }, top: { lg: '90px' } });
+const summaryCaption = css({ fontSize: '0.82rem', color: 'textMuted', lineHeight: 1.5, m: 0, minH: '1.2em' });
+const stageOutputBox = css(outputBoxBase, { fontSize: '0.85rem', color: 'primary' });
+const actionCol = css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' });
+---
+
+<WorkspaceShell hook="data-deobfuscator" noJsMessage="The deobfuscation recipe builder needs JavaScript enabled." gap="1.25rem">
+  <div>
+    <label class={fieldLabel} for="deob-input">Input — the obfuscated blob to peel apart</label>
+    <textarea
+      id="deob-input"
+      class={textarea}
+      rows={5}
+      placeholder="Paste a Base64/hex/URL-encoded, ROT-shifted, XOR'd, or compressed blob…"
+      autocomplete="off"
+      spellcheck="false"
+      data-deob-input
+    ></textarea>
+  </div>
+
+  <div>
+    <div class={addStepRow}>
+      <div class={selectorField}>
+        <label class={fieldLabel} for="deob-step-select">Add a step</label>
+        <select id="deob-step-select" class={selectInput} data-deob-step-select>
+          {DEOBFUSCATE_STEPS.map((s) => (
+            <option value={s.id} data-needs-decompression={s.needsDecompressionStream ? '1' : undefined}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <button type="button" class={primaryActionBtn} data-deob-add-step data-sound="tick">Add step</button>
+      <button type="button" class={actionBtn} data-deob-clear-steps data-sound="tick">
+        <Icon name="x" size={14} /> Clear steps
+      </button>
+    </div>
+    <p class={featureNote} data-deob-feature-note hidden>
+      Gzip inflate and Deflate inflate need a browser with the Decompression Streams API — they're disabled below in
+      this one.
+    </p>
+  </div>
+
+  <div class={workspaceGrid}>
+    <div>
+      <p class={paneLabel}>Recipe steps</p>
+      <p class={emptyNote} data-deob-empty>No steps yet — add one above to start building the chain.</p>
+      <ol class={stepList} data-deob-steps hidden></ol>
+    </div>
+
+    <div class={stage}>
+      <p class={paneLabel}>Result</p>
+      <p class={summaryCaption} data-deob-summary role="status" aria-live="polite">Add a step above to start building the recipe.</p>
+      <div>
+        <p class={fieldLabel}>Text</p>
+        <pre class={stageOutputBox} data-deob-output-text>&nbsp;</pre>
+      </div>
+      <div data-deob-hex-wrap hidden>
+        <p class={fieldLabel}>Hex — the result looks like binary data</p>
+        <pre class={stageOutputBox} data-deob-output-hex>&nbsp;</pre>
+      </div>
+      <div class={actionCol}>
+        <button type="button" class={primaryActionBtn} data-deob-copy-text data-copy-pop data-sound="copy" disabled>
+          <Icon name="copy" size={15} /> Copy text
+        </button>
+        <button type="button" class={actionBtn} data-deob-copy-hex data-copy-pop data-sound="copy" hidden>
+          <Icon name="copy" size={15} /> Copy hex
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {/* Cloned per added step — see the client script's addStep(). */}
+  <template data-deob-step-template>
+    <li class={stepItem} data-deob-step-item>
+      <div class={stepHeaderRow}>
+        <span class={stepIndexBadge} data-step-index aria-hidden="true"></span>
+        <span class={tag({ tone: 'muted' })} data-step-kind-badge></span>
+        <div class={stepControls}>
+          <button type="button" class={iconBtn} data-step-move-up aria-label="Move step up" title="Move step up" data-sound="tick">
+            <Icon name="arrow-up" size={13} />
+          </button>
+          <button type="button" class={iconBtn} data-step-move-down aria-label="Move step down" title="Move step down" data-sound="tick">
+            <Icon name="arrow-down" size={13} />
+          </button>
+          <button type="button" class={iconBtn} data-step-remove aria-label="Remove step" title="Remove step" data-sound="tick">
+            <Icon name="x" size={13} />
+          </button>
+        </div>
+      </div>
+
+      <div class={xorPanel} data-step-xor-panel hidden>
+        <div class={modeRow} role="radiogroup" aria-label="XOR key source" data-xor-mode-group>
+          <button type="button" role="radio" aria-checked="true" data-active data-xor-mode="manual" data-sound="tick" class={modeBtn}>
+            Manual key
+          </button>
+          <button type="button" role="radio" aria-checked="false" data-xor-mode="brute" data-sound="tick" class={modeBtn}>
+            Brute-force
+          </button>
+        </div>
+        <div class={xorManualWrap} data-xor-manual-wrap>
+          <label class={fieldLabel}>Key (0-255, or 0x hex)</label>
+          <input type="text" class={inlineInput} placeholder="e.g. 42 or 0x2a" autocomplete="off" spellcheck="false" data-xor-key-input />
+        </div>
+        <div class={xorManualWrap} data-xor-brute-wrap hidden>
+          <p class={xorHint}>Ranked by printable-ASCII ratio of the decoded result — pick one to lock it in.</p>
+          <ul class={candidateList} data-xor-candidates></ul>
+        </div>
+      </div>
+
+      <details class={css({})} data-step-details>
+        <summary class={stepSummary} data-step-summary>Pending…</summary>
+        <div class={stepBody}>
+          <pre class={outputBox} data-step-output-text>&nbsp;</pre>
+          <div data-step-hex-wrap hidden>
+            <pre class={outputBox} data-step-output-hex>&nbsp;</pre>
+          </div>
+        </div>
+      </details>
+    </li>
+  </template>
+
+  <template data-deob-xor-candidate-template>
+    <li>
+      <button type="button" class={candidateBtn} data-xor-candidate-use>
+        <span class={candidateKey} data-candidate-key></span>
+        <span class={candidateRatio} data-candidate-ratio></span>
+        <span class={candidatePreview} data-candidate-preview></span>
+      </button>
+    </li>
+  </template>
+</WorkspaceShell>
+
+<script>
+  // @ts-nocheck — vanilla DOM client script
+  import {
+    DEOBFUSCATE_STEPS,
+    stepDefinition,
+    runPipeline,
+    xorBruteForce,
+    parseXorKey,
+    bytesToDisplayText,
+    bytesToPreviewText,
+    toHexString,
+    isLikelyBinary,
+  } from '../utils/deobfuscate';
+  import { animateSwitch } from '../scripts/animatedSwitch';
+  import { pop } from '../scripts/copyPop';
+
+  (function () {
+    function init() {
+      var roots = document.querySelectorAll('[data-deobfuscator]:not([data-ready])');
+      Array.prototype.forEach.call(roots, function (root) {
+        var input = root.querySelector('[data-deob-input]');
+        var stepSelect = root.querySelector('[data-deob-step-select]');
+        var addBtn = root.querySelector('[data-deob-add-step]');
+        var clearBtn = root.querySelector('[data-deob-clear-steps]');
+        var featureNote = root.querySelector('[data-deob-feature-note]');
+        var emptyNote = root.querySelector('[data-deob-empty]');
+        var stepsList = root.querySelector('[data-deob-steps]');
+        var stepTemplate = root.querySelector('[data-deob-step-template]');
+        var candidateTemplate = root.querySelector('[data-deob-xor-candidate-template]');
+        var summaryEl = root.querySelector('[data-deob-summary]');
+        var finalTextEl = root.querySelector('[data-deob-output-text]');
+        var finalHexWrap = root.querySelector('[data-deob-hex-wrap]');
+        var finalHexEl = root.querySelector('[data-deob-output-hex]');
+        var copyTextBtn = root.querySelector('[data-deob-copy-text]');
+        var copyHexBtn = root.querySelector('[data-deob-copy-hex]');
+        if (!input || !stepSelect || !addBtn || !stepsList || !stepTemplate || !candidateTemplate) return;
+
+        var hasDecompression = typeof DecompressionStream !== 'undefined';
+        if (!hasDecompression) {
+          Array.prototype.forEach.call(stepSelect.querySelectorAll('option[data-needs-decompression]'), function (opt) {
+            opt.disabled = true;
+          });
+          if (featureNote) featureNote.hidden = false;
+        }
+
+        var stepSeq = 0;
+        var steps = []; // { id, kind, xorMode: 'manual'|'brute', xorKey: number|null, refs: {...} }
+        var renderSeq = 0; // monotonic guard against a stale async render clobbering a newer one
+
+        function labelFor(kind) {
+          return stepDefinition(kind).label;
+        }
+
+        function renumber() {
+          steps.forEach(function (s, i) {
+            s.refs.index.textContent = String(i + 1) + '.';
+            s.refs.moveUp.disabled = i === 0;
+            s.refs.moveDown.disabled = i === steps.length - 1;
+          });
+          emptyNote.hidden = steps.length > 0;
+          stepsList.hidden = steps.length === 0;
+        }
+
+        function renderXorCandidates(step, inputBytes) {
+          var list = step.refs.xorCandidates;
+          list.innerHTML = '';
+          var candidates = xorBruteForce(inputBytes, 5);
+          candidates.forEach(function (c) {
+            var li = candidateTemplate.content.firstElementChild.cloneNode(true);
+            var btn = li.querySelector('[data-xor-candidate-use]');
+            li.querySelector('[data-candidate-key]').textContent = c.key + ' (0x' + c.key.toString(16).padStart(2, '0') + ')';
+            li.querySelector('[data-candidate-ratio]').textContent = Math.round(c.printableRatio * 100) + '%';
+            li.querySelector('[data-candidate-preview]').textContent = c.preview;
+            btn.addEventListener('click', function () {
+              step.xorKey = c.key;
+              step.xorMode = 'manual';
+              setXorMode(step, 'manual');
+              step.refs.xorKeyInput.value = String(c.key);
+              render();
+            });
+            list.appendChild(li);
+          });
+        }
+
+        function setXorMode(step, mode) {
+          step.xorMode = mode;
+          step.refs.xorModeBtns.forEach(function (b) {
+            var active = b.getAttribute('data-xor-mode') === mode;
+            if (active) b.setAttribute('data-active', ''); else b.removeAttribute('data-active');
+            b.setAttribute('aria-checked', String(active));
+          });
+          step.refs.xorManualWrap.hidden = mode !== 'manual';
+          step.refs.xorBruteWrap.hidden = mode !== 'brute';
+        }
+
+        function statusText(step, status, error) {
+          if (status === 'ok') return 'Ran successfully';
+          if (status === 'error') return error || 'This step failed.';
+          if (status === 'pending') {
+            return step.kind === 'xor'
+              ? step.xorMode === 'brute'
+                ? 'Waiting — pick a candidate below to continue.'
+                : 'Waiting — enter a key above (0-255) to continue.'
+              : 'Waiting for input.';
+          }
+          return 'Not reached — an earlier step needs to be resolved first.';
+        }
+
+        function renderStepRow(step, result, inputBytes) {
+          step.el.setAttribute('data-step-status', result.status);
+
+          if (step.kind === 'xor') {
+            if (step.xorMode === 'brute') renderXorCandidates(step, inputBytes);
+          }
+
+          var summary = step.refs.summary;
+          var textEl = step.refs.outputText;
+          var hexWrap = step.refs.hexWrap;
+          var hexEl = step.refs.outputHex;
+
+          if (result.status === 'ok') {
+            var text = bytesToDisplayText(result.bytes);
+            summary.textContent = labelFor(step.kind) + ' — ' + bytesToPreviewText(result.bytes, 60);
+            textEl.textContent = text.length ? text : '(empty)';
+            if (isLikelyBinary(result.bytes)) {
+              hexWrap.hidden = false;
+              hexEl.textContent = toHexString(result.bytes);
+            } else {
+              hexWrap.hidden = true;
+            }
+          } else {
+            summary.textContent = labelFor(step.kind) + ' — ' + statusText(step, result.status, result.error);
+            textEl.textContent = '—';
+            hexWrap.hidden = true;
+          }
+        }
+
+        function pipelineSummary(results) {
+          if (results.length === 0) return 'Add a step above to start building the recipe.';
+          var okCount = 0;
+          var brokenAt = -1;
+          for (var i = 0; i < results.length; i++) {
+            if (results[i].status === 'ok') okCount++;
+            else if (brokenAt === -1) brokenAt = i;
+          }
+          if (brokenAt === -1) {
+            return 'All ' + results.length + ' step' + (results.length === 1 ? '' : 's') + ' ran successfully.';
+          }
+          var broken = results[brokenAt];
+          var stepLabel = labelFor(broken.kind);
+          var prefix = okCount + ' step' + (okCount === 1 ? '' : 's') + ' completed — step ' + (brokenAt + 1) + ' (' + stepLabel + ') ';
+          if (broken.status === 'pending') return prefix + 'needs a key before the chain can continue.';
+          return prefix + 'failed: ' + (broken.error || 'unknown error');
+        }
+
+        function renderFinalStage(results) {
+          summaryEl.textContent = pipelineSummary(results);
+          var last = results.length ? results[results.length - 1] : null;
+          if (last && last.status === 'ok') {
+            var text = bytesToDisplayText(last.bytes);
+            finalTextEl.textContent = text.length ? text : '(empty)';
+            copyTextBtn.disabled = false;
+            copyTextBtn.__deobText = text;
+            if (isLikelyBinary(last.bytes)) {
+              finalHexWrap.hidden = false;
+              var hex = toHexString(last.bytes);
+              finalHexEl.textContent = hex;
+              copyHexBtn.hidden = false;
+              copyHexBtn.__deobHex = hex;
+            } else {
+              finalHexWrap.hidden = true;
+              copyHexBtn.hidden = true;
+            }
+          } else {
+            finalTextEl.textContent = ' ';
+            finalHexWrap.hidden = true;
+            copyTextBtn.disabled = true;
+            copyHexBtn.hidden = true;
+          }
+        }
+
+        async function render() {
+          var seq = ++renderSeq;
+          var bytes = new TextEncoder().encode(input.value);
+          var configs = steps.map(function (s) {
+            return { kind: s.kind, xorKey: s.kind === 'xor' && s.xorMode === 'manual' ? s.xorKey : undefined };
+          });
+          var results = await runPipeline(bytes, configs);
+          if (seq !== renderSeq) return; // a newer render already started; discard this stale one
+
+          var currentInput = bytes;
+          var inputs = [];
+          for (var i = 0; i < steps.length; i++) {
+            inputs.push(currentInput);
+            currentInput = results[i].status === 'ok' ? results[i].bytes : new Uint8Array(0);
+          }
+          for (var j = 0; j < steps.length; j++) {
+            renderStepRow(steps[j], results[j], inputs[j]);
+          }
+          renderFinalStage(results);
+        }
+
+        function addStep(kind) {
+          var def = null;
+          for (var i = 0; i < DEOBFUSCATE_STEPS.length; i++) if (DEOBFUSCATE_STEPS[i].id === kind) def = DEOBFUSCATE_STEPS[i];
+          if (!def || (def.needsDecompressionStream && !hasDecompression)) return;
+
+          var li = stepTemplate.content.firstElementChild.cloneNode(true);
+          var step = {
+            id: ++stepSeq,
+            kind: kind,
+            xorMode: 'manual',
+            xorKey: null,
+            el: li,
+            refs: {
+              index: li.querySelector('[data-step-index]'),
+              badge: li.querySelector('[data-step-kind-badge]'),
+              moveUp: li.querySelector('[data-step-move-up]'),
+              moveDown: li.querySelector('[data-step-move-down]'),
+              remove: li.querySelector('[data-step-remove]'),
+              xorPanel: li.querySelector('[data-step-xor-panel]'),
+              xorModeGroup: li.querySelector('[data-xor-mode-group]'),
+              xorModeBtns: Array.prototype.slice.call(li.querySelectorAll('[data-xor-mode]')),
+              xorManualWrap: li.querySelector('[data-xor-manual-wrap]'),
+              xorBruteWrap: li.querySelector('[data-xor-brute-wrap]'),
+              xorKeyInput: li.querySelector('[data-xor-key-input]'),
+              xorCandidates: li.querySelector('[data-xor-candidates]'),
+              summary: li.querySelector('[data-step-summary]'),
+              outputText: li.querySelector('[data-step-output-text]'),
+              hexWrap: li.querySelector('[data-step-hex-wrap]'),
+              outputHex: li.querySelector('[data-step-output-hex]'),
+            },
+          };
+
+          step.refs.badge.textContent = def.shortLabel;
+          li.setAttribute('data-step-kind', kind);
+
+          if (kind === 'xor') {
+            step.refs.xorPanel.hidden = false;
+            step.refs.xorModeBtns.forEach(function (b) {
+              b.addEventListener('click', function () {
+                setXorMode(step, b.getAttribute('data-xor-mode'));
+                render();
+              });
+            });
+            step.refs.xorKeyInput.addEventListener('input', function () {
+              var parsed = parseXorKey(step.refs.xorKeyInput.value);
+              step.xorKey = parsed;
+              render();
+            });
+            animateSwitch(step.refs.xorModeGroup);
+          }
+
+          step.refs.moveUp.addEventListener('click', function () { moveStep(step, -1); });
+          step.refs.moveDown.addEventListener('click', function () { moveStep(step, 1); });
+          step.refs.remove.addEventListener('click', function () { removeStep(step); });
+
+          steps.push(step);
+          stepsList.appendChild(li);
+          renumber();
+          render();
+        }
+
+        function removeStep(step) {
+          var idx = steps.indexOf(step);
+          if (idx === -1) return;
+          steps.splice(idx, 1);
+          step.el.remove();
+          renumber();
+          render();
+        }
+
+        function moveStep(step, delta) {
+          var idx = steps.indexOf(step);
+          var target = idx + delta;
+          if (idx === -1 || target < 0 || target >= steps.length) return;
+          steps.splice(idx, 1);
+          steps.splice(target, 0, step);
+          if (delta < 0) stepsList.insertBefore(step.el, steps[target + 1].el);
+          else stepsList.insertBefore(step.el, steps[target - 1].el.nextSibling);
+          renumber();
+          render();
+        }
+
+        addBtn.addEventListener('click', function () {
+          addStep(stepSelect.value);
+        });
+
+        if (clearBtn) {
+          clearBtn.addEventListener('click', function () {
+            steps.slice().forEach(function (s) { s.el.remove(); });
+            steps = [];
+            renumber();
+            render();
+          });
+        }
+
+        var debounceTimer = null;
+        input.addEventListener('input', function () {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(render, 150);
+        });
+
+        if (copyTextBtn) {
+          copyTextBtn.addEventListener('click', function () {
+            var text = copyTextBtn.__deobText;
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(function () { pop(copyTextBtn); }).catch(function () {});
+          });
+        }
+        if (copyHexBtn) {
+          copyHexBtn.addEventListener('click', function () {
+            var hex = copyHexBtn.__deobHex;
+            if (!hex) return;
+            navigator.clipboard.writeText(hex).then(function () { pop(copyHexBtn); }).catch(function () {});
+          });
+        }
+
+        renumber();
+        render();
+        root.setAttribute('data-ready', '');
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>

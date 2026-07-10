@@ -19,7 +19,7 @@
 //     `refOffsetMinutes` (0 = UTC, or the browser's local offset) and, for
 //     syslog, a `refYear` to resolve against — see parseFat/parseSyslogBsd.
 
-export type TimestampCategory = 'epoch' | 'text' | 'packed';
+type TimestampCategory = 'epoch' | 'text' | 'packed';
 
 export interface TimestampFormat {
   id: string;

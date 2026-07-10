@@ -1,8 +1,9 @@
 ---
 // Site-wide DFIR quick-access rail: a compact vertical dock on the left edge
-// so a visitor anywhere on the site can jump straight to any of the 10
-// DFIR_GROUPS links (Reference / Frameworks / Interactive Tools — consts.ts,
-// the same single source that drives the nav "DFIR" dropdown) without
+// so a visitor anywhere on the site can jump straight to any of the 17
+// DFIR_GROUPS links (Reference / Frameworks / Extractors / Converters /
+// Artifact Parsers / Query Builders — consts.ts, the same single source
+// that drives the nav "DFIR" dropdown and the /dfir/ landing page) without
 // detouring through the nav. Desktop/tablet only (`md` and up) — on narrow
 // viewports the nav's own <details> accordion already covers this, and a
 // fixed-left rail would just overlap body copy.
@@ -20,7 +21,7 @@
 // `rail`'s own data-view, no JS position math — see `handle`'s comment below.
 //
 // Up/down arrows at the rail's bottom cycle which DFIR_GROUPS category is
-// shown — all three categories' link lists are rendered server-side (so a
+// shown — all six categories' link lists are rendered server-side (so a
 // no-JS visitor still gets a real, fully labeled Reference list, the
 // server-computed default) and JS just toggles which one is unhidden.
 //
@@ -183,7 +184,7 @@ const catBtn = css({
   flexShrink: 0,
 });
 
-// No truncation here either: the longest category name ("Interactive Tools")
+// No truncation here either: the longest category name ("Artifact Parsers")
 // measures comfortably under the space available at `rail`'s expanded width,
 // so a plain nowrap line is enough — no overflow/ellipsis needed.
 const catLabel = css({

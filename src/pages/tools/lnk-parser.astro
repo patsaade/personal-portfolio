@@ -1,0 +1,111 @@
+---
+// LNK (Shell Link) Forensic Parser — parse a Windows .lnk shortcut file per
+// [MS-SHLLINK], entirely client-side. Same page shape as the Hash Calculator
+// / IOC Extractor (intro aside -> interactive tool -> reference notes).
+// Static page — prerender to HTML served from the CDN.
+export const prerender = true;
+import { css } from 'styled-system/css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import Icon from '../../components/Icon.astro';
+import LnkParser from '../../components/LnkParser.astro';
+
+const sectionH2 = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  fontSize: '1.3rem',
+  fontWeight: 700,
+  mt: '2.5rem',
+  mb: '1rem',
+  pt: '1.5rem',
+  borderTop: '1px solid token(colors.border)',
+  scrollMarginTop: '90px',
+});
+const refTable = css({ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' });
+const refTh = css({ textAlign: 'left', color: 'textMuted', fontFamily: 'sans', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)' });
+const refTd = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'text', verticalAlign: 'top' });
+const refTdMuted = css({ p: '0.5rem 0.7rem', borderBottom: '1px solid token(colors.border)', color: 'textMuted', fontSize: '0.8rem', verticalAlign: 'top' });
+
+const REFERENCE_ROWS: { field: string; note: string }[] = [
+  { field: 'ShellLinkHeader', note: 'Fixed 76 bytes. Validated against HeaderSize (must be 0x4C) and the LinkCLSID GUID before anything else is trusted.' },
+  { field: 'LinkFlags / FileAttributes', note: 'Two 32-bit bitmasks decoded into their named flags — LinkFlags also gates which optional sections below are even present.' },
+  { field: 'CreationTime / AccessTime / WriteTime', note: 'Windows FILETIME (100-ns ticks since 1601-01-01). A raw value of 0 means "not set", shown as such rather than the 1601 epoch.' },
+  { field: 'LinkTargetIDList', note: 'A shell-item breadcrumb path (e.g. drive root -> folders -> file), gated on the HasLinkTargetIDList flag. Only common item types are decoded into text; anything else is explicitly labeled unrecognized.' },
+  { field: 'LinkInfo', note: 'Volume info (drive type + serial) plus either a local base path or a network share (UNC) path, gated on LinkInfo’s own internal flags.' },
+  { field: 'StringData', note: 'Description, RelativePath, WorkingDir, CommandLineArguments, IconLocation — each a length-prefixed string, present only when its own LinkFlags bit is set.' },
+];
+---
+
+<BaseLayout
+  title="LNK (Shell Link) Forensic Parser"
+  description="Parse a Windows .lnk shortcut file per MS-SHLLINK — target timestamps, volume/host info, and the embedded shell item breadcrumb path. Entirely in your browser, nothing uploaded."
+>
+  <PageHeader
+    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Tool Catalog', href: '/tools/' }, { label: 'LNK Parser' }]}
+    eyebrow="Host Forensics"
+    title="LNK (Shell Link) Forensic Parser"
+    description="Upload a .lnk shortcut file to decode its target path, timestamps, volume info, and embedded shell item breadcrumb — entirely local."
+  />
+
+  <aside
+    class={css({
+      bg: 'bgSubtle',
+      border: '1px solid token(colors.border)',
+      borderLeftWidth: '3px',
+      borderLeftColor: 'primary',
+      borderRadius: 'md',
+      p: '1rem 1.25rem',
+      mb: '1.5rem',
+    })}
+  >
+    <p class={css({ color: 'text', lineHeight: 1.7, fontSize: '0.95rem', m: 0 })}>
+      Everything here runs entirely in your browser — <strong class={css({ color: 'text' })}>no external APIs, no
+      upload, the .lnk file you choose never leaves your machine</strong>. It's read locally via the File API and
+      parsed byte-by-byte against the public <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-shllink/16cb4ca1-9339-4d0c-a68d-bf1d6cc0f943" target="_blank" rel="noopener" class={css({ color: 'primary' })}>[MS-SHLLINK]</a> spec.
+      A file that doesn't validate against the format's fixed header signature fails with a specific message rather
+      than guessing at a result.
+    </p>
+  </aside>
+
+  <h2 id="parser" class={css({ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.3rem', fontWeight: 700, mb: '1rem', scrollMarginTop: '90px' })}>
+    <Icon name="link" size={20} class={css({ color: 'primary' })} /> Parser
+  </h2>
+  <LnkParser />
+
+  <h2 id="reference" class={sectionH2}>
+    <Icon name="list" size={20} class={css({ color: 'primary' })} /> What's decoded
+  </h2>
+  <div class={css({ overflowX: 'auto' })}>
+    <table class={refTable}>
+      <thead>
+        <tr>
+          <th class={refTh}>Structure</th>
+          <th class={refTh}>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          REFERENCE_ROWS.map((row) => (
+            <tr>
+              <td class={refTd}>
+                <strong class={css({ color: 'text', fontFamily: 'mono', fontSize: '0.85rem' })}>{row.field}</strong>
+              </td>
+              <td class={refTdMuted}>{row.note}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p class={css({ color: 'textMuted', fontSize: '0.88rem', mt: '1.5rem', lineHeight: 1.7 })}>
+    <strong class={css({ color: 'text' })}>Why LNK files matter in DFIR:</strong> Windows creates shortcut files
+    automatically for recently-opened documents (Jump Lists and the Recent Items folder), so a system's
+    <code class={css({ fontFamily: 'mono', bg: 'bgCard', border: '1px solid token(colors.border)', borderRadius: 'sm', px: '0.3rem' })}>.lnk</code>
+    files are a durable record of files a user opened — including files on removable media or network shares
+    that may no longer be present. Because the embedded volume serial number and target timestamps are written
+    at shortcut-creation time, they can outlive the original file or device, making LNK parsing a standard step
+    in timeline reconstruction and removable-media/lateral-movement analysis.
+  </p>
+</BaseLayout>
