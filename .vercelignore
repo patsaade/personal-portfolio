@@ -38,19 +38,38 @@ README.md
 
 # Local tooling & metadata
 .claude/
+graphify-out/
 .vercel
 .gitignore
+# Full commit history has no reason to leave the local machine — a local
+# `vercel deploy` uploads the raw working tree, and .git/ would otherwise ship
+# every past commit (including anything since rotated out of HEAD) to
+# Vercel's build environment. Not consulted for git-integrated push deploys
+# (Vercel clones the repo itself there), but this file covers the local-CLI
+# path specifically — see the forensic-artifacts note below for why that
+# path matters at all.
+.git/
 
 # Secrets & local env (never upload)
 .env
 .env.*
 .env.local
+.netrc
 *.pem
 *.key
+*.gpg
 *.p12
 *.pfx
 id_rsa*
+id_ed25519*
+id_ecdsa*
 secrets*.json
+.aws/
+.azure/
+.gcloud/
+*.tfstate
+*.tfstate.*
+.terraform/
 
 # Forensic artifacts & archives — mirrors .gitignore. These are never committed, but
 # .vercelignore is evaluated independently: its mere presence makes the Vercel CLI
@@ -59,23 +78,42 @@ secrets*.json
 # patterns here too, a stray lab evidence file or key sitting in the working tree
 # would ship to Vercel on any local CLI deploy. Never used by the build either way.
 *.raw
+*.dd
+*.img
 *.mem
 *.vmem
 *.vmsn
 *.vmdk
+*.vhd
+*.vhdx
+*.vdi
+*.qcow2
+*.ova
+*.ovf
 *.dmp
 *.lime
 *.bin
 *.e01
 *.ex01
+*.l01
+*.lx01
+*.ad1
 *.aff4
 *.pcap
 *.pcapng
+*.cap
+*.evtx
+*.har
 *.zip
 *.7z
 *.tar.gz
 *.tgz
 *.rar
+
+# Editor/merge backup artifacts (see .gitignore)
+*.bak
+*.orig
+*.rej
 
 # OS / logs
 .DS_Store
