@@ -198,6 +198,25 @@ export function animateSwitch(group) {
     const w = btn.offsetWidth;
     if (!w) return; // group is currently hidden (display:none) — ResizeObserver retries
     const x = btn.offsetLeft;
+    // Same root cause as syncColors()'s getAnimations().finish() above, applied to
+    // the thumb's OWN slide animation instead of the button's color transition: a
+    // motion/mini animate() call started around the same time as a View Transition
+    // capture can get orphaned mid-flight and never reach its target — observed
+    // stuck indefinitely at a fixed intermediate frame (e.g. 43ms into a 150ms
+    // animation, forever). Without this, currentTranslateX()/currentWidthPx() below
+    // would keep reading that frozen midpoint as the "from" position for every
+    // subsequent placement, so the thumb could drift to or stay at the wrong spot
+    // across clicks instead of reliably landing on the active segment — this is
+    // the actual mechanics behind the toggle's thumb not tracking the current
+    // selection. Finishing here guarantees each placement starts from a real,
+    // settled position.
+    thumb.getAnimations().forEach(function (a) {
+      try {
+        a.finish();
+      } catch (e) {
+        /* ignore */
+      }
+    });
     syncColors(btn);
     // Suppresses each button's own (now-redundant) [data-active] background —
     // see file header's "IMPORTANT" section. Set only here, on the thumb's
@@ -242,8 +261,23 @@ export function animateSwitch(group) {
   // change didn't come from clicking *this* switch (e.g. the ThemePicker,
   // not ModeToggle, changing the active palette) — window.__theme dispatches
   // this on every change (see CLAUDE.md invariant 4).
+  //
+  // Deferred to the next frame for the exact same reason the click handler
+  // below is: ModeToggle's own 'themechange' listener (which is what actually
+  // moves `data-active` to the new button) is a SEPARATE, independent
+  // listener on the same event — and this one isn't guaranteed to run after
+  // it. Reading data-active synchronously inside the same dispatch could
+  // catch it *before* ModeToggle's own listener has updated it, so place()
+  // would reposition/recolor the thumb for the button that was active a
+  // moment ago, not the one the mode actually just changed to. This is what
+  // made the mode toggle's active segment intermittently show the wrong
+  // button after a click or an OS theme change — a same-tick race, not a
+  // stuck animation (see syncColors()'s getAnimations().finish() below for
+  // the separate, already-fixed frozen-transition case).
   document.addEventListener('themechange', function () {
-    place(false);
+    requestAnimationFrame(function () {
+      place(false);
+    });
   });
 
   // Deliberately NOT the existing per-component click handler — that logic
