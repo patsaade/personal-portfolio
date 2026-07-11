@@ -197,9 +197,9 @@ const modeBtn = css({
   transition: 'all 150ms ease',
   _hover: { color: 'text' },
   '&[data-active]': { bg: 'bgCard', color: 'primary', borderColor: 'border', boxShadow: 'card' },
-  '[data-switch-armed] &': {
-    '&[data-active]': { bg: 'transparent', borderColor: 'transparent', boxShadow: 'none' },
-  },
+  // Once armed, this button's own bg/border/shadow is suppressed by a
+  // hand-written global rule in motion.css (Panda's css() can't express the
+  // compound ancestor+self condition needed — see that rule's comment).
 });
 const xorManualWrap = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem' });
 const xorHint = css({ fontSize: '0.76rem', color: 'textMuted', m: 0 });

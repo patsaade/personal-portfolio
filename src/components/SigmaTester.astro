@@ -55,14 +55,9 @@ const viewBtn = css({
   transition: 'all 150ms ease',
   _hover: { color: 'text' },
   '&[data-active]': { bg: 'bgSubtle', color: 'primary', borderColor: 'border', boxShadow: 'card' },
-  // See ModeToggle.astro's identical rule for why: once AnimatedSwitch arms
-  // a sliding thumb underneath, suppress this button's own bg/border/shadow
-  // so the two don't animate against each other on separate clocks. No-JS/
-  // reduced-motion visitors never get data-switch-armed, so their indicator
-  // is untouched.
-  '[data-switch-armed] &': {
-    '&[data-active]': { bg: 'transparent', borderColor: 'transparent', boxShadow: 'none' },
-  },
+  // Once armed, this button's own bg/border/shadow is suppressed by a
+  // hand-written global rule in motion.css (Panda's css() can't express the
+  // compound ancestor+self condition needed — see that rule's comment).
 });
 
 const titleInput = css({

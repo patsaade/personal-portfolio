@@ -38,14 +38,22 @@
 // thumb has actually been placed at a real position for the first time —
 // inside place(), past its `if (!w) return` guard, NOT unconditionally right
 // after the thumb element is created — this script sets `data-switch-armed`
-// on the GROUP; each consuming component adds one small CSS override —
-// `'[data-switch-armed] &[data-active]': { bg: 'transparent', borderColor:
-// 'transparent', boxShadow: 'none' }` — that suppresses ONLY the background/
-// border/shadow (never the active-state text/icon `color`, which stays a
-// normal, non-competing 150ms fade layered on top of the sliding thumb) and
-// ONLY while a thumb actually exists to replace it. No-JS/reduced-motion
-// visitors never see `data-switch-armed` at all, so their experience is
-// byte-for-byte unchanged from before this feature existed.
+// on the GROUP; a single hand-written global rule in motion.css —
+// `[data-switch-armed] [role='radio'][data-active] { background: transparent;
+// border-color: transparent; box-shadow: none; }` — suppresses ONLY the
+// background/border/shadow (never the active-state text/icon `color`, which
+// stays a normal, non-competing 150ms fade layered on top of the sliding
+// thumb) and ONLY while a thumb actually exists to replace it. This is a
+// single shared rule, not a per-consumer Panda override: the natural way to
+// author this in each component's own css() — a nested condition like
+// `{'[data-switch-armed] &': {'&[data-active]': {...}}}` — does NOT compile
+// to a real compound selector (confirmed by inspecting the compiled CSS
+// directly; it collapses to a plain `.btn[data-active]` rule with the
+// ancestor check only baked into the generated class name, never into an
+// actual selector, so it unconditionally won on source order regardless of
+// whether the group was armed). No-JS/reduced-motion visitors never see
+// `data-switch-armed` at all, so their experience is byte-for-byte unchanged
+// from before this feature existed.
 //
 // No-ops entirely under prefers-reduced-motion — mirrors animatedDetails.ts's
 // own shape (idempotent init guard, then an immediate reduced-motion bailout
@@ -132,36 +140,44 @@ export function animateSwitch(group) {
   //
   // Must read the button's color with `data-switch-armed` temporarily OFF.
   // That attribute is what suppresses the active button's own (redundant)
-  // background via each consumer's `'[data-switch-armed] &'` CSS rule — so
-  // once the group is armed (true for every call after the first), reading
+  // background via the shared `[data-switch-armed] [role='radio'][data-active]`
+  // rule in motion.css — so once the group is armed (true for every call
+  // after the first), reading
   // getComputedStyle(btn) straight would read back that already-suppressed
   // *transparent* value instead of the real color the thumb is supposed to
   // clone, permanently blanking the thumb on the very next reposition (any
-  // click, ResizeObserver fire, or theme change). getComputedStyle() forces
-  // a synchronous style recalc, so remove/read/restore here never paints an
-  // intermediate frame — no flicker, just an accurate read.
+  // click, ResizeObserver fire, or theme change).
   //
-  // Also finish any in-flight animations on the button before reading. A
-  // click that goes through BaseHead's applyAnimated() (the theme wipe) can
-  // start this button's own `transition: all 150ms` background-color change
-  // *inside* the View Transition's synchronous capture callback — and on
-  // some clicks that transition gets orphaned mid-flight (observed stuck at
-  // localTime 0 via getAnimations(), permanently rendering its *start*
-  // color instead of its end color: the mode-toggle thumb went transparent
-  // — same visible symptom as the armed-suppression bug above, different
-  // cause). getAnimations()[].finish() jumps any such stuck transition to
-  // its end state before we read, so we never clone a frozen intermediate
-  // (or reversed) color onto the thumb. No-op when nothing is animating.
+  // Must ALSO read with the button's own `transition: all 150ms` (its
+  // `&[data-active]` background swap) temporarily disabled. The very first
+  // time this runs — on page load — the consuming component's own setup
+  // script (e.g. ModeToggle's sync()) sets `data-active` on the button
+  // *synchronously*, which starts that CSS transition from transparent
+  // toward the real color; this function then runs one requestAnimationFrame
+  // later and can catch that transition still mid-flight. `getAnimations()
+  // [].finish()` was tried first to settle it before reading, but a
+  // just-started CSS transition isn't guaranteed to be registered as a
+  // running Animation by the very next frame in every engine — so finish()
+  // can be a no-op while the transition is still live, silently cloning
+  // whatever partial (sometimes still fully transparent) frame it's on onto
+  // the thumb, permanently. This is the actual mechanics behind "system
+  // doesn't show the selector by default": confirmed by direct inspection —
+  // disabling the transition and forcing a reflow before reading reliably
+  // recovers the real color where `getAnimations().forEach(finish)` did not.
+  // Toggling `transition: none` off and back on around BOTH the unarm and
+  // the read (restored only after re-arming below) sidesteps the race
+  // entirely: it cancels any in-flight transition outright and forces the
+  // plain settled cascade value, independent of Animation-object timing —
+  // and keeping it off across the re-arm step too avoids a second, reverse
+  // flash-transition as the suppression rule re-applies. getComputedStyle()
+  // forces a synchronous recalc, so this whole dance never paints an
+  // intermediate frame — no visible flicker, just an accurate read.
   function syncColors(btn) {
-    btn.getAnimations().forEach(function (a) {
-      try {
-        a.finish();
-      } catch (e) {
-        /* ignore */
-      }
-    });
+    const prevTransition = btn.style.transition;
+    btn.style.transition = 'none';
     const wasArmed = group.hasAttribute('data-switch-armed');
     if (wasArmed) group.removeAttribute('data-switch-armed');
+    void btn.offsetWidth; // force the synchronous recalc the override above needs
     const s = getComputedStyle(btn);
     thumb.style.backgroundColor = s.backgroundColor;
     thumb.style.borderRadius = s.borderRadius;
@@ -170,6 +186,7 @@ export function animateSwitch(group) {
     thumb.style.borderColor = s.borderColor;
     thumb.style.boxShadow = s.boxShadow;
     if (wasArmed) group.setAttribute('data-switch-armed', '');
+    btn.style.transition = prevTransition;
   }
 
   // Reads the thumb's own live rendered position/width — including
@@ -198,7 +215,7 @@ export function animateSwitch(group) {
     const w = btn.offsetWidth;
     if (!w) return; // group is currently hidden (display:none) — ResizeObserver retries
     const x = btn.offsetLeft;
-    // Same root cause as syncColors()'s getAnimations().finish() above, applied to
+    // Same family of bug as syncColors()'s transition-bypass above, applied to
     // the thumb's OWN slide animation instead of the button's color transition: a
     // motion/mini animate() call started around the same time as a View Transition
     // capture can get orphaned mid-flight and never reach its target — observed
@@ -248,7 +265,28 @@ export function animateSwitch(group) {
 
   // Initial placement: instant, never animated — a slide-in on page load
   // would be a jarring first impression.
-  place(false);
+  //
+  // Deferred to the next frame for the exact same reason the click and
+  // themechange listeners are: this script runs generically for every
+  // role="radiogroup" on the page, so its execution order relative to a
+  // specific consumer's OWN setup script (e.g. ModeToggle's sync(), which is
+  // what actually sets data-active for the very first time from getMode() —
+  // a *direct* call, not something dispatched via 'themechange') isn't
+  // guaranteed — Astro/Vite bundles per-component scripts together, and
+  // which one's top-level code runs first depends on the bundle's own
+  // module graph, not the components' render order in the template. If this
+  // ran first, activeButton() would find no button with data-active yet and
+  // fall back to buttons[0] — often the right button by coincidence (e.g.
+  // "system" is first and also the default mode) — but syncColors() would
+  // still read every button's *inactive* (transparent) style, since none of
+  // them have [data-active] applied yet either. And because sync()'s first
+  // call is direct rather than themechange-triggered, nothing would ever
+  // re-place the thumb afterward — leaving it permanently uncolored on load
+  // any time this raced ahead of the consumer's own initial sync. This is
+  // exactly the "system doesn't show the selector by default" symptom.
+  requestAnimationFrame(function () {
+    place(false);
+  });
 
   if (window.ResizeObserver) {
     const ro = new ResizeObserver(function () {
@@ -272,8 +310,8 @@ export function animateSwitch(group) {
   // moment ago, not the one the mode actually just changed to. This is what
   // made the mode toggle's active segment intermittently show the wrong
   // button after a click or an OS theme change — a same-tick race, not a
-  // stuck animation (see syncColors()'s getAnimations().finish() below for
-  // the separate, already-fixed frozen-transition case).
+  // stuck animation (see syncColors()'s transition-bypass above for the
+  // separate, already-fixed frozen-transition case).
   document.addEventListener('themechange', function () {
     requestAnimationFrame(function () {
       place(false);

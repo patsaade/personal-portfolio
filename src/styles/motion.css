@@ -102,6 +102,39 @@
   }
 }
 
+/* Switch-thumb armed suppression — hand-written because Panda's css() can't
+   express this compound condition (see CLAUDE.md invariant 12's "suppressing
+   the redundant indicator" paragraph and each switch component's own segBtn/
+   modeBtn/etc. comment for the full story). The natural way to author "when
+   the ancestor group has [data-switch-armed] AND this element has
+   [data-active], suppress the background" is the nested Panda condition
+   `{'[data-switch-armed] &': {'&[data-active]': {...}}}` — but that does NOT
+   compile to a real `[data-switch-armed] .btn[data-active]` compound
+   selector (confirmed by inspecting the compiled output directly): it
+   collapses to a plain `.btn[data-active]` rule with the ancestor condition
+   only baked into the generated class NAME, never into an actual selector.
+   Since that ends up with the exact same specificity as the unconditional
+   `&[data-active]` active-color rule and simply sits later in the
+   stylesheet, it always won on source order — permanently blanking every
+   switch's active segment even before a thumb existed to replace it,
+   regardless of whether the group was ever actually armed. A literal single-
+   string selector (`'[data-switch-armed] &[data-active]'`) isn't accepted
+   either — Panda's types only allow `&` at the very start or end of a
+   custom selector, never followed by more selector text.
+   This targets the existing `role="radio"` + `data-active` attributes every
+   switch button already carries (the site-wide AnimatedSwitch retrofit
+   contract — see animatedSwitch.ts's header) directly, so no new class or
+   component change is needed anywhere. Three plain attribute selectors give
+   it specificity (0,3,0), one full level above Panda's own `.class[data-
+   active]` rule's (0,2,0) — it wins unconditionally on real specificity,
+   not fragile source order, and only ever matches while the ancestor
+   actually carries [data-switch-armed]. */
+[data-switch-armed] [role='radio'][data-active] {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
 /* ── 1. Declassify — the heading "decode" ─────────────────────────────────────
    A heading decodes from a heavily-eroded Redaction grade (100, "super
    pixelated") down to a cleaner one, once on load. The grades share metrics, so

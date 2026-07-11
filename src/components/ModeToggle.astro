@@ -31,15 +31,21 @@ const segBtn = css({
     boxShadow: 'card',
   },
   // Once AnimatedSwitch arms a sliding thumb underneath (see
-  // animatedSwitch.ts), that thumb takes over rendering the bg/border/shadow
-  // — suppress this button's own copy so the two don't animate against each
-  // other on separate clocks. The active *color* stays: a plain, non-moving
-  // text/icon tint layered on top of the thumb is fine. No-JS/reduced-motion
-  // visitors never get data-switch-armed, so they keep the original,
-  // unsuppressed indicator untouched.
-  '[data-switch-armed] &': {
-    '&[data-active]': { bg: 'transparent', borderColor: 'transparent', boxShadow: 'none' },
-  },
+  // animatedSwitch.ts), that thumb takes over rendering the bg/border/shadow.
+  // The redundant per-button copy is suppressed by a hand-written global CSS
+  // rule instead of a Panda condition here — see motion.css's
+  // "switch-armed suppression" rule for why: the natural way to express this
+  // in Panda, `{'[data-switch-armed] &': {'&[data-active]': {...}}}`, does
+  // NOT compile to a real `[data-switch-armed] .btn[data-active]` compound
+  // selector (confirmed by inspecting the compiled CSS) — it collapses to
+  // plain `.btn[data-active]`, identical specificity to the rule above and
+  // later in the stylesheet, so it unconditionally won regardless of
+  // whether the group was actually armed. A literal single-string selector
+  // (`'[data-switch-armed] &[data-active]'`) isn't accepted either — Panda's
+  // types only allow `&` at the very start or end of a custom selector, not
+  // followed by more selector text. The active *color* still stays: a
+  // plain, non-moving text/icon tint layered on top of the thumb is fine,
+  // only bg/border/shadow are suppressed.
 });
 ---
 
