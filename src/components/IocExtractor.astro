@@ -62,14 +62,9 @@ const fangBtn = css({
   transition: 'all 150ms ease',
   _hover: { color: 'text' },
   '&[data-active]': { bg: 'bgSubtle', color: 'primary', borderColor: 'border', boxShadow: 'card' },
-  // Once AnimatedSwitch arms a sliding thumb underneath (see
-  // animatedSwitch.ts / CLAUDE.md invariant 12), suppress this button's own
-  // bg/border/shadow so the two don't animate against each other on
-  // separate clocks. No-JS/reduced-motion visitors never get
-  // data-switch-armed, so their indicator is untouched.
-  '[data-switch-armed] &': {
-    '&[data-active]': { bg: 'transparent', borderColor: 'transparent', boxShadow: 'none' },
-  },
+  // Once armed, this button's own bg/border/shadow is suppressed by a
+  // hand-written global rule in motion.css (Panda's css() can't express the
+  // compound ancestor+self condition needed — see that rule's comment).
 });
 const actionRow = css({ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' });
 // Kept as plain objects (not pre-atomized css() calls) so the primary variant
