@@ -2,11 +2,15 @@
 // Animates a segmented-switch's active-position indicator — a "thumb" that
 // slides behind the active segment — on click. Used site-wide (see
 // AnimatedSwitch.astro, mounted once in BaseLayout) for every
-// role="radiogroup" segmented switch: ModeToggle, ViewToggle, and
-// HashCalculator's Input source switch (IocExtractor's fang row and
-// DorkBuilder's engine row are slated to adopt this same markup shape next —
+// role="radiogroup" segmented switch: ModeToggle, ViewToggle,
+// HashCalculator's Input source switch, IocExtractor's fang row,
+// DorkBuilder's engine row, and ThemePicker's two vertical palette lists —
 // see AnimatedSwitch.astro's header for the retrofit contract; nothing below
-// needs to change for them to pick it up).
+// needs to change for a future switch to pick it up. Slides horizontally
+// (translateX) by default; a group with `aria-orientation="vertical"` (only
+// ThemePicker's palette lists today) slides vertically (translateY) instead
+// — same attribute those lists already carry for their own arrow-key nav, so
+// there's no separate opt-in convention to remember.
 //
 // 150ms/ease-out — deliberately snappy (matches this codebase's existing
 // "fast UI feedback" rhythm — segBtn/modeBtn/engineBtn's own `transition:
@@ -108,13 +112,25 @@ export function animateSwitch(group) {
   });
   if (buttons.length < 2) return;
 
+  const vertical = group.getAttribute('aria-orientation') === 'vertical';
+
   const thumb = document.createElement('span');
   thumb.className = 'switch-thumb';
   thumb.setAttribute('aria-hidden', 'true');
   thumb.style.position = 'absolute';
-  thumb.style.top = '0';
-  thumb.style.bottom = '0';
-  thumb.style.left = '0';
+  if (vertical) {
+    // Spans the track's full width, top pinned; JS below animates `height`
+    // and a translateY to slide it down the column.
+    thumb.style.left = '0';
+    thumb.style.right = '0';
+    thumb.style.top = '0';
+  } else {
+    // Spans the track's full height, left pinned; JS below animates `width`
+    // and a translateX to slide it across the row.
+    thumb.style.top = '0';
+    thumb.style.bottom = '0';
+    thumb.style.left = '0';
+  }
   thumb.style.zIndex = '-1'; // group carries position:relative + z-index:0 (its own stacking
   // context), so a negative z-index here reliably paints below the group's
   // other children — the buttons — regardless of whether they're positioned
@@ -189,12 +205,12 @@ export function animateSwitch(group) {
     btn.style.transition = prevTransition;
   }
 
-  // Reads the thumb's own live rendered position/width — including
-  // mid-animation, since getComputedStyle reflects the current interpolated
-  // value of a running Web Animation — so a rapid second click redirects
-  // smoothly from wherever the thumb currently is, not from a stale
-  // previously-recorded target.
-  function currentTranslateX() {
+  // Reads the thumb's own live rendered position/size along the active axis
+  // — including mid-animation, since getComputedStyle reflects the current
+  // interpolated value of a running Web Animation — so a rapid second click
+  // redirects smoothly from wherever the thumb currently is, not from a
+  // stale previously-recorded target.
+  function currentTranslate() {
     const t = getComputedStyle(thumb).transform;
     if (!t || t === 'none') return 0;
     const parts = t
@@ -203,24 +219,25 @@ export function animateSwitch(group) {
       .map(function (n) {
         return parseFloat(n);
       });
-    // matrix(a, b, c, d, tx, ty) — translateX lives at index 4.
-    return parts.length >= 6 ? parts[4] || 0 : 0;
+    // matrix(a, b, c, d, tx, ty) — translateX lives at index 4, translateY at index 5.
+    if (parts.length < 6) return 0;
+    return (vertical ? parts[5] : parts[4]) || 0;
   }
-  function currentWidthPx() {
-    return parseFloat(getComputedStyle(thumb).width) || 0;
+  function currentSizePx() {
+    return parseFloat(getComputedStyle(thumb)[vertical ? 'height' : 'width']) || 0;
   }
 
   function place(animated) {
     const btn = activeButton();
-    const w = btn.offsetWidth;
-    if (!w) return; // group is currently hidden (display:none) — ResizeObserver retries
-    const x = btn.offsetLeft;
+    const size = vertical ? btn.offsetHeight : btn.offsetWidth;
+    if (!size) return; // group is currently hidden (display:none) — ResizeObserver retries
+    const pos = vertical ? btn.offsetTop : btn.offsetLeft;
     // Same family of bug as syncColors()'s transition-bypass above, applied to
     // the thumb's OWN slide animation instead of the button's color transition: a
     // motion/mini animate() call started around the same time as a View Transition
     // capture can get orphaned mid-flight and never reach its target — observed
     // stuck indefinitely at a fixed intermediate frame (e.g. 43ms into a 150ms
-    // animation, forever). Without this, currentTranslateX()/currentWidthPx() below
+    // animation, forever). Without this, currentTranslate()/currentSizePx() below
     // would keep reading that frozen midpoint as the "from" position for every
     // subsequent placement, so the thumb could drift to or stay at the wrong spot
     // across clicks instead of reliably landing on the active segment — this is
@@ -249,17 +266,22 @@ export function animateSwitch(group) {
     // IOC Extractor's fang switch render with no visible active indicator.
     group.setAttribute('data-switch-armed', '');
 
+    const axis = vertical ? 'Y' : 'X';
+    const dim = vertical ? 'height' : 'width';
     if (animated) {
-      const fromX = currentTranslateX();
-      const fromW = currentWidthPx();
+      const from = currentTranslate();
+      const fromSize = currentSizePx();
       animate(
         thumb,
-        { transform: [`translateX(${fromX}px)`, `translateX(${x}px)`], width: [`${fromW}px`, `${w}px`] },
+        {
+          transform: [`translate${axis}(${from}px)`, `translate${axis}(${pos}px)`],
+          [dim]: [`${fromSize}px`, `${size}px`],
+        },
         { duration: DURATION, easing: EASING },
       );
     } else {
-      thumb.style.transform = `translateX(${x}px)`;
-      thumb.style.width = `${w}px`;
+      thumb.style.transform = `translate${axis}(${pos}px)`;
+      thumb.style[dim] = `${size}px`;
     }
   }
 
@@ -318,23 +340,38 @@ export function animateSwitch(group) {
     });
   });
 
-  // Deliberately NOT the existing per-component click handler — that logic
-  // (which button gets `data-active`) is untouched. This is a second,
-  // independent listener that reacts to the result. A rapid repeat click
-  // retargeting the thumb mid-flight is correct, expected UX (motion/mini's
-  // animate() naturally redirects from the thumb's current live position —
-  // see currentTranslateX/currentWidthPx above) — no debounce here; that
-  // hard rule (CLAUDE.md invariant 12) is for toggles that fully reverse
-  // each other, not a multi-position switch redirecting mid-slide.
+  // Re-place the thumb the instant a button's own `data-active` actually
+  // changes. This used to be a per-button click listener instead (deferred a
+  // frame so it always ran after the component's own click handler had set
+  // the new `data-active`) — replaced because that approach raced ModeToggle
+  // specifically: a click there also runs window.__theme.setMode(), which
+  // wraps the DOM update in document.startViewTransition() (the full-page
+  // theme-wipe, see BaseHead.astro's applyAnimated()) — a second click fired
+  // before that transition settles calls skipTransition() on the first one,
+  // and that interaction could leave the click listener's scheduled place()
+  // reading data-active before the second click's own update had actually
+  // landed, stranding the thumb at the *previous* selection even though the
+  // page had already switched modes (the button's own icon color updated
+  // correctly regardless, since that's a plain CSS attribute selector with
+  // no timing dependency — only the thumb, and the color cloned from it,
+  // stayed stuck). A MutationObserver has no such race: it fires once per
+  // batch of attribute changes no matter what caused them or how many
+  // happened in a row, and always reads whatever data-active *currently* is
+  // at delivery time — necessarily the final state after all synchronous
+  // click handling (of however many rapid clicks) has already completed.
+  // This is also why IOC Extractor's fang-row switch and every other switch
+  // that doesn't trigger a page-wide transition never showed this bug: their
+  // click listener's own next-frame callback never had anything else in
+  // flight to race against. A rapid repeat click retargeting the thumb
+  // mid-flight is still correct, expected UX (motion/mini's animate()
+  // naturally redirects from the thumb's current live position — see
+  // currentTranslate()/currentSizePx() above) — no debounce here; that hard
+  // rule (CLAUDE.md invariant 12) is for toggles that fully reverse each
+  // other, not a multi-position switch redirecting mid-slide.
+  const activeAttrObserver = new MutationObserver(function () {
+    place(true);
+  });
   buttons.forEach(function (b) {
-    b.addEventListener('click', function () {
-      // Deferred to the next frame so this always runs after the
-      // component's own (possibly later-registered) click handler has
-      // already set the new `data-active`, regardless of listener
-      // attachment order.
-      requestAnimationFrame(function () {
-        place(true);
-      });
-    });
+    activeAttrObserver.observe(b, { attributes: true, attributeFilter: ['data-active'] });
   });
 }

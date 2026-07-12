@@ -63,13 +63,11 @@ const moreMenuOuter = css({
   // moving the pointer from More back to DFIR hid DFIR's entire 1500ms
   // opening slide behind More's still-fading-out panel — "only one slide
   // visible at a time," and always the wrong one when going in that
-  // direction. Fix: whichever dropdown is currently open/opening (hovered,
-  // focus-within, or JS-armed via [data-open] for touch) always wins the
-  // stacking order over its sibling, so the one you're looking at is always
-  // the one you see animate.
+  // direction. Fix: whichever dropdown is currently open/opening (hovered or
+  // focus-within) always wins the stacking order over its sibling, so the
+  // one you're looking at is always the one you see animate.
   '.nav-more:hover &': { zIndex: 70 },
   '.nav-more:focus-within &': { zIndex: 70 },
-  '&[data-open]': { zIndex: 70 },
 });
 const moreMenuInner = css({
   minW: '210px',
@@ -243,18 +241,46 @@ const mobileSummary = css({
         }
         {dropdowns.map((d) => (
           <li class={`nav-more ${moreWrap}`}>
-            <button
-              type="button"
-              id={`nav-${d.id}-btn`}
-              aria-expanded="false"
-              aria-controls={`nav-${d.id}-menu`}
-              aria-label={`${d.label} links`}
-              data-sound="tick"
-              class={`nav-more-btn ${moreBtn} ${isDropdownActive(d) ? moreBtnActive : ''}`}
-            >
-              {d.label}
-              <Icon name="chevron-down" size={13} strokeWidth={2.5} class="nav-more-chev" />
-            </button>
+            {d.id === 'dfir' ? (
+              // Desktop only (this whole <ul> is md:flex — see its own class
+              // above): a real link, not a button. Hovering it still previews
+              // the category dropdown below (CSS :hover/:focus-within on the
+              // shared .nav-more ancestor, untouched by the tag change), but
+              // a click navigates straight to /dfir/ instead of just toggling
+              // a menu — this trigger IS the DFIR overview page, so clicking
+              // its own label should go there, mirroring how a mega-menu
+              // trigger link behaves on other sites. The mobile accordion
+              // below (<details class="nav-mobile-section">) is a completely
+              // separate markup block and keeps its own tap-to-expand
+              // behavior — a link can't both navigate and expand on a single
+              // tap, so mobile intentionally does not get this behavior.
+              <a
+                href="/dfir/"
+                id={`nav-${d.id}-btn`}
+                aria-expanded="false"
+                aria-haspopup="true"
+                aria-controls={`nav-${d.id}-menu`}
+                aria-current={isActive('/dfir/') ? 'page' : undefined}
+                data-sound="tick"
+                class={`nav-more-btn ${moreBtn} ${isDropdownActive(d) ? moreBtnActive : ''}`}
+              >
+                {d.label}
+                <Icon name="chevron-down" size={13} strokeWidth={2.5} class="nav-more-chev" />
+              </a>
+            ) : (
+              <button
+                type="button"
+                id={`nav-${d.id}-btn`}
+                aria-expanded="false"
+                aria-controls={`nav-${d.id}-menu`}
+                aria-label={`${d.label} links`}
+                data-sound="tick"
+                class={`nav-more-btn ${moreBtn} ${isDropdownActive(d) ? moreBtnActive : ''}`}
+              >
+                {d.label}
+                <Icon name="chevron-down" size={13} strokeWidth={2.5} class="nav-more-chev" />
+              </button>
+            )}
             <div id={`nav-${d.id}-menu`} class={`nav-more-menu ${moreMenuOuter}`}>
               <div class={moreMenuInner}>
                 {d.id === 'dfir' && (
@@ -467,36 +493,36 @@ const mobileSummary = css({
       else close();
     });
 
-    // Desktop dropdowns (Analyst / More): hover/focus open via CSS; click toggles
-    // for touch. One handler per .nav-more group; opening one closes the others.
+    // Desktop dropdowns (DFIR / More): open purely via CSS :hover/:focus-within
+    // (see global.css's `.nav-more-menu` rule) — no click-to-pin. A previous
+    // version toggled a `data-open` attribute on click so the panel stayed
+    // open until a second click or an outside click dismissed it; that read
+    // as the menu getting stuck open (move the pointer away and it's still
+    // there), so it's gone. The DFIR trigger is now a real link (see the
+    // markup above) and just navigates on click, no JS needed. Two things
+    // still need script, since CSS alone can't do them: keeping
+    // `aria-expanded` accurate for screen readers (it has to track the same
+    // hover/focus-within condition the CSS reveal already uses — there's no
+    // way to bind an ARIA attribute to a CSS pseudo-class), and letting
+    // Escape close an open menu for keyboard users (moving focus away is the
+    // only thing that stops :focus-within from matching, and Escape has no
+    // native "unfocus everything" behavior).
     var groups = Array.prototype.slice.call(document.querySelectorAll('.nav-more'));
     groups.forEach(function (group) {
       var btn = group.querySelector('.nav-more-btn');
-      var menu = group.querySelector('.nav-more-menu');
-      if (!btn || !menu) return;
-      function closeGroup() {
-        menu.removeAttribute('data-open');
-        btn.setAttribute('aria-expanded', 'false');
-        document.removeEventListener('click', onDoc, true);
-        document.removeEventListener('keydown', onEsc);
+      if (!btn) return;
+      function syncExpanded() {
+        btn.setAttribute('aria-expanded', String(group.matches(':hover') || group.matches(':focus-within')));
       }
-      function onDoc(e) { if (!menu.contains(e.target) && !btn.contains(e.target)) closeGroup(); }
-      function onEsc(e) { if (e.key === 'Escape') { closeGroup(); btn.focus(); } }
-      btn.addEventListener('click', function () {
-        var wasOpen = menu.hasAttribute('data-open');
-        // Close any other open dropdown first.
-        groups.forEach(function (g) {
-          var m = g.querySelector('.nav-more-menu');
-          var b = g.querySelector('.nav-more-btn');
-          if (m) m.removeAttribute('data-open');
-          if (b) b.setAttribute('aria-expanded', 'false');
-        });
-        if (wasOpen) return;
-        menu.setAttribute('data-open', '');
-        btn.setAttribute('aria-expanded', 'true');
-        document.addEventListener('click', onDoc, true);
-        document.addEventListener('keydown', onEsc);
-      });
+      group.addEventListener('mouseenter', syncExpanded);
+      group.addEventListener('mouseleave', syncExpanded);
+      group.addEventListener('focusin', syncExpanded);
+      group.addEventListener('focusout', syncExpanded);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      var active = document.activeElement;
+      if (active && groups.some(function (g) { return g.contains(active); })) active.blur();
     });
   })();
 </script>

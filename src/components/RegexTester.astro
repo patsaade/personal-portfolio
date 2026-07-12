@@ -3,19 +3,26 @@
 // (src/utils/regexPatterns.ts) with inline match highlighting and a
 // capture-group breakdown, plus a library of common DFIR-relevant patterns
 // (IPv4/IPv6, Windows SID, GUID, escaped file paths, registry keys, base64,
-// email, hex hashes) rendered as clickable chips that populate the
-// pattern/flags inputs. Everything recomputes on a short debounce as you
-// type — the pattern, the flags, and the sample text all feed the same
-// pipeline. Match highlighting builds the DOM directly (text nodes + cloned
-// <mark> elements from a <template>, per this codebase's no-innerHTML rule)
-// rather than ever concatenating user-supplied text into an HTML string.
-// Same "Scratch-inspired workspace" visual language as the site's other
-// builder tools. Genuinely requires JS (there's no meaningful static
-// fallback for live regex evaluation), so the workspace stays hidden until
-// the script confirms it's running.
+// email, hex hashes) rendered as clickable chips that populate a pattern
+// row. Supports multiple simultaneous patterns: every non-empty pattern row
+// is tested against the *same* sample text at once, each with its own
+// flags, color-coded highlight, and live per-row match count — useful for
+// checking several IOC shapes against one blob of text without swapping
+// patterns in and out one at a time (for a fixed, curated set of common IOC
+// types run together, the IOC Extractor tool is the more purpose-built
+// choice; this is for arbitrary custom patterns). Everything recomputes on
+// a short debounce as you type — every row's pattern/flags plus the shared
+// sample text all feed the same pipeline. Match highlighting builds the DOM
+// directly (text nodes + cloned <mark> elements from a <template>, per this
+// codebase's no-innerHTML rule) rather than ever concatenating user-supplied
+// text into an HTML string. Same "Scratch-inspired workspace" visual
+// language as the site's other builder tools. Genuinely requires JS
+// (there's no meaningful static fallback for live regex evaluation), so the
+// workspace stays hidden until the script confirms it's running.
 import { css } from 'styled-system/css';
 import WorkspaceShell from './WorkspaceShell.astro';
 import { tag } from 'styled-system/recipes';
+import Icon from './Icon.astro';
 import { DFIR_REGEX_PATTERNS } from '../utils/regexPatterns';
 
 const paneLabel = css({
@@ -29,8 +36,17 @@ const paneLabel = css({
 });
 const fieldLabel = css({ fontFamily: 'sans', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'textMuted', mb: '0.3rem', display: 'block' });
 
+// Each pattern row gets a small color swatch (set inline via JS, cycling a
+// fixed palette by row position — see the script's ROW_COLORS) tying it to
+// its own highlight color in the sample text below and its own rows in the
+// capture-group table, so a multi-pattern test set stays visually
+// disambiguated without a legend.
+const patternsWrap = css({ display: 'flex', flexDirection: 'column', gap: '0.85rem' });
+const patternRowOuter = css({ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' });
+const rowSwatch = css({ flexShrink: 0, w: '0.85rem', h: '0.85rem', borderRadius: 'sm', mt: '0.85rem', border: '1px solid token(colors.border)' });
+const rowMain = css({ flex: 1, minW: 0, display: 'flex', flexDirection: 'column', gap: '0.3rem' });
 const patternRow = css({ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'flex-end' });
-const patternField = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: '1 1 260px', minW: '200px' });
+const patternField = css({ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: '1 1 220px', minW: '180px' });
 const patternInput = css({
   fontFamily: 'mono',
   fontSize: '0.88rem',
@@ -70,16 +86,56 @@ const flagBtn = css({
     bg: 'color-mix(in srgb, token(colors.primary) 12%, transparent)',
   },
 });
-
-const errorBox = css({
-  fontFamily: 'mono',
-  fontSize: '0.82rem',
-  lineHeight: 1.5,
-  minH: '1.4em',
-  wordBreak: 'break-word',
+const removeRowBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '2.1rem',
+  h: '2.1rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  bg: 'bgCard',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  // Same red color-mix idiom as the error text below, not a new convention.
+  _hover: { borderColor: 'color-mix(in srgb, red 55%, transparent)', color: 'color-mix(in srgb, red 65%, token(colors.text))' },
 });
+const addRowBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.35rem',
+  alignSelf: 'flex-start',
+  px: '0.75rem',
+  py: '0.45rem',
+  fontFamily: 'sans',
+  fontSize: '0.8rem',
+  fontWeight: 600,
+  color: 'textMuted',
+  bg: 'transparent',
+  border: '1px dashed token(colors.border)',
+  borderRadius: 'md',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { color: 'primary', borderColor: 'primary' },
+});
+const rowStatus = css({ fontFamily: 'mono', fontSize: '0.78rem', color: 'textMuted', minH: '1.2em', wordBreak: 'break-word' });
 
 const libraryGrid = css({ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' });
+const libraryItem = css({ display: 'inline-flex', alignItems: 'stretch', gap: '0.2rem' });
+const libraryCopyBtn = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  w: '1.9rem',
+  borderRadius: 'md',
+  border: '1px solid token(colors.border)',
+  bg: 'bgCard',
+  color: 'textMuted',
+  cursor: 'pointer',
+  transition: 'all 150ms ease',
+  _hover: { borderColor: 'primary', color: 'primary' },
+});
 const libraryCaption = css({ color: 'textMuted', fontSize: '0.82rem', lineHeight: 1.5, m: 0, mt: '0.5rem', minH: '1.3em' });
 
 const textarea = css({
@@ -119,6 +175,8 @@ const highlightBox = css({
   whiteSpace: 'pre-wrap',
   wordBreak: 'break-word',
 });
+// Background is overridden per-match via inline style (each pattern row's
+// own color) — this is just the fallback if that's ever somehow skipped.
 const markStyle = css({
   bg: 'color-mix(in srgb, token(colors.primary) 30%, transparent)',
   color: 'text',
@@ -155,33 +213,43 @@ const groupsEmpty = css({ color: 'textMuted', fontSize: '0.85rem', m: 0 });
 ---
 
 <WorkspaceShell hook="data-regex-tester" noJsMessage="The interactive regex tester needs JavaScript enabled." gap="1.25rem">
-  {/* Pattern + flags */}
+  {/* Patterns */}
   <div>
-    <p class={paneLabel}>Pattern</p>
-    <div class={patternRow}>
-      <div class={patternField}>
-        <label class={fieldLabel} for="regex-pattern-input">Regular expression</label>
-        <input
-          id="regex-pattern-input"
-          type="text"
-          class={patternInput}
-          placeholder="e.g. \b\d{1,3}(\.\d{1,3}){3}\b"
-          autocomplete="off"
-          spellcheck="false"
-          data-regex-pattern
-        />
-      </div>
-      <div class={flagField}>
-        <span class={fieldLabel} id="regex-flags-label">Flags</span>
-        <div class={flagGroup} role="group" aria-labelledby="regex-flags-label">
-          <button type="button" class={flagBtn} aria-pressed="true" data-regex-flag="g" data-sound="tick" title="Global — find all matches, not just the first">g</button>
-          <button type="button" class={flagBtn} aria-pressed="false" data-regex-flag="i" data-sound="tick" title="Case-insensitive">i</button>
-          <button type="button" class={flagBtn} aria-pressed="false" data-regex-flag="m" data-sound="tick" title="Multiline — ^ and $ match at line breaks">m</button>
-          <button type="button" class={flagBtn} aria-pressed="false" data-regex-flag="s" data-sound="tick" title="Dot-all — . also matches newlines">s</button>
+    <p class={paneLabel}>Patterns — tested together against the same sample text</p>
+    <div class={patternsWrap} data-regex-rows>
+      <div class={patternRowOuter} data-regex-pattern-row>
+        <span class={rowSwatch} data-regex-row-swatch aria-hidden="true"></span>
+        <div class={rowMain}>
+          <div class={patternRow}>
+            <div class={patternField}>
+              <input
+                type="text"
+                class={patternInput}
+                placeholder="e.g. \b\d{1,3}(\.\d{1,3}){3}\b"
+                autocomplete="off"
+                spellcheck="false"
+                data-regex-pattern-input
+                aria-label="Regular expression 1"
+              />
+            </div>
+            <div class={flagField}>
+              <span class={fieldLabel} aria-hidden="true">Flags</span>
+              <div class={flagGroup} role="group" aria-label="Flags for pattern 1">
+                <button type="button" class={flagBtn} aria-pressed="true" data-regex-flag="g" data-sound="tick" title="Global — find all matches, not just the first">g</button>
+                <button type="button" class={flagBtn} aria-pressed="false" data-regex-flag="i" data-sound="tick" title="Case-insensitive">i</button>
+                <button type="button" class={flagBtn} aria-pressed="false" data-regex-flag="m" data-sound="tick" title="Multiline — ^ and $ match at line breaks">m</button>
+                <button type="button" class={flagBtn} aria-pressed="false" data-regex-flag="s" data-sound="tick" title="Dot-all — . also matches newlines">s</button>
+              </div>
+            </div>
+            <button type="button" class={removeRowBtn} data-regex-row-remove data-sound="tick" aria-label="Remove pattern 1" title="Remove this pattern" hidden>
+              <Icon name="x" size={14} />
+            </button>
+          </div>
+          <p class={rowStatus} data-regex-row-status role="status" aria-live="polite"></p>
         </div>
       </div>
     </div>
-    <p class={errorBox} data-regex-error role="status" aria-live="polite"></p>
+    <button type="button" class={addRowBtn} data-regex-add-row data-sound="tick">+ Add pattern</button>
   </div>
 
   {/* Pattern library */}
@@ -190,9 +258,22 @@ const groupsEmpty = css({ color: 'textMuted', fontSize: '0.85rem', m: 0 });
     <div class={libraryGrid}>
       {
         DFIR_REGEX_PATTERNS.map((p) => (
-          <button type="button" class={tag({ tone: 'muted' })} data-regex-lib-id={p.id} data-sound="tick" title={p.description}>
-            {p.label}
-          </button>
+          <div class={libraryItem}>
+            <button type="button" class={tag({ tone: 'muted' })} data-regex-lib-id={p.id} data-sound="tick" title={p.description}>
+              {p.label}
+            </button>
+            <button
+              type="button"
+              class={libraryCopyBtn}
+              data-regex-lib-copy={p.id}
+              data-copy-pop
+              data-sound="copy"
+              aria-label={`Copy ${p.label} pattern`}
+              title="Copy pattern"
+            >
+              <Icon name="copy" size={12} />
+            </button>
+          </div>
         ))
       }
     </div>
@@ -237,6 +318,31 @@ const groupsEmpty = css({ color: 'textMuted', fontSize: '0.85rem', m: 0 });
     </div>
   </div>
 
+  <template data-regex-row-template>
+    <div class={patternRowOuter} data-regex-pattern-row>
+      <span class={rowSwatch} data-regex-row-swatch aria-hidden="true"></span>
+      <div class={rowMain}>
+        <div class={patternRow}>
+          <div class={patternField}>
+            <input type="text" class={patternInput} placeholder="e.g. \b\d{1,3}(\.\d{1,3}){3}\b" autocomplete="off" spellcheck="false" data-regex-pattern-input aria-label="Regular expression" />
+          </div>
+          <div class={flagField}>
+            <span class={fieldLabel} aria-hidden="true">Flags</span>
+            <div class={flagGroup} role="group" aria-label="Flags">
+              <button type="button" class={flagBtn} aria-pressed="true" data-regex-flag="g" data-sound="tick" title="Global — find all matches, not just the first">g</button>
+              <button type="button" class={flagBtn} aria-pressed="false" data-regex-flag="i" data-sound="tick" title="Case-insensitive">i</button>
+              <button type="button" class={flagBtn} aria-pressed="false" data-regex-flag="m" data-sound="tick" title="Multiline — ^ and $ match at line breaks">m</button>
+              <button type="button" class={flagBtn} aria-pressed="false" data-regex-flag="s" data-sound="tick" title="Dot-all — . also matches newlines">s</button>
+            </div>
+          </div>
+          <button type="button" class={removeRowBtn} data-regex-row-remove data-sound="tick" aria-label="Remove this pattern" title="Remove this pattern">
+            <Icon name="x" size={14} />
+          </button>
+        </div>
+        <p class={rowStatus} data-regex-row-status role="status" aria-live="polite"></p>
+      </div>
+    </div>
+  </template>
   <template data-regex-mark-template><mark class={markStyle}></mark></template>
   <template data-regex-group-row-template>
     <tr>
@@ -250,15 +356,25 @@ const groupsEmpty = css({ color: 'textMuted', fontSize: '0.85rem', m: 0 });
 <script>
   // @ts-nocheck — vanilla DOM client script
   import { DFIR_REGEX_PATTERNS, compileRegexSafely, findAllMatches } from '../utils/regexPatterns';
+  import { pop } from '../scripts/copyPop';
+
+  // Fixed 6-color palette, cycled by row position (not by insertion order —
+  // recomputed from current DOM order on every add/remove so colors always
+  // read as a clean 1,2,3,... sequence with no gaps left by a removed row).
+  // Plain hex rather than theme tokens: this needs to stay visually distinct
+  // *within itself* across all 10 site palettes, which the small semantic
+  // token set (primary/accent/border/...) isn't built for.
+  var ROW_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6'];
 
   (function () {
     function init() {
       var roots = document.querySelectorAll('[data-regex-tester]:not([data-ready])');
       Array.prototype.forEach.call(roots, function (root) {
-        var patternInput = root.querySelector('[data-regex-pattern]');
-        var flagBtns = Array.prototype.slice.call(root.querySelectorAll('[data-regex-flag]'));
-        var errorEl = root.querySelector('[data-regex-error]');
+        var rowsContainer = root.querySelector('[data-regex-rows]');
+        var addRowBtn = root.querySelector('[data-regex-add-row]');
+        var rowTemplate = root.querySelector('[data-regex-row-template]');
         var libBtns = Array.prototype.slice.call(root.querySelectorAll('[data-regex-lib-id]'));
+        var libCopyBtns = Array.prototype.slice.call(root.querySelectorAll('[data-regex-lib-copy]'));
         var libCaption = root.querySelector('[data-regex-lib-caption]');
         var sampleInput = root.querySelector('[data-regex-sample]');
         var summaryEl = root.querySelector('[data-regex-summary]');
@@ -267,37 +383,102 @@ const groupsEmpty = css({ color: 'textMuted', fontSize: '0.85rem', m: 0 });
         var groupsWrapEl = root.querySelector('[data-regex-groups-wrap]');
         var groupsBodyEl = root.querySelector('[data-regex-groups-body]');
         var markTemplate = root.querySelector('[data-regex-mark-template]');
-        var rowTemplate = root.querySelector('[data-regex-group-row-template]');
-        if (!patternInput || !sampleInput || !highlightEl || !markTemplate || !rowTemplate) return;
+        var groupRowTemplate = root.querySelector('[data-regex-group-row-template]');
+        if (!rowsContainer || !rowTemplate || !sampleInput || !highlightEl || !markTemplate || !groupRowTemplate) return;
 
-        function currentFlags() {
-          return flagBtns
+        function rows() {
+          return Array.prototype.slice.call(rowsContainer.querySelectorAll('[data-regex-pattern-row]'));
+        }
+        function colorForIndex(i) {
+          return ROW_COLORS[i % ROW_COLORS.length];
+        }
+        function rowFlags(row) {
+          return Array.prototype.slice
+            .call(row.querySelectorAll('[data-regex-flag]'))
             .filter(function (b) { return b.getAttribute('aria-pressed') === 'true'; })
             .map(function (b) { return b.getAttribute('data-regex-flag'); })
             .join('');
         }
 
-        function setFlags(flagsStr) {
-          flagBtns.forEach(function (b) {
-            var active = flagsStr.indexOf(b.getAttribute('data-regex-flag')) !== -1;
-            b.setAttribute('aria-pressed', String(active));
+        // Re-numbers every row's swatch color, aria-labels, and remove-button
+        // visibility from current DOM order — called after any add/remove so
+        // colors/labels never drift from a stale insertion-order count.
+        function updateRowChrome() {
+          var list = rows();
+          list.forEach(function (row, i) {
+            var swatch = row.querySelector('[data-regex-row-swatch]');
+            var input = row.querySelector('[data-regex-pattern-input]');
+            var group = row.querySelector('[role="group"]');
+            var removeBtn = row.querySelector('[data-regex-row-remove]');
+            var color = colorForIndex(i);
+            if (swatch) swatch.style.background = color;
+            if (input) input.setAttribute('aria-label', 'Regular expression ' + (i + 1));
+            if (group) group.setAttribute('aria-label', 'Flags for pattern ' + (i + 1));
+            if (removeBtn) {
+              removeBtn.hidden = list.length <= 1;
+              removeBtn.setAttribute('aria-label', 'Remove pattern ' + (i + 1));
+            }
           });
         }
 
+        function wireRow(row) {
+          var input = row.querySelector('[data-regex-pattern-input]');
+          var flagBtnsForRow = Array.prototype.slice.call(row.querySelectorAll('[data-regex-flag]'));
+          var removeBtn = row.querySelector('[data-regex-row-remove]');
+          input.addEventListener('input', scheduleRecompute);
+          flagBtnsForRow.forEach(function (b) {
+            b.addEventListener('click', function () {
+              b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+              scheduleRecompute();
+            });
+          });
+          if (removeBtn) {
+            removeBtn.addEventListener('click', function () {
+              if (rows().length <= 1) return; // always keep at least one row
+              row.remove();
+              updateRowChrome();
+              recompute();
+            });
+          }
+        }
+
+        function addRow(pattern, flags) {
+          var frag = rowTemplate.content.cloneNode(true);
+          var row = frag.querySelector('[data-regex-pattern-row]');
+          var input = row.querySelector('[data-regex-pattern-input]');
+          if (pattern) input.value = pattern;
+          if (flags) {
+            Array.prototype.slice.call(row.querySelectorAll('[data-regex-flag]')).forEach(function (b) {
+              b.setAttribute('aria-pressed', String(flags.indexOf(b.getAttribute('data-regex-flag')) !== -1));
+            });
+          }
+          wireRow(row);
+          rowsContainer.appendChild(row);
+          updateRowChrome();
+          return row;
+        }
+
         // Safely render `text` into `container` with every match wrapped in a
-        // cloned <mark> — plain text nodes for the untouched spans, never a
-        // string built into innerHTML.
+        // cloned <mark>, colored to match its own pattern row — plain text
+        // nodes for the untouched spans, never a string built into innerHTML.
+        // `matches` is pre-sorted by start index; a match that starts before
+        // the cursor (i.e. overlaps a match already rendered from an earlier
+        // pattern) is skipped rather than rendered on top of it — nesting two
+        // <mark>s over the same characters isn't something this cursor-based
+        // renderer supports, and DFIR patterns rarely overlap in practice.
         function renderHighlight(text, matches) {
           highlightEl.textContent = '';
           if (!text) return;
           var cursor = 0;
           matches.forEach(function (m) {
+            if (m.index < cursor) return;
             if (m.index > cursor) {
               highlightEl.appendChild(document.createTextNode(text.slice(cursor, m.index)));
             }
             if (m.match.length > 0) {
               var mark = markTemplate.content.firstElementChild.cloneNode(true);
               mark.textContent = m.match;
+              mark.style.backgroundColor = 'color-mix(in srgb, ' + m.color + ' 35%, transparent)';
               highlightEl.appendChild(mark);
             }
             cursor = Math.max(cursor, m.index + m.match.length);
@@ -309,68 +490,88 @@ const groupsEmpty = css({ color: 'textMuted', fontSize: '0.85rem', m: 0 });
 
         function renderGroups(matches) {
           groupsBodyEl.innerHTML = '';
-          var rows = [];
-          matches.forEach(function (m, matchIdx) {
+          var out = [];
+          var countPerRow = {};
+          matches.forEach(function (m) {
+            countPerRow[m.rowIndex] = (countPerRow[m.rowIndex] || 0) + 1;
+            var matchLabel = 'P' + (m.rowIndex + 1) + ' match ' + countPerRow[m.rowIndex];
             m.groups.forEach(function (g) {
-              rows.push({ matchLabel: 'Match ' + (matchIdx + 1), groupLabel: g.name ? g.index + ' (' + g.name + ')' : String(g.index), value: g.value === undefined ? '(did not participate)' : g.value });
+              out.push({
+                matchLabel: matchLabel,
+                groupLabel: g.name ? g.index + ' (' + g.name + ')' : String(g.index),
+                value: g.value === undefined ? '(did not participate)' : g.value,
+                color: m.color,
+              });
             });
           });
-          if (!rows.length) {
+          if (!out.length) {
             groupsEmptyEl.hidden = false;
-            groupsEmptyEl.textContent = matches.length ? 'This pattern has no capture groups.' : 'No capture groups to show yet.';
+            groupsEmptyEl.textContent = matches.length ? 'None of the current patterns have capture groups.' : 'No capture groups to show yet.';
             groupsWrapEl.hidden = true;
             return;
           }
           groupsEmptyEl.hidden = true;
           groupsWrapEl.hidden = false;
-          rows.forEach(function (r) {
-            var row = rowTemplate.content.firstElementChild.cloneNode(true);
-            row.querySelector('[data-regex-group-match]').textContent = r.matchLabel;
-            row.querySelector('[data-regex-group-name]').textContent = r.groupLabel;
-            row.querySelector('[data-regex-group-value]').textContent = r.value;
-            groupsBodyEl.appendChild(row);
+          out.forEach(function (r) {
+            var tr = groupRowTemplate.content.firstElementChild.cloneNode(true);
+            var matchTd = tr.querySelector('[data-regex-group-match]');
+            matchTd.textContent = r.matchLabel;
+            matchTd.style.borderLeft = '3px solid ' + r.color;
+            tr.querySelector('[data-regex-group-name]').textContent = r.groupLabel;
+            tr.querySelector('[data-regex-group-value]').textContent = r.value;
+            groupsBodyEl.appendChild(tr);
           });
         }
 
-        function setError(message) {
-          if (!errorEl) return;
-          errorEl.textContent = message || '';
-          if (message) errorEl.setAttribute('data-state', 'error');
-          else errorEl.removeAttribute('data-state');
-        }
-
         function recompute() {
-          var patternStr = patternInput.value;
           var sampleText = sampleInput.value;
+          var list = rows();
+          var allMatches = [];
+          var anyPattern = false;
 
-          if (!patternStr) {
-            setError('');
-            renderHighlight(sampleText, []);
-            renderGroups([]);
+          list.forEach(function (row, rowIndex) {
+            var input = row.querySelector('[data-regex-pattern-input]');
+            var statusEl = row.querySelector('[data-regex-row-status]');
+            var patternStr = input.value;
+            if (!patternStr) {
+              if (statusEl) { statusEl.textContent = ''; statusEl.removeAttribute('data-state'); }
+              return;
+            }
+            anyPattern = true;
+            var result = compileRegexSafely(patternStr, rowFlags(row));
+            if (!result.ok) {
+              if (statusEl) { statusEl.textContent = result.error; statusEl.setAttribute('data-state', 'error'); }
+              return;
+            }
+            if (statusEl) statusEl.removeAttribute('data-state');
+            var color = colorForIndex(rowIndex);
+            var matches = findAllMatches(result.regex, sampleText);
+            matches.forEach(function (m) {
+              allMatches.push({ index: m.index, match: m.match, groups: m.groups, color: color, rowIndex: rowIndex });
+            });
+            if (statusEl) {
+              statusEl.textContent = !sampleText.trim()
+                ? 'Paste sample text below to test.'
+                : matches.length + ' match' + (matches.length === 1 ? '' : 'es');
+            }
+          });
+
+          // Stable sort by start index so highlighting renders left-to-right;
+          // ties keep row order, so an earlier pattern's color wins on an
+          // exact-same-start overlap.
+          allMatches.sort(function (a, b) { return a.index - b.index; });
+
+          renderHighlight(sampleText, allMatches);
+          renderGroups(allMatches);
+
+          if (!anyPattern) {
             summaryEl.textContent = 'Enter a pattern and some sample text above.';
-            return;
-          }
-
-          var result = compileRegexSafely(patternStr, currentFlags());
-          if (!result.ok) {
-            setError(result.error);
-            renderHighlight(sampleText, []);
-            renderGroups([]);
-            summaryEl.textContent = 'Fix the pattern above to see matches.';
-            return;
-          }
-          setError('');
-
-          var matches = findAllMatches(result.regex, sampleText);
-          renderHighlight(sampleText, matches);
-          renderGroups(matches);
-
-          if (!sampleText.trim()) {
-            summaryEl.textContent = 'Paste sample text above to test this pattern against it.';
-          } else if (matches.length === 0) {
+          } else if (!sampleText.trim()) {
+            summaryEl.textContent = 'Paste sample text above to test your pattern(s) against it.';
+          } else if (allMatches.length === 0) {
             summaryEl.textContent = 'No matches found in the sample text.';
           } else {
-            summaryEl.textContent = matches.length + ' match' + (matches.length === 1 ? '' : 'es') + ' found.';
+            summaryEl.textContent = 'Highlighted below, color-coded per pattern — see each pattern’s own count above.';
           }
         }
 
@@ -380,27 +581,52 @@ const groupsEmpty = css({ color: 'textMuted', fontSize: '0.85rem', m: 0 });
           debounceTimer = setTimeout(recompute, 200);
         }
 
-        patternInput.addEventListener('input', scheduleRecompute);
         sampleInput.addEventListener('input', scheduleRecompute);
-        flagBtns.forEach(function (b) {
-          b.addEventListener('click', function () {
-            b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
-            scheduleRecompute();
-          });
+        rows().forEach(wireRow);
+        updateRowChrome();
+
+        addRowBtn.addEventListener('click', function () {
+          var row = addRow('', 'g');
+          recompute();
+          var input = row.querySelector('[data-regex-pattern-input]');
+          if (input) input.focus();
         });
 
+        // Loads a library pattern into the last row if it's still empty (the
+        // common "first click" case, matching the old single-pattern
+        // behavior); otherwise adds a new row, so clicking several library
+        // chips in a row builds up a multi-pattern test set.
         libBtns.forEach(function (b) {
           b.addEventListener('click', function () {
             var id = b.getAttribute('data-regex-lib-id');
             var p = DFIR_REGEX_PATTERNS.find(function (x) { return x.id === id; });
             if (!p) return;
-            libBtns.forEach(function (o) {
-              if (o === b) o.setAttribute('data-active', ''); else o.removeAttribute('data-active');
-            });
-            patternInput.value = p.pattern;
-            setFlags(p.flags);
-            if (libCaption) libCaption.textContent = p.label + ' — ' + p.description;
+            var list = rows();
+            var lastRow = list[list.length - 1];
+            var lastInput = lastRow && lastRow.querySelector('[data-regex-pattern-input]');
+            if (lastInput && !lastInput.value) {
+              lastInput.value = p.pattern;
+              Array.prototype.slice.call(lastRow.querySelectorAll('[data-regex-flag]')).forEach(function (fb) {
+                fb.setAttribute('aria-pressed', String(p.flags.indexOf(fb.getAttribute('data-regex-flag')) !== -1));
+              });
+            } else {
+              addRow(p.pattern, p.flags);
+            }
+            if (libCaption) libCaption.textContent = 'Loaded ' + p.label + ' — ' + p.description;
             recompute();
+          });
+        });
+
+        // Copies a library entry's raw pattern string straight to the
+        // clipboard — deliberately separate from the load buttons above, so
+        // grabbing a pattern for use elsewhere never disturbs whatever rows
+        // the user currently has loaded in the tester.
+        libCopyBtns.forEach(function (b) {
+          b.addEventListener('click', function () {
+            var id = b.getAttribute('data-regex-lib-copy');
+            var p = DFIR_REGEX_PATTERNS.find(function (x) { return x.id === id; });
+            if (!p) return;
+            navigator.clipboard.writeText(p.pattern).then(function () { pop(b); }).catch(function () {});
           });
         });
 
@@ -414,7 +640,7 @@ const groupsEmpty = css({ color: 'textMuted', fontSize: '0.85rem', m: 0 });
 </script>
 
 <style>
-  [data-regex-error][data-state='error'] {
+  [data-regex-row-status][data-state='error'] {
     color: color-mix(in srgb, red 65%, var(--colors-text));
   }
   [data-regex-lib-id] {
@@ -424,10 +650,5 @@ const groupsEmpty = css({ color: 'textMuted', fontSize: '0.85rem', m: 0 });
   [data-regex-lib-id]:hover {
     border-color: var(--colors-primary);
     color: var(--colors-primary);
-  }
-  [data-regex-lib-id][data-active] {
-    color: var(--colors-primary);
-    background: color-mix(in srgb, var(--colors-primary) 12%, transparent);
-    border-color: color-mix(in srgb, var(--colors-primary) 30%, transparent);
   }
 </style>

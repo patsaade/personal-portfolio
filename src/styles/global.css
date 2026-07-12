@@ -25,8 +25,11 @@ html {
 }
 
 /* Nav "More"/"DFIR" dropdowns (Navigation.astro): open on hover/focus (desktop)
-   or when JS sets data-open (touch tap); slides down + fades in, rotates the
-   chevron while open. Plain CSS here because these are cross-element ancestor
+   only — no click-to-pin, so moving the pointer away (or tabbing out) always
+   closes it; a stale click-armed state used to leave the panel stuck open
+   until a second click or an outside click dismissed it. Slides down + fades
+   in, rotates the chevron while open. Plain CSS here because these are
+   cross-element ancestor
    selectors Panda's css() types reject. The panel stays laid out (position:
    absolute, so no layout shift) but invisible/non-interactive at rest —
    visibility flips to hidden only after the fade/slide-out finishes
@@ -46,8 +49,7 @@ html {
   transition: opacity 500ms ease, transform 500ms ease, visibility 0s linear 500ms;
 }
 .nav-more:hover .nav-more-menu,
-.nav-more:focus-within .nav-more-menu,
-.nav-more-menu[data-open] {
+.nav-more:focus-within .nav-more-menu {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
@@ -70,8 +72,7 @@ html {
   animation: none;
 }
 .nav-more:hover .nav-more-menu .nav-declassify,
-.nav-more:focus-within .nav-more-menu .nav-declassify,
-.nav-more-menu[data-open] .nav-declassify {
+.nav-more:focus-within .nav-more-menu .nav-declassify {
   animation: declassify-hero 0.5s ease-out both;
 }
 
