@@ -28,7 +28,7 @@
     "@astrojs/vercel": "^10.0.8",
     "@floating-ui/dom": "^1.7.6",
     "@vercel/speed-insights": "^2.0.0",
-    "astro": "^6.4.7",
+    "astro": "^7.1.1",
     "motion": "^12.42.2"
   },
   "devDependencies": {
