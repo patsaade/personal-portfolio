@@ -9,6 +9,7 @@ import { ATTACK_TECHNIQUES } from '../data/references';
 import { D3FEND_TECHNIQUES } from '../data/d3fend';
 import { TOOLS } from '../data/tools';
 import { EVENT_IDS } from '../data/eventIds';
+import { NETWORK_PORTS } from '../data/networkPorts';
 
 export const prerender = true;
 
@@ -32,6 +33,7 @@ const STATIC_PAGES = [
   { title: 'Certifications', url: '/certifications/', kind: 'Page', desc: 'Security certifications — CISSP, CompTIA, the GIAC forensics track.', keywords: 'certifications cissp giac gcfa comptia credly' },
   { title: 'Glossary', url: '/glossary/', kind: 'Page', desc: 'A cybersecurity & DFIR glossary.', keywords: 'glossary terms definitions reference' },
   { title: 'Windows Event ID / Sysmon Reference', url: '/event-ids/', kind: 'Page', desc: 'A comprehensive, fully-cited reference for Windows Security auditing log and Sysmon event IDs that matter for DFIR.', keywords: 'windows event id sysmon security log auditing reference 4624 4688 logon process creation' },
+  { title: 'Network Port Reference', url: '/network-ports/', kind: 'Page', desc: 'A comprehensive, fully-cited reference for TCP/UDP ports that matter for DFIR, with confidence levels.', keywords: 'network port reference tcp udp well-known registered ephemeral dynamic iana rdp smb ssh dns c2' },
   { title: 'MITRE ATT&CK Coverage Map', url: '/attack-map/', kind: 'Page', desc: 'MITRE ATT&CK techniques covered across the site.', keywords: 'mitre attack techniques tactics coverage matrix' },
   { title: 'MITRE D3FEND map', url: '/d3fend/', kind: 'Page', desc: 'MITRE D3FEND defensive techniques, mapped to ATT&CK.', keywords: 'mitre d3fend defensive techniques tactics countermeasures harden detect isolate' },
   { title: 'Blog', url: '/blog/', kind: 'Page', desc: 'DFIR deep dives.', keywords: 'blog posts writeups articles' },
@@ -90,6 +92,13 @@ export const GET: APIRoute = async () => {
       kind: 'Event ID',
       desc: e.category,
       keywords: `${e.channel} ${e.source} windows event id sysmon`.toLowerCase(),
+    })),
+    ...NETWORK_PORTS.map((p) => ({
+      title: `${p.port} ${p.name}`,
+      url: `/network-ports/${p.slug}/`,
+      kind: 'Port',
+      desc: p.category,
+      keywords: `${p.protocol} port ${p.port} network`.toLowerCase(),
     })),
     ...STATIC_PAGES,
   ];

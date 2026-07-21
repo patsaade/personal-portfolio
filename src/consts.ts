@@ -57,6 +57,7 @@ const REFERENCE_LINKS: { href: string; label: string; icon: IconName; descriptio
   { href: '/tools/cheatsheet/', label: 'Command Cheat Sheet', icon: 'terminal', description: 'Verified DFIR commands for the toolkit, by platform.' },
   { href: '/glossary/', label: 'Glossary', icon: 'book-open', description: 'A cybersecurity & DFIR glossary.' },
   { href: '/event-ids/', label: 'Event ID Reference', icon: 'file-text', description: 'Windows Security + Sysmon event IDs that matter for DFIR.' },
+  { href: '/network-ports/', label: 'Network Port Reference', icon: 'server', description: 'TCP/UDP ports that matter for DFIR, fully cited with confidence levels.' },
 ];
 
 // The two MITRE framework maps — kept together since they're explicit

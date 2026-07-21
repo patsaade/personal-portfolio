@@ -12,6 +12,8 @@ import Icon from '../../components/Icon.astro';
 import SigmaTester from '../../components/SigmaTester.astro';
 import Term from '../../components/Term.astro';
 import { toolChip } from '../../components/RelatedTools.astro';
+import ExternalResources from '../../components/ExternalResources.astro';
+import { EXTERNAL_RESOURCES } from '../../data/externalResources';
 import { SIGMA_MODIFIERS, CONDITION_UI_TYPES } from '../../utils/sigma';
 
 const sectionH2 = css({
@@ -185,4 +187,6 @@ const CONDITION_NOTES: Record<string, string> = {
       </p>
     </div>
   </div>
+
+  <ExternalResources resources={EXTERNAL_RESOURCES['sigma-tester']} />
 </BaseLayout>

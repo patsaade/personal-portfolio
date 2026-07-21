@@ -12,6 +12,8 @@ import Icon from '../../components/Icon.astro';
 import RegexTester from '../../components/RegexTester.astro';
 import Term from '../../components/Term.astro';
 import { toolChip } from '../../components/RelatedTools.astro';
+import ExternalResources from '../../components/ExternalResources.astro';
+import { EXTERNAL_RESOURCES } from '../../data/externalResources';
 import { DFIR_REGEX_PATTERNS } from '../../utils/regexPatterns';
 
 const sectionH2 = css({
@@ -150,4 +152,6 @@ const relatedReason = css({ color: 'textMuted', fontSize: '0.85rem', mt: '0.35re
       </p>
     </div>
   </div>
+
+  <ExternalResources resources={EXTERNAL_RESOURCES['regex-tester']} />
 </BaseLayout>

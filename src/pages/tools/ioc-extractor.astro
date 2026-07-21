@@ -12,6 +12,8 @@ import PageHeader from '../../components/PageHeader.astro';
 import Icon from '../../components/Icon.astro';
 import IocExtractor from '../../components/IocExtractor.astro';
 import { toolChip } from '../../components/RelatedTools.astro';
+import ExternalResources from '../../components/ExternalResources.astro';
+import { EXTERNAL_RESOURCES } from '../../data/externalResources';
 import { IOC_CATEGORIES } from '../../utils/iocs';
 
 const sectionH2 = css({
@@ -160,4 +162,6 @@ const CATEGORY_NOTES: Record<string, string> = {
       </p>
     </div>
   </div>
+
+  <ExternalResources resources={EXTERNAL_RESOURCES['ioc-extractor']} />
 </BaseLayout>

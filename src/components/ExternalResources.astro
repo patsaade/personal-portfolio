@@ -1,0 +1,51 @@
+---
+// "Other resources" section shared by the 11 interactive tool pages — real,
+// WebFetch-verified external websites/tools that complement or extend what
+// this site's own local, client-side tool does (CyberChef, VirusTotal,
+// regex101, Eric Zimmerman's EZ Tools, etc.). Distinct from RelatedTools.astro's
+// toolChip, which links to OTHER PAGES ON THIS SITE — every link here is
+// off-site, so every anchor carries target="_blank" rel="noopener".
+import { css } from 'styled-system/css';
+import Icon from './Icon.astro';
+import type { ExternalResource } from '../data/externalResources';
+
+interface Props {
+  resources: ExternalResource[];
+}
+const { resources } = Astro.props;
+
+const sectionH2 = css({ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem', fontWeight: 700, mt: '2.5rem', mb: '0.75rem' });
+const card = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.3rem',
+  p: '1rem 1.15rem',
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'md',
+  transition: 'border-color 200ms ease, transform 200ms ease',
+  _hover: { borderColor: 'primary', transform: 'translateY(-2px)' },
+});
+---
+
+{
+  resources.length > 0 && (
+    <>
+      <h2 class={sectionH2}><Icon name="external-link" size={18} class={css({ color: 'primary' })} /> Other resources</h2>
+      <p class={css({ color: 'textMuted', fontSize: '0.92rem', mb: '0.85rem', lineHeight: 1.7 })}>
+        Real, well-known external tools and sites that complement this one — none of these are affiliated with
+        this site, and nothing you enter here is shared with them:
+      </p>
+      <div class={css({ display: 'flex', flexDirection: 'column', gap: '0.6rem' })}>
+        {resources.map((r) => (
+          <a href={r.url} target="_blank" rel="noopener" class={card}>
+            <span class={css({ fontWeight: 700, color: 'text', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' })}>
+              {r.name} <Icon name="external-link" size={13} class={css({ color: 'primary' })} />
+            </span>
+            <span class={css({ fontSize: '0.9rem', color: 'textMuted', lineHeight: 1.5 })}>{r.blurb}</span>
+          </a>
+        ))}
+      </div>
+    </>
+  )
+}

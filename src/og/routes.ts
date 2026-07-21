@@ -32,6 +32,7 @@ const STATIC_ENTRIES: OgEntry[] = [
   { slug: 'tools/sigma-tester', title: 'Sigma Rule Tester & Builder', eyebrow: 'Detection Engineering' },
   { slug: 'glossary', title: 'Cybersecurity glossary', eyebrow: 'Reference' },
   { slug: 'event-ids', title: 'Windows Event ID / Sysmon Reference', eyebrow: 'Reference' },
+  { slug: 'network-ports', title: 'Network Port Reference', eyebrow: 'Reference' },
   { slug: 'attack-map', title: 'MITRE ATT&CK Coverage Map', eyebrow: 'Coverage' },
   { slug: 'd3fend', title: 'MITRE D3FEND Map', eyebrow: 'Countermeasures' },
   { slug: 'certifications', title: 'Certifications', eyebrow: 'Credentials' },
@@ -74,6 +75,7 @@ export function ogSlugForPath(pathname: string): string {
   if (s.startsWith('glossary/')) return 'glossary';
   if (s === 'word-of-the-day' || s === 'term-of-the-day') return 'glossary';
   if (s.startsWith('event-ids/')) return 'event-ids';
+  if (s.startsWith('network-ports/')) return 'network-ports';
   // Every technique detail page shares its map's one card, same as glossary terms.
   if (s.startsWith('attack-map/')) return 'attack-map';
   if (s.startsWith('d3fend/')) return 'd3fend';

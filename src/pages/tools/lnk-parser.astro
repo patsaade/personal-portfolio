@@ -11,6 +11,8 @@ import Icon from '../../components/Icon.astro';
 import LnkParser from '../../components/LnkParser.astro';
 import Term from '../../components/Term.astro';
 import { toolChip } from '../../components/RelatedTools.astro';
+import ExternalResources from '../../components/ExternalResources.astro';
+import { EXTERNAL_RESOURCES } from '../../data/externalResources';
 
 const sectionH2 = css({
   display: 'flex',
@@ -131,4 +133,6 @@ const REFERENCE_ROWS: { field: string; note: string }[] = [
       </p>
     </div>
   </div>
+
+  <ExternalResources resources={EXTERNAL_RESOURCES['lnk-parser']} />
 </BaseLayout>

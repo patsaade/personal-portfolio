@@ -13,6 +13,8 @@ import PageHeader from '../../components/PageHeader.astro';
 import Icon from '../../components/Icon.astro';
 import EmailHeaderAnalyzer from '../../components/EmailHeaderAnalyzer.astro';
 import Term from '../../components/Term.astro';
+import ExternalResources from '../../components/ExternalResources.astro';
+import { EXTERNAL_RESOURCES } from '../../data/externalResources';
 import { resolveAttackLink } from '../../data/references';
 import { describeSclValue, describeBclValue } from '../../utils/emailHeaders';
 
@@ -231,4 +233,6 @@ const attackChip = css({
       {attackTechnique.name}
     </a>
   </p>
+
+  <ExternalResources resources={EXTERNAL_RESOURCES['email-header-analyzer']} />
 </BaseLayout>

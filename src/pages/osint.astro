@@ -15,6 +15,8 @@ import PageHeader from '../components/PageHeader.astro';
 import Icon from '../components/Icon.astro';
 import DorkBuilder from '../components/DorkBuilder.astro';
 import Term from '../components/Term.astro';
+import ExternalResources from '../components/ExternalResources.astro';
+import { EXTERNAL_RESOURCES } from '../data/externalResources';
 import { SEARCH_ENGINES, DORK_OPERATORS, DORK_FOCUSES } from '../data/osint';
 import { TOOLS } from '../data/tools';
 import { resolveAttackLink } from '../data/references';
@@ -199,4 +201,6 @@ const toolChip = css({
       See all OSINT tools in the Tool Catalog <Icon name="link" size={13} />
     </a>
   </p>
+
+  <ExternalResources resources={EXTERNAL_RESOURCES['osint']} />
 </BaseLayout>

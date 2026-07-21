@@ -12,6 +12,8 @@ import Icon from '../../components/Icon.astro';
 import DeobfuscatorBuilder from '../../components/DeobfuscatorBuilder.astro';
 import Term from '../../components/Term.astro';
 import { toolChip } from '../../components/RelatedTools.astro';
+import ExternalResources from '../../components/ExternalResources.astro';
+import { EXTERNAL_RESOURCES } from '../../data/externalResources';
 import { resolveAttackLink } from '../../data/references';
 import { DEOBFUSCATE_STEPS } from '../../utils/deobfuscate';
 
@@ -161,4 +163,6 @@ const STEP_NOTES: Record<string, string> = {
       </p>
     </div>
   </div>
+
+  <ExternalResources resources={EXTERNAL_RESOURCES['deobfuscator']} />
 </BaseLayout>
