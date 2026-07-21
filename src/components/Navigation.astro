@@ -29,6 +29,12 @@ const isDropdownActive = (d: (typeof dropdowns)[number]) =>
 // Desktop nav "More" dropdown (mirrors the footer's More column). Opens on
 // hover/focus via CSS (the `.nav-more` ancestor) and on click/tap via JS.
 const moreWrap = css({ position: 'relative', display: 'flex', alignItems: 'center' });
+// DFIR's own trigger LI is deliberately NOT `position: relative` — its mega-
+// menu panel (dfirMenuOuter below) needs to be centered under the whole nav
+// bar, not hugging this narrow "DFIR ⌄" trigger, so its containing block is
+// left to resolve up to `<nav>` itself (which IS position:relative — see the
+// <nav> element below) instead of stopping at this LI.
+const dfirWrap = css({ display: 'flex', alignItems: 'center' });
 const moreBtn = css({
   display: 'inline-flex',
   alignItems: 'center',
@@ -79,6 +85,74 @@ const moreMenuInner = css({
   display: 'flex',
   flexDirection: 'column',
   gap: '0.15rem',
+});
+
+// DFIR's own mega-menu — a 3-column grid (17 links across 6 categories no
+// longer fits any single stacked column without spilling well past the nav
+// bar). Centered under the WHOLE nav, not the narrow "DFIR ⌄" trigger: fixed
+// width + a matching fixed `left: calc(50% - width/2)` rather than the more
+// obvious `left: 50%; transform: translateX(-50%)` — `.nav-more-menu` in
+// global.css already owns `transform: translateY(...)` for the open/close
+// slide, and a second `transform` here would silently clobber it (only one
+// `transform` declaration on an element ever wins, they don't merge). Fixed
+// pixel math is safe specifically because this dropdown only ever renders at
+// the `md` breakpoint and up (768px, this whole `<ul>` is `md:flex`) and the
+// nav's own `maxW` is 960px — 600px comfortably fits with margin at every
+// width in that whole range, so there's no responsive case to account for.
+const dfirMenuOuter = css({
+  position: 'absolute',
+  top: '100%',
+  left: 'calc(50% - 300px)',
+  w: '600px',
+  pt: '0.6rem',
+  zIndex: 60,
+  '.nav-more:hover &': { zIndex: 70 },
+  '.nav-more:focus-within &': { zIndex: 70 },
+});
+const dfirMenuInner = css({
+  bg: 'bgCard',
+  border: '1px solid token(colors.border)',
+  borderRadius: 'lg',
+  boxShadow: 'cardHover',
+  p: '1rem',
+  // Safety net, not an expected case: 6 categories in a 3-column grid is 2
+  // rows, comfortably under this even on the shortest realistic viewport —
+  // kept anyway so a future 7th/8th category degrades to a scrollbar instead
+  // of quietly pushing past the viewport bottom again.
+  maxH: '75vh',
+  overflowY: 'auto',
+});
+const dfirGrid = css({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(3, 1fr)',
+  gap: '0.5rem 1.5rem',
+  mt: '0.75rem',
+});
+const dfirGroupLabel = css({
+  fontFamily: 'sans',
+  fontSize: '0.68rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: 'primary',
+  px: '0.5rem',
+  pb: '0.3rem',
+});
+// Unlike `moreLink` (a flat single-column list with room to spare), a 600px
+// panel split 3 ways leaves ~170px per column — plenty for most labels, but
+// a couple of the longer ones ("MITRE ATT&CK Coverage Map") wrap to two
+// lines rather than overflow their column, so no `whiteSpace: nowrap` here.
+const dfirLink = css({
+  display: 'block',
+  px: '0.5rem',
+  py: '0.35rem',
+  fontSize: '0.85rem',
+  lineHeight: 1.3,
+  color: 'textMuted',
+  borderRadius: 'md',
+  transition: 'color 150ms ease, background 150ms ease',
+  _hover: { color: 'primary', bg: 'bgSubtle' },
+  '&[aria-current=page]': { color: 'primary', fontWeight: 600 },
 });
 const menuGroup = css({ listStyle: 'none', m: 0, p: 0 });
 const menuGroupLabel = css({
@@ -169,6 +243,7 @@ const mobileSummary = css({
 >
   <nav
     class={css({
+      position: 'relative',
       maxW: '960px',
       mx: 'auto',
       px: '1.25rem',
@@ -240,7 +315,7 @@ const mobileSummary = css({
           ))
         }
         {dropdowns.map((d) => (
-          <li class={`nav-more ${moreWrap}`}>
+          <li class={`nav-more ${d.id === 'dfir' ? dfirWrap : moreWrap}`}>
             {d.id === 'dfir' ? (
               // Desktop only (this whole <ul> is md:flex — see its own class
               // above): a real link, not a button. Hovering it still previews
@@ -281,33 +356,52 @@ const mobileSummary = css({
                 <Icon name="chevron-down" size={13} strokeWidth={2.5} class="nav-more-chev" />
               </button>
             )}
-            <div id={`nav-${d.id}-menu`} class={`nav-more-menu ${moreMenuOuter}`}>
-              <div class={moreMenuInner}>
-                {d.id === 'dfir' && (
-                  <>
-                    <a href="/dfir/" aria-current={isActive('/dfir/') ? 'page' : undefined} class={`nav-declassify ${moreLink}`}>
-                      Browse all DFIR pages →
-                    </a>
-                    <div class={menuGroupDivider} />
-                  </>
-                )}
-                {d.groups.map((g, i) => (
-                  <>
-                    {i > 0 && <div class={menuGroupDivider} />}
-                    {g.category && <p class={`nav-declassify ${menuGroupLabel}`}>{g.category}</p>}
-                    <ul class={menuGroup} aria-label={g.category ?? d.label}>
-                      {g.links.map((link) => (
-                        <li>
-                          <a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class={`nav-declassify ${moreLink}`}>
-                            {link.label}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                ))}
+            {d.id === 'dfir' ? (
+              <div id={`nav-${d.id}-menu`} class={`nav-more-menu ${dfirMenuOuter}`}>
+                <div class={dfirMenuInner}>
+                  <a href="/dfir/" aria-current={isActive('/dfir/') ? 'page' : undefined} class={`nav-declassify ${moreLink}`}>
+                    Browse all DFIR pages →
+                  </a>
+                  <div class={menuGroupDivider} />
+                  <div class={dfirGrid}>
+                    {d.groups.map((g) => (
+                      <div>
+                        {g.category && <p class={`nav-declassify ${dfirGroupLabel}`}>{g.category}</p>}
+                        <ul class={menuGroup} aria-label={g.category ?? d.label}>
+                          {g.links.map((link) => (
+                            <li>
+                              <a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class={`nav-declassify ${dfirLink}`}>
+                                {link.label}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div id={`nav-${d.id}-menu`} class={`nav-more-menu ${moreMenuOuter}`}>
+                <div class={moreMenuInner}>
+                  {d.groups.map((g, i) => (
+                    <>
+                      {i > 0 && <div class={menuGroupDivider} />}
+                      {g.category && <p class={`nav-declassify ${menuGroupLabel}`}>{g.category}</p>}
+                      <ul class={menuGroup} aria-label={g.category ?? d.label}>
+                        {g.links.map((link) => (
+                          <li>
+                            <a href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} class={`nav-declassify ${moreLink}`}>
+                              {link.label}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ))}
+                </div>
+              </div>
+            )}
           </li>
         ))}
       </ul>
